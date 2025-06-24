@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;

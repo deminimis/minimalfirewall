@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
