@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-<Window x:Class="MinimalFirewall.MainWindow"
+﻿<Window x:Class="MinimalFirewall.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -56,7 +53,7 @@
         <Style x:Key="SortableHeaderStyle" TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource BaseHeaderStyle}">
             <EventSetter Event="Click" Handler="SortableColumnHeader_Click" />
         </Style>
-
+        
         <Style x:Key="StatusRowStyle" TargetType="{x:Type ListViewItem}">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Style.Triggers>
@@ -215,7 +212,7 @@
                             </Button.Style>
                         </Button>
                     </StackPanel>
-
+                    
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="MinimizeButton" Content="—" Style="{StaticResource CaptionButtonStyle}" Click="MinimizeButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
                         <Button x:Name="MaximizeButton" Content="☐" Style="{StaticResource CaptionButtonStyle}" Click="MaximizeButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
@@ -227,7 +224,7 @@
             <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
                 <TabItem Header="Pending Connections">
                     <Grid>
-                        <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource Header.Background.Default}" BorderThickness="0">
+                        <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource Header.Background.Default}" BorderThickness="0">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Actions" Width="320" HeaderContainerStyle="{StaticResource BaseHeaderStyle}">
@@ -252,7 +249,16 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                     <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                     <GridViewColumn Header="Path" DisplayMemberBinding="{Binding AppPath}" Width="330" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
