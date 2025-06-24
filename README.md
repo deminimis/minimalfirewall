@@ -2,6 +2,10 @@
 
 Minimal Firewall works in conjuncton with Windows Firewall to block all unknown connections by default, prompting you to create application based rules to mitigate malware, telemetry, and data leaks. Completely rid yourself of apps phoning home without your knowledge.
 
+<div align="center">
+<img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo.jpg" alt="Description of image" width="50%">
+</div>
+
 
 ## Core Features
 
@@ -36,7 +40,24 @@ Minimal Firewall offers a more secure and integrated approach by interacting dir
 |**Open Source**|✅|✅|✅|✅|
 |**Wildcards**|✅|❌|❌|✅|
 
+## Screenshots
 
+### You can choose to view pending connections silently inside the app or as an annoying popup.
+![pending connection tab](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20094754.png)
+
+![popup](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095134.png) 
+
+### Includes both light and dark themes
+
+![light theme UWP](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095637.png)
+
+![light theme services](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095730.png) 
+
+### Easy or advanced rule creation
+
+![Easy](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095751.png)
+
+![Advanced](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095821.png)
 
 ## Security by Default
 
