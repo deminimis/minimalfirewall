@@ -18,12 +18,10 @@ namespace MinimalFirewall
 
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly FirewallActionsService _actionsService;
-
         private readonly HashSet<string> _snoozedApps = new HashSet<string>();
         private readonly Dictionary<string, Timer> _snoozeTimers = new Dictionary<string, Timer>();
 
         public event Action<PendingConnectionViewModel> PendingConnectionDetected;
-
         public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, Func<bool> isLockdownEnabled)
         {
             _dataService = dataService;
@@ -69,8 +67,6 @@ namespace MinimalFirewall
                 }
 
                 var eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-
-                // Check if a specific rule has already been created for this app since the last full load.
                 var allAppRules = _dataService.AllProgramRules.Concat(_dataService.AllServiceRules);
                 if (allAppRules.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -110,8 +106,9 @@ namespace MinimalFirewall
         {
             switch (rawDirection)
             {
-                case "%%14592": return "Outbound";
-                case "%%14593": return "Inbound";
+                // --- THIS IS THE FIX ---
+                case "%%14592": return "Inbound";    // Corrected from Outbound
+                case "%%14593": return "Outbound";   // Corrected from Inbound
                 default: return rawDirection;
             }
         }
