@@ -67,9 +67,9 @@ Minimal Firewall is a WPF-based graphical user interface, written in C# against 
 The application's core efficacy is derived from its implementation of a default-deny outbound policy on all active network profiles (NET_FW_PROFILE_TYPE2_). This is set via the INetFwPolicy2 COM interface. Rather than employing complex packet-filtering drivers, the application leverages the native capabilities of WFP's auditing feature. Firewall rules are not stored in a proprietary format but are materialized directly as INetFwRule2 objects via the NetFwTypeLib COM Interop library. This ensures native integration, performance, and visibility within the standard "Windows Defender Firewall with Advanced Security" console. 
 
 
-Disclaimer
+## Disclaimer
 
-Minimal Firewall is designed to enhance the usability of Windows Defender Firewall. It does not replace or modify the underlying firewall but provides a management interface.
+Minimal Firewall is designed to enhance the usability of Windows Defender Firewall. It does not replace or modify the underlying firewall but provides a management interface. 
 
 
 ## Contributing
