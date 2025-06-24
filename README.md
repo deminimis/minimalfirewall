@@ -1,6 +1,7 @@
 # Minimal Firewall
 
-Tired of applications "phoning home" without your permission? Worried about malware, telemetry, or data leaks? Minimal Firewall blocks all unknown connections, allowing you to easily create simple application-based rules. 
+Minimal Firewall works in conjuncton with Windows Firewall to block all unknown connections by default, prompting you to create application based rules to mitigate malware, telemetry, and data leaks. Completely rid yourself of apps phoning home without your knowledge.
+
 
 ## Core Features
 
