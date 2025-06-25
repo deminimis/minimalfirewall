@@ -1,0 +1,482 @@
+﻿<Window x:Class="MinimalFirewall.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:local="clr-namespace:MinimalFirewall"
+        mc:Ignorable="d"
+        Title="Minimal Firewall" Height="700" Width="1000"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" WindowState="Normal">
+
+    <Window.Resources>
+        <Style x:Key="CaptionButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource App.Text.Default}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}" Name="border">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource CaptionButton.Background.MouseOver}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CloseButtonStyle" BasedOn="{StaticResource CaptionButtonStyle}" TargetType="Button">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123" />
+                    <Setter Property="Foreground" Value="White" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SortableHeaderStyle" TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
+            <EventSetter Event="Click" Handler="SortableColumnHeader_Click" />
+        </Style>
+
+        <Style x:Key="StatusRowStyle" TargetType="{x:Type ListViewItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="{DynamicResource App.Window.Background}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="Allow (All)">
+                    <Setter Property="Background" Value="#C8E6C9" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Allow Out, Allow In">
+                    <Setter Property="Background" Value="#FFF9C4" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Allow Out">
+                    <Setter Property="Background" Value="#FFF9C4" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Allow In">
+                    <Setter Property="Background" Value="#FFF9C4" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Block (All)">
+                    <Setter Property="Background" Value="#EF9A9A" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Block Out, Block In">
+                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Block Out">
+                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Block In">
+                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Block Out, Allow In">
+                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Allow Out, Block In">
+                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="Undefined">
+                    <Setter Property="Background" Value="{DynamicResource ListItem.Background.Undefined}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Undefined}" />
+                </DataTrigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItem.Background.MouseOver}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Selected}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItem.Background.Selected}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Selected}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="UndefinedRowStyle" TargetType="{x:Type ListViewItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="{DynamicResource ListItem.Background.Undefined}" />
+            <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Undefined}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItem.Background.MouseOver}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Selected}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItem.Background.Selected}" />
+                    <Setter Property="Foreground" Value="{DynamicResource ListItem.Text.Selected}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome ResizeBorderThickness="8" CaptionHeight="40" CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="1" Background="{DynamicResource App.Window.Background}">
+        <DockPanel x:Name="RootPanel">
+            <Border DockPanel.Dock="Top" Background="{DynamicResource TitleBar.Background.Default}" BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="0,0,0,1">
+                <Grid Height="40" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <Button x:Name="FileMenuButton" Content="☰" Width="40" Height="30" Margin="5" Click="FileMenuButton_Click" ToolTip="Menu" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="Close to Tray" IsCheckable="True" IsChecked="{Binding IsCloseToTrayEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <MenuItem Header="Start on System Startup" IsCheckable="True" IsChecked="{Binding IsStartupEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <MenuItem Header="Use Dark Mode" IsCheckable="True" IsChecked="{Binding IsDarkModeEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Show System Rules" IsCheckable="True" IsChecked="{Binding ShowSystemRules, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <MenuItem Header="Enable Popups" IsCheckable="True" IsChecked="{Binding IsPopupsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <MenuItem Header="Enable Event Logging" IsCheckable="True" IsChecked="{Binding IsLoggingEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Scan Directory for Files..." Click="ScanDirectory_Click"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button Command="{Binding ToggleLockdownCommand}" Width="40" Height="30" Margin="0,5,5,5" ToolTip="{Binding FirewallStatus}" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <Path Fill="{DynamicResource App.Text.Default}" Stretch="Uniform" Width="16" Height="16" Data="M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M17,8H7V4A2,2 0 0,1 9,2H11A2,2 0 0,1 13,4V5H15V4A4,4 0 0,0 11,0H9A4,4 0 0,0 5,4V8A2,2 0 0,0 3,10V20A2,2 0 0,0 5,22H19A2,2 0 0,0 21,20V10A2,2 0 0,0 19,8Z" />
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLockedDown}" Value="True">
+                                            <Setter Property="Background" Value="#C8E6C9"/>
+                                            <Setter Property="Content">
+                                                <Setter.Value>
+                                                    <Path Fill="Black" Stretch="Uniform" Width="16" Height="16" Data="M12,17A2,2 0 0,0 14,15A2,2 0 0,0 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M6,8A2,2 0 0,0 4,10V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V10A2,2 0 0,0 18,8H6ZM9,8V5A3,3 0 0,1 15,5V8H17V5A5,5 0 0,0 7,5V8H9Z" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <TextBlock Text="{Binding FirewallStatus}" VerticalAlignment="Center" Margin="5,0" FontWeight="SemiBold" Foreground="{DynamicResource App.Text.Default}"/>
+                        <Grid Width="250" Margin="15,0,0,0" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBox x:Name="SearchTextBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Padding="22,0,0,0" ToolTip="Search all lists..."/>
+                            <TextBlock Text="🔍" IsHitTestVisible="False" Foreground="{DynamicResource Search.Placeholder.Foreground}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchTextBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <ComboBox ItemsSource="{Binding SearchModes}" SelectedItem="{Binding CurrentSearchMode}" Margin="5,0,0,0" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="SupportButton" Content="☕" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0" ToolTip="Support my work for the price of a coffee!" Click="SupportButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource App.Text.Default}"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Opacity" Value="0.7"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="MinimizeButton" Content="—" Style="{StaticResource CaptionButtonStyle}" Click="MinimizeButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="☐" Style="{StaticResource CaptionButtonStyle}" Click="MaximizeButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="CloseButton" Content="✕" Style="{StaticResource CloseButtonStyle}" Click="CloseButton_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
+                <TabItem Header="Pending Connections">
+                    <Grid>
+                        <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Actions" Width="320">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="Allow" Style="{StaticResource GreenPendingButton}" Command="{Binding DataContext.AllowPendingCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="2" Padding="10,2"/>
+                                                    <Button Content="Block" Style="{StaticResource RedPendingButton}" Command="{Binding DataContext.BlockPendingCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="2" Padding="10,2"/>
+                                                    <Button Content="Allow Temp..." Style="{StaticResource YellowPendingButton}" x:Name="AllowTempButton" Click="AllowTempButton_Click" Margin="2" Padding="10,2">
+                                                        <Button.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="1 Minute" Tag="1" Click="AllowTempMenuItem_Click"/>
+                                                                <MenuItem Header="5 Minutes" Tag="5" Click="AllowTempMenuItem_Click"/>
+                                                                <MenuItem Header="10 Minutes" Tag="10" Click="AllowTempMenuItem_Click"/>
+                                                                <MenuItem Header="30 Minutes" Tag="30" Click="AllowTempMenuItem_Click"/>
+                                                                <MenuItem Header="1 Hour" Tag="60" Click="AllowTempMenuItem_Click"/>
+                                                            </ContextMenu>
+                                                        </Button.ContextMenu>
+                                                    </Button>
+                                                    <Button Content="Ignore" Command="{Binding DataContext.IgnorePendingCommand, RelativeSource={RelativeSource AncestorType=ListView}}" CommandParameter="{Binding}" Margin="2" Padding="10,2"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Path" DisplayMemberBinding="{Binding AppPath}" Width="330" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Create Allow Wildcard..." Click="CreateWildcardRule_Click" Tag="AutoAllow"/>
+                                    <MenuItem Header="Create Block Wildcard..." Click="CreateWildcardRule_Click" Tag="AutoBlock"/>
+                                    <Separator/>
+                                    <MenuItem Header="Open File Location" Click="OpenFileLocation_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                        </ListView>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding PendingConnections.Count}" Value="0" />
+                                                <Condition Binding="{Binding IsLockedDown}" Value="False" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Image Source="/logo.jpg" Width="256" Height="256" Opacity="1.0" />
+                            <TextBlock Text="Firewall is unlocked. No new connections are being blocked." FontSize="16" Foreground="Gray" Margin="0,20,0,0" />
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="Gray" Text="Firewall is locked down. Waiting for new connection attempts...">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding PendingConnections.Count}" Value="0" />
+                                                <Condition Binding="{Binding IsLockedDown}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Programs">
+                    <ListView x:Name="ProgramsListView" ItemsSource="{Binding ProgramRules}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Application" DisplayMemberBinding="{Binding ApplicationName}" Width="580" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Edit Rule(s)" Click="EditProgramRules_Click"/>
+                                <MenuItem Header="Delete Rule(s)" Click="DeleteAppRules_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Open File Location" Click="OpenFileLocation_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="Services">
+                    <ListView x:Name="ServicesListView" ItemsSource="{Binding Services}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Service Path" DisplayMemberBinding="{Binding ApplicationName}" Width="530" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Edit Rule(s)" Click="EditServiceRules_Click"/>
+                                <MenuItem Header="Delete Rule(s)" Click="DeleteAppRules_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Open File Location" Click="OpenFileLocation_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="UWP Apps">
+                    <ListView x:Name="UwpAppsListView" ItemsSource="{Binding UwpApps}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Package Family Name" DisplayMemberBinding="{Binding PackageFamilyName}" Width="530" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Edit Rule(s)" Click="EditUwpRules_Click"/>
+                                <MenuItem Header="Delete Rule(s)" Click="DeleteUwpRules_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="Wildcard Rules">
+                    <DockPanel>
+                        <ListView x:Name="WildcardRulesListView" ItemsSource="{Binding WildcardRules}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Action" DisplayMemberBinding="{Binding Action}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Pattern" DisplayMemberBinding="{Binding Pattern}" Width="800" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete Wildcard Rule" Command="{Binding RemoveWildcardRuleCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=ContextMenu}, Path=PlacementTarget.SelectedItem}"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                        </ListView>
+                    </DockPanel>
+                </TabItem>
+                <TabItem Header="Advanced Rules">
+                    <ListView x:Name="AdvancedRulesListView" ItemsSource="{Binding AdvancedRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Enabled" DisplayMemberBinding="{Binding IsEnabled}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="70" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Port(s)" DisplayMemberBinding="{Binding Ports}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Protocol" DisplayMemberBinding="{Binding Protocol}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Service" DisplayMemberBinding="{Binding ServiceName}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Remote IPs" DisplayMemberBinding="{Binding RemoteAddresses}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Profiles" DisplayMemberBinding="{Binding Profiles}" Width="80" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                            </GridView>
+                        </ListView.View>
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Create Advanced Rule..." Click="CreateAdvancedRule_Click"/>
+                                <Separator />
+                                <MenuItem Header="Open Windows Firewall..." Click="OpenFirewallConsole_Click"/>
+                                <Separator />
+                                <MenuItem Header="Delete Rule(s)" Click="DeleteAdvancedRules_Click"/>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="Undefined Programs">
+                    <Grid>
+                        <ListView x:Name="UndefinedProgramsListView" ItemsSource="{Binding UndefinedPrograms}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                            <ListView.Style>
+                                <Style TargetType="ListView">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding UndefinedPrograms.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Style>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Path" DisplayMemberBinding="{Binding ExePath}" Width="650" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Create Rule(s)" Click="CreateProgramRules_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="Open File Location" Click="OpenFileLocation_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                        </ListView>
+                        <TextBlock Text="Scan a directory to find programs without rules in the menu." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="Gray">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding UndefinedPrograms.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
+    </Border>
+</Window>
