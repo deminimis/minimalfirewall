@@ -23,7 +23,11 @@ Minimal Firewall works in conjuncton with Windows Firewall to block all unknown 
 
 * **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet itself, and all your rules and logs are stored locally on your machine.
 
-* **Portable:** Minimal Firewall can be copied as a portable app, and you can even delete all the rules created by it in the app. 
+* **Portable:** Minimal Firewall can be copied as a portable app, and you can even delete all the rules created by it in the app.
+
+
+## User Guide
+The program is very intuitive, but for a concise user guie, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide). 
 
 
 ## Why Use Minimal Firewall?
@@ -88,10 +92,6 @@ Minimal Firewall is a WPF-based graphical user interface, written in C# against 
 
 The application's core efficacy is derived from its implementation of a default-deny outbound policy on all active network profiles (NET_FW_PROFILE_TYPE2_). This is set via the INetFwPolicy2 COM interface. Rather than employing complex packet-filtering drivers, the application leverages the native capabilities of WFP's auditing feature. Firewall rules are not stored in a proprietary format but are materialized directly as INetFwRule2 objects via the NetFwTypeLib COM Interop library. This ensures native integration, performance, and visibility within the standard "Windows Defender Firewall with Advanced Security" console. 
 
-
-## Disclaimer
-
-Minimal Firewall is designed to enhance the usability of Windows Defender Firewall. It does not replace or modify the underlying firewall but provides a management interface. 
 
 
 ## Contributing
