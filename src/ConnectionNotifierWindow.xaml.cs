@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 
 namespace MinimalFirewall

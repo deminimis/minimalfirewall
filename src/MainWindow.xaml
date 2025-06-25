@@ -41,16 +41,7 @@
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="BaseHeaderStyle" TargetType="{x:Type GridViewColumnHeader}">
-            <Setter Property="Foreground" Value="{DynamicResource App.Text.Default}" />
-            <Setter Property="Background" Value="{DynamicResource Header.Background.Default}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource Header.Border.Default}" />
-            <Setter Property="BorderThickness" Value="0,0,1,0" />
-            <Setter Property="Padding" Value="5,0,5,0" />
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        </Style>
-
-        <Style x:Key="SortableHeaderStyle" TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource BaseHeaderStyle}">
+        <Style x:Key="SortableHeaderStyle" TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
             <EventSetter Event="Click" Handler="SortableColumnHeader_Click" />
         </Style>
 
@@ -228,7 +219,7 @@
                         <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Actions" Width="320" HeaderContainerStyle="{StaticResource BaseHeaderStyle}">
+                                    <GridViewColumn Header="Actions" Width="320">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
@@ -250,7 +241,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
@@ -313,7 +304,7 @@
                     <ListView x:Name="ProgramsListView" ItemsSource="{Binding ProgramRules}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
@@ -341,7 +332,7 @@
                     <ListView x:Name="ServicesListView" ItemsSource="{Binding Services}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
@@ -369,7 +360,7 @@
                     <ListView x:Name="UwpAppsListView" ItemsSource="{Binding UwpApps}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
@@ -450,7 +441,7 @@
                             </ListView.Style>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}">
+                                    <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
