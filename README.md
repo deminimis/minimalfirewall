@@ -39,7 +39,7 @@ Minimal Firewall offers a more secure and integrated approach by interacting dir
 |Feature|Minimal Firewall|TinyWall|SimpleWall|Fort Firewall|
 |**Size**|~1MB|~2MB|~1MB|~6MB|
 |**Portability**|✅|❌|✅|✅|
-|**Core Isolation Required**|No|No|No|Yes|
+|**Core Isolation Revoked?**|No|No|No|Yes|
 |**Connection Alerts**|✅|❌|✅|✅|
 |**Open Source**|✅|✅|✅|✅|
 |**Wildcards**|✅|❌|❌|✅|
