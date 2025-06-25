@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;

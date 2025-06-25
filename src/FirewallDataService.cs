@@ -51,7 +51,6 @@ namespace MinimalFirewall
             var rulesByApp = allRules.Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName))
                                      .GroupBy(r => r.ApplicationName, StringComparer.OrdinalIgnoreCase)
                                      .ToDictionary(g => g.Key, g => g.AsEnumerable(), StringComparer.OrdinalIgnoreCase);
-
             var programRuleGroups = rulesByApp.Where(kvp => !serviceExePaths.ContainsKey(kvp.Key));
             foreach (var group in programRuleGroups)
             {
@@ -64,8 +63,6 @@ namespace MinimalFirewall
                 });
             }
 
-            // *** THIS IS THE CORRECTED SECTION ***
-            // Reverted the deconstruction to a standard foreach loop to fix compile errors.
             foreach (var service in serviceExePaths)
             {
                 var appPath = service.Key;
@@ -98,8 +95,7 @@ namespace MinimalFirewall
         public void ApplyFilters()
         {
             string windowsFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-
-            bool shouldFilter(string path) => !ShowSystemRules && path.StartsWith(windowsFolderPath, StringComparison.OrdinalIgnoreCase);
+            bool shouldFilter(string path) => !ShowSystemRules && !string.IsNullOrEmpty(path) && path.StartsWith(windowsFolderPath, StringComparison.OrdinalIgnoreCase);
 
             _filteredProgramRules.Clear();
             _filteredProgramRules.AddRange(_masterProgramRules.Where(r => !shouldFilter(r.ApplicationName)));
@@ -138,6 +134,13 @@ namespace MinimalFirewall
             }
         }
 
+        public void AddAdvancedRuleToView(INetFwRule2 rule)
+        {
+            var advancedRule = CreateAdvancedRuleViewModel(rule);
+            _masterAdvancedRules.Add(advancedRule);
+            ApplyFilters();
+        }
+
         public void RemoveRulesByPath(List<string> appPaths)
         {
             var pathSet = new HashSet<string>(appPaths, StringComparer.OrdinalIgnoreCase);
@@ -147,8 +150,33 @@ namespace MinimalFirewall
 
         public void RemoveAdvancedRulesByName(List<string> ruleNames)
         {
-            var nameSet = new HashSet<string>(ruleNames);
+            var nameSet = new HashSet<string>(ruleNames, StringComparer.OrdinalIgnoreCase);
             _masterAdvancedRules.RemoveAll(r => nameSet.Contains(r.Name));
+            ApplyFilters();
+        }
+
+        // ADDED THIS NEW METHOD
+        public bool DoesRuleExist(string appPath, string direction)
+        {
+            var rule = _masterProgramRules.FirstOrDefault(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase)) ??
+                       _masterServiceRules.FirstOrDefault(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase));
+
+            if (rule == null || rule.Status == "Undefined")
+            {
+                return false;
+            }
+
+            if (direction == "Outbound")
+            {
+                return rule.Status.Contains("Out") || rule.Status.Contains("(All)");
+            }
+
+            if (direction == "Inbound")
+            {
+                return rule.Status.Contains("In") || rule.Status.Contains("(All)");
+            }
+
+            return false;
         }
 
         public void LoadUwpAppsFromCache()

@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Windows;
 
 namespace MinimalFirewall

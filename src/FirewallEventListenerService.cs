@@ -51,33 +51,37 @@ namespace MinimalFirewall
             {
                 if (e.EventRecord == null) return;
                 string xmlContent = e.EventRecord.ToXml();
-                string appPath = GetValueFromXml(xmlContent, "Application");
+
+                // Read the raw path from the log
+                string rawAppPath = GetValueFromXml(xmlContent, "Application");
+
+                // *** THIS IS THE FIX: Convert the device path to a normal drive path ***
+                string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
 
                 if (!ShouldProcessEvent(appPath)) return;
+
+                var eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+
+                if (_dataService.DoesRuleExist(appPath, eventDirection))
+                {
+                    return;
+                }
 
                 var matchingRule = _wildcardRuleService.Match(appPath);
                 if (matchingRule != null)
                 {
                     if (matchingRule.Action == WildcardAction.AutoAllow)
                     {
-                        var direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                        _actionsService.ApplyApplicationRuleChange(new List<string> { appPath }, "Allow (" + direction + ")");
+                        _actionsService.ApplyApplicationRuleChange(new List<string> { appPath }, "Allow (" + eventDirection + ")");
                     }
-                    return;
-                }
-
-                var eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                var allAppRules = _dataService.AllProgramRules.Concat(_dataService.AllServiceRules);
-                if (allAppRules.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase)))
-                {
                     return;
                 }
 
                 var pendingVm = new PendingConnectionViewModel
                 {
-                    AppPath = appPath,
+                    AppPath = appPath, // Use the corrected path
                     Direction = eventDirection,
-                    Icon = IconCacheService.GetIcon(appPath)
+                    Icon = IconCacheService.GetIcon(appPath) // Use the corrected path
                 };
 
                 PendingConnectionDetected?.Invoke(pendingVm);
@@ -98,7 +102,10 @@ namespace MinimalFirewall
 
         private bool ShouldProcessEvent(string appPath)
         {
-            if (string.IsNullOrEmpty(appPath) || !appPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return false;
+            if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
             return _isLockdownEnabled() && !_snoozedApps.Contains(appPath);
         }
 
@@ -106,9 +113,8 @@ namespace MinimalFirewall
         {
             switch (rawDirection)
             {
-                // --- THIS IS THE FIX ---
-                case "%%14592": return "Inbound";    // Corrected from Outbound
-                case "%%14593": return "Outbound";   // Corrected from Inbound
+                case "%%14592": return "Inbound";
+                case "%%14593": return "Outbound";
                 default: return rawDirection;
             }
         }

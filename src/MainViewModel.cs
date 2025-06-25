@@ -159,7 +159,6 @@ namespace MinimalFirewall
             AdvancedRules = new ObservableCollection<AdvancedRuleViewModel>();
             PendingConnections = new ObservableCollection<PendingConnectionViewModel>();
             WildcardRules = new ObservableCollection<WildcardRule>();
-
             _firewallService = new FirewallRuleService();
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
             var uwpService = new UwpService();
@@ -175,6 +174,7 @@ namespace MinimalFirewall
             IgnorePendingCommand = new RelayCommand<PendingConnectionViewModel>(IgnorePendingConnection);
             RemoveWildcardRuleCommand = new RelayCommand<WildcardRule>(RemoveWildcardRule);
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
+            _actionsService.TemporaryRuleExpired += OnTemporaryRuleExpired;
         }
 
         public async Task InitializeAsync()
@@ -326,7 +326,16 @@ namespace MinimalFirewall
             if (pending == null) return;
             _actionsService.AllowPendingConnectionTemporarily(pending, minutes);
             PendingConnections.Remove(pending);
-            SlowRefresh();
+            FastRefresh();
+        }
+
+        private void OnTemporaryRuleExpired(string ruleName)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _dataService.RemoveAdvancedRulesByName(new List<string> { ruleName });
+                FastRefresh();
+            });
         }
 
         private void ShowConnectionNotifier(PendingConnectionViewModel pendingVm)

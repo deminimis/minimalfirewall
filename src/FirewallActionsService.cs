@@ -15,6 +15,8 @@ namespace MinimalFirewall
         private readonly UserActivityLogger _activityLogger;
         private readonly Dictionary<string, Timer> _activeTempRuleTimers = new Dictionary<string, Timer>();
 
+        public event Action<string> TemporaryRuleExpired;
+
         public FirewallActionsService(FirewallRuleService firewallService, FirewallDataService dataService, UserActivityLogger activityLogger)
         {
             _firewallService = firewallService;
@@ -28,10 +30,7 @@ namespace MinimalFirewall
             foreach (var appPath in appPaths)
             {
                 string appName = Path.GetFileNameWithoutExtension(appPath);
-
-                // Converted to local function per IDE0039
                 void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act) => CreateApplicationRule(name, appPath, dir, act);
-
                 ApplyRuleAction(appName, action, createRule);
                 _activityLogger.Log("Rule Changed", action + " for " + appPath);
                 _dataService.AddOrUpdateAppRule(appPath);
@@ -44,9 +43,7 @@ namespace MinimalFirewall
             _firewallService.DeleteUwpRules(packageFamilyNames);
             foreach (var app in uwpApps)
             {
-                // Converted to local function per IDE0039
                 void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act) => CreateUwpRule(name, app.PackageFamilyName, dir, act);
-
                 ApplyRuleAction(app.Name, action, createRule);
                 _activityLogger.Log("UWP Rule Changed", action + " for " + app.Name);
             }
@@ -112,7 +109,7 @@ namespace MinimalFirewall
             var timer = new Timer(_ => DeleteTemporaryRule(tempRuleName), null, TimeSpan.FromMinutes(minutes), Timeout.InfiniteTimeSpan);
             _activeTempRuleTimers[tempRuleName] = timer;
             _activityLogger.Log("Temporary Rule Created", minutes + " min for " + pending.AppPath);
-            _dataService.LoadInitialData();
+            _dataService.AddAdvancedRuleToView(firewallRule);
         }
 
         private void DeleteTemporaryRule(string ruleName)
@@ -124,7 +121,7 @@ namespace MinimalFirewall
                 _activeTempRuleTimers.Remove(ruleName);
             }
             _activityLogger.Log("Temporary Rule Expired", ruleName);
-            Application.Current.Dispatcher.Invoke(new Action(() => _dataService.LoadInitialData()));
+            TemporaryRuleExpired?.Invoke(ruleName);
         }
 
         private static void ApplyRuleAction(string appName, string action, Action<string, NET_FW_RULE_DIRECTION_, NET_FW_ACTION_> createRule)

@@ -1,7 +1,4 @@
-﻿// Copyright (c) 2025 Deminimis
-// Licensed under the GNU AGPL v3.
-
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -23,8 +20,7 @@ namespace MinimalFirewall
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            var selectedTab = tabControl.SelectedItem as TabItem;
-            if (selectedTab == null) return;
+            if (!(tabControl.SelectedItem is TabItem selectedTab)) return;
 
             var commandBuilder = new StringBuilder("New-NetFirewallRule");
             string displayName;
