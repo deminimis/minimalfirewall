@@ -103,3 +103,6 @@ Ensure code adheres to the project's security and simplicity principles.
 ## License
 
 Minimal Firewall is licensed under the GNU Affero General Public License v3 (AGPL v3). For commercial or proprietary licensing, please contact me. 
+
+
+![Virus Total](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-25%20093921.png)
