@@ -159,8 +159,8 @@
     <Compile Include="FirewallDataService.cs" />
     <Compile Include="FirewallEventListenerService.cs" />
     <Compile Include="FirewallRuleService.cs" />
+    <Compile Include="ForeignRuleTracker.cs" />
     <Compile Include="FolderPicker.cs" />
-    <Compile Include="IconCacheService.cs" />
     <Compile Include="MainViewModel.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

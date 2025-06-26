@@ -52,12 +52,8 @@ namespace MinimalFirewall
                 if (e.EventRecord == null) return;
                 string xmlContent = e.EventRecord.ToXml();
 
-                // Read the raw path from the log
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-
-                // *** THIS IS THE FIX: Convert the device path to a normal drive path ***
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
-
                 if (!ShouldProcessEvent(appPath)) return;
 
                 var eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
@@ -79,11 +75,9 @@ namespace MinimalFirewall
 
                 var pendingVm = new PendingConnectionViewModel
                 {
-                    AppPath = appPath, // Use the corrected path
-                    Direction = eventDirection,
-                    Icon = IconCacheService.GetIcon(appPath) // Use the corrected path
+                    AppPath = appPath,
+                    Direction = eventDirection
                 };
-
                 PendingConnectionDetected?.Invoke(pendingVm);
             }
             catch (Exception ex) { Debug.WriteLine("[FATAL ERROR IN EVENT HANDLER] " + ex); }
@@ -128,7 +122,10 @@ namespace MinimalFirewall
                 var dataElement = xdoc.Descendants(ns + "Data").FirstOrDefault(d => d.Attribute("Name")?.Value == elementName);
                 return dataElement?.Value ?? string.Empty;
             }
-            catch { return string.Empty; }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         public void Dispose()

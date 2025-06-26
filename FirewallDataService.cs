@@ -16,6 +16,7 @@ namespace MinimalFirewall
         private readonly List<FirewallRuleViewModel> _masterProgramRules = new List<FirewallRuleViewModel>();
         private readonly List<FirewallRuleViewModel> _masterServiceRules = new List<FirewallRuleViewModel>();
         private readonly List<AdvancedRuleViewModel> _masterAdvancedRules = new List<AdvancedRuleViewModel>();
+        private readonly List<AdvancedRuleViewModel> _masterForeignRules = new List<AdvancedRuleViewModel>();
         private readonly List<FirewallRuleViewModel> _filteredProgramRules = new List<FirewallRuleViewModel>();
         private readonly List<FirewallRuleViewModel> _filteredServiceRules = new List<FirewallRuleViewModel>();
         private readonly List<ProgramViewModel> _allUndefinedPrograms = new List<ProgramViewModel>();
@@ -28,6 +29,7 @@ namespace MinimalFirewall
         public IReadOnlyList<FirewallRuleViewModel> AllServiceRules => _filteredServiceRules;
         public IReadOnlyList<ProgramViewModel> AllUndefinedPrograms => _allUndefinedPrograms;
         public IReadOnlyList<AdvancedRuleViewModel> AllAdvancedRules => _filteredAdvancedRules;
+        public IReadOnlyList<AdvancedRuleViewModel> AllForeignRules => _masterForeignRules;
         public IReadOnlyList<UwpApp> AllUwpApps => _allUwpApps;
         public bool ShowSystemRules { get; set; }
 
@@ -39,6 +41,22 @@ namespace MinimalFirewall
             ShowSystemRules = true;
         }
 
+        public void ScanForForeignRules(ForeignRuleTracker tracker)
+        {
+            _masterForeignRules.Clear();
+            var allRules = _firewallService.GetAllRules();
+
+            var foreignRules = allRules.Where(r => r != null && (string.IsNullOrEmpty(r.Grouping) || !r.Grouping.Equals("Minimal Firewall", StringComparison.OrdinalIgnoreCase)));
+
+            foreach (var rule in foreignRules)
+            {
+                if (!tracker.IsAcknowledged(rule.Name))
+                {
+                    _masterForeignRules.Add(CreateAdvancedRuleViewModel(rule));
+                }
+            }
+        }
+
         public void LoadInitialData()
         {
             _masterProgramRules.Clear();
@@ -48,43 +66,53 @@ namespace MinimalFirewall
 
             var serviceExePaths = SystemDiscoveryService.GetServicesWithExePaths();
             var allRules = _firewallService.GetAllRules();
-            var rulesByApp = allRules.Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName))
-                                     .GroupBy(r => r.ApplicationName, StringComparer.OrdinalIgnoreCase)
-                                     .ToDictionary(g => g.Key, g => g.AsEnumerable(), StringComparer.OrdinalIgnoreCase);
-            var programRuleGroups = rulesByApp.Where(kvp => !serviceExePaths.ContainsKey(kvp.Key));
-            foreach (var group in programRuleGroups)
+
+            // Group rules by application path for efficient processing
+            var rulesByAppPath = allRules
+                .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName))
+                .GroupBy(r => r.ApplicationName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+            // Process rules with an application path first
+            foreach (var group in rulesByAppPath)
             {
-                _masterProgramRules.Add(new FirewallRuleViewModel
+                var appPath = group.Key;
+                var ruleGroup = group.Value;
+                var status = GetRuleStatusForGroup(ruleGroup);
+
+                // Check if it's a known service
+                if (serviceExePaths.TryGetValue(appPath, out var serviceInfo))
                 {
-                    Name = Path.GetFileNameWithoutExtension(group.Key),
-                    ApplicationName = group.Key,
-                    Status = GetRuleStatusForGroup(group.Value),
-                    Icon = IconCacheService.GetIcon(group.Key)
-                });
+                    _masterServiceRules.Add(new FirewallRuleViewModel
+                    {
+                        Name = string.IsNullOrEmpty(serviceInfo.DisplayName) ? serviceInfo.ServiceName : serviceInfo.DisplayName,
+                        ApplicationName = appPath,
+                        Status = status
+                    });
+                }
+                else // It's a regular program
+                {
+                    _masterProgramRules.Add(new FirewallRuleViewModel
+                    {
+                        Name = Path.GetFileNameWithoutExtension(appPath),
+                        ApplicationName = appPath,
+                        Status = status
+                    });
+                }
             }
 
-            foreach (var service in serviceExePaths)
+            // Process all other rules (Advanced, UWP, etc.) in a single pass
+            var nonAppRules = allRules.Where(r => r != null && string.IsNullOrEmpty(r.ApplicationName));
+            foreach (var rule in nonAppRules)
             {
-                var appPath = service.Key;
-                var serviceInfo = service.Value;
-                var status = "Undefined";
-
-                if (rulesByApp.TryGetValue(appPath, out var ruleGroup))
+                // Check if it's a UWP rule
+                if (!string.IsNullOrEmpty(rule.Description) && rule.Description.StartsWith("UWP App;", StringComparison.Ordinal))
                 {
-                    status = GetRuleStatusForGroup(ruleGroup);
+                    // This is a UWP rule, its status will be updated below
+                    continue;
                 }
 
-                _masterServiceRules.Add(new FirewallRuleViewModel
-                {
-                    Name = string.IsNullOrEmpty(serviceInfo.DisplayName) ? serviceInfo.ServiceName : serviceInfo.DisplayName,
-                    ApplicationName = appPath,
-                    Status = status,
-                    Icon = IconCacheService.GetIcon(appPath)
-                });
-            }
-
-            foreach (var rule in allRules.Where(r => r != null && string.IsNullOrEmpty(r.ApplicationName) && (r.Description == null || !r.Description.StartsWith("UWP App;", StringComparison.Ordinal))))
-            {
+                // If it's not a UWP rule, it's an Advanced Rule
                 _masterAdvancedRules.Add(CreateAdvancedRuleViewModel(rule));
             }
 
@@ -104,7 +132,7 @@ namespace MinimalFirewall
             _filteredServiceRules.AddRange(_masterServiceRules.Where(r => !shouldFilter(r.ApplicationName)));
 
             _filteredAdvancedRules.Clear();
-            _filteredAdvancedRules.AddRange(_masterAdvancedRules.Where(r => ShowSystemRules || !(r.Name.Contains("Windows Defender") || r.Name.StartsWith("Microsoft-"))));
+            _filteredAdvancedRules.AddRange(_masterAdvancedRules.Where(r => ShowSystemRules || (r.Name != null && !(r.Name.Contains("Windows Defender") || r.Name.StartsWith("Microsoft-")))));
         }
 
         public void AddOrUpdateAppRule(string appPath)
@@ -120,8 +148,7 @@ namespace MinimalFirewall
                 {
                     Name = Path.GetFileNameWithoutExtension(appPath),
                     ApplicationName = appPath,
-                    Status = GetRuleStatusForGroup(group),
-                    Icon = IconCacheService.GetIcon(appPath)
+                    Status = GetRuleStatusForGroup(group)
                 };
                 if (SystemDiscoveryService.GetServicesWithExePaths().ContainsKey(appPath))
                 {
@@ -160,12 +187,14 @@ namespace MinimalFirewall
 
             if (direction == "Outbound")
             {
-                return rule.Status.Contains("Out") || rule.Status.Contains("(All)");
+                return rule.Status.Contains("Out") ||
+                       rule.Status.Contains("(All)");
             }
 
             if (direction == "Inbound")
             {
-                return rule.Status.Contains("In") || rule.Status.Contains("(All)");
+                return rule.Status.Contains("In") ||
+                       rule.Status.Contains("(All)");
             }
 
             return false;
@@ -211,14 +240,13 @@ namespace MinimalFirewall
             var newPrograms = await Task.Run(() =>
             {
                 var existingPaths = _masterProgramRules.Select(r => r.ApplicationName)
-                    .Concat(_masterServiceRules.Select(r => r.ApplicationName))
+                                   .Concat(_masterServiceRules.Select(r => r.ApplicationName))
                     .Concat(_allUndefinedPrograms.Select(p => p.ExePath))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
                 return SystemDiscoveryService.ScanDirectoryForExecutables(directoryPath, existingPaths);
             });
             foreach (var program in newPrograms)
             {
-                program.Icon = IconCacheService.GetIcon(program.ExePath);
                 _allUndefinedPrograms.Add(program);
             }
             _activityLogger.Log("Directory Scanned", directoryPath);
@@ -287,6 +315,19 @@ namespace MinimalFirewall
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0) profileNames.Add("Private");
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0) profileNames.Add("Public");
             return string.Join(", ", profileNames);
+        }
+
+        public void ClearDataCaches()
+        {
+            _masterProgramRules.Clear();
+            _masterServiceRules.Clear();
+            _masterAdvancedRules.Clear();
+            _allUndefinedPrograms.Clear();
+            _allUwpApps.Clear();
+
+            _filteredProgramRules.Clear();
+            _filteredServiceRules.Clear();
+            _filteredAdvancedRules.Clear();
         }
     }
 }
