@@ -279,7 +279,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <Image Source="/logo.jpg" Width="256" Height="256" Opacity="1.0" />
+                            <Image Source="/logo.png" Width="256" Height="256" Opacity="1.0" />
                             <TextBlock Text="Firewall is unlocked. No new connections are being blocked." FontSize="16" Foreground="Gray" Margin="0,20,0,0" />
                         </StackPanel>
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="Gray" Text="Firewall is locked down. Waiting for new connection attempts...">
