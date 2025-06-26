@@ -14,7 +14,6 @@ namespace MinimalFirewall
         private readonly FirewallDataService _dataService;
         private readonly UserActivityLogger _activityLogger;
         private readonly Dictionary<string, Timer> _activeTempRuleTimers = new Dictionary<string, Timer>();
-
         public event Action<string> ApplicationRuleSetExpired;
 
         public FirewallActionsService(FirewallRuleService firewallService, FirewallDataService dataService, UserActivityLogger activityLogger)
@@ -47,7 +46,6 @@ namespace MinimalFirewall
                 ApplyRuleAction(app.Name, action, createRule);
                 _activityLogger.Log("UWP Rule Changed", action + " for " + app.Name);
             }
-            _dataService.LoadInitialData();
         }
 
         public void DeleteApplicationRules(List<string> appPaths)
@@ -68,7 +66,6 @@ namespace MinimalFirewall
             if (result == MessageBoxResult.No) return;
             _firewallService.DeleteUwpRules(packageFamilyNames);
             foreach (var pfn in packageFamilyNames) _activityLogger.Log("UWP Rule Deleted", pfn);
-            _dataService.LoadInitialData();
         }
 
         public void DeleteAdvancedRules(List<string> ruleNames)
@@ -87,7 +84,6 @@ namespace MinimalFirewall
             if (string.IsNullOrWhiteSpace(command)) return;
             AdminTaskService.ExecutePowerShellRuleCommand(command);
             _activityLogger.Log("Advanced Rule Created", command);
-            _dataService.LoadInitialData();
         }
 
         public void ToggleLockdown()
@@ -99,13 +95,11 @@ namespace MinimalFirewall
             _activityLogger.Log("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
         }
 
-        // THIS METHOD IS REWRITTEN TO BE DIRECTIONAL
         public void AllowPendingConnectionTemporarily(PendingConnectionViewModel pending, int minutes)
         {
             string appName = Path.GetFileNameWithoutExtension(pending.AppPath);
             string guid = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-            // Determine direction from the pending connection
             NET_FW_RULE_DIRECTION_ directionEnum;
             string directionString;
 
@@ -120,25 +114,20 @@ namespace MinimalFirewall
                 directionString = "In";
             }
 
-            // Create only one rule for the specific direction
             string tempRuleName = $"Temp Allow {directionString} - {appName} ({guid})";
             var tempRule = CreateRuleObject(tempRuleName, pending.AppPath, directionEnum, NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
             _firewallService.CreateRule(tempRule);
 
-            // Treat this as a normal program rule update so it appears in the main list
             _dataService.AddOrUpdateAppRule(pending.AppPath);
             _activityLogger.Log("Temporary Rule Created", $"{minutes} min for {pending.AppPath} ({directionString})");
 
-            // Set a timer to delete the specific rule
             var timer = new Timer(_ => DeleteTemporaryRule(tempRuleName, pending.AppPath), null, TimeSpan.FromMinutes(minutes), Timeout.InfiniteTimeSpan);
-
             _activeTempRuleTimers[tempRuleName] = timer;
         }
 
         private void DeleteTemporaryRule(string ruleName, string appPath)
         {
             _firewallService.DeleteRulesByName(new List<string> { ruleName });
-
             if (_activeTempRuleTimers.ContainsKey(ruleName))
             {
                 _activeTempRuleTimers[ruleName].Dispose();

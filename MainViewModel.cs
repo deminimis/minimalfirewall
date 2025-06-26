@@ -21,6 +21,7 @@ namespace MinimalFirewall
         public ObservableCollection<AdvancedRuleViewModel> AdvancedRules { get; private set; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; private set; }
         public ObservableCollection<WildcardRule> WildcardRules { get; private set; }
+        public ObservableCollection<AdvancedRuleViewModel> ForeignRules { get; private set; }
 
         private readonly FirewallDataService _dataService;
         private readonly FirewallActionsService _actionsService;
@@ -30,8 +31,12 @@ namespace MinimalFirewall
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly StartupService _startupService;
         private readonly AppSettings _appSettings;
+        private readonly ForeignRuleTracker _foreignRuleTracker;
         private int _lastTemporaryMinutes = 2;
         private bool _uwpScanPerformed = false;
+        private bool _foreignRuleScanPerformed = false;
+
+        public bool IsCacheCleared { get; private set; } = false;
 
         public event Action<PendingConnectionViewModel, WildcardAction> WildcardRuleRequested;
         public static IEnumerable<SearchMode> SearchModes => Enum.GetValues(typeof(SearchMode)).Cast<SearchMode>();
@@ -143,6 +148,7 @@ namespace MinimalFirewall
         public ICommand BlockPendingCommand { get; private set; }
         public ICommand IgnorePendingCommand { get; private set; }
         public ICommand RemoveWildcardRuleCommand { get; private set; }
+        public ICommand AcknowledgeForeignRulesCommand { get; private set; }
 
         public MainViewModel()
         {
@@ -159,11 +165,14 @@ namespace MinimalFirewall
             AdvancedRules = new ObservableCollection<AdvancedRuleViewModel>();
             PendingConnections = new ObservableCollection<PendingConnectionViewModel>();
             WildcardRules = new ObservableCollection<WildcardRule>();
+            ForeignRules = new ObservableCollection<AdvancedRuleViewModel>();
+
             _firewallService = new FirewallRuleService();
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
             var uwpService = new UwpService();
             _wildcardRuleService = new WildcardRuleService();
             _startupService = new StartupService();
+            _foreignRuleTracker = new ForeignRuleTracker();
             _dataService = new FirewallDataService(_firewallService, uwpService, _activityLogger) { ShowSystemRules = _appSettings.ShowSystemRules };
             _actionsService = new FirewallActionsService(_firewallService, _dataService, _activityLogger);
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, _actionsService, () => IsLockedDown);
@@ -173,6 +182,8 @@ namespace MinimalFirewall
             BlockPendingCommand = new RelayCommand<PendingConnectionViewModel>(BlockPendingConnection);
             IgnorePendingCommand = new RelayCommand<PendingConnectionViewModel>(IgnorePendingConnection);
             RemoveWildcardRuleCommand = new RelayCommand<WildcardRule>(RemoveWildcardRule);
+            AcknowledgeForeignRulesCommand = new RelayCommand(AcknowledgeForeignRules);
+
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
             _actionsService.ApplicationRuleSetExpired += OnApplicationRuleSetExpired;
         }
@@ -196,6 +207,7 @@ namespace MinimalFirewall
             _eventListenerService.Start();
             _activityLogger.Log("Application Started", "Version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
+            IsCacheCleared = false;
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
         }
 
@@ -206,6 +218,7 @@ namespace MinimalFirewall
             PopulateCollectionFromSource(UwpApps, _dataService.AllUwpApps);
             PopulateCollectionFromSource(UndefinedPrograms, _dataService.AllUndefinedPrograms);
             PopulateCollectionFromSource(AdvancedRules, _dataService.AllAdvancedRules);
+            PopulateCollectionFromSource(ForeignRules, _dataService.AllForeignRules);
         }
 
         private void FastRefresh()
@@ -215,13 +228,15 @@ namespace MinimalFirewall
             FilterAllCollections();
         }
 
-        private async void SlowRefresh()
+        public async void SlowRefresh()
         {
             var statusWindow = new StatusWindow("Reloading Rules...");
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
             await Task.Run(new Action(() => _dataService.LoadInitialData()));
             UpdateCollectionsFromSource();
             FilterAllCollections();
+            _foreignRuleScanPerformed = false;
+            IsCacheCleared = false;
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
         }
 
@@ -257,6 +272,40 @@ namespace MinimalFirewall
             Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " UWP apps.")));
         }
 
+        public void LoadForeignRulesOnDemand()
+        {
+            if (_foreignRuleScanPerformed) return;
+
+            var statusWindow = new StatusWindow("Scanning for new third-party rules...");
+            Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
+
+            _dataService.ScanForForeignRules(_foreignRuleTracker);
+            UpdateCollectionsFromSource();
+            FilterAllCollections();
+            _foreignRuleScanPerformed = true;
+
+            Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
+        }
+
+        private void AcknowledgeForeignRules()
+        {
+            var ruleNamesToAcknowledge = ForeignRules.Select(r => r.Name).ToList();
+            if (ruleNamesToAcknowledge.Count == 0)
+            {
+                MessageBox.Show("There are no new foreign rules to acknowledge.", "No New Rules", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show($"Are you sure you want to acknowledge {ruleNamesToAcknowledge.Count} new rule(s)?\n\nThey will be hidden from this list unless they are modified or re-created.", "Confirm Acknowledgment", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _foreignRuleTracker.AcknowledgeRules(ruleNamesToAcknowledge);
+                ForeignRules.Clear();
+                _activityLogger.Log("Foreign Rules", $"Acknowledged {ruleNamesToAcknowledge.Count} rule(s).");
+            }
+        }
+
         public async Task ScanDirectoryForUndefined(string directoryPath)
         {
             var statusWindow = new StatusWindow("Scanning Directory");
@@ -265,6 +314,22 @@ namespace MinimalFirewall
             UpdateCollectionsFromSource();
             FilterAllCollections();
             Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " new executable(s).")));
+        }
+
+        public void ClearCachesForTray()
+        {
+            _dataService.ClearDataCaches();
+
+            ProgramRules.Clear();
+            Services.Clear();
+            UwpApps.Clear();
+            UndefinedPrograms.Clear();
+            AdvancedRules.Clear();
+            ForeignRules.Clear();
+
+            _foreignRuleScanPerformed = false;
+            _uwpScanPerformed = false;
+            IsCacheCleared = true;
         }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action) { _actionsService.ApplyApplicationRuleChange(appPaths, action); FastRefresh(); }
@@ -364,7 +429,6 @@ namespace MinimalFirewall
         }
 
         private void CheckFirewallStatus() => IsLockedDown = _firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-
         #region Filtering and Sorting
         private void FilterAllCollections()
         {
@@ -376,6 +440,7 @@ namespace MinimalFirewall
             PopulateCollectionFromSource(UwpApps, _dataService.AllUwpApps, u => CurrentSearchMode == SearchMode.Name ? namePredicate(u.Name) : pathPredicate(u.PackageFamilyName));
             PopulateCollectionFromSource(UndefinedPrograms, _dataService.AllUndefinedPrograms, p => CurrentSearchMode == SearchMode.Name ? namePredicate(p.Name) : pathPredicate(p.ExePath));
             PopulateCollectionFromSource(AdvancedRules, _dataService.AllAdvancedRules, r => namePredicate(r.Name) || namePredicate(r.Description));
+            PopulateCollectionFromSource(ForeignRules, _dataService.AllForeignRules, r => namePredicate(r.Name) || namePredicate(r.Description));
         }
 
         private void PopulateCollectionFromSource<T>(ObservableCollection<T> target, IReadOnlyList<T> source, Func<T, bool> filter = null)
@@ -401,6 +466,7 @@ namespace MinimalFirewall
                 case "PendingConnectionsListView": collection = PendingConnections; break;
                 case "UwpAppsListView": collection = UwpApps; break;
                 case "WildcardRulesListView": collection = WildcardRules; break;
+                case "ForeignRulesListView": collection = ForeignRules; break;
                 default: return;
             }
 

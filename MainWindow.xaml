@@ -241,16 +241,7 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding FileName}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
+                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}"/>
                                     <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                     <GridViewColumn Header="Path" DisplayMemberBinding="{Binding AppPath}" Width="330" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
@@ -304,16 +295,7 @@
                     <ListView x:Name="ProgramsListView" ItemsSource="{Binding ProgramRules}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
+                                <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
                                 <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 <GridViewColumn Header="Application" DisplayMemberBinding="{Binding ApplicationName}" Width="580" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                             </GridView>
@@ -332,16 +314,7 @@
                     <ListView x:Name="ServicesListView" ItemsSource="{Binding Services}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
+                                <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
                                 <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 <GridViewColumn Header="Service Path" DisplayMemberBinding="{Binding ApplicationName}" Width="530" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                             </GridView>
@@ -360,16 +333,7 @@
                     <ListView x:Name="UwpAppsListView" ItemsSource="{Binding UwpApps}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
+                                <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
                                 <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 <GridViewColumn Header="Package Family Name" DisplayMemberBinding="{Binding PackageFamilyName}" Width="530" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                             </GridView>
@@ -426,6 +390,37 @@
                         </ListView.ContextMenu>
                     </ListView>
                 </TabItem>
+                <TabItem Header="Foreign Rules">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="5">
+                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource App.Text.Default}">
+                                This tab shows newly detected firewall rules that were NOT created by Minimal Firewall. Review them to ensure they are not malicious or unwanted.
+                            </TextBlock>
+                            <Button Content="Acknowledge All Rules" Command="{Binding AcknowledgeForeignRulesCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                        </StackPanel>
+                        <ListView x:Name="ForeignRulesListView" ItemsSource="{Binding ForeignRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Enabled" DisplayMemberBinding="{Binding IsEnabled}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="70" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Port(s)" DisplayMemberBinding="{Binding Ports}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Protocol" DisplayMemberBinding="{Binding Protocol}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Service" DisplayMemberBinding="{Binding ServiceName}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Remote IPs" DisplayMemberBinding="{Binding RemoteAddresses}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Profiles" DisplayMemberBinding="{Binding Profiles}" Width="80" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete Rule(s)" Click="DeleteAdvancedRules_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                        </ListView>
+                    </DockPanel>
+                </TabItem>
                 <TabItem Header="Undefined Programs">
                     <Grid>
                         <ListView x:Name="UndefinedProgramsListView" ItemsSource="{Binding UndefinedPrograms}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
@@ -441,16 +436,7 @@
                             </ListView.Style>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
+                                    <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
                                     <GridViewColumn Header="Path" DisplayMemberBinding="{Binding ExePath}" Width="650" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
                             </ListView.View>

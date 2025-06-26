@@ -10,7 +10,7 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent">
 
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="0" CaptionHeight="0"/>
+        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="1" CaptionHeight="0"/>
     </shell:WindowChrome.WindowChrome>
 
     <Border BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="1" Background="{DynamicResource App.Window.Background}">

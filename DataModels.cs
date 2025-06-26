@@ -40,7 +40,6 @@ namespace MinimalFirewall
         public string Name { get; set; }
         public string ApplicationName { get; set; }
         public string Status { get; set; }
-        public ImageSource Icon { get; set; }
     }
 
     public class PendingConnectionViewModel
@@ -48,14 +47,12 @@ namespace MinimalFirewall
         public string AppPath { get; set; }
         public string FileName { get { return Path.GetFileName(AppPath); } }
         public string Direction { get; set; }
-        public ImageSource Icon { get; set; }
     }
 
     public class ProgramViewModel
     {
         public string Name { get; set; }
         public string ExePath { get; set; }
-        public ImageSource Icon { get; set; }
     }
 
     public class ServiceViewModel
@@ -63,14 +60,12 @@ namespace MinimalFirewall
         public string ServiceName { get; set; }
         public string DisplayName { get; set; }
         public string ExePath { get; set; }
-        public ImageSource Icon { get; set; }
     }
 
     public class UwpApp
     {
         public string Name { get; set; }
         public string PackageFamilyName { get; set; }
-        public ImageSource Icon { get; set; }
         public string Status { get; set; } = "Undefined";
     }
 }
