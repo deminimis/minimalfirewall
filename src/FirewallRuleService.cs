@@ -9,7 +9,6 @@ namespace MinimalFirewall
     public class FirewallRuleService
     {
         private readonly INetFwPolicy2 _firewallPolicy;
-
         public FirewallRuleService()
         {
             try
@@ -42,11 +41,39 @@ namespace MinimalFirewall
             }
         }
 
+        // THIS METHOD IS REWRITTEN TO BE MORE ROBUST
         public NET_FW_ACTION_ GetDefaultOutboundAction()
         {
             if (_firewallPolicy == null) return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
-            var currentProfileType = (NET_FW_PROFILE_TYPE2_)_firewallPolicy.CurrentProfileTypes;
-            return _firewallPolicy.DefaultOutboundAction[currentProfileType];
+
+            try
+            {
+                // Get the current combination of active profiles
+                var currentProfileTypes = (NET_FW_PROFILE_TYPE2_)_firewallPolicy.CurrentProfileTypes;
+
+                // Check profiles in order of most to least restrictive.
+                // If the Public profile is active, its setting takes precedence.
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0)
+                {
+                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC];
+                }
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0)
+                {
+                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE];
+                }
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0)
+                {
+                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN];
+                }
+            }
+            catch (Exception ex)
+            {
+                // If for any reason the API fails, log it and return a safe default.
+                System.Diagnostics.Debug.WriteLine($"[FATAL] Could not get default outbound action: {ex.Message}");
+            }
+
+            // Fallback if no specific profile is detected or an error occurs.
+            return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
         }
 
         public void DeleteRulesByPath(List<string> appPaths)
@@ -99,7 +126,6 @@ namespace MinimalFirewall
         {
             try
             {
-                // RECOMMENDATION: Null check simplified
                 _firewallPolicy?.Rules.Add(rule);
             }
             catch (Exception ex)
