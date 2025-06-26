@@ -14,7 +14,7 @@ Minimal Firewall works in conjuncton with Windows Firewall to block all unknown 
 
 ## Core Features
 
-* **Lockdown Mode:** The core of Minimal Firewall. Enable this mode to block all outbound connections by default. No program connects without your explicit say-so.
+* **Lockdown Mode:** The core of Minimal Firewall. Enable this mode to block all network connections without Windows Firewall rules by default. No program connects without your explicit say-so.
 
 * **Real-Time Connection Alerts:** Get instant notifications when a blocked program tries to connect, allowing you to make a decision on the spot. You can choose whether to have annoying pop-ups or quiet, in-application notifications. 
 
@@ -32,7 +32,7 @@ Minimal Firewall works in conjuncton with Windows Firewall to block all unknown 
 
 
 ## User Guide
-The program is very intuitive, but for a concise user guie, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide). 
+The program is very intuitive, but for a concise user guide, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide). 
 
 
 ## Why Use Minimal Firewall?
