@@ -70,7 +70,7 @@ Minimal Firewall offers a more secure and integrated approach by interacting dir
 
 ## Security by Default
 
-By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing critical security components, unlike WFP-based tools that inject code into the network stack.
+By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing critical security components, unlike WFP-based tools that inject code into the network stack or otherwise bypass the standard firewall arbitration logic and group policy enforcement, with potential brittle or buggy logic.
 
 Using native Windows Firewall rules is more secure because they integrate directly with the Windows Filtering Platform at a privileged level, ensuring that traffic control policies are enforced consistently across the entire system—including during early boot stages and before third-party services initialize. These rules benefit from tight coupling with core Windows security subsystems (like IPsec, Group Policy, and service hardening), making them less susceptible to tampering or race conditions introduced by external tools. Additionally, Microsoft continuously hardens the native firewall with OS-level updates, offering a level of protection and stability that user-space or third-party implementations often lack.
 
