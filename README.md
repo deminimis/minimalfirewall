@@ -1,7 +1,7 @@
 <h1>
   Minimal Firewall
   <a href="https://github.com/deminimis/minimalfirewall">
-    <img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo1.png" alt="Logo" width="85" height="85">
+    <img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo1.png" alt="Logo" width="100" height="100">
   </a>
 </h1>
 
@@ -9,7 +9,7 @@ Minimal Firewall works in conjuncton with Windows Firewall to block all unknown 
 
 
 
-### Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
+### 💾 Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
 
 ## Core Features
 
