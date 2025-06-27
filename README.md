@@ -75,6 +75,7 @@ Using native Windows Firewall rules is more secure because they integrate direct
 
 * No Service Required: Creates persistent Windows Firewall rules, eliminating the need for a background service.
 * No Network Activity: The application makes no network connections, ensuring no telemetry, update checks, or "phoning home."
+* Allows you to examine if another app silently adds a rule to Windows Firewall. 
 
 ### Secure Rule Creation
 * Follows Microsoft's [best practices](https://support.microsoft.com/en-us/windows/risks-of-allowing-apps-through-windows-firewall-654559af-3f54-3dcf-349f-71ccd90bcc5c) for Windows Defender Firewall management, using application-based rules instead of risky port-based rules.
