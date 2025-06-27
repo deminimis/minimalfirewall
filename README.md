@@ -7,9 +7,6 @@
 
 Minimal Firewall works in conjuncton with Windows Firewall to block all unknown connections by default, prompting you to create application based rules to mitigate malware, telemetry, and data leaks. Completely rid yourself of apps phoning home without your knowledge.
 
-<div align="center">
-<img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo.jpg" alt="Description of image" width="35%">
-</div>
 
 
 ### Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
