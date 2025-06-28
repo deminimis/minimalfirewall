@@ -117,5 +117,22 @@ namespace MinimalFirewall
 
             return programs;
         }
+
+        public static List<string> GetExecutablesInFolder(string directoryPath)
+        {
+            var executables = new List<string>();
+            if (!Directory.Exists(directoryPath)) return executables;
+
+            try
+            {
+                executables.AddRange(Directory.GetFiles(directoryPath, "*.exe", SearchOption.AllDirectories));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred while scanning the folder: " + ex.Message, "Scanning Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+
+            return executables;
+        }
     }
 }

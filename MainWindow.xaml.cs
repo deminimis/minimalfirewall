@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Media;
 using System.Windows.Forms;
-using System.Drawing;
+using System.Windows.Media;
 using System.Windows.Shell;
 
 namespace MinimalFirewall
@@ -25,7 +25,6 @@ namespace MinimalFirewall
         {
             InitializeComponent();
             var vm = new MainViewModel();
-            vm.WildcardRuleRequested += OnWildcardRuleRequested;
             DataContext = vm;
             this.Loaded += MainWindow_Loaded;
 
@@ -106,37 +105,11 @@ namespace MinimalFirewall
             }
         }
 
-        private void OnWildcardRuleRequested(PendingConnectionViewModel pending, WildcardAction action)
+        private void CreateWildcardFromPending_Click(object sender, RoutedEventArgs e)
         {
-            if (pending == null) return;
-            var result = System.Windows.MessageBox.Show(
-                this,
-                "This will create a wildcard rule to automatically " + (action == WildcardAction.AutoAllow ? "allow" : "block") + " future versions of this program.\n\nPlease select the application's base folder that remains constant between updates.\n\nExample: For '...\\Edge\\Application\\125.0.2\\msedge.exe', you should select the '...\\Edge\\Application' folder.",
-                "Create Wildcard Rule",
-                MessageBoxButton.OKCancel,
-                MessageBoxImage.Information);
-            if (result == MessageBoxResult.Cancel) return;
-
-            string initialDirectory = Path.GetDirectoryName(pending.AppPath);
-            if (FolderPicker.TryPickFolder(out var selectedFolder, initialDirectory))
+            if (PendingConnectionsListView.SelectedItem is PendingConnectionViewModel pending && DataContext is MainViewModel vm)
             {
-                if (DataContext is MainViewModel vm)
-                {
-                    vm.CompleteWildcardRuleCreation(pending, selectedFolder, action);
-                }
-            }
-        }
-
-        private void CreateWildcardRule_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.MenuItem menuItem &&
-                PendingConnectionsListView.SelectedItem is PendingConnectionViewModel pending &&
-                DataContext is MainViewModel)
-            {
-                if (Enum.TryParse<WildcardAction>(menuItem.Tag.ToString(), out var action))
-                {
-                    OnWildcardRuleRequested(pending, action);
-                }
+                vm.HandleWildcardCreationRequest(Path.GetDirectoryName(pending.AppPath), pending);
             }
         }
 
@@ -154,8 +127,8 @@ namespace MinimalFirewall
         {
             if (DataContext is MainViewModel mainViewModel)
             {
-                var programPaths = ProgramsListView.SelectedItems.Cast<FirewallRuleViewModel>().Select(vm => vm.ApplicationName);
-                var servicePaths = ServicesListView.SelectedItems.Cast<FirewallRuleViewModel>().Select(vm => vm.ApplicationName);
+                var programPaths = ProgramsListView.SelectedItems.Cast<FirewallRuleViewModel>().Select(vm => vm.ApplicationName).ToList();
+                var servicePaths = ServicesListView.SelectedItems.Cast<FirewallRuleViewModel>().Select(vm => vm.ApplicationName).ToList();
 
                 var combinedPaths = new List<string>();
                 combinedPaths.AddRange(programPaths);
@@ -352,18 +325,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void ScanDirectory_Click(object sender, RoutedEventArgs e)
-        {
-            if (FolderPicker.TryPickFolder(out var folderPath) && folderPath != null)
-            {
-                if (DataContext is MainViewModel vm)
-                {
-                    _ = vm.ScanDirectoryForUndefined(folderPath);
-                }
-            }
-        }
-
-        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.Source is System.Windows.Controls.TabControl tabControl && tabControl.SelectedItem is TabItem selectedTab)
             {
@@ -372,12 +334,36 @@ namespace MinimalFirewall
                     string header = selectedTab.Header?.ToString();
                     if (header == "UWP Apps")
                     {
-                        _ = vm.LoadUwpAppsOnDemandAsync();
+                        await vm.LoadUwpAppsOnDemandAsync();
                     }
                     else if (header == "Foreign Rules")
                     {
-                        vm.LoadForeignRulesOnDemand();
+                        await vm.LoadForeignRulesOnDemandAsync();
                     }
+                    else if (header == "Wildcard Rules")
+                    {
+                        vm.SyncWildcardRules(true);
+                    }
+                }
+            }
+        }
+
+        private async void RescanForeignRules_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                await vm.LoadForeignRulesOnDemandAsync(true);
+            }
+        }
+
+        private void ListView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (e.OriginalSource is DependencyObject source)
+            {
+                var item = FindParent<System.Windows.Controls.ListViewItem>(source);
+                if (item == null)
+                {
+                    e.Handled = true;
                 }
             }
         }

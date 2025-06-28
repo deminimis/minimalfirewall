@@ -23,13 +23,21 @@ namespace MinimalFirewall
             _activityLogger = activityLogger;
         }
 
-        public void ApplyApplicationRuleChange(List<string> appPaths, string action)
+        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string wildcardSourcePath = null)
         {
-            _firewallService.DeleteRulesByPath(appPaths);
+            if (string.IsNullOrEmpty(wildcardSourcePath))
+            {
+                _firewallService.DeleteRulesByPath(appPaths);
+            }
+
             foreach (var appPath in appPaths)
             {
                 string appName = Path.GetFileNameWithoutExtension(appPath);
-                void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act) => CreateApplicationRule(name, appPath, dir, act);
+                void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act)
+                {
+                    string description = string.IsNullOrEmpty(wildcardSourcePath) ? "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    CreateApplicationRule(name, appPath, dir, act, description);
+                }
                 ApplyRuleAction(appName, action, createRule);
                 _activityLogger.Log("Rule Changed", action + " for " + appPath);
                 _dataService.AddOrUpdateAppRule(appPath);
@@ -46,6 +54,7 @@ namespace MinimalFirewall
                 ApplyRuleAction(app.Name, action, createRule);
                 _activityLogger.Log("UWP Rule Changed", action + " for " + app.Name);
             }
+            _dataService.LoadInitialData();
         }
 
         public void DeleteApplicationRules(List<string> appPaths)
@@ -59,6 +68,14 @@ namespace MinimalFirewall
             foreach (var path in appPaths) _activityLogger.Log("Rule Deleted", path);
         }
 
+        public void DeleteRulesForWildcard(WildcardRule wildcard)
+        {
+            if (wildcard == null) return;
+            string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
+            _firewallService.DeleteRulesByDescription(descriptionTag);
+            _activityLogger.Log("Wildcard Rules Deleted", $"Deleted rules for folder {wildcard.FolderPath}");
+        }
+
         public void DeleteUwpRules(List<string> packageFamilyNames)
         {
             if (packageFamilyNames.Count == 0) return;
@@ -66,6 +83,7 @@ namespace MinimalFirewall
             if (result == MessageBoxResult.No) return;
             _firewallService.DeleteUwpRules(packageFamilyNames);
             foreach (var pfn in packageFamilyNames) _activityLogger.Log("UWP Rule Deleted", pfn);
+            _dataService.LoadInitialData();
         }
 
         public void DeleteAdvancedRules(List<string> ruleNames)
@@ -84,6 +102,7 @@ namespace MinimalFirewall
             if (string.IsNullOrWhiteSpace(command)) return;
             AdminTaskService.ExecutePowerShellRuleCommand(command);
             _activityLogger.Log("Advanced Rule Created", command);
+            _dataService.LoadInitialData();
         }
 
         public void ToggleLockdown()
@@ -100,19 +119,8 @@ namespace MinimalFirewall
             string appName = Path.GetFileNameWithoutExtension(pending.AppPath);
             string guid = Guid.NewGuid().ToString("N").Substring(0, 8);
 
-            NET_FW_RULE_DIRECTION_ directionEnum;
-            string directionString;
-
-            if (pending.Direction == "Outbound")
-            {
-                directionEnum = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT;
-                directionString = "Out";
-            }
-            else
-            {
-                directionEnum = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
-                directionString = "In";
-            }
+            NET_FW_RULE_DIRECTION_ directionEnum = pending.Direction == "Outbound" ? NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT : NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN;
+            string directionString = pending.Direction == "Outbound" ? "Out" : "In";
 
             string tempRuleName = $"Temp Allow {directionString} - {appName} ({guid})";
             var tempRule = CreateRuleObject(tempRuleName, pending.AppPath, directionEnum, NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
@@ -142,16 +150,20 @@ namespace MinimalFirewall
         {
             switch (action)
             {
-                case "Allow (All)": createRule(appName + " - In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_ALLOW); createRule(appName + " - Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_ALLOW); break;
+                case "Allow (All)":
+                    createRule(appName + " - In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                    createRule(appName + " - Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_ALLOW); break;
                 case "Allow (Outbound)": createRule(appName + " - Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_ALLOW); break;
                 case "Allow (Inbound)": createRule(appName + " - In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_ALLOW); break;
-                case "Block (All)": createRule(appName + " - Block In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_BLOCK); createRule(appName + " - Block Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_BLOCK); break;
+                case "Block (All)":
+                    createRule(appName + " - Block In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
+                    createRule(appName + " - Block Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_BLOCK); break;
                 case "Block (Outbound)": createRule(appName + " - Block Out (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_BLOCK); break;
                 case "Block (Inbound)": createRule(appName + " - Block In (MFW)", NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_BLOCK); break;
             }
         }
 
-        private static INetFwRule2 CreateRuleObject(string name, string appPath, NET_FW_RULE_DIRECTION_ direction, NET_FW_ACTION_ action)
+        private static INetFwRule2 CreateRuleObject(string name, string appPath, NET_FW_RULE_DIRECTION_ direction, NET_FW_ACTION_ action, string description = "")
         {
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
             firewallRule.Name = name;
@@ -160,13 +172,22 @@ namespace MinimalFirewall
             firewallRule.Action = action;
             firewallRule.Enabled = true;
             firewallRule.Protocol = 256;
-            firewallRule.Grouping = "Minimal Firewall";
+
+            if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
+            {
+                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
+                firewallRule.Description = description;
+            }
+            else
+            {
+                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+            }
             return firewallRule;
         }
 
-        private void CreateApplicationRule(string name, string appPath, NET_FW_RULE_DIRECTION_ direction, NET_FW_ACTION_ action)
+        private void CreateApplicationRule(string name, string appPath, NET_FW_RULE_DIRECTION_ direction, NET_FW_ACTION_ action, string description)
         {
-            var rule = CreateRuleObject(name, appPath, direction, action);
+            var rule = CreateRuleObject(name, appPath, direction, action, description);
             _firewallService.CreateRule(rule);
         }
 
@@ -174,12 +195,12 @@ namespace MinimalFirewall
         {
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
             firewallRule.Name = name;
-            firewallRule.Description = "UWP App; PFN=" + packageFamilyName;
+            firewallRule.Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName;
             firewallRule.Direction = direction;
             firewallRule.Action = action;
             firewallRule.Enabled = true;
             firewallRule.Protocol = 256;
-            firewallRule.Grouping = "Minimal Firewall";
+            firewallRule.Grouping = MFWConstants.MainRuleGroup;
             _firewallService.CreateRule(firewallRule);
         }
     }

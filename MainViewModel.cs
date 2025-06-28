@@ -4,8 +4,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -32,13 +34,14 @@ namespace MinimalFirewall
         private readonly StartupService _startupService;
         private readonly AppSettings _appSettings;
         private readonly ForeignRuleTracker _foreignRuleTracker;
-        private int _lastTemporaryMinutes = 2;
+        private int _lastTemporaryMinutes = 5;
         private bool _uwpScanPerformed = false;
-        private bool _foreignRuleScanPerformed = false;
+        private bool _foreignRulesLoaded = false;
 
         public bool IsCacheCleared { get; private set; } = false;
 
-        public event Action<PendingConnectionViewModel, WildcardAction> WildcardRuleRequested;
+        public string VersionInfo { get; }
+
         public static IEnumerable<SearchMode> SearchModes => Enum.GetValues(typeof(SearchMode)).Cast<SearchMode>();
         private string _searchText = string.Empty;
         public string SearchText
@@ -149,6 +152,10 @@ namespace MinimalFirewall
         public ICommand IgnorePendingCommand { get; private set; }
         public ICommand RemoveWildcardRuleCommand { get; private set; }
         public ICommand AcknowledgeForeignRulesCommand { get; private set; }
+        public ICommand CreateWildcardFromTabCommand { get; private set; }
+        public ICommand CheckForUpdatesCommand { get; private set; }
+        public ICommand ScanDirectoryCommand { get; private set; }
+        public ICommand ClearUndefinedProgramsCommand { get; private set; }
 
         public MainViewModel()
         {
@@ -157,6 +164,8 @@ namespace MinimalFirewall
             {
                 app.ApplyTheme(_appSettings.Theme);
             }
+
+            VersionInfo = "Version " + Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
 
             ProgramRules = new ObservableCollection<FirewallRuleViewModel>();
             Services = new ObservableCollection<FirewallRuleViewModel>();
@@ -178,14 +187,36 @@ namespace MinimalFirewall
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, _actionsService, () => IsLockedDown);
 
             ToggleLockdownCommand = new RelayCommand(new Action(ToggleLockdown));
-            AllowPendingCommand = new RelayCommand<PendingConnectionViewModel>(p => AllowPendingConnection(p, false));
+            AllowPendingCommand = new RelayCommand<PendingConnectionViewModel>(AllowPendingConnection);
             BlockPendingCommand = new RelayCommand<PendingConnectionViewModel>(BlockPendingConnection);
+            AcknowledgeForeignRulesCommand = new RelayCommand(AcknowledgeForeignRules);
             IgnorePendingCommand = new RelayCommand<PendingConnectionViewModel>(IgnorePendingConnection);
             RemoveWildcardRuleCommand = new RelayCommand<WildcardRule>(RemoveWildcardRule);
-            AcknowledgeForeignRulesCommand = new RelayCommand(AcknowledgeForeignRules);
+            CreateWildcardFromTabCommand = new RelayCommand(() => HandleWildcardCreationRequest(null));
+            CheckForUpdatesCommand = new RelayCommand(CheckForUpdates);
+            ScanDirectoryCommand = new RelayCommand(() => _ = ScanDirectoryForUndefined());
+            ClearUndefinedProgramsCommand = new RelayCommand(ClearUndefinedPrograms);
 
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
             _actionsService.ApplicationRuleSetExpired += OnApplicationRuleSetExpired;
+        }
+
+        private void ClearUndefinedPrograms()
+        {
+            _dataService.ClearUndefinedPrograms();
+            UndefinedPrograms.Clear();
+        }
+
+        private void CheckForUpdates()
+        {
+            try
+            {
+                Process.Start("https://github.com/deminimis/minimalfirewall/releases");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not open the link.\n\nError: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public async Task InitializeAsync()
@@ -198,10 +229,16 @@ namespace MinimalFirewall
                 _dataService.LoadUwpAppsFromCache();
                 _dataService.LoadInitialData();
             });
-            UpdateCollectionsFromSource();
-            WildcardRules = new ObservableCollection<WildcardRule>(_wildcardRuleService.GetRules());
-            OnPropertyChanged("WildcardRules");
-            FilterAllCollections();
+
+            await Task.Run(() => SyncWildcardRules(false));
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdateCollectionsFromSource();
+                WildcardRules = new ObservableCollection<WildcardRule>(_wildcardRuleService.GetRules());
+                OnPropertyChanged("WildcardRules");
+                FilterAllCollections();
+            });
 
             CheckFirewallStatus();
             _eventListenerService.Start();
@@ -209,6 +246,37 @@ namespace MinimalFirewall
 
             IsCacheCleared = false;
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
+        }
+
+        public void SyncWildcardRules(bool shouldRefreshUI)
+        {
+            var allWildcards = _wildcardRuleService.GetRules();
+            if (!allWildcards.Any()) return;
+
+            var allSystemRules = _firewallService.GetAllRules();
+
+            foreach (var wildcard in allWildcards)
+            {
+                var executablesInFolder = SystemDiscoveryService.GetExecutablesInFolder(wildcard.FolderPath);
+                if (!executablesInFolder.Any()) continue;
+
+                string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
+                var existingRulePaths = allSystemRules
+                    .Where(r => r.Description != null && r.Description == descriptionTag)
+                    .Select(r => r.ApplicationName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var missingExePaths = executablesInFolder.Where(exe => !existingRulePaths.Contains(exe)).ToList();
+
+                if (missingExePaths.Any())
+                {
+                    _actionsService.ApplyApplicationRuleChange(missingExePaths, wildcard.Action, wildcard.FolderPath);
+                }
+            }
+            if (shouldRefreshUI)
+            {
+                FastRefresh();
+            }
         }
 
         private void UpdateCollectionsFromSource()
@@ -223,20 +291,30 @@ namespace MinimalFirewall
 
         private void FastRefresh()
         {
-            _dataService.ApplyFilters();
-            UpdateCollectionsFromSource();
-            FilterAllCollections();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _dataService.ApplyFilters();
+                UpdateCollectionsFromSource();
+                FilterAllCollections();
+            });
         }
 
         public async void SlowRefresh()
         {
             var statusWindow = new StatusWindow("Reloading Rules...");
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
-            await Task.Run(new Action(() => _dataService.LoadInitialData()));
-            UpdateCollectionsFromSource();
-            FilterAllCollections();
-            _foreignRuleScanPerformed = false;
-            IsCacheCleared = false;
+            await Task.Run(() => {
+                _dataService.LoadInitialData();
+                SyncWildcardRules(false);
+            });
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdateCollectionsFromSource();
+                FilterAllCollections();
+                IsCacheCleared = false;
+            });
+
             Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
         }
 
@@ -272,19 +350,23 @@ namespace MinimalFirewall
             Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " UWP apps.")));
         }
 
-        public void LoadForeignRulesOnDemand()
+        public async Task LoadForeignRulesOnDemandAsync(bool forceRescan = false)
         {
-            if (_foreignRuleScanPerformed) return;
+            if (_foreignRulesLoaded && !forceRescan)
+            {
+                return;
+            }
 
             var statusWindow = new StatusWindow("Scanning for new third-party rules...");
-            Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
+            Application.Current.Dispatcher.Invoke(() => statusWindow.Show());
 
-            _dataService.ScanForForeignRules(_foreignRuleTracker);
+            await Task.Run(() => _dataService.ScanForForeignRules(_foreignRuleTracker));
+
             UpdateCollectionsFromSource();
             FilterAllCollections();
-            _foreignRuleScanPerformed = true;
+            _foreignRulesLoaded = true;
 
-            Application.Current.Dispatcher.Invoke(new Action(statusWindow.Close));
+            Application.Current.Dispatcher.Invoke(() => statusWindow.Close());
         }
 
         private void AcknowledgeForeignRules()
@@ -296,7 +378,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            var result = MessageBox.Show($"Are you sure you want to acknowledge {ruleNamesToAcknowledge.Count} new rule(s)?\n\nThey will be hidden from this list unless they are modified or re-created.", "Confirm Acknowledgment", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show($"Are you sure you want to acknowledge {ruleNamesToAcknowledge.Count} new rule(s)?\n\nThey will be hidden from this list unless they are modified.", "Confirm Acknowledgment", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
@@ -306,14 +388,17 @@ namespace MinimalFirewall
             }
         }
 
-        public async Task ScanDirectoryForUndefined(string directoryPath)
+        public async Task ScanDirectoryForUndefined()
         {
-            var statusWindow = new StatusWindow("Scanning Directory");
-            Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
-            var count = await _dataService.ScanDirectoryForUndefined(directoryPath);
-            UpdateCollectionsFromSource();
-            FilterAllCollections();
-            Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " new executable(s).")));
+            if (FolderPicker.TryPickFolder(out var folderPath) && folderPath != null)
+            {
+                var statusWindow = new StatusWindow("Scanning Directory");
+                Application.Current.Dispatcher.Invoke(new Action(statusWindow.Show));
+                var count = await _dataService.ScanDirectoryForUndefined(folderPath);
+                UpdateCollectionsFromSource();
+                FilterAllCollections();
+                Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " new executable(s).")));
+            }
         }
 
         public void ClearCachesForTray()
@@ -327,57 +412,81 @@ namespace MinimalFirewall
             AdvancedRules.Clear();
             ForeignRules.Clear();
 
-            _foreignRuleScanPerformed = false;
             _uwpScanPerformed = false;
+            _foreignRulesLoaded = false;
             IsCacheCleared = true;
+        }
+
+        public void CreateWildcardRule(string folderPath, string action)
+        {
+            var executables = SystemDiscoveryService.GetExecutablesInFolder(folderPath);
+            if (!executables.Any())
+            {
+                MessageBox.Show("No executable files were found in the selected folder.", "No Files Found", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var newRule = new WildcardRule { FolderPath = folderPath, Action = action };
+            _wildcardRuleService.AddRule(newRule);
+            WildcardRules.Add(newRule);
+            _activityLogger.Log("Wildcard Rule Created", $"{action} for folder {folderPath}");
+
+            _actionsService.ApplyApplicationRuleChange(executables, action, folderPath);
+            FastRefresh();
+        }
+
+        public void HandleWildcardCreationRequest(string initialPath, PendingConnectionViewModel pendingToRemove = null)
+        {
+            var dialog = new WildcardCreatorWindow();
+            if (!string.IsNullOrEmpty(initialPath))
+            {
+                dialog.FolderPathTextBox.Text = initialPath;
+            }
+
+            if (dialog.ShowDialog() == true)
+            {
+                CreateWildcardRule(dialog.FolderPath, dialog.SelectedAction);
+                if (pendingToRemove != null)
+                {
+                    PendingConnections.Remove(pendingToRemove);
+                }
+            }
         }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action) { _actionsService.ApplyApplicationRuleChange(appPaths, action); FastRefresh(); }
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action) { _actionsService.ApplyUwpRuleChange(uwpApps, action); SlowRefresh(); }
-        public void DeleteApplicationRules(List<string> appPaths) { _actionsService.DeleteApplicationRules(appPaths); FastRefresh(); }
+
+        public void DeleteApplicationRules(List<string> appPaths)
+        {
+            _actionsService.DeleteApplicationRules(appPaths);
+            _eventListenerService.ClearAllSnoozes();
+            FastRefresh();
+        }
+
         public void DeleteUwpRules(List<string> packageFamilyNames) { _actionsService.DeleteUwpRules(packageFamilyNames); SlowRefresh(); }
         public void DeleteAdvancedRules(List<string> ruleNames) { _actionsService.DeleteAdvancedRules(ruleNames); FastRefresh(); }
         public void CreatePowerShellRule(string command) { _actionsService.CreatePowerShellRule(command); SlowRefresh(); }
         private void ToggleLockdown() { _actionsService.ToggleLockdown(); CheckFirewallStatus(); }
 
-        public void CompleteWildcardRuleCreation(PendingConnectionViewModel pending, string selectedFolder, WildcardAction action)
-        {
-            string pattern = Path.Combine(selectedFolder, "*", Path.GetFileName(pending.AppPath));
-            var newRule = new WildcardRule { Pattern = pattern, Action = action };
-
-            _wildcardRuleService.AddRule(newRule);
-            WildcardRules.Add(newRule);
-            _activityLogger.Log("Wildcard Rule Created", pattern);
-            if (action == WildcardAction.AutoAllow)
-            {
-                AllowPendingConnection(pending, false);
-            }
-            else
-            {
-                PendingConnections.Remove(pending);
-            }
-        }
-
         private void RemoveWildcardRule(WildcardRule rule)
         {
             if (rule == null) return;
+            var result = MessageBox.Show($"This will delete the wildcard rule and all firewall rules created by it for the folder:\n\n{rule.FolderPath}\n\nAre you sure you want to continue?", "Confirm Wildcard Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result == MessageBoxResult.No) return;
+
+            _actionsService.DeleteRulesForWildcard(rule);
             _wildcardRuleService.RemoveRule(rule);
             WildcardRules.Remove(rule);
-            _activityLogger.Log("Wildcard Rule Removed", rule.Pattern);
+            _eventListenerService.ClearAllSnoozes();
+            _activityLogger.Log("Wildcard Rule Removed", rule.FolderPath);
+            FastRefresh();
         }
 
-        private void AllowPendingConnection(PendingConnectionViewModel pending, bool createWildcard)
+        private void AllowPendingConnection(PendingConnectionViewModel pending)
         {
             if (pending == null) return;
-            if (createWildcard)
-            {
-                WildcardRuleRequested?.Invoke(pending, WildcardAction.AutoAllow);
-            }
-            else
-            {
-                ApplyApplicationRuleChange(new List<string> { pending.AppPath }, "Allow (All)");
-                PendingConnections.Remove(pending);
-            }
+            ApplyApplicationRuleChange(new List<string> { pending.AppPath }, "Allow (" + pending.Direction + ")");
+            PendingConnections.Remove(pending);
         }
 
         private void BlockPendingConnection(PendingConnectionViewModel pending)
@@ -406,30 +515,33 @@ namespace MinimalFirewall
         private void ShowConnectionNotifier(PendingConnectionViewModel pendingVm)
         {
             var dialog = new ConnectionNotifierWindow(pendingVm.AppPath, pendingVm.Direction, _lastTemporaryMinutes);
-            if (dialog.ShowDialog() == true)
-            {
-                _lastTemporaryMinutes = dialog.Minutes;
-                switch (dialog.Result)
-                {
-                    case ConnectionNotifierWindow.NotifierResult.Allow:
-                        AllowPendingConnection(pendingVm, dialog.CreateWildcard);
-                        break;
-                    case ConnectionNotifierWindow.NotifierResult.Block:
-                        BlockPendingConnection(pendingVm);
-                        break;
-                    case ConnectionNotifierWindow.NotifierResult.AllowTemporary:
-                        AllowPendingConnectionTemporarily(pendingVm, dialog.Minutes);
-                        break;
-                }
-            }
-            else
+            if (dialog.ShowDialog() != true)
             {
                 IgnorePendingConnection(pendingVm);
+                return;
+            }
+
+            _lastTemporaryMinutes = dialog.Minutes;
+
+            switch (dialog.Result)
+            {
+                case ConnectionNotifierWindow.NotifierResult.Allow:
+                    AllowPendingConnection(pendingVm);
+                    break;
+                case ConnectionNotifierWindow.NotifierResult.Block:
+                    BlockPendingConnection(pendingVm);
+                    break;
+                case ConnectionNotifierWindow.NotifierResult.AllowTemporary:
+                    AllowPendingConnectionTemporarily(pendingVm, dialog.Minutes);
+                    break;
+                case ConnectionNotifierWindow.NotifierResult.CreateWildcard:
+                    HandleWildcardCreationRequest(Path.GetDirectoryName(pendingVm.AppPath), pendingVm);
+                    break;
             }
         }
 
         private void CheckFirewallStatus() => IsLockedDown = _firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-        #region Filtering and Sorting
+
         private void FilterAllCollections()
         {
             bool namePredicate(string text) { return text != null && text.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0; }
@@ -490,7 +602,6 @@ namespace MinimalFirewall
                 collection.Add(item);
             }
         }
-        #endregion
 
         public void Dispose()
         {

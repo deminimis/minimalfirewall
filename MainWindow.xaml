@@ -146,7 +146,8 @@
                                     <MenuItem Header="Enable Popups" IsCheckable="True" IsChecked="{Binding IsPopupsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                     <MenuItem Header="Enable Event Logging" IsCheckable="True" IsChecked="{Binding IsLoggingEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                     <Separator/>
-                                    <MenuItem Header="Scan Directory for Files..." Click="ScanDirectory_Click"/>
+                                    <MenuItem Header="{Binding VersionInfo}" IsEnabled="False"/>
+                                    <MenuItem Header="Check for updates..." Command="{Binding CheckForUpdatesCommand}"/>
                                 </ContextMenu>
                             </Button.ContextMenu>
                         </Button>
@@ -216,7 +217,7 @@
             <TabControl x:Name="MainTabControl" SelectionChanged="MainTabControl_SelectionChanged">
                 <TabItem Header="Pending Connections">
                     <Grid>
-                        <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView x:Name="PendingConnectionsListView" ItemsSource="{Binding PendingConnections}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Actions" Width="320">
@@ -248,8 +249,7 @@
                             </ListView.View>
                             <ListView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Create Allow Wildcard..." Click="CreateWildcardRule_Click" Tag="AutoAllow"/>
-                                    <MenuItem Header="Create Block Wildcard..." Click="CreateWildcardRule_Click" Tag="AutoBlock"/>
+                                    <MenuItem Header="Create Wildcard Rule..." Click="CreateWildcardFromPending_Click"/>
                                     <Separator/>
                                     <MenuItem Header="Open File Location" Click="OpenFileLocation_Click"/>
                                 </ContextMenu>
@@ -292,7 +292,7 @@
                     </Grid>
                 </TabItem>
                 <TabItem Header="Programs">
-                    <ListView x:Name="ProgramsListView" ItemsSource="{Binding ProgramRules}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                    <ListView x:Name="ProgramsListView" ItemsSource="{Binding ProgramRules}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Name" Width="250" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
@@ -311,7 +311,7 @@
                     </ListView>
                 </TabItem>
                 <TabItem Header="Services">
-                    <ListView x:Name="ServicesListView" ItemsSource="{Binding Services}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                    <ListView x:Name="ServicesListView" ItemsSource="{Binding Services}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Display Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
@@ -330,7 +330,7 @@
                     </ListView>
                 </TabItem>
                 <TabItem Header="UWP Apps">
-                    <ListView x:Name="UwpAppsListView" ItemsSource="{Binding UwpApps}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                    <ListView x:Name="UwpAppsListView" ItemsSource="{Binding UwpApps}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Header="Name" Width="300" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Name}"/>
@@ -348,11 +348,14 @@
                 </TabItem>
                 <TabItem Header="Wildcard Rules">
                     <DockPanel>
-                        <ListView x:Name="WildcardRulesListView" ItemsSource="{Binding WildcardRules}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource StatusRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
+                            <Button Content="Create Wildcard Rule..." Command="{Binding CreateWildcardFromTabCommand}"/>
+                        </StackPanel>
+                        <ListView x:Name="WildcardRulesListView" ItemsSource="{Binding WildcardRules}" FontSize="14" SelectionMode="Single" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Header="Action" DisplayMemberBinding="{Binding Action}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                    <GridViewColumn Header="Pattern" DisplayMemberBinding="{Binding Pattern}" Width="800" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Action" DisplayMemberBinding="{Binding Action}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Folder Path" DisplayMemberBinding="{Binding FolderPath}" Width="770" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
                             </ListView.View>
                             <ListView.ContextMenu>
@@ -364,41 +367,12 @@
                     </DockPanel>
                 </TabItem>
                 <TabItem Header="Advanced Rules">
-                    <ListView x:Name="AdvancedRulesListView" ItemsSource="{Binding AdvancedRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Enabled" DisplayMemberBinding="{Binding IsEnabled}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="70" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Port(s)" DisplayMemberBinding="{Binding Ports}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Protocol" DisplayMemberBinding="{Binding Protocol}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Service" DisplayMemberBinding="{Binding ServiceName}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Remote IPs" DisplayMemberBinding="{Binding RemoteAddresses}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Profiles" DisplayMemberBinding="{Binding Profiles}" Width="80" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                            </GridView>
-                        </ListView.View>
-                        <ListView.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Create Advanced Rule..." Click="CreateAdvancedRule_Click"/>
-                                <Separator />
-                                <MenuItem Header="Open Windows Firewall..." Click="OpenFirewallConsole_Click"/>
-                                <Separator />
-                                <MenuItem Header="Delete Rule(s)" Click="DeleteAdvancedRules_Click"/>
-                            </ContextMenu>
-                        </ListView.ContextMenu>
-                    </ListView>
-                </TabItem>
-                <TabItem Header="Foreign Rules">
                     <DockPanel>
-                        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="5">
-                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource App.Text.Default}">
-                                This tab shows newly detected firewall rules that were NOT created by Minimal Firewall. Review them to ensure they are not malicious or unwanted.
-                            </TextBlock>
-                            <Button Content="Acknowledge All Rules" Command="{Binding AcknowledgeForeignRulesCommand}" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
+                            <Button Content="Create Advanced Rule..." Click="CreateAdvancedRule_Click" Margin="0,0,5,0"/>
+                            <Button Content="Open Windows Firewall..." Click="OpenFirewallConsole_Click"/>
                         </StackPanel>
-                        <ListView x:Name="ForeignRulesListView" ItemsSource="{Binding ForeignRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <ListView x:Name="AdvancedRulesListView" ItemsSource="{Binding AdvancedRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
@@ -421,9 +395,56 @@
                         </ListView>
                     </DockPanel>
                 </TabItem>
-                <TabItem Header="Undefined Programs">
+                <TabItem Header="Foreign Rules">
                     <Grid>
-                        <ListView x:Name="UndefinedProgramsListView" ItemsSource="{Binding UndefinedPrograms}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
+                            <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource App.Text.Default}">
+                                This tab shows newly detected firewall rules that were NOT created by Minimal Firewall. Review them to ensure they are not malicious or unwanted.
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Button Content="Acknowledge All Rules" Command="{Binding AcknowledgeForeignRulesCommand}"/>
+                                <Button Content="Rescan" Margin="5,0,0,0" Click="RescanForeignRules_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <ListView Grid.Row="1" x:Name="ForeignRulesListView" ItemsSource="{Binding ForeignRules}" FontSize="12" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Status" DisplayMemberBinding="{Binding Status}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Enabled" DisplayMemberBinding="{Binding IsEnabled}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="70" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Port(s)" DisplayMemberBinding="{Binding Ports}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Protocol" DisplayMemberBinding="{Binding Protocol}" Width="60" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Service" DisplayMemberBinding="{Binding ServiceName}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Remote IPs" DisplayMemberBinding="{Binding RemoteAddresses}" Width="120" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Profiles" DisplayMemberBinding="{Binding Profiles}" Width="80" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Description" DisplayMemberBinding="{Binding Description}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                </GridView>
+                            </ListView.View>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete Rule(s)" Click="DeleteAdvancedRules_Click"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
+                        </ListView>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Undefined Programs">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="5">
+                            <TextBlock TextWrapping="Wrap" Margin="0,0,0,10" Foreground="{DynamicResource App.Text.Default}">This list shows programs found by the directory scanner that do not have any existing firewall rules.</TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Scan Directory..." Command="{Binding ScanDirectoryCommand}" Margin="0,0,5,0"/>
+                                <Button Content="Clear List" Command="{Binding ClearUndefinedProgramsCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <ListView x:Name="UndefinedProgramsListView" ItemsSource="{Binding UndefinedPrograms}" FontSize="14" SelectionMode="Extended" ItemContainerStyle="{StaticResource UndefinedRowStyle}" Background="{DynamicResource App.Window.Background}" BorderThickness="0" ContextMenuOpening="ListView_ContextMenuOpening">
                             <ListView.Style>
                                 <Style TargetType="ListView">
                                     <Setter Property="Visibility" Value="Visible"/>
@@ -448,7 +469,8 @@
                                 </ContextMenu>
                             </ListView.ContextMenu>
                         </ListView>
-                        <TextBlock Text="Scan a directory to find programs without rules in the menu." HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="Gray">
+                        <TextBlock Text="Click 'Scan Directory...' to find programs without existing rules."
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Foreground="Gray">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -460,7 +482,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                    </Grid>
+                    </DockPanel>
                 </TabItem>
             </TabControl>
         </DockPanel>

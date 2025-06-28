@@ -5,16 +5,14 @@ namespace MinimalFirewall
 {
     public partial class ConnectionNotifierWindow : Window
     {
-        public enum NotifierResult { Ignore, Allow, Block, AllowTemporary }
+        public enum NotifierResult { Ignore, Allow, Block, AllowTemporary, CreateWildcard }
         public NotifierResult Result { get; private set; }
-        public int Minutes { get; set; }
+        public int Minutes { get; set; } = 5;
         public string AppPath { get; }
         public string AppName => Path.GetFileName(AppPath);
         public string Direction { get; }
         public string AllowButtonText => "Allow " + Direction;
         public string BlockButtonText => "Block " + Direction;
-
-        public bool CreateWildcard { get; set; }
 
         public ConnectionNotifierWindow(string appPath, string direction, int defaultMinutes)
         {
@@ -24,7 +22,6 @@ namespace MinimalFirewall
             AppPath = appPath;
             Direction = direction;
             Minutes = defaultMinutes;
-            CreateWildcard = false;
             DataContext = this;
         }
 
@@ -37,6 +34,12 @@ namespace MinimalFirewall
         private void BlockButton_Click(object sender, RoutedEventArgs e)
         {
             Result = NotifierResult.Block;
+            DialogResult = true;
+        }
+
+        private void CreateWildcardButton_Click(object sender, RoutedEventArgs e)
+        {
+            Result = NotifierResult.CreateWildcard;
             DialogResult = true;
         }
 

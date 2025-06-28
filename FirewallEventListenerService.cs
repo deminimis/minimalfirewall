@@ -66,9 +66,9 @@ namespace MinimalFirewall
                 var matchingRule = _wildcardRuleService.Match(appPath);
                 if (matchingRule != null)
                 {
-                    if (matchingRule.Action == WildcardAction.AutoAllow)
+                    if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
                     {
-                        _actionsService.ApplyApplicationRuleChange(new List<string> { appPath }, "Allow (" + eventDirection + ")");
+                        _actionsService.ApplyApplicationRuleChange(new List<string> { appPath }, matchingRule.Action, matchingRule.FolderPath);
                     }
                     return;
                 }
@@ -92,6 +92,16 @@ namespace MinimalFirewall
             }
             var timer = new Timer(_ => Application.Current.Dispatcher.Invoke(new Action(() => _snoozedApps.Remove(appPath))), null, TimeSpan.FromMinutes(minutes), Timeout.InfiniteTimeSpan);
             _snoozeTimers[appPath] = timer;
+        }
+
+        public void ClearAllSnoozes()
+        {
+            _snoozedApps.Clear();
+            foreach (var timer in _snoozeTimers.Values)
+            {
+                timer.Dispose();
+            }
+            _snoozeTimers.Clear();
         }
 
         private bool ShouldProcessEvent(string appPath)

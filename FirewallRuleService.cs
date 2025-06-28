@@ -142,5 +142,19 @@ namespace MinimalFirewall
                 MessageBox.Show("Failed to create rule. The firewall API rejected the input.\n\nError: " + ex.Message, "Rule Creation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        public void DeleteRulesByDescription(string description)
+        {
+            if (_firewallPolicy == null || string.IsNullOrEmpty(description)) return;
+            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
+                .Where(r => r != null && !string.IsNullOrEmpty(r.Description) && r.Description.Equals(description, StringComparison.OrdinalIgnoreCase))
+                .Select(r => r.Name)
+                .ToList();
+
+            foreach (var ruleName in rulesToRemove)
+            {
+                try { _firewallPolicy.Rules.Remove(ruleName); } catch { /* Ignore errors */ }
+            }
+        }
     }
 }
