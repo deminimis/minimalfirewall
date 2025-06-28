@@ -46,7 +46,7 @@ namespace MinimalFirewall
             _masterForeignRules.Clear();
             var allRules = _firewallService.GetAllRules();
 
-            var foreignRules = allRules.Where(r => r != null && (string.IsNullOrEmpty(r.Grouping) || !r.Grouping.Equals("Minimal Firewall", StringComparison.OrdinalIgnoreCase)));
+            var foreignRules = allRules.Where(r => r != null && (string.IsNullOrEmpty(r.Grouping) || !r.Grouping.StartsWith(MFWConstants.MainRuleGroup, StringComparison.OrdinalIgnoreCase)));
 
             foreach (var rule in foreignRules)
             {
@@ -62,57 +62,53 @@ namespace MinimalFirewall
             _masterProgramRules.Clear();
             _masterServiceRules.Clear();
             _masterAdvancedRules.Clear();
-            _allUndefinedPrograms.Clear();
 
             var serviceExePaths = SystemDiscoveryService.GetServicesWithExePaths();
             var allRules = _firewallService.GetAllRules();
 
-            // Group rules by application path for efficient processing
             var rulesByAppPath = allRules
                 .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName))
                 .GroupBy(r => r.ApplicationName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
 
-            // Process rules with an application path first
-            foreach (var group in rulesByAppPath)
+            foreach (var service in serviceExePaths)
             {
-                var appPath = group.Key;
-                var ruleGroup = group.Value;
-                var status = GetRuleStatusForGroup(ruleGroup);
+                var appPath = service.Key;
+                var serviceInfo = service.Value;
+                var status = "Undefined";
 
-                // Check if it's a known service
-                if (serviceExePaths.TryGetValue(appPath, out var serviceInfo))
+                if (rulesByAppPath.TryGetValue(appPath, out var ruleGroup))
                 {
-                    _masterServiceRules.Add(new FirewallRuleViewModel
-                    {
-                        Name = string.IsNullOrEmpty(serviceInfo.DisplayName) ? serviceInfo.ServiceName : serviceInfo.DisplayName,
-                        ApplicationName = appPath,
-                        Status = status
-                    });
+                    status = GetRuleStatusForGroup(ruleGroup);
+                    rulesByAppPath.Remove(appPath);
                 }
-                else // It's a regular program
+
+                _masterServiceRules.Add(new FirewallRuleViewModel
                 {
-                    _masterProgramRules.Add(new FirewallRuleViewModel
-                    {
-                        Name = Path.GetFileNameWithoutExtension(appPath),
-                        ApplicationName = appPath,
-                        Status = status
-                    });
-                }
+                    Name = string.IsNullOrEmpty(serviceInfo.DisplayName) ? serviceInfo.ServiceName : serviceInfo.DisplayName,
+                    ApplicationName = appPath,
+                    Status = status
+                });
             }
 
-            // Process all other rules (Advanced, UWP, etc.) in a single pass
+            foreach (var group in rulesByAppPath.Where(g => g.Value.All(r => r.Grouping != MFWConstants.WildcardRuleGroup)))
+            {
+                _masterProgramRules.Add(new FirewallRuleViewModel
+                {
+                    Name = Path.GetFileNameWithoutExtension(group.Key),
+                    ApplicationName = group.Key,
+                    Status = GetRuleStatusForGroup(group.Value)
+                });
+            }
+
             var nonAppRules = allRules.Where(r => r != null && string.IsNullOrEmpty(r.ApplicationName));
             foreach (var rule in nonAppRules)
             {
-                // Check if it's a UWP rule
-                if (!string.IsNullOrEmpty(rule.Description) && rule.Description.StartsWith("UWP App;", StringComparison.Ordinal))
+                if (!string.IsNullOrEmpty(rule.Description) && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal))
                 {
-                    // This is a UWP rule, its status will be updated below
                     continue;
                 }
 
-                // If it's not a UWP rule, it's an Advanced Rule
                 _masterAdvancedRules.Add(CreateAdvancedRuleViewModel(rule));
             }
 
@@ -132,7 +128,7 @@ namespace MinimalFirewall
             _filteredServiceRules.AddRange(_masterServiceRules.Where(r => !shouldFilter(r.ApplicationName)));
 
             _filteredAdvancedRules.Clear();
-            _filteredAdvancedRules.AddRange(_masterAdvancedRules.Where(r => ShowSystemRules || (r.Name != null && !(r.Name.Contains("Windows Defender") || r.Name.StartsWith("Microsoft-")))));
+            _filteredAdvancedRules.AddRange(_masterAdvancedRules.Where(r => ShowSystemRules || (r.Grouping != null && r.Grouping.StartsWith(MFWConstants.MainRuleGroup))));
         }
 
         public void AddOrUpdateAppRule(string appPath)
@@ -159,6 +155,11 @@ namespace MinimalFirewall
                     _masterProgramRules.Add(newRuleVm);
                 }
             }
+        }
+
+        public void ClearUndefinedPrograms()
+        {
+            _allUndefinedPrograms.Clear();
         }
 
         public void RemoveRulesByPath(List<string> appPaths)
@@ -223,8 +224,8 @@ namespace MinimalFirewall
 
         private void UpdateUwpAppStatuses(List<INetFwRule2> allRules)
         {
-            var uwpRuleGroups = allRules.Where(r => r != null && !string.IsNullOrEmpty(r.Description) && r.Description.StartsWith("UWP App; PFN=", StringComparison.Ordinal))
-                                        .GroupBy(r => r.Description.Substring("UWP App; PFN=".Length), StringComparer.OrdinalIgnoreCase);
+            var uwpRuleGroups = allRules.Where(r => r != null && !string.IsNullOrEmpty(r.Description) && r.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal))
+                                        .GroupBy(r => r.Description.Substring(MFWConstants.UwpDescriptionPrefix.Length), StringComparer.OrdinalIgnoreCase);
             lock (_uwpLock)
             {
                 foreach (var app in _allUwpApps)
@@ -255,10 +256,10 @@ namespace MinimalFirewall
 
         public static string GetRuleStatusForGroup(IEnumerable<INetFwRule2> group)
         {
-            bool hasInAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
-            bool hasInBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+            bool hasInAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+            bool hasInBlock = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutBlock = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
 
             if (hasInBlock && hasOutBlock) return "Block (All)";
             if (hasInAllow && hasOutAllow && !hasInBlock && !hasOutBlock) return "Allow (All)";
@@ -274,23 +275,19 @@ namespace MinimalFirewall
 
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
         {
-            var name = rule.Name ?? "Unnamed Rule";
-            var description = rule.Description;
-            var localPorts = rule.LocalPorts;
-            var serviceName = rule.serviceName;
-            var remoteAddresses = rule.RemoteAddresses;
             return new AdvancedRuleViewModel
             {
-                Name = name,
-                Description = (string.IsNullOrEmpty(description) || string.Equals(description, name, StringComparison.Ordinal)) ? "N/A" : description,
+                Name = rule.Name ?? "Unnamed Rule",
+                Description = rule.Description ?? "N/A",
                 IsEnabled = rule.Enabled,
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = rule.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN ? "Inbound" : "Outbound",
-                Ports = (string.IsNullOrEmpty(localPorts) || localPorts == "*") ? "Any" : localPorts,
+                Ports = string.IsNullOrEmpty(rule.LocalPorts) || rule.LocalPorts == "*" ? "Any" : rule.LocalPorts,
                 Protocol = GetProtocolString(rule.Protocol),
-                ServiceName = (string.IsNullOrEmpty(serviceName) || serviceName == "*") ? "Any" : serviceName,
-                RemoteAddresses = (string.IsNullOrEmpty(remoteAddresses) || remoteAddresses == "*") ? "Any" : remoteAddresses,
-                Profiles = GetProfileString(rule.Profiles)
+                ServiceName = string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*" ? "Any" : rule.serviceName,
+                RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) || rule.RemoteAddresses == "*" ? "Any" : rule.RemoteAddresses,
+                Profiles = GetProfileString(rule.Profiles),
+                Grouping = rule.Grouping
             };
         }
 

@@ -21,7 +21,6 @@ namespace MinimalFirewall
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             if (!(tabControl.SelectedItem is TabItem selectedTab)) return;
-
             var commandBuilder = new StringBuilder("New-NetFirewallRule");
             string displayName;
             const string validationError = "cannot be empty.";
@@ -84,7 +83,7 @@ namespace MinimalFirewall
                     return;
             }
 
-            commandBuilder.Append(" -Group 'Minimal Firewall'");
+            commandBuilder.Append($" -Group '{MFWConstants.MainRuleGroup}'");
             RuleCommand = commandBuilder.ToString();
             DialogResult = true;
         }
@@ -92,13 +91,13 @@ namespace MinimalFirewall
         private void UninstallButton_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show(
-                "Are you sure you want to delete ALL rules created by Minimal Firewall?\n\nThis action cannot be undone.",
+                "Are you sure you want to delete ALL rules created by Minimal Firewall (including wildcard rules)?\n\nThis action cannot be undone.",
                 "Confirm Uninstall",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
             {
-                RuleCommand = "Get-NetFirewallRule -Group 'Minimal Firewall' | Remove-NetFirewallRule";
+                RuleCommand = $"Get-NetFirewallRule -Group '{MFWConstants.MainRuleGroup}', '{MFWConstants.WildcardRuleGroup}' | Remove-NetFirewallRule";
                 DialogResult = true;
             }
         }

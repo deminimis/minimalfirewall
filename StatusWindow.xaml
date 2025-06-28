@@ -6,23 +6,26 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="Scanning..." Height="150" Width="400"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False">
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent">
 
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="1"/>
+        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="0" CaptionHeight="0"/>
     </shell:WindowChrome.WindowChrome>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Border BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="1" Background="{DynamicResource App.Window.Background}">
+        <Grid Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock x:Name="StatusTextBlock" Grid.Row="0" Text="Scanning, please wait..." FontSize="14" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="StatusTextBlock" Grid.Row="0" Text="Scanning, please wait..." FontSize="14" HorizontalAlignment="Center" Foreground="{DynamicResource App.Text.Default}"/>
 
-        <ProgressBar x:Name="ProgressBar" Grid.Row="1" IsIndeterminate="True" Height="20" Margin="0,15,0,15"/>
+            <ProgressBar x:Name="ProgressBar" Grid.Row="1" IsIndeterminate="True" Height="20" Margin="0,15,0,15"/>
 
-        <Button x:Name="OkButton" Grid.Row="2" Content="OK" Width="80" HorizontalAlignment="Center" Visibility="Collapsed" Click="OkButton_Click" IsDefault="True"/>
-    </Grid>
+            <Button x:Name="OkButton" Grid.Row="2" Content="OK" Width="80" HorizontalAlignment="Center" Visibility="Collapsed" Click="OkButton_Click" IsDefault="True"/>
+        </Grid>
+    </Border>
 </Window>

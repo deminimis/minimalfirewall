@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Windows.Media;
 
 namespace MinimalFirewall
 {
@@ -9,16 +8,10 @@ namespace MinimalFirewall
         Path
     }
 
-    public enum WildcardAction
-    {
-        AutoAllow,
-        AutoBlock
-    }
-
     public class WildcardRule
     {
-        public string Pattern { get; set; }
-        public WildcardAction Action { get; set; }
+        public string FolderPath { get; set; }
+        public string Action { get; set; }
     }
 
     public class AdvancedRuleViewModel
@@ -33,6 +26,7 @@ namespace MinimalFirewall
         public string RemoteAddresses { get; set; }
         public string Profiles { get; set; }
         public string Description { get; set; }
+        public string Grouping { get; set; }
     }
 
     public class FirewallRuleViewModel

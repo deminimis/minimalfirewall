@@ -6,17 +6,16 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         mc:Ignorable="d"
         Title="Connection Blocked" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="True"
+        ResizeMode="NoResize" ShowInTaskbar="True"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent">
 
     <shell:WindowChrome.WindowChrome>
-        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="1" CaptionHeight="0"/>
+        <shell:WindowChrome CornerRadius="0" UseAeroCaptionButtons="False" GlassFrameThickness="0" CaptionHeight="0"/>
     </shell:WindowChrome.WindowChrome>
 
     <Border BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="1" Background="{DynamicResource App.Window.Background}">
         <Grid Margin="20">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -42,15 +41,12 @@
                 <Run Text="{Binding AppPath, Mode=OneWay}"/>
             </TextBlock>
 
-            <CheckBox Grid.Row="3" x:Name="CreateWildcardCheckBox" Content="Apply to future versions (create wildcard rule)" Margin="0,15,0,0"
-                      IsChecked="{Binding CreateWildcard, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
-                <Button Content="{Binding AllowButtonText}" x:Name="AllowButton" Click="AllowButton_Click" Width="140" Height="30" Margin="5" Style="{StaticResource GreenPendingButton}"/>
-                <Button Content="{Binding BlockButtonText}" x:Name="BlockButton" Click="BlockButton_Click" Width="140" Height="30" Margin="5" Style="{StaticResource RedPendingButton}"/>
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                <Button Content="{Binding AllowButtonText}" x:Name="AllowButton" Click="AllowButton_Click" Width="180" Height="30" Margin="5" Style="{StaticResource GreenPendingButton}"/>
+                <Button Content="{Binding BlockButtonText}" x:Name="BlockButton" Click="BlockButton_Click" Width="180" Height="30" Margin="5" Style="{StaticResource RedPendingButton}"/>
             </StackPanel>
 
-            <GroupBox Grid.Row="5" Header="Temporary Rule" Margin="0,20,0,0" Padding="10">
+            <GroupBox Grid.Row="4" Header="Temporary Rule" Margin="0,15,0,0" Padding="10">
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Allow for:"/>
                     <TextBox x:Name="MinutesTextBox" Text="{Binding Minutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="50" VerticalAlignment="Center"/>
@@ -59,7 +55,10 @@
                 </StackPanel>
             </GroupBox>
 
-            <Button Grid.Row="6" Content="Ignore" Margin="0,20,0,0" IsCancel="True" HorizontalAlignment="Right"/>
+            <Grid Grid.Row="5" Margin="0,20,0,0">
+                <Button Content="Create Wildcard Rule..." HorizontalAlignment="Left" Width="160" Height="28" Click="CreateWildcardButton_Click"/>
+                <Button Content="Ignore" IsCancel="True" HorizontalAlignment="Right" Width="80" Height="28"/>
+            </Grid>
         </Grid>
     </Border>
 </Window>
