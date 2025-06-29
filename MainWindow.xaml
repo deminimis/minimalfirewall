@@ -82,11 +82,11 @@
                     <Setter Property="Foreground" Value="Black" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Block Out, Allow In">
-                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Background" Value="#E1BEE7" />
                     <Setter Property="Foreground" Value="Black" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Allow Out, Block In">
-                    <Setter Property="Background" Value="#FFCC80" />
+                    <Setter Property="Background" Value="#E1BEE7" />
                     <Setter Property="Foreground" Value="Black" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Status}" Value="Undefined">
@@ -204,6 +204,21 @@
                                 </Style>
                             </Button.Style>
                         </Button>
+                        <Button Command="{Binding RefreshCommand}" Content="⟳" FontSize="18" ToolTip="Refresh All Rules" Margin="5,0,0,0" VerticalAlignment="Center" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource App.Text.Default}"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Opacity" Value="0.7"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
@@ -242,9 +257,10 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn Header="Application" Width="200" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}"/>
-                                    <GridViewColumn Header="Direction" DisplayMemberBinding="{Binding Direction}" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                    <GridViewColumn Header="Path" DisplayMemberBinding="{Binding AppPath}" Width="330" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Application" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding FileName}"/>
+                                    <GridViewColumn Header="Service" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding ServiceName}"/>
+                                    <GridViewColumn Header="Direction" Width="100" HeaderContainerStyle="{StaticResource SortableHeaderStyle}" DisplayMemberBinding="{Binding Direction}"/>
+                                    <GridViewColumn Header="Path" DisplayMemberBinding="{Binding AppPath}" Width="230" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
                             </ListView.View>
                             <ListView.ContextMenu>
@@ -355,7 +371,8 @@
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Action" DisplayMemberBinding="{Binding Action}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
-                                    <GridViewColumn Header="Folder Path" DisplayMemberBinding="{Binding FolderPath}" Width="770" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Executable Name" DisplayMemberBinding="{Binding ExeName}" Width="150" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
+                                    <GridViewColumn Header="Folder Path" DisplayMemberBinding="{Binding FolderPath}" Width="620" HeaderContainerStyle="{StaticResource SortableHeaderStyle}"/>
                                 </GridView>
                             </ListView.View>
                             <ListView.ContextMenu>

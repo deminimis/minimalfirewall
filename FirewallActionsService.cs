@@ -25,13 +25,20 @@ namespace MinimalFirewall
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string wildcardSourcePath = null)
         {
-            if (string.IsNullOrEmpty(wildcardSourcePath))
-            {
-                _firewallService.DeleteRulesByPath(appPaths);
-            }
-
             foreach (var appPath in appPaths)
             {
+                if (string.IsNullOrEmpty(wildcardSourcePath))
+                {
+                    if (action.Contains("Inbound") || action.Contains("(All)"))
+                    {
+                        _firewallService.DeleteRuleByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+                    }
+                    if (action.Contains("Outbound") || action.Contains("(All)"))
+                    {
+                        _firewallService.DeleteRuleByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+                    }
+                }
+
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act)
                 {
@@ -42,6 +49,30 @@ namespace MinimalFirewall
                 _activityLogger.Log("Rule Changed", action + " for " + appPath);
                 _dataService.AddOrUpdateAppRule(appPath);
             }
+        }
+
+        public void ApplyServiceRuleChange(string serviceName, string action)
+        {
+            if (string.IsNullOrEmpty(serviceName)) return;
+
+            _firewallService.DeleteRulesByServiceName(serviceName);
+
+            void createRule(string name, NET_FW_RULE_DIRECTION_ dir, NET_FW_ACTION_ act)
+            {
+                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule"));
+                firewallRule.Name = name;
+                firewallRule.serviceName = serviceName;
+                firewallRule.Direction = dir;
+                firewallRule.Action = act;
+                firewallRule.Enabled = true;
+                firewallRule.Protocol = (int)NET_FW_IP_PROTOCOL_.NET_FW_IP_PROTOCOL_ANY;
+                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+                _firewallService.CreateRule(firewallRule);
+            }
+
+            ApplyRuleAction(serviceName, action, createRule);
+            _activityLogger.Log("Service Rule Changed", action + " for " + serviceName);
+            _dataService.LoadInitialData();
         }
 
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)

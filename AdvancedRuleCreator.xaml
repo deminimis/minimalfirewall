@@ -229,7 +229,7 @@
                     <TabItem Header="Uninstall Rules">
                         <Grid Margin="10">
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <TextBlock TextWrapping="Wrap" TextAlignment="Center" MaxWidth="400">
+                                <TextBlock TextWrapping="Wrap" TextAlignment="center" MaxWidth="400">
                                     This will permanently remove all firewall rules created by Minimal Firewall.
                                     <LineBreak/><LineBreak/>
                                     This action cannot be undone.

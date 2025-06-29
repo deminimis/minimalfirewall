@@ -156,6 +156,7 @@ namespace MinimalFirewall
         public ICommand CheckForUpdatesCommand { get; private set; }
         public ICommand ScanDirectoryCommand { get; private set; }
         public ICommand ClearUndefinedProgramsCommand { get; private set; }
+        public ICommand RefreshCommand { get; private set; }
 
         public MainViewModel()
         {
@@ -196,6 +197,7 @@ namespace MinimalFirewall
             CheckForUpdatesCommand = new RelayCommand(CheckForUpdates);
             ScanDirectoryCommand = new RelayCommand(() => _ = ScanDirectoryForUndefined());
             ClearUndefinedProgramsCommand = new RelayCommand(ClearUndefinedPrograms);
+            RefreshCommand = new RelayCommand(SlowRefresh);
 
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
             _actionsService.ApplicationRuleSetExpired += OnApplicationRuleSetExpired;
@@ -257,7 +259,7 @@ namespace MinimalFirewall
 
             foreach (var wildcard in allWildcards)
             {
-                var executablesInFolder = SystemDiscoveryService.GetExecutablesInFolder(wildcard.FolderPath);
+                var executablesInFolder = SystemDiscoveryService.GetExecutablesInFolder(wildcard.FolderPath, wildcard.ExeName);
                 if (!executablesInFolder.Any()) continue;
 
                 string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
@@ -322,7 +324,7 @@ namespace MinimalFirewall
         {
             Application.Current.Dispatcher.Invoke(new Action(() =>
             {
-                if (PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction == pending.Direction)) return;
+                if (PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction == pending.Direction && p.ServiceName == pending.ServiceName)) return;
                 PendingConnections.Add(pending);
                 _activityLogger.Log("Pending Connection", pending.Direction + " for " + pending.AppPath);
                 if (IsPopupsEnabled) { ShowConnectionNotifier(pending); }
@@ -350,13 +352,18 @@ namespace MinimalFirewall
             Application.Current.Dispatcher.Invoke(new Action(() => statusWindow.Complete("Found " + count + " UWP apps.")));
         }
 
-        public async Task LoadForeignRulesOnDemandAsync(bool forceRescan = false)
+        public async Task LoadForeignRulesOnDemandAsync()
         {
-            if (_foreignRulesLoaded && !forceRescan)
+            if (_foreignRulesLoaded)
             {
                 return;
             }
+            _foreignRulesLoaded = true;
+            await RescanForeignRulesAsync();
+        }
 
+        public async Task RescanForeignRulesAsync()
+        {
             var statusWindow = new StatusWindow("Scanning for new third-party rules...");
             Application.Current.Dispatcher.Invoke(() => statusWindow.Show());
 
@@ -364,7 +371,6 @@ namespace MinimalFirewall
 
             UpdateCollectionsFromSource();
             FilterAllCollections();
-            _foreignRulesLoaded = true;
 
             Application.Current.Dispatcher.Invoke(() => statusWindow.Close());
         }
@@ -417,19 +423,25 @@ namespace MinimalFirewall
             IsCacheCleared = true;
         }
 
-        public void CreateWildcardRule(string folderPath, string action)
+        public void CreateWildcardRule(string folderPath, string exeName, string action)
         {
-            var executables = SystemDiscoveryService.GetExecutablesInFolder(folderPath);
+            var executables = SystemDiscoveryService.GetExecutablesInFolder(folderPath, exeName);
             if (!executables.Any())
             {
-                MessageBox.Show("No executable files were found in the selected folder.", "No Files Found", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (!exeName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("No executable files matching the criteria were found in the selected folder.", "No Files Found", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
                 return;
             }
 
-            var newRule = new WildcardRule { FolderPath = folderPath, Action = action };
+            var newRule = new WildcardRule { FolderPath = folderPath, ExeName = exeName, Action = action };
             _wildcardRuleService.AddRule(newRule);
-            WildcardRules.Add(newRule);
-            _activityLogger.Log("Wildcard Rule Created", $"{action} for folder {folderPath}");
+            if (!WildcardRules.Any(r => r.FolderPath == newRule.FolderPath && r.ExeName == newRule.ExeName))
+            {
+                WildcardRules.Add(newRule);
+            }
+            _activityLogger.Log("Wildcard Rule Created", $"{action} for {exeName ?? "*.exe"} in folder {folderPath}");
 
             _actionsService.ApplyApplicationRuleChange(executables, action, folderPath);
             FastRefresh();
@@ -445,7 +457,7 @@ namespace MinimalFirewall
 
             if (dialog.ShowDialog() == true)
             {
-                CreateWildcardRule(dialog.FolderPath, dialog.SelectedAction);
+                CreateWildcardRule(dialog.FolderPath, dialog.ExeName, dialog.SelectedAction);
                 if (pendingToRemove != null)
                 {
                     PendingConnections.Remove(pendingToRemove);
@@ -485,14 +497,40 @@ namespace MinimalFirewall
         private void AllowPendingConnection(PendingConnectionViewModel pending)
         {
             if (pending == null) return;
-            ApplyApplicationRuleChange(new List<string> { pending.AppPath }, "Allow (" + pending.Direction + ")");
+
+            string action = "Allow (" + pending.Direction + ")";
+            if (!string.IsNullOrEmpty(pending.ServiceName))
+            {
+                var services = pending.ServiceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var service in services)
+                {
+                    _actionsService.ApplyServiceRuleChange(service, action);
+                }
+            }
+            else
+            {
+                _actionsService.ApplyApplicationRuleChange(new List<string> { pending.AppPath }, action);
+            }
             PendingConnections.Remove(pending);
         }
 
         private void BlockPendingConnection(PendingConnectionViewModel pending)
         {
             if (pending == null) return;
-            ApplyApplicationRuleChange(new List<string> { pending.AppPath }, "Block (" + pending.Direction + ")");
+
+            string action = "Block (" + pending.Direction + ")";
+            if (!string.IsNullOrEmpty(pending.ServiceName))
+            {
+                var services = pending.ServiceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var service in services)
+                {
+                    _actionsService.ApplyServiceRuleChange(service, action);
+                }
+            }
+            else
+            {
+                _actionsService.ApplyApplicationRuleChange(new List<string> { pending.AppPath }, action);
+            }
             PendingConnections.Remove(pending);
         }
 
@@ -514,7 +552,7 @@ namespace MinimalFirewall
 
         private void ShowConnectionNotifier(PendingConnectionViewModel pendingVm)
         {
-            var dialog = new ConnectionNotifierWindow(pendingVm.AppPath, pendingVm.Direction, _lastTemporaryMinutes);
+            var dialog = new ConnectionNotifierWindow(pendingVm, _lastTemporaryMinutes);
             if (dialog.ShowDialog() != true)
             {
                 IgnorePendingConnection(pendingVm);

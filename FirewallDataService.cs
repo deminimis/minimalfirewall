@@ -63,51 +63,67 @@ namespace MinimalFirewall
             _masterServiceRules.Clear();
             _masterAdvancedRules.Clear();
 
-            var serviceExePaths = SystemDiscoveryService.GetServicesWithExePaths();
+            var allServices = SystemDiscoveryService.GetServicesWithExePaths();
             var allRules = _firewallService.GetAllRules();
 
             var rulesByAppPath = allRules
-                .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName))
+                .Where(r => !string.IsNullOrEmpty(r.ApplicationName))
                 .GroupBy(r => r.ApplicationName, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(g => g.Key, g => g.ToList());
 
-            foreach (var service in serviceExePaths)
+            var rulesByServiceName = allRules
+                .Where(r => !string.IsNullOrEmpty(r.serviceName))
+                .GroupBy(r => r.serviceName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var allServicePaths = new HashSet<string>(allServices.Select(s => s.ExePath), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var service in allServices)
             {
-                var appPath = service.Key;
-                var serviceInfo = service.Value;
-                var status = "Undefined";
+                var relevantRules = new List<INetFwRule2>();
 
-                if (rulesByAppPath.TryGetValue(appPath, out var ruleGroup))
+                if (rulesByServiceName.TryGetValue(service.ServiceName, out var serviceRules))
                 {
-                    status = GetRuleStatusForGroup(ruleGroup);
-                    rulesByAppPath.Remove(appPath);
+                    relevantRules.AddRange(serviceRules);
                 }
+
+                if (rulesByAppPath.TryGetValue(service.ExePath, out var appRules))
+                {
+                    relevantRules.AddRange(appRules);
+                }
+
+                var status = relevantRules.Any() ? GetRuleStatusForGroup(relevantRules.Distinct()) : "Undefined";
+                var displayName = string.IsNullOrEmpty(service.DisplayName) ? service.ServiceName : service.DisplayName;
 
                 _masterServiceRules.Add(new FirewallRuleViewModel
                 {
-                    Name = string.IsNullOrEmpty(serviceInfo.DisplayName) ? serviceInfo.ServiceName : serviceInfo.DisplayName,
-                    ApplicationName = appPath,
+                    Name = displayName,
+                    ApplicationName = service.ExePath,
                     Status = status
                 });
             }
 
-            foreach (var group in rulesByAppPath.Where(g => g.Value.All(r => r.Grouping != MFWConstants.WildcardRuleGroup)))
+            foreach (var appGroup in rulesByAppPath)
             {
-                _masterProgramRules.Add(new FirewallRuleViewModel
+                if (!allServicePaths.Contains(appGroup.Key))
                 {
-                    Name = Path.GetFileNameWithoutExtension(group.Key),
-                    ApplicationName = group.Key,
-                    Status = GetRuleStatusForGroup(group.Value)
-                });
+                    if (appGroup.Value.All(r => r.Grouping != MFWConstants.WildcardRuleGroup))
+                    {
+                        _masterProgramRules.Add(new FirewallRuleViewModel
+                        {
+                            Name = Path.GetFileNameWithoutExtension(appGroup.Key),
+                            ApplicationName = appGroup.Key,
+                            Status = GetRuleStatusForGroup(appGroup.Value)
+                        });
+                    }
+                }
             }
 
-            var nonAppRules = allRules.Where(r => r != null && string.IsNullOrEmpty(r.ApplicationName));
+            var nonAppRules = allRules.Where(r => string.IsNullOrEmpty(r.ApplicationName) && string.IsNullOrEmpty(r.serviceName));
             foreach (var rule in nonAppRules)
             {
                 if (!string.IsNullOrEmpty(rule.Description) && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal))
-                {
                     continue;
-                }
 
                 _masterAdvancedRules.Add(CreateAdvancedRuleViewModel(rule));
             }
@@ -131,30 +147,9 @@ namespace MinimalFirewall
             _filteredAdvancedRules.AddRange(_masterAdvancedRules.Where(r => ShowSystemRules || (r.Grouping != null && r.Grouping.StartsWith(MFWConstants.MainRuleGroup))));
         }
 
-        public void AddOrUpdateAppRule(string appPath)
+        public void AddOrUpdateAppRule(string _appPath)
         {
-            _masterProgramRules.RemoveAll(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase));
-            _masterServiceRules.RemoveAll(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase));
-            _allUndefinedPrograms.RemoveAll(p => p.ExePath.Equals(appPath, StringComparison.OrdinalIgnoreCase));
-
-            var group = _firewallService.GetAllRules().Where(r => r != null && appPath.Equals(r.ApplicationName, StringComparison.OrdinalIgnoreCase));
-            if (group.Any())
-            {
-                var newRuleVm = new FirewallRuleViewModel
-                {
-                    Name = Path.GetFileNameWithoutExtension(appPath),
-                    ApplicationName = appPath,
-                    Status = GetRuleStatusForGroup(group)
-                };
-                if (SystemDiscoveryService.GetServicesWithExePaths().ContainsKey(appPath))
-                {
-                    _masterServiceRules.Add(newRuleVm);
-                }
-                else
-                {
-                    _masterProgramRules.Add(newRuleVm);
-                }
-            }
+            LoadInitialData();
         }
 
         public void ClearUndefinedPrograms()
@@ -176,11 +171,39 @@ namespace MinimalFirewall
             ApplyFilters();
         }
 
-        public bool DoesRuleExist(string appPath, string direction)
+        public bool DoesServiceRuleExist(string serviceName, string direction)
         {
+            var allServices = SystemDiscoveryService.GetServicesWithExePaths();
+            var targetService = allServices.FirstOrDefault(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+            if (targetService == null) return false;
+
+            var displayName = string.IsNullOrEmpty(targetService.DisplayName) ? targetService.ServiceName : targetService.DisplayName;
+            var rule = _masterServiceRules.FirstOrDefault(r => r.Name.Equals(displayName, StringComparison.OrdinalIgnoreCase));
+            return DoesRuleMatchDirection(rule, direction);
+        }
+
+        public bool DoesRuleExist(string appPath, string direction, string serviceName)
+        {
+            if (!string.IsNullOrEmpty(serviceName))
+            {
+                var services = serviceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var service in services)
+                {
+                    if (DoesServiceRuleExist(service, direction))
+                    {
+                        return true;
+                    }
+                }
+            }
+
             var rule = _masterProgramRules.FirstOrDefault(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase)) ??
                        _masterServiceRules.FirstOrDefault(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase));
 
+            return DoesRuleMatchDirection(rule, direction);
+        }
+
+        private bool DoesRuleMatchDirection(FirewallRuleViewModel rule, string direction)
+        {
             if (rule == null || rule.Status == "Undefined")
             {
                 return false;

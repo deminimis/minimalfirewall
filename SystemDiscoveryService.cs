@@ -9,17 +9,17 @@ namespace MinimalFirewall
 {
     public static class SystemDiscoveryService
     {
-        private static Dictionary<string, (string DisplayName, string ServiceName)> _serviceCache;
+        private static List<ServiceViewModel> _serviceCache;
         private static bool _wmiQueryFailedMessageShown = false;
 
-        public static Dictionary<string, (string DisplayName, string ServiceName)> GetServicesWithExePaths()
+        public static List<ServiceViewModel> GetServicesWithExePaths()
         {
             if (_serviceCache != null)
             {
                 return _serviceCache;
             }
 
-            var services = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
+            var services = new List<ServiceViewModel>();
             try
             {
                 var wmiQuery = new ObjectQuery("SELECT Name, DisplayName, PathName FROM Win32_Service WHERE PathName IS NOT NULL");
@@ -62,16 +62,20 @@ namespace MinimalFirewall
 
                         pathName = pathName.Trim('"');
 
-                        if (!string.IsNullOrEmpty(pathName) && !services.ContainsKey(pathName))
+                        if (!string.IsNullOrEmpty(pathName))
                         {
-                            services[pathName] = (service["DisplayName"]?.ToString() ?? "", service["Name"]?.ToString() ?? "");
+                            services.Add(new ServiceViewModel
+                            {
+                                ExePath = pathName,
+                                DisplayName = service["DisplayName"]?.ToString() ?? "",
+                                ServiceName = service["Name"]?.ToString() ?? ""
+                            });
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                // THIS CATCH BLOCK IS NOW IMPROVED
                 System.Diagnostics.Debug.WriteLine("WMI Query failed: " + ex.Message);
                 if (!_wmiQueryFailedMessageShown)
                 {
@@ -88,6 +92,28 @@ namespace MinimalFirewall
             return services;
         }
 
+        public static string GetServicesByPID(string processId)
+        {
+            if (string.IsNullOrEmpty(processId) || processId == "0") return string.Empty;
+
+            try
+            {
+                var query = new ObjectQuery($"SELECT Name FROM Win32_Service WHERE ProcessId = {processId}");
+                using (var searcher = new ManagementObjectSearcher(query))
+                {
+                    var serviceNames = searcher.Get().Cast<ManagementObject>()
+                                               .Select(s => s["Name"]?.ToString())
+                                               .Where(n => !string.IsNullOrEmpty(n));
+                    return string.Join(", ", serviceNames);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"WMI Query for PID failed: {ex.Message}");
+                return string.Empty;
+            }
+        }
+
         public static List<ProgramViewModel> ScanDirectoryForExecutables(string directoryPath, ICollection<string> existingRulePaths)
         {
             var programs = new List<ProgramViewModel>();
@@ -96,7 +122,7 @@ namespace MinimalFirewall
             var existingRuleSet = new HashSet<string>(existingRulePaths, StringComparer.OrdinalIgnoreCase);
             try
             {
-                var exeFiles = Directory.GetFiles(directoryPath, "*.exe", SearchOption.AllDirectories);
+                var exeFiles = GetExecutablesInFolder(directoryPath, "*.exe");
                 foreach (var exe in exeFiles)
                 {
                     if (!existingRuleSet.Contains(exe))
@@ -106,10 +132,6 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch (UnauthorizedAccessException)
-            {
-                MessageBox.Show("Access denied to a subdirectory within '" + directoryPath + "'. Try running as administrator or choosing a different folder.", "Permission Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
             catch (Exception ex)
             {
                 MessageBox.Show("An error occurred while scanning: " + ex.Message, "Scanning Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -118,21 +140,32 @@ namespace MinimalFirewall
             return programs;
         }
 
-        public static List<string> GetExecutablesInFolder(string directoryPath)
+        public static List<string> GetExecutablesInFolder(string directoryPath, string exeName = null)
         {
-            var executables = new List<string>();
-            if (!Directory.Exists(directoryPath)) return executables;
+            var files = new List<string>();
+            string searchPattern = string.IsNullOrWhiteSpace(exeName) ? "*.exe" : exeName;
+            GetExecutablesInFolderRecursive(directoryPath, searchPattern, files);
+            return files;
+        }
 
+        private static void GetExecutablesInFolderRecursive(string directoryPath, string searchPattern, List<string> files)
+        {
             try
             {
-                executables.AddRange(Directory.GetFiles(directoryPath, "*.exe", SearchOption.AllDirectories));
+                files.AddRange(Directory.GetFiles(directoryPath, searchPattern));
+
+                foreach (var directory in Directory.GetDirectories(directoryPath))
+                {
+                    GetExecutablesInFolderRecursive(directory, searchPattern, files);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
             catch (Exception ex)
             {
-                MessageBox.Show("An error occurred while scanning the folder: " + ex.Message, "Scanning Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Diagnostics.Debug.WriteLine($"Error scanning folder {directoryPath}: {ex.Message}");
             }
-
-            return executables;
         }
     }
 }

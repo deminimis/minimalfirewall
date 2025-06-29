@@ -8,19 +8,31 @@ namespace MinimalFirewall
         public enum NotifierResult { Ignore, Allow, Block, AllowTemporary, CreateWildcard }
         public NotifierResult Result { get; private set; }
         public int Minutes { get; set; } = 5;
-        public string AppPath { get; }
-        public string AppName => Path.GetFileName(AppPath);
-        public string Direction { get; }
+
+        public PendingConnectionViewModel PendingConnection { get; }
+
+        public string AppPath => PendingConnection.AppPath;
+        public string Direction => PendingConnection.Direction;
+        public string AppNameWithServices
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(PendingConnection.ServiceName))
+                {
+                    return $"{PendingConnection.FileName}; {PendingConnection.ServiceName}";
+                }
+                return PendingConnection.FileName;
+            }
+        }
         public string AllowButtonText => "Allow " + Direction;
         public string BlockButtonText => "Block " + Direction;
 
-        public ConnectionNotifierWindow(string appPath, string direction, int defaultMinutes)
+        public ConnectionNotifierWindow(PendingConnectionViewModel pendingVm, int defaultMinutes)
         {
             InitializeComponent();
             Owner = Application.Current.MainWindow;
             Result = NotifierResult.Ignore;
-            AppPath = appPath;
-            Direction = direction;
+            PendingConnection = pendingVm;
             Minutes = defaultMinutes;
             DataContext = this;
         }
