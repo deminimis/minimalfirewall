@@ -58,7 +58,18 @@ namespace MinimalFirewall
 
                 var eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
 
-                if (_dataService.DoesRuleExist(appPath, eventDirection))
+                string serviceName = GetValueFromXml(xmlContent, "ServiceName");
+                if (appPath.EndsWith("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    string pid = GetValueFromXml(xmlContent, "ProcessID");
+                    string servicesInProcess = SystemDiscoveryService.GetServicesByPID(pid);
+                    if (!string.IsNullOrEmpty(servicesInProcess))
+                    {
+                        serviceName = servicesInProcess;
+                    }
+                }
+
+                if (_dataService.DoesRuleExist(appPath, eventDirection, serviceName))
                 {
                     return;
                 }
@@ -76,7 +87,8 @@ namespace MinimalFirewall
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
-                    Direction = eventDirection
+                    Direction = eventDirection,
+                    ServiceName = serviceName
                 };
                 PendingConnectionDetected?.Invoke(pendingVm);
             }

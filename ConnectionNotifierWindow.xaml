@@ -30,7 +30,7 @@
                 <Run Text=" connection."/>
             </TextBlock>
 
-            <TextBlock Grid.Row="1" Text="{Binding AppName, Mode=OneWay}" TextWrapping="Wrap" Margin="0,15,0,0" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource App.Text.Default}" />
+            <TextBlock Grid.Row="1" Text="{Binding AppNameWithServices, Mode=OneWay}" TextWrapping="Wrap" Margin="0,15,0,0" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource App.Text.Default}" />
             <TextBlock Grid.Row="2" TextWrapping="Wrap" Margin="0,5,0,0" MaxWidth="500">
                 <TextBlock.Resources>
                     <Style TargetType="Run">

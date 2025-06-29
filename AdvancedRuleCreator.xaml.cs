@@ -97,7 +97,7 @@ namespace MinimalFirewall
                 MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
             {
-                RuleCommand = $"Get-NetFirewallRule -Group '{MFWConstants.MainRuleGroup}', '{MFWConstants.WildcardRuleGroup}' | Remove-NetFirewallRule";
+                RuleCommand = $"Get-NetFirewallRule -Group '{MFWConstants.MainRuleGroup}', '{MFWConstants.WildcardRuleGroup}' -ErrorAction SilentlyContinue | Remove-NetFirewallRule";
                 DialogResult = true;
             }
         }

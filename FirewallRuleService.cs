@@ -65,7 +65,6 @@ namespace MinimalFirewall
             }
             catch (Exception ex)
             {
-                // This block now only logs the error to a file for the end-user.
                 try
                 {
                     string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "crash_log.txt");
@@ -78,7 +77,6 @@ namespace MinimalFirewall
                 }
                 catch
                 {
-                    // If logging fails, do nothing to avoid a crash loop.
                 }
             }
 
@@ -91,6 +89,35 @@ namespace MinimalFirewall
             var pathSet = new HashSet<string>(appPaths, StringComparer.OrdinalIgnoreCase);
             var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
                 .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName) && pathSet.Contains(r.ApplicationName))
+                .Select(r => r.Name)
+                .ToList();
+            foreach (var ruleName in rulesToRemove)
+            {
+                try { _firewallPolicy.Rules.Remove(ruleName); } catch { /* Ignore errors */ }
+            }
+        }
+
+        public void DeleteRuleByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        {
+            if (_firewallPolicy == null || string.IsNullOrEmpty(appPath)) return;
+            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
+                .Where(r => r != null &&
+                            appPath.Equals(r.ApplicationName, StringComparison.OrdinalIgnoreCase) &&
+                            r.Direction == direction)
+                .Select(r => r.Name)
+                .ToList();
+
+            foreach (var ruleName in rulesToRemove)
+            {
+                try { _firewallPolicy.Rules.Remove(ruleName); } catch { /* Ignore errors */ }
+            }
+        }
+
+        public void DeleteRulesByServiceName(string serviceName)
+        {
+            if (_firewallPolicy == null || string.IsNullOrEmpty(serviceName)) return;
+            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule2>()
+                .Where(r => r != null && serviceName.Equals(r.serviceName, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Name)
                 .ToList();
             foreach (var ruleName in rulesToRemove)

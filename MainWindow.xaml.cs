@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Forms;
+using System.Drawing;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shell;
 
@@ -352,7 +354,7 @@ namespace MinimalFirewall
         {
             if (DataContext is MainViewModel vm)
             {
-                await vm.LoadForeignRulesOnDemandAsync(true);
+                await vm.RescanForeignRulesAsync();
             }
         }
 

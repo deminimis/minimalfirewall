@@ -6,6 +6,7 @@ namespace MinimalFirewall
     public partial class WildcardCreatorWindow : Window
     {
         public string FolderPath { get; private set; }
+        public string ExeName { get; private set; }
         public string SelectedAction { get; private set; }
 
         public WildcardCreatorWindow()
@@ -31,6 +32,8 @@ namespace MinimalFirewall
             }
 
             FolderPath = FolderPathTextBox.Text;
+            ExeName = ExeNameTextBox.Text;
+
             if (AllowOutboundRadio.IsChecked == true) SelectedAction = "Allow (Outbound)";
             else if (AllowInboundRadio.IsChecked == true) SelectedAction = "Allow (Inbound)";
             else if (BlockOutboundRadio.IsChecked == true) SelectedAction = "Block (Outbound)";

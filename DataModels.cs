@@ -11,6 +11,7 @@ namespace MinimalFirewall
     public class WildcardRule
     {
         public string FolderPath { get; set; }
+        public string ExeName { get; set; }
         public string Action { get; set; }
     }
 
@@ -41,6 +42,7 @@ namespace MinimalFirewall
         public string AppPath { get; set; }
         public string FileName { get { return Path.GetFileName(AppPath); } }
         public string Direction { get; set; }
+        public string ServiceName { get; set; }
     }
 
     public class ProgramViewModel

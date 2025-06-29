@@ -4,13 +4,15 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Create Wildcard Rule" Height="280" Width="500"
+        Title="Create Wildcard Rule" Height="340" Width="500"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent">
 
     <Border BorderBrush="{DynamicResource App.Border.Default}" BorderThickness="1" Background="{DynamicResource App.Window.Background}">
         <Grid Margin="15">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -27,7 +29,10 @@
                 <Button Grid.Column="1" Content="Browse..." Click="BrowseButton_Click" Margin="5,0,0,0"/>
             </Grid>
 
-            <GroupBox Grid.Row="2" Header="Action" Margin="0,15,0,0">
+            <Label Grid.Row="2" Content="Optional .exe Name:" FontWeight="Bold" Margin="0,10,0,0"/>
+            <TextBox Grid.Row="3" x:Name="ExeNameTextBox" VerticalAlignment="Center" Margin="0,5,0,0" ToolTip="e.g., svchost.exe (leave blank to apply to all executables in the folder)"/>
+
+            <GroupBox Grid.Row="4" Header="Action" Margin="0,15,0,0">
                 <StackPanel VerticalAlignment="Center">
                     <RadioButton x:Name="AllowOutboundRadio" Content="Allow (Outbound)" IsChecked="True" Margin="5"/>
                     <RadioButton x:Name="AllowInboundRadio" Content="Allow (Inbound)" Margin="5"/>
@@ -36,7 +41,7 @@
                 </StackPanel>
             </GroupBox>
 
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
                 <Button Content="OK" Width="80" IsDefault="True" Click="OkButton_Click" Margin="5"/>
                 <Button Content="Cancel" Width="80" IsCancel="True" Margin="5"/>
             </StackPanel>
