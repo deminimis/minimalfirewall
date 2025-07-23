@@ -68,6 +68,11 @@ Minimal Firewall offers a more secure and integrated approach by interacting dir
 
 ![Advanced](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095821.png)
 
+## FAQ
+
+1. Do I need to keep the app turned on?
+   * No. Once you turn the lock on, you can completely close the app and the lock will still be in place. After you have used it a few days and accepted/blocked what you need, you probably don't need to have it on unless you have trouble connecting to a new app you haven't used since having it on before. 
+
 ## Security by Default
 
 By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing critical security components, unlike WFP-based tools that inject code into the network stack or otherwise bypass the standard firewall arbitration logic and group policy enforcement, with potential brittle or buggy logic.
