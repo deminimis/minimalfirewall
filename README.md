@@ -55,7 +55,7 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 |**Firewall Change Auditing**|✅|❌|❌|❌|
 |**Wildcards**|✅|❌|❌|✅|
 |**Open Source**|✅|✅|✅|✅|
-|**Avoids low-level filters**||✅|✅|❌|❌|
+|**Avoids low-level filters**|✅|✅|❌|❌|
 
 
 
