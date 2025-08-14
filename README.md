@@ -5,115 +5,117 @@
   </a>
 </h1>
 
-Minimal Firewall works in conjuncton with Windows Firewall to block all unknown connections by default, prompting you to create application based rules to mitigate malware, telemetry, and data leaks. Completely rid yourself of apps phoning home without your knowledge.
 
-
-**Note: the advanced rules are incomplete at the moment, please wait for v2.0, and in the meantime, create advanced rules within Windows Firewall itself**
+Minimal Firewall enhances the built-in Windows Firewall to block all unknown network connections by default, giving you complete control. It prompts you for action when an application tries to connect, allowing you to mitigate malware, stop unwanted telemetry, and prevent data leaks. With Minimal Firewall, no application "phones home" without your explicit permission.
 
 ### 💾 Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
 
 ## Core Features
 
-* **Lockdown Mode:** The core of Minimal Firewall. Enable this mode to block all network connections without Windows Firewall rules by default. No program connects without your explicit say-so.
-
-* **Real-Time Connection Alerts:** Get instant notifications when a blocked program tries to connect, allowing you to make a decision on the spot. You can choose whether to have annoying pop-ups or quiet, in-application notifications. 
-
-* **Simple Rule Creation:** Allow or block any application permanently with a single click, or temporarily allow or block. 
-
-* **Wildcard Rules:** Easily manage programs that update frequently (like web browsers) by creating rules that apply to any version within a specific folder.
-
-* **UWP & Service Support:** Manage rules for modern Windows Store apps and background system services, not just traditional desktop programs.
-
-* **Light & Dark Themes:** A clean user interface that's easy on the eyes, day or night.
-
-* **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet itself, and all your rules and logs are stored locally on your machine.
-
-* **Portable:** Minimal Firewall can be copied as a portable app, and you can even delete all the rules created by it in the app.
-
+- **Lockdown Mode:** The heart of Minimal Firewall. When enabled, it configures the Windows Firewall to block all outbound connections that don't have an explicit "Allow" rule. No program connects without your say-so.
+    
+- **Real-Time Connection Alerts:** Get instant notifications when a blocked program attempts network access. Choose between interactive pop-ups for immediate action or silent, in-app alerts on the dashboard to review later.
+    
+- **Simple & Advanced Rule Creation:**
+    
+    - **Program Rules:** Allow or block applications with a single click.
+        
+    - **Advanced Rules:** Create detailed rules based on protocol (TCP/UDP/ICMP), local/remote ports, IP addresses, services, and network profiles (Domain, Private, Public).
+        
+- **Firewall Auditing:** The Audit tab shows you a log of firewall rules that were created, modified, or deleted by other applications, giving you visibility into background changes.
+    
+- **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time, showing which process is connected to which remote address.
+    
+- **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder.
+    
+- **UWP & Service Support:** Manage rules for modern Windows Store (UWP) apps and background system services, not just traditional desktop programs.
+    
+- **Light & Dark Themes:** A clean, modern user interface that's easy on the eyes, day or night.
+    
+- **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet, and stores all rules and logs locally on your machine.
+    
+- **Portable:** Minimal Firewall is a single executable that requires no installation. All rules are native to Windows Firewall, so no custom drivers or services are left behind.
+    
 
 ## User Guide
-The program is very intuitive, but for a concise user guide, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide). 
 
+The program is designed to be intuitive. For a concise user guide, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide).
 
 ## Why Use Minimal Firewall?
 
-Minimal Firewall offers a more secure and integrated approach by interacting directly with the native Windows Firewall, eliminating the need for risky system modifications. Unlike Fort Firewall, which compromises system security by requiring core isolation to be disabled—exposing the kernel to potential exploits—Minimal Firewall preserves critical OS protections. Compared to Simplewall, which uses low-level WFP filters and introduces a larger attack surface with potential for conflicts or misconfigurations, Minimal Firewall leverages the stability, auditing, and trusted enforcement of the built-in firewall engine. This mitigates potential risks from WFP, such as potential exploits from malformed network packets or bugs in custom packet-parsing code. And unlike Tinywall, which fails to alert users of new or unauthorized outbound connections, Minimal Firewall provides real-time visibility and control, maintaining both usability and security without sacrificing system integrity.
+Minimal Firewall offers a secure and integrated approach by managing the native Windows Firewall, eliminating the need for custom drivers or risky system modifications.
 
-|   |   |   |   |   |
-|---|---|---|---|---|
 |Feature|Minimal Firewall|TinyWall|SimpleWall|Fort Firewall|
-|**Size**|~1MB|~2MB|~1MB|~6MB|
+|---|---|---|---|---|
+|**Size**|~2MB|~2MB|~1MB|~6MB|
 |**Portability**|✅|❌|✅|✅|
-|**Core Isolation Revoked?**|No|No|No|Yes|
+|**Requires Core Isolation Off?**|No|No|No|Yes|
 |**Connection Alerts**|✅|❌|✅|✅|
-|**Open Source**|✅|✅|✅|✅|
+|**Advanced Rule Editor**|✅|❌|✅|✅|
+|**Firewall Change Auditing**|✅|❌|❌|❌|
 |**Wildcards**|✅|❌|❌|✅|
+|**Open Source**|✅|✅|✅|✅|
+|**Avoids low-level filters**||✅|✅|❌|❌|
+
+
 
 ## Screenshots
 
-### You can choose to view pending connections silently inside the app or as an annoying popup.
-![pending connection tab](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20094754.png)
+#### The Dashboard shows blocked connections for you to manage.
 
-![popup](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095134.png) 
+#### Or, choose to get interactive pop-up notifications.
 
-### Includes both light and dark themes
+#### Includes both light and dark themes.
 
-![light theme UWP](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095637.png)
-
-![light theme services](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095730.png) 
-
-### Easy or advanced rule creation
-
-![Easy](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095751.png)
-
-![Advanced](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-24%20095821.png)
+#### Create simple program rules or powerful, detailed advanced rules.
 
 ## FAQ
 
-1. Do I need to keep the app turned on?
-   * No. Once you turn the lock on, you can completely close the app and the lock will still be in place. After you have used it a few days and accepted/blocked what you need, you probably don't need to have it on unless you have trouble connecting to a new app you haven't used since having it on before. 
+1. **Do I need to keep the app running?**
+    
+    - No. Once you enable Lockdown Mode, the policy is set in the Windows Firewall itself. You can close Minimal Firewall completely, and the block-by-default rule will remain active. You only need to run the app when you want to authorize a new program or change a rule.
+        
 
 ## Security by Default
 
-By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing critical security components, unlike WFP-based tools that inject code into the network stack or otherwise bypass the standard firewall arbitration logic and group policy enforcement, with potential brittle or buggy logic.
+By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing the wheel. It uses documented Microsoft APIs to ensure stability and security.
 
-Using native Windows Firewall rules is more secure because they integrate directly with the Windows Filtering Platform at a privileged level, ensuring that traffic control policies are enforced consistently across the entire system—including during early boot stages and before third-party services initialize. These rules benefit from tight coupling with core Windows security subsystems (like IPsec, Group Policy, and service hardening), making them less susceptible to tampering or race conditions introduced by external tools. Additionally, Microsoft continuously hardens the native firewall with OS-level updates, offering a level of protection and stability that user-space or third-party implementations often lack.
-
-* No Service Required: Creates persistent Windows Firewall rules, eliminating the need for a background service.
-* No Network Activity: The application makes no network connections, ensuring no telemetry, update checks, or "phoning home."
-* Allows you to examine if another app silently adds a rule to Windows Firewall. 
+- **No Service Required:** Creates persistent Windows Firewall rules, eliminating the need for its own background service.
+    
+- **No Network Activity:** The application itself makes no network connections. No telemetry, no update checks, no "phoning home."
+    
+- **Auditing:** Allows you to see if other applications silently add or change rules in the Windows Firewall.
+    
 
 ### Secure Rule Creation
-* Follows Microsoft's [best practices](https://support.microsoft.com/en-us/windows/risks-of-allowing-apps-through-windows-firewall-654559af-3f54-3dcf-349f-71ccd90bcc5c) for Windows Defender Firewall management, using application-based rules instead of risky port-based rules.
-* Rules are:
-  * Program-Specific: Tied to an executable path (e.g., C:\Path\To\program.exe) or a UWP app's Package Family Name (PFN).
-  * Dynamic Ports: Allows apps to use necessary ports only while running, closing them when the app terminates.
-  * Directional: Supports inbound or outbound control to enforce least privilege.
-* Prevents malicious programs from impersonating allowed apps, enhancing security.
-* Rules for Universal Windows Platform apps use secure Package Family Names (PFNs) to prevent bypass attempts.
 
-## Technical Notes
-Some system files in C:\Windows\System32 are owned by accounts like TrustedInstaller, limiting access even with admin privileges. 
+- Follows Microsoft's [best practices](https://support.microsoft.com/en-us/windows/risks-of-allowing-apps-through-windows-firewall-654559af-3f54-3dcf-349f-71ccd90bcc5c) for firewall management by favoring application-based rules over risky port-based rules.
+    
+- Rules are program-specific, tied to an executable's path or a UWP app's Package Family Name, preventing malicious programs from impersonating an allowed app on the same port.
+    
 
+## Technical Architecture
 
-## Architecture
+Minimal Firewall is a **Windows Forms** application written in **C#** on the **.NET 8** platform. It serves as a user-friendly management layer for the native **Windows Firewall with Advanced Security**.
 
+- **Core Interaction:** It uses the `NetFwTypeLib` COM Interop library to interact with the `INetFwPolicy2` interface, which is the standard API for managing Windows Firewall rules and policies.
+    
+- **Connection Alerting:** It listens for Event ID `5157` ("The Windows Filtering Platform has blocked a connection") in the Windows Security event log. This is a native, efficient way to detect blocked connection attempts without a custom driver.
+    
+- **Auditing:** It uses a `ManagementEventWatcher` (WMI) to monitor for real-time changes to the `MSFT_NetFirewallRule` class, allowing it to detect when other processes modify the firewall ruleset.
+    
+- **Live Traffic:** The live connection monitor uses the `GetExtendedTcpTable` function from `iphlpapi.dll` to retrieve a list of active TCP connections and their associated Process IDs.
+    
+- **No Drivers:** It does not use any custom kernel drivers, relying entirely on documented Windows APIs for maximum stability and security.
 
-Minimal Firewall is a WPF-based graphical user interface, written in C# against the .NET Framework 4.8, that serves as a robust management layer for the underlying Windows Filtering Platform (WFP). It does not use any custom kernel drivers, instead relying entirely on documented Windows APIs for maximum stability and security. Rule atomicity for multi-rule actions (e.g., "Allow All") is handled by deleting existing rules for a given application path before creating new ones, preventing rule conflicts.
-
-The application's core efficacy is derived from its implementation of a default-deny outbound policy on all active network profiles (NET_FW_PROFILE_TYPE2_). This is set via the INetFwPolicy2 COM interface. Rather than employing complex packet-filtering drivers, the application leverages the native capabilities of WFP's auditing feature. Firewall rules are not stored in a proprietary format but are materialized directly as INetFwRule2 objects via the NetFwTypeLib COM Interop library. This ensures native integration, performance, and visibility within the standard "Windows Defender Firewall with Advanced Security" console. 
-
-
+## Special Thanks
+For dark theme, Minimal Firewall uses a modified version of [Dark-Mode-Forms](https://github.com/BlueMystical/Dark-Mode-Forms). 
+    
 
 ## Contributing
 
-Contributions are welcome! Please submit issues or pull requests to the GitHub repository. If you have questions, feel free to submit an issue. 
-Ensure code adheres to the project's security and simplicity principles.
-
+Contributions are welcome! Please submit issues or pull requests to the GitHub repository. If you have questions, feel free to open an issue.
 
 ## License
 
-Minimal Firewall is licensed under the GNU Affero General Public License v3 (AGPL v3). For commercial or proprietary licensing, please contact me. 
-
-
-![Virus Total](https://github.com/deminimis/minimalfirewall/blob/main/assets/Screenshot%202025-06-25%20093921.png)
+Minimal Firewall is licensed under the GNU Affero General Public License v3 (AGPL v3). For commercial or proprietary licensing, please contact me.
