@@ -61,6 +61,13 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 ## Screenshots
 
+![dashboard](https://github.com/deminimis/minimalfirewall/blob/main/assets/dashboard1.png)
+![rulees](https://github.com/deminimis/minimalfirewall/blob/main/assets/rules.png)
+![lighttheme](https://github.com/deminimis/minimalfirewall/blob/main/assets/lighttheme.png)
+![dashboard and poup](https://github.com/deminimis/minimalfirewall/blob/main/assets/dashboard2.png)
+
+
+
 #### The Dashboard shows blocked connections for you to manage.
 
 #### Or, choose to get interactive pop-up notifications.
