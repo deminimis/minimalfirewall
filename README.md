@@ -80,7 +80,7 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 1. **Do I need to keep the app running?**
     
-    - No. Once you enable Lockdown Mode, the policy is set in the Windows Firewall itself. You can close Minimal Firewall completely, and the block-by-default rule will remain active. You only need to run the app when you want to authorize a new program or change a rule.
+    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again. 
         
 
 ## Security by Default
