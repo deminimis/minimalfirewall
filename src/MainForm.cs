@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using System.IO;
 
 namespace MinimalFirewall
 {
@@ -34,6 +35,8 @@ namespace MinimalFirewall
         private readonly StartupService _startupService;
         private readonly RuleCacheService _ruleCacheService;
         private readonly FirewallGroupManager _groupManager;
+        private readonly IconService _iconService;
+        private readonly PublisherWhitelistService _whitelistService;
         private readonly List<PendingConnectionViewModel> _pendingConnections = [];
         private readonly Queue<PendingConnectionViewModel> _popupQueue = new();
         private volatile bool _isPopupVisible = false;
@@ -119,6 +122,8 @@ namespace MinimalFirewall
             _startupService = new StartupService();
             _ruleCacheService = new RuleCacheService();
             _groupManager = new FirewallGroupManager(_firewallPolicy);
+            _iconService = new IconService { ImageList = this.appIconList };
+            _whitelistService = new PublisherWhitelistService();
             versionLabel.Text = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _firewallRuleService = new FirewallRuleService(_firewallPolicy);
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
@@ -126,14 +131,19 @@ namespace MinimalFirewall
             _foreignRuleTracker = new ForeignRuleTracker();
             _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, _ruleCacheService);
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
-            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, IsLockedDown, (msg) => _activityLogger.LogDebug(msg));
-            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService);
             _trafficMonitorViewModel = new TrafficMonitorViewModel();
+
+            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
+            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService);
+            _eventListenerService.ActionsService = _actionsService;
 
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
             _trafficMonitorViewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
 
+            rulesListView.SmallImageList = this.appIconList;
+            dashboardListView.SmallImageList = this.appIconList;
+            liveConnectionsListView.SmallImageList = this.appIconList;
 
             SetupTrayIcon();
         }
@@ -177,7 +187,6 @@ namespace MinimalFirewall
             lockdownButton.BackColor = Color.Transparent;
 
             SetupAppIcons();
-
             await _ruleCacheService.LoadCacheFromDiskAsync();
             if (IsLockedDown())
             {
@@ -199,6 +208,7 @@ namespace MinimalFirewall
             SetupAutoRefreshTimer();
             await DisplayCurrentTabData();
             UpdateThemeAndColors();
+            UpdateIconColumnVisibility();
 
             ApplyLastWindowState();
 
@@ -210,8 +220,6 @@ namespace MinimalFirewall
         private void SetupAppIcons()
         {
             var assembly = Assembly.GetExecutingAssembly();
-
-            // Load the .ico file from embedded resources
             using (var stream = assembly.GetManifestResourceStream("MinimalFirewall.logo.ico"))
             {
                 if (stream != null)
@@ -247,8 +255,6 @@ namespace MinimalFirewall
             lockdownButton.Size = new Size(40, 40);
             rescanButton.AutoSize = false;
             rescanButton.Size = new Size(40, 40);
-
-            // Load the .png file from embedded resources
             using (var stream = assembly.GetManifestResourceStream("MinimalFirewall.logo.png"))
             {
                 if (stream != null)
@@ -308,6 +314,21 @@ namespace MinimalFirewall
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;
             autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
             trafficMonitorSwitch.Checked = _appSettings.IsTrafficMonitorEnabled;
+            showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
+
+            switch (_appSettings.AutoAllowSignedApps)
+            {
+                case AutoAllowSignedAppsOption.Disabled:
+                    autoAllowDisabledRadio.Checked = true;
+                    break;
+                case AutoAllowSignedAppsOption.AllowSystemTrusted:
+                    autoAllowSystemTrustedRadio.Checked = true;
+                    break;
+                case AutoAllowSignedAppsOption.AllowWhitelisted:
+                    autoAllowWhitelistedRadio.Checked = true;
+                    break;
+            }
+            managePublishersButton.Enabled = autoAllowWhitelistedRadio.Checked;
         }
 
         private void SaveSettingsFromUI()
@@ -322,7 +343,11 @@ namespace MinimalFirewall
                 _appSettings.AutoRefreshIntervalMinutes = val;
             }
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
+            _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
 
+            if (autoAllowDisabledRadio.Checked) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.Disabled;
+            else if (autoAllowSystemTrustedRadio.Checked) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.AllowSystemTrusted;
+            else if (autoAllowWhitelistedRadio.Checked) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.AllowWhitelisted;
 
             _startupService.SetStartup(_appSettings.StartOnSystemStartup);
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
@@ -335,8 +360,26 @@ namespace MinimalFirewall
                 _trafficMonitorViewModel.StopMonitoring();
             }
 
-
+            UpdateIconColumnVisibility();
             _appSettings.Save();
+        }
+
+        private void AutoAllow_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton rb && rb.Checked)
+            {
+                if (rb == autoAllowDisabledRadio) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.Disabled;
+                else if (rb == autoAllowSystemTrustedRadio) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.AllowSystemTrusted;
+                else if (rb == autoAllowWhitelistedRadio) _appSettings.AutoAllowSignedApps = AutoAllowSignedAppsOption.AllowWhitelisted;
+
+                managePublishersButton.Enabled = autoAllowWhitelistedRadio.Checked;
+            }
+        }
+
+        private void managePublishersButton_Click(object sender, EventArgs e)
+        {
+            using var form = new ManagePublishersForm(_whitelistService);
+            form.ShowDialog(this);
         }
 
         private void PopupsSwitch_CheckedChanged(object sender, EventArgs e)
@@ -361,6 +404,20 @@ namespace MinimalFirewall
             {
                 _trafficMonitorViewModel.StopMonitoring();
             }
+        }
+
+        private void ShowAppIconsSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
+            UpdateIconColumnVisibility();
+            DisplayCurrentTabData();
+        }
+
+        private void UpdateIconColumnVisibility()
+        {
+            advIconColumn.Width = _appSettings.ShowAppIcons ? 32 : 0;
+            dashIconColumn.Width = _appSettings.ShowAppIcons ? 32 : 0;
+            liveIconColumn.Width = _appSettings.ShowAppIcons ? 32 : 0;
         }
         #endregion
 
@@ -411,6 +468,15 @@ namespace MinimalFirewall
                 }
             }
 
+            bool alreadyPending = _pendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase)) ||
+                                  _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase));
+
+            if (alreadyPending)
+            {
+                _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath}");
+                return;
+            }
+
             if (_appSettings.IsPopupsEnabled)
             {
                 lock (_popupLock)
@@ -421,10 +487,6 @@ namespace MinimalFirewall
             }
             else
             {
-                if (_pendingConnections.Any(p => p.AppPath == pending.AppPath && p.Direction == pending.Direction))
-                {
-                    return;
-                }
                 _pendingConnections.Add(pending);
                 ApplyDashboardSearchFilter();
             }
@@ -433,7 +495,6 @@ namespace MinimalFirewall
         private void ActiveConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (liveConnectionsListView is null || !this.Visible || IsDisposed) return;
-
             if (liveConnectionsListView.InvokeRequired)
             {
                 liveConnectionsListView.Invoke(new Action(() => ActiveConnections_CollectionChanged(sender, e)));
@@ -441,7 +502,6 @@ namespace MinimalFirewall
             }
 
             liveConnectionsListView.BeginUpdate();
-
             if (e.Action == NotifyCollectionChangedAction.Reset)
             {
                 liveConnectionsListView.Items.Clear();
@@ -464,10 +524,16 @@ namespace MinimalFirewall
             {
                 foreach (TcpConnectionViewModel newVm in e.NewItems)
                 {
-                    var newItem = new ListViewItem(new[] { newVm.ProcessName, newVm.RemoteAddress, newVm.RemotePort.ToString() })
+                    int iconIndex = -1;
+                    if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(newVm.ProcessPath))
+                    {
+                        iconIndex = _iconService.GetIconIndex(newVm.ProcessPath);
+                    }
+                    var newItem = new ListViewItem("", iconIndex)
                     {
                         Tag = newVm
                     };
+                    newItem.SubItems.AddRange(new[] { newVm.ProcessName, newVm.RemoteAddress, newVm.RemotePort.ToString() });
                     liveConnectionsListView.Items.Add(newItem);
                 }
             }
@@ -498,13 +564,36 @@ namespace MinimalFirewall
             if (sender is not NotifierForm notifier) return;
             notifier.FormClosed -= Notifier_FormClosed;
 
-            string decision = notifier.Result.ToString();
             var pending = notifier.PendingConnection;
-
-            _actionsService.ProcessPendingConnection(pending, decision);
-            if (decision != "Ignore")
+            var result = notifier.Result;
+            if (result == NotifierForm.NotifierResult.CreateWildcard)
             {
-                _ = ForceDataRefreshAsync();
+                _actionsService.ProcessPendingConnection(pending, "Ignore");
+                this.BeginInvoke(new Action(async () =>
+                {
+                    using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
+                    if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        await ForceDataRefreshAsync(showStatus: false);
+                    }
+                }));
+            }
+            else
+            {
+                string decision = result.ToString();
+                if (result == NotifierForm.NotifierResult.TemporaryAllow)
+                {
+                    _actionsService.ProcessPendingConnection(pending, "TemporaryAllow", notifier.TemporaryDuration);
+                }
+                else
+                {
+                    _actionsService.ProcessPendingConnection(pending, decision, trustPublisher: notifier.TrustPublisher);
+                }
+
+                if (decision != "Ignore")
+                {
+                    _ = ForceDataRefreshAsync(showStatus: false);
+                }
             }
 
             lock (_popupLock)
@@ -554,7 +643,7 @@ namespace MinimalFirewall
                     {
                         this.Invoke(new Action(async () =>
                         {
-                            if (this.Visible && mainTabControl.SelectedTab?.Name is "rulesTabPage")
+                            if (this.Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
                             {
                                 await ForceDataRefreshAsync();
                             }
@@ -617,7 +706,7 @@ namespace MinimalFirewall
             }
             _eventListenerService.Start();
             _firewallSentryService.Start();
-            SetupAutoRefreshTimer(); // Restart the timer when the window is shown
+            SetupAutoRefreshTimer();
             RefreshOnRestoreAsync(sender, e);
         }
 
@@ -677,13 +766,14 @@ namespace MinimalFirewall
         {
             _firewallSentryService.Stop();
             _trafficMonitorViewModel.StopMonitoring();
-            _autoRefreshTimer?.Dispose(); // Stop the timer when closing to tray
+            _autoRefreshTimer?.Dispose();
 
             _pendingConnections.Clear();
             rulesListView.Items.Clear();
             dashboardListView.Items.Clear();
             systemChangesListView.Items.Clear();
             liveConnectionsListView.Items.Clear();
+            _iconService.ClearCache();
 
             SystemDiscoveryService.ClearCache();
             _firewallSentryService.ClearBaseline();
@@ -765,7 +855,7 @@ namespace MinimalFirewall
 
         private async Task DisplayRulesAsync()
         {
-            var rules = _dataService.LoadAdvancedRules();
+            var rules = _dataService.GetAggregatedAdvancedRules();
             ApplyRulesFilters(rules);
             await Task.CompletedTask;
         }
@@ -773,7 +863,6 @@ namespace MinimalFirewall
         private async Task DisplayGroupsAsync()
         {
             if (groupsListView is null) return;
-
             var groups = await Task.Run(() => _groupManager.GetAllGroups());
             groupsListView.BeginUpdate();
             groupsListView.Items.Clear();
@@ -788,12 +877,12 @@ namespace MinimalFirewall
             groupsListView.EndUpdate();
         }
 
-        private void ApplyRulesFilters(List<AdvancedRuleViewModel> rules)
+        private void ApplyRulesFilters(List<AggregatedRuleViewModel> rules)
         {
             var enabledTypes = new HashSet<RuleType> { RuleType.Program };
             if (advFilterServiceCheck.Checked) enabledTypes.Add(RuleType.Service);
             if (advFilterUwpCheck.Checked) enabledTypes.Add(RuleType.UWP);
-            if (advFilterWildcardCheck.Checked) enabledTypes.Add(RuleType.Advanced);
+            if (advFilterWildcardCheck.Checked) enabledTypes.Add(RuleType.Wildcard);
             if (advFilterAdvancedCheck.Checked) enabledTypes.Add(RuleType.Advanced);
 
             rulesListView.BeginUpdate();
@@ -801,15 +890,6 @@ namespace MinimalFirewall
             if (enabledTypes.Count > 0)
             {
                 var filteredRules = rules.Where(r => enabledTypes.Contains(r.Type));
-                if (!advFilterAdvancedCheck.Checked)
-                {
-                    filteredRules = filteredRules.Where(r => r.ProtocolName == "Any" &&
-                                                             r.LocalPorts.Count == 0 &&
-                                                             r.RemotePorts.Count == 0 &&
-                                                             r.LocalAddresses.Count == 0 &&
-                                                             r.RemoteAddresses.Count == 0);
-                }
-
                 if (!string.IsNullOrWhiteSpace(rulesSearchTextBox.Text))
                 {
                     filteredRules = filteredRules.Where(r =>
@@ -818,9 +898,16 @@ namespace MinimalFirewall
                         r.ApplicationName.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase));
                 }
 
-                var listItems = filteredRules.Select(rule =>
+                foreach (var rule in filteredRules)
                 {
-                    var item = new ListViewItem(new[]
+                    int iconIndex = -1;
+                    if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(rule.ApplicationName))
+                    {
+                        iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
+                    }
+
+                    var item = new ListViewItem("", iconIndex) { Tag = rule };
+                    item.SubItems.AddRange(new[]
                     {
                         rule.Name,
                         rule.IsEnabled.ToString(),
@@ -836,14 +923,9 @@ namespace MinimalFirewall
                         rule.Profiles,
                         rule.Grouping,
                         rule.Description
-                    })
-                    {
-                        Tag = rule
-                    };
-                    return item;
-                }).ToArray();
-
-                rulesListView.Items.AddRange(listItems);
+                    });
+                    rulesListView.Items.Add(item);
+                }
             }
             rulesListView.EndUpdate();
         }
@@ -855,11 +937,17 @@ namespace MinimalFirewall
             dashboardListView.BeginUpdate();
             dashboardListView.Items.Clear();
 
-            var listItems = itemsToShow.Select(pending => new ListViewItem(new[] { "", pending.FileName, pending.ServiceName, pending.Direction, pending.AppPath })
+            foreach (var pending in itemsToShow)
             {
-                Tag = pending
-            }).ToArray();
-            dashboardListView.Items.AddRange(listItems);
+                int iconIndex = -1;
+                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(pending.AppPath))
+                {
+                    iconIndex = _iconService.GetIconIndex(pending.AppPath);
+                }
+                var item = new ListViewItem("", iconIndex) { Tag = pending };
+                item.SubItems.AddRange(new[] { "", pending.FileName, pending.ServiceName, pending.Direction, pending.AppPath });
+                dashboardListView.Items.Add(item);
+            }
             dashboardListView.EndUpdate();
         }
 
@@ -1112,7 +1200,6 @@ namespace MinimalFirewall
 
         private void RulesListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
         {
-            e.DrawDefault = false;
             Color backColor;
             Color foreColor;
 
@@ -1159,6 +1246,18 @@ namespace MinimalFirewall
             {
                 using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
                 e.Graphics.FillRectangle(overlayBrush, e.Bounds);
+            }
+
+            if (e.ColumnIndex == 0)
+            {
+                if (e.Item.ImageIndex != -1 && e.Item.ImageList != null)
+                {
+                    Image img = e.Item.ImageList.Images[e.Item.ImageIndex];
+                    int imgX = e.Bounds.Left + (e.Bounds.Width - img.Width) / 2;
+                    int imgY = e.Bounds.Top + (e.Bounds.Height - img.Height) / 2;
+                    e.Graphics.DrawImage(img, imgX, imgY);
+                }
+                return;
             }
 
             TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.PathEllipsis;
@@ -1252,7 +1351,20 @@ namespace MinimalFirewall
                 e.Graphics.FillRectangle(overlayBrush, e.Bounds);
             }
 
-            if (e.ColumnIndex == 0)
+            int buttonColumnIndex = (e.Item.ListView == dashboardListView) ? 1 : 0;
+            int iconColumnIndex = 0;
+
+            if (e.ColumnIndex == iconColumnIndex && e.Item.ListView == dashboardListView)
+            {
+                if (e.Item.ImageIndex != -1 && e.Item.ImageList != null)
+                {
+                    Image img = e.Item.ImageList.Images[e.Item.ImageIndex];
+                    int imgX = e.Bounds.Left + (e.Bounds.Width - img.Width) / 2;
+                    int imgY = e.Bounds.Top + (e.Bounds.Height - img.Height) / 2;
+                    e.Graphics.DrawImage(img, imgX, imgY);
+                }
+            }
+            else if (e.ColumnIndex == buttonColumnIndex)
             {
                 int buttonWidth = 70;
                 int buttonHeight = 22;
@@ -1310,6 +1422,15 @@ namespace MinimalFirewall
 
         private async void DashboardListView_MouseClick(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Right)
+            {
+                if (dashboardListView.FocusedItem != null && dashboardListView.FocusedItem.Bounds.Contains(e.Location))
+                {
+                    dashboardContextMenu.Show(Cursor.Position);
+                }
+                return;
+            }
+
             if (e.Button != MouseButtons.Left) return;
             var hitTest = dashboardListView.HitTest(e.Location);
             if (hitTest.Item?.Tag is not PendingConnectionViewModel pending || hitTest.SubItem == null)
@@ -1317,7 +1438,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (hitTest.Item.SubItems.IndexOf(hitTest.SubItem) == 0)
+            if (hitTest.Item.SubItems.IndexOf(hitTest.SubItem) == 1)
             {
                 int buttonWidth = 70;
                 int buttonHeight = 22;
@@ -1340,7 +1461,7 @@ namespace MinimalFirewall
                     ApplyDashboardSearchFilter();
                     if (decision != "Ignore")
                     {
-                        await ForceDataRefreshAsync();
+                        await ForceDataRefreshAsync(showStatus: false);
                     }
                 }
             }
@@ -1352,7 +1473,7 @@ namespace MinimalFirewall
             var hitTest = dashboardListView.HitTest(e.Location);
             Rectangle? newHotBounds = null;
             ListViewItem? currentItem = hitTest.Item;
-            if (currentItem != null && hitTest.SubItem != null && currentItem.SubItems.IndexOf(hitTest.SubItem) == 0)
+            if (currentItem != null && hitTest.SubItem != null && currentItem.SubItems.IndexOf(hitTest.SubItem) == 1)
             {
                 int buttonWidth = 70;
                 int buttonHeight = 22;
@@ -1378,11 +1499,11 @@ namespace MinimalFirewall
 
                 if (oldHotItem != null && oldHotItem.ListView != null)
                 {
-                    dashboardListView.Invalidate(oldHotItem.SubItems[0].Bounds);
+                    dashboardListView.Invalidate(oldHotItem.SubItems[1].Bounds);
                 }
                 if (_hotDashboardItem != null)
                 {
-                    dashboardListView.Invalidate(_hotDashboardItem.SubItems[0].Bounds);
+                    dashboardListView.Invalidate(_hotDashboardItem.SubItems[1].Bounds);
                 }
             }
         }
@@ -1625,38 +1746,75 @@ namespace MinimalFirewall
             }
         }
 
-        private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
+        private async void ApplyRuleMenuItem_Click(object sender, EventArgs e)
         {
             if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesListView.SelectedItems.Count == 0) return;
             var items = rulesListView.SelectedItems.Cast<ListViewItem>()
-                .Select(i => i.Tag as AdvancedRuleViewModel)
+                .Select(i => i.Tag as AggregatedRuleViewModel)
                 .Where(r => r != null)
                 .Select(r => r!)
                 .ToList();
             if (items.Count > 0)
             {
-                ApplyRuleChangeToSelection(items, action);
+                foreach (var item in items)
+                {
+                    var firstRule = item.UnderlyingRules.FirstOrDefault();
+                    if (firstRule == null) continue;
+
+                    switch (firstRule.Type)
+                    {
+                        case RuleType.Program:
+                            _actionsService.ApplyApplicationRuleChange([firstRule.ApplicationName], action);
+                            break;
+                        case RuleType.Service:
+                            _actionsService.ApplyServiceRuleChange(firstRule.ServiceName, action);
+                            break;
+                        case RuleType.UWP:
+                            if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
+                            {
+                                var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
+                                var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
+                                _actionsService.ApplyUwpRuleChange([uwpApp], action);
+                            }
+                            break;
+                    }
+                }
+                await ForceDataRefreshAsync();
             }
         }
 
-        private void DeleteRuleMenuItem_Click(object sender, EventArgs e)
+        private async void DeleteRuleMenuItem_Click(object sender, EventArgs e)
         {
             if (rulesListView.SelectedItems.Count == 0) return;
             var items = rulesListView.SelectedItems.Cast<ListViewItem>()
-                .Select(i => i.Tag as AdvancedRuleViewModel)
+                .Select(i => i.Tag as AggregatedRuleViewModel)
                 .Where(r => r != null)
                 .Select(r => r!)
                 .ToList();
             if (items.Count > 0)
             {
-                DeleteRules(items);
+                var result = Messenger.MessageBox($"Are you sure you want to delete all underlying rules for the {items.Count} selected item(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result == DialogResult.No) return;
+
+                var ruleNamesToDelete = items.SelectMany(i => i.UnderlyingRules.Select(r => r.Name)).ToList();
+                if (ruleNamesToDelete.Count > 0)
+                {
+                    _actionsService.DeleteAdvancedRules(ruleNamesToDelete);
+                }
+                await ForceDataRefreshAsync();
             }
         }
 
         private void OpenFileLocationMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesListView.SelectedItems.Cast<ListViewItem>().FirstOrDefault()?.Tag is not AdvancedRuleViewModel rule) return;
-            if (string.IsNullOrEmpty(rule.ApplicationName) || !File.Exists(rule.ApplicationName)) return;
+            if (rulesListView.SelectedItems.Cast<ListViewItem>().FirstOrDefault()?.Tag is not AggregatedRuleViewModel aggRule) return;
+            var rule = aggRule.UnderlyingRules.FirstOrDefault();
+            if (rule is null || rule.Type != RuleType.Program) return;
+            if (string.IsNullOrEmpty(rule.ApplicationName) || !File.Exists(rule.ApplicationName))
+            {
+                Messenger.MessageBox("The file path for this application could not be found.", "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             try
             {
                 Process.Start("explorer.exe", $"/select, \"{rule.ApplicationName}\"");
@@ -1665,29 +1823,6 @@ namespace MinimalFirewall
             {
                 Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        public async void ApplyRuleChangeToSelection(List<AdvancedRuleViewModel> items, string action)
-        {
-            var appPaths = items.Where(i => !string.IsNullOrEmpty(i.ApplicationName)).Select(i => i.ApplicationName).Distinct().ToList();
-            if (appPaths.Count > 0)
-            {
-                _actionsService.ApplyApplicationRuleChange(appPaths, action);
-            }
-            await ForceDataRefreshAsync();
-        }
-
-        public async void DeleteRules(List<AdvancedRuleViewModel> items)
-        {
-            var result = Messenger.MessageBox($"Are you sure you want to delete all rules for {items.Count} selected item(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (result == DialogResult.No) return;
-
-            var ruleNames = items.Select(i => i.Name).ToList();
-            if (ruleNames.Count > 0)
-            {
-                _actionsService.DeleteAdvancedRules(ruleNames);
-            }
-            await ForceDataRefreshAsync();
         }
         #endregion
 
@@ -1702,6 +1837,51 @@ namespace MinimalFirewall
                 }
             }
         }
+
+        private void LiveConnectionsListView_DrawItem(object sender, DrawListViewItemEventArgs e)
+        {
+            e.DrawDefault = false;
+        }
+
+        private void LiveConnectionsListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
+        {
+            Color backColor;
+            Color foreColor;
+
+            if (e.Item.Selected)
+            {
+                backColor = e.Item.ListView.Focused ? SystemColors.Highlight : SystemColors.ControlDark;
+                foreColor = e.Item.ListView.Focused ? SystemColors.HighlightText : SystemColors.ControlText;
+            }
+            else
+            {
+                backColor = e.Item.ListView.BackColor;
+                foreColor = e.Item.ListView.ForeColor;
+            }
+
+            e.Graphics.FillRectangle(new SolidBrush(backColor), e.Bounds);
+            if (_hoveredItem == e.Item && !e.Item.Selected)
+            {
+                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                e.Graphics.FillRectangle(overlayBrush, e.Bounds);
+            }
+
+            if (e.ColumnIndex == 0)
+            {
+                if (e.Item.ImageIndex != -1 && e.Item.ImageList != null)
+                {
+                    Image img = e.Item.ImageList.Images[e.Item.ImageIndex];
+                    int imgX = e.Bounds.Left + (e.Bounds.Width - img.Width) / 2;
+                    int imgY = e.Bounds.Top + (e.Bounds.Height - img.Height) / 2;
+                    e.Graphics.DrawImage(img, imgX, imgY);
+                }
+                return;
+            }
+
+            TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.PathEllipsis;
+            TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.SubItem.Font, e.Bounds, foreColor, flags);
+        }
+
         private void KillProcessToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (liveConnectionsListView.SelectedItems.Count > 0 && liveConnectionsListView.SelectedItems[0].Tag is TcpConnectionViewModel vm)
@@ -1722,13 +1902,13 @@ namespace MinimalFirewall
                     Grouping = MFWConstants.MainRuleGroup,
                     Status = "Block",
                     Direction = Directions.Outgoing,
-                    Protocol = 6, // TCP
+                    Protocol = 6,
                     RemoteAddresses = [new(System.Net.IPAddress.Parse(vm.RemoteAddress))],
                     Profiles = "All",
                     Type = RuleType.Advanced
                 };
                 _actionsService.CreateAdvancedRule(rule, "All", "");
-                _ = ForceDataRefreshAsync();
+                _ = ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -1798,11 +1978,115 @@ namespace MinimalFirewall
                     break;
             }
 
-            listView.ListViewItemSorter = new ListViewItemComparer(sortColumn, sortOrder);
+            int columnToSort = e.Column;
+            if (listView == rulesListView && _appSettings.ShowAppIcons)
+            {
+                columnToSort = e.Column > 0 ? e.Column : 1;
+            }
+            if (listView == dashboardListView && _appSettings.ShowAppIcons)
+            {
+                columnToSort = e.Column > 1 ? e.Column : 2;
+            }
+            if (listView == liveConnectionsListView && _appSettings.ShowAppIcons)
+            {
+                columnToSort = e.Column > 0 ? e.Column : 1;
+            }
+
+            listView.ListViewItemSorter = new ListViewItemComparer(columnToSort, sortOrder);
             listView.Sort();
         }
         #endregion
 
+        #region Dashboard Context Menu Handlers
+        private void dashboardContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 && dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                bool isSigned = SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
+                allowAndTrustPublisherToolStripMenuItem.Visible = isSigned;
+            }
+            else
+            {
+                allowAndTrustPublisherToolStripMenuItem.Visible = false;
+            }
+        }
+
+        private void TempAllowMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending &&
+                sender is ToolStripMenuItem menuItem &&
+                int.TryParse(menuItem.Tag?.ToString(), out int minutes))
+            {
+                _actionsService.ProcessPendingConnection(pending, "TemporaryAllow", TimeSpan.FromMinutes(minutes));
+                _pendingConnections.Remove(pending);
+                ApplyDashboardSearchFilter();
+                _ = ForceDataRefreshAsync(showStatus: false);
+            }
+        }
+
+        private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                _actionsService.ProcessPendingConnection(pending, "Allow");
+                _pendingConnections.Remove(pending);
+                ApplyDashboardSearchFilter();
+                _ = ForceDataRefreshAsync(showStatus: false);
+            }
+        }
+
+        private void AllowAndTrustPublisherToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                _actionsService.ProcessPendingConnection(pending, "Allow", trustPublisher: true);
+                _pendingConnections.Remove(pending);
+                ApplyDashboardSearchFilter();
+                _ = ForceDataRefreshAsync(showStatus: false);
+            }
+        }
+
+        private void PermanentBlockToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                _actionsService.ProcessPendingConnection(pending, "Block");
+                _pendingConnections.Remove(pending);
+                ApplyDashboardSearchFilter();
+                _ = ForceDataRefreshAsync(showStatus: false);
+            }
+        }
+
+        private void IgnoreToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                _actionsService.ProcessPendingConnection(pending, "Ignore");
+                _pendingConnections.Remove(pending);
+                ApplyDashboardSearchFilter();
+            }
+        }
+
+        private async void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardListView.SelectedItems.Count > 0 &&
+                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            {
+                using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
+                if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    _pendingConnections.Remove(pending);
+                    ApplyDashboardSearchFilter();
+                    await ForceDataRefreshAsync(showStatus: false);
+                }
+            }
+        }
+        #endregion
 
         private static Image RecolorImage(Image sourceImage, Color newColor)
         {

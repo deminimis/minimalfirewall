@@ -25,10 +25,19 @@
     <Compile Update="FlatTabControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="IconService.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="ManagePublishersForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="NotifierForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="SignatureValidationService.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="StatusForm.cs">
@@ -37,5 +46,13 @@
     <Compile Update="WildcardCreatorForm.cs">
       <SubType>Form</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="IconService.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Update="ManagePublishersForm.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

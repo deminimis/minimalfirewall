@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿// WildcardCreatorForm.cs
+using System.IO;
 using DarkModeForms;
 
 namespace MinimalFirewall
@@ -14,6 +15,17 @@ namespace MinimalFirewall
             InitializeComponent();
             dm = new DarkModeCS(this);
             _wildcardRuleService = wildcardRuleService;
+        }
+
+        public WildcardCreatorForm(WildcardRuleService wildcardRuleService, string initialAppPath) : this(wildcardRuleService)
+        {
+            string? dirPath = Path.GetDirectoryName(initialAppPath);
+            if (!string.IsNullOrEmpty(dirPath) && Directory.Exists(dirPath))
+            {
+                _folderPath = dirPath;
+                folderPathTextBox.Text = _folderPath;
+                exeNameTextBox.Text = Path.GetFileName(initialAppPath);
+            }
         }
 
         private void browseButton_Click(object sender, EventArgs e)

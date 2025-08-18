@@ -24,11 +24,31 @@ namespace MinimalFirewall
         public string Status { get; set; } = string.Empty;
         public RuleType Type { get; set; }
 
+        [JsonIgnore]
+        public string RuleTarget
+        {
+            get
+            {
+                return Type switch
+                {
+                    RuleType.Program => Path,
+                    RuleType.Service => Name,
+                    RuleType.UWP => UwpPackageFamilyName ?? string.Empty,
+                    _ => string.Empty
+                };
+            }
+        }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? UwpPackageFamilyName { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public WildcardRule? WildcardDefinition { get; set; }
+    }
+
+    public class AggregatedRuleViewModel : AdvancedRuleViewModel
+    {
+        public List<AdvancedRuleViewModel> UnderlyingRules { get; set; } = [];
     }
 
     public class AdvancedRuleViewModel

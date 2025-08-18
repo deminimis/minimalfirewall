@@ -19,6 +19,7 @@ namespace MinimalFirewall
         private List<AdvancedRuleViewModel> _serviceRulesCache = [];
 
         private delegate bool TryParseHandler<T>(string value, [NotNullWhen(true)] out T? result);
+
         public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService, RuleCacheService ruleCacheService)
         {
             _firewallService = firewallService;
@@ -34,7 +35,7 @@ namespace MinimalFirewall
             }
 
             if (_appRulesCache.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase) &&
-                                       (r.Direction == dirEnum)))
+                                       r.Direction.HasFlag(dirEnum)))
             {
                 return true;
             }
@@ -45,7 +46,7 @@ namespace MinimalFirewall
                 foreach (var sName in serviceNames)
                 {
                     if (_serviceRulesCache.Any(r => r.ServiceName.Equals(sName, StringComparison.OrdinalIgnoreCase) &&
-                                                  (r.Direction == dirEnum)))
+                                                  r.Direction.HasFlag(dirEnum)))
                     {
                         return true;
                     }
@@ -58,6 +59,55 @@ namespace MinimalFirewall
         public List<AdvancedRuleViewModel> LoadAdvancedRules()
         {
             return _ruleCacheService.GetAdvancedRules();
+        }
+
+        public List<AggregatedRuleViewModel> GetAggregatedAdvancedRules()
+        {
+            var advancedRules = LoadAdvancedRules();
+            var aggregatedRules = new List<AggregatedRuleViewModel>();
+
+            var groups = advancedRules.GroupBy(r =>
+            {
+                var name = r.Name ?? string.Empty;
+                var baseName = name.Replace(" - TCP", "").Replace(" - UDP", "");
+                return new { BaseName = baseName, r.ApplicationName, r.ServiceName, r.Direction, r.Status, r.Type };
+            });
+
+            foreach (var group in groups)
+            {
+                var firstRule = group.First();
+                var protocols = group.Select(r => r.ProtocolName).Distinct().OrderBy(p => p).ToList();
+                var protocolString = string.Join(", ", protocols);
+
+                if (protocols.Contains("TCP") && protocols.Contains("UDP"))
+                {
+                    protocolString = "TCP, UDP";
+                }
+
+                var aggregatedRule = new AggregatedRuleViewModel
+                {
+                    Name = group.Key.BaseName,
+                    IsEnabled = group.All(r => r.IsEnabled),
+                    Status = firstRule.Status,
+                    Direction = firstRule.Direction,
+                    ProtocolName = protocolString,
+                    LocalPorts = firstRule.LocalPorts,
+                    RemotePorts = firstRule.RemotePorts,
+                    LocalAddresses = firstRule.LocalAddresses,
+                    RemoteAddresses = firstRule.RemoteAddresses,
+                    ApplicationName = firstRule.ApplicationName,
+                    ServiceName = firstRule.ServiceName,
+                    Profiles = firstRule.Profiles,
+                    Grouping = firstRule.Grouping,
+                    Description = firstRule.Description,
+                    Type = firstRule.Type,
+                    UnderlyingRules = group.ToList()
+                };
+
+                aggregatedRules.Add(aggregatedRule);
+            }
+
+            return aggregatedRules.OrderBy(r => r.Name).ToList();
         }
 
         public void ClearLocalCaches()
