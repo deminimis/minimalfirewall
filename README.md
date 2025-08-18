@@ -8,6 +8,8 @@
 
 Minimal Firewall enhances the built-in Windows Firewall to block all unknown network connections by default, giving you complete control. It prompts you for action when an application tries to connect, allowing you to mitigate malware, stop unwanted telemetry, and prevent data leaks. With Minimal Firewall, no application "phones home" without your explicit permission.
 
+Unlike most other Firewall programs, Minimal Firewall acts as a frontend, avoiding enlarging your computer's attack surface by playing around with lower levels of the WFP. Minimal Firewall also has an audit feature to examine new rules added to Windows Firewall. When you use a WFP app, it acts as a filter on top of Windows Firewall. The problem is that Microsoft sets varying levels of importance to its firewall rules (e.g. those changed in group  policy editor or related to Windows Defender may have higher importance). So if the filter and Windows Firewall rules conflict, it's not clear which one supercedes the other. Minimal Firewall avoids this by working directly with Windows Firewall without having to shut off this key part of your Windows security. 
+
 ### 💾 Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
 
 ## Core Features
