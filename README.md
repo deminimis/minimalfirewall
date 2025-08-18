@@ -27,6 +27,8 @@ Minimal Firewall enhances the built-in Windows Firewall to block all unknown net
 - **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time, showing which process is connected to which remote address.
     
 - **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder.
+
+- **Trust Publishers/Digital Certificates:** This works similar to wildcard rules. You can automatically trust apps with digital certificates trusted by Windows. Or you can whitelist publishers yourself. 
     
 - **UWP & Service Support:** Manage rules for modern Windows Store (UWP) apps and background system services, not just traditional desktop programs.
     
