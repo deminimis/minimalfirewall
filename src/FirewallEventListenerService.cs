@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
+using System.Collections.Concurrent;
 
 namespace MinimalFirewall
 {
@@ -11,18 +12,26 @@ namespace MinimalFirewall
         private readonly FirewallDataService _dataService;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly Func<bool> _isLockdownEnabled;
-        private readonly HashSet<string> _snoozedApps = [];
+        private readonly AppSettings _appSettings;
+        private readonly PublisherWhitelistService _whitelistService;
+        private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, DateTime> _recentlyNotifiedApps = new(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, System.Threading.Timer> _snoozeTimers = [];
         private EventLogWatcher? _eventWatcher;
         private readonly Action<string> _logAction;
 
+        public FirewallActionsService? ActionsService { get; set; }
+
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
-        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction)
+
+        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService)
         {
             _dataService = dataService;
             _wildcardRuleService = wildcardRuleService;
             _isLockdownEnabled = isLockdownEnabled;
             _logAction = logAction;
+            _appSettings = appSettings;
+            _whitelistService = whitelistService;
         }
 
         public void Start()
@@ -85,13 +94,14 @@ namespace MinimalFirewall
         {
             try
             {
+                if (ActionsService == null) return;
+
                 _logAction("[EventListener] Firing OnFirewallBlockEvent.");
                 string xmlContent = eventRecord.ToXml();
 
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
                 _logAction($"[EventListener] Event Path: {appPath} (Raw: {rawAppPath})");
-
                 if (!ShouldProcessEvent(appPath))
                 {
                     _logAction("[EventListener] Event SKIPPED by ShouldProcessEvent filter.");
@@ -107,7 +117,49 @@ namespace MinimalFirewall
                     return;
                 }
 
-                _logAction("[EventListener] Event PASSED all filters. Firing PendingConnectionDetected.");
+                if (_appSettings.AutoAllowSignedApps != AutoAllowSignedAppsOption.Disabled)
+                {
+                    bool shouldAutoAllow = false;
+                    string publisherNameToAllow = string.Empty;
+
+                    if (_appSettings.AutoAllowSignedApps == AutoAllowSignedAppsOption.AllowSystemTrusted)
+                    {
+                        if (SignatureValidationService.IsSignatureTrusted(appPath, out var publisherName) && publisherName != null)
+                        {
+                            shouldAutoAllow = true;
+                            publisherNameToAllow = publisherName;
+                            _logAction($"[EventListener] Auto-allowing system-trusted application: {appPath} from {publisherNameToAllow}");
+                        }
+                    }
+                    else if (_appSettings.AutoAllowSignedApps == AutoAllowSignedAppsOption.AllowWhitelisted)
+                    {
+                        if (SignatureValidationService.GetPublisherInfo(appPath, out var publisherName) && publisherName != null && _whitelistService.IsTrusted(publisherName))
+                        {
+                            shouldAutoAllow = true;
+                            publisherNameToAllow = publisherName;
+                            _logAction($"[EventListener] Auto-allowing whitelisted publisher application: {appPath} from {publisherNameToAllow}");
+                        }
+                    }
+
+                    if (shouldAutoAllow)
+                    {
+                        string allowAction = $"Allow ({eventDirection})";
+                        ActionsService.ApplyApplicationRuleChange([appPath], allowAction);
+                        return;
+                    }
+                }
+
+                if (_recentlyNotifiedApps.TryGetValue(appPath, out DateTime lastNotificationTime))
+                {
+                    if ((DateTime.UtcNow - lastNotificationTime).TotalSeconds < 60)
+                    {
+                        _logAction($"[EventListener] Event DEBOUNCED for {appPath}. Last notification was too recent.");
+                        return;
+                    }
+                }
+
+                _recentlyNotifiedApps[appPath] = DateTime.UtcNow;
+                _logAction($"[EventListener] Event PASSED all filters. Firing PendingConnectionDetected for {appPath}.");
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
@@ -122,15 +174,9 @@ namespace MinimalFirewall
             }
         }
 
-        public void SnoozeNotificationsForApp(string appPath, int minutes)
+        public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
-            _snoozedApps.Add(appPath);
-            if (_snoozeTimers.TryGetValue(appPath, out var oldTimer))
-            {
-                oldTimer.Dispose();
-            }
-            var timer = new System.Threading.Timer(_ => _snoozedApps.Remove(appPath), null, TimeSpan.FromMinutes(minutes), Timeout.InfiniteTimeSpan);
-            _snoozeTimers[appPath] = timer;
+            _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
         }
 
         public void ClearAllSnoozes()
@@ -149,7 +195,13 @@ namespace MinimalFirewall
             {
                 return false;
             }
-            return _isLockdownEnabled() && !_snoozedApps.Contains(appPath);
+
+            if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
+            {
+                return false;
+            }
+
+            return _isLockdownEnabled();
         }
 
         private static string ParseDirection(string rawDirection)

@@ -132,6 +132,7 @@ namespace Firewall.Traffic.ViewModels
     {
         public TcpTrafficTracker.TcpTrafficRow Connection { get; }
         public string ProcessName { get; private set; } = "Loading...";
+        public string ProcessPath { get; private set; } = string.Empty;
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
 
@@ -152,6 +153,17 @@ namespace Firewall.Traffic.ViewModels
             {
                 var p = Process.GetProcessById(Connection.ProcessId);
                 ProcessName = p.ProcessName;
+                try
+                {
+                    if (p.MainModule != null)
+                    {
+                        ProcessPath = p.MainModule.FileName;
+                    }
+                }
+                catch (Win32Exception)
+                {
+                    ProcessPath = string.Empty;
+                }
             }
             catch { ProcessName = "System"; }
             OnPropertyChanged(nameof(ProcessName));

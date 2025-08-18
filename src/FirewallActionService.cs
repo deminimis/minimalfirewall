@@ -17,13 +17,17 @@ namespace MinimalFirewall
         private readonly FirewallEventListenerService eventListenerService;
         private readonly ForeignRuleTracker foreignRuleTracker;
         private readonly FirewallSentryService sentryService;
-        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService)
+        private readonly PublisherWhitelistService _whitelistService;
+        private readonly Dictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
+
+        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService)
         {
             this.firewallService = firewallService;
             this.activityLogger = activityLogger;
             this.eventListenerService = eventListenerService;
             this.foreignRuleTracker = foreignRuleTracker;
             this.sentryService = sentryService;
+            this._whitelistService = whitelistService;
         }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
@@ -43,12 +47,14 @@ namespace MinimalFirewall
                 }
 
                 string appName = Path.GetFileNameWithoutExtension(appPath);
-                void createRule(string name, Directions dir, Actions act)
+                void createTcpAndUdpRules(string baseName, Directions dir, Actions act)
                 {
                     string description = string.IsNullOrEmpty(wildcardSourcePath) ? "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
-                    CreateApplicationRule(name, appPath, dir, act, description);
+                    CreateApplicationRule(baseName + " - TCP", appPath, dir, act, ProtocolTypes.TCP.Value, description);
+                    CreateApplicationRule(baseName + " - UDP", appPath, dir, act, ProtocolTypes.UDP.Value, description);
                 }
-                ApplyRuleAction(appName, action, createRule);
+
+                ApplyRuleAction(appName, action, createTcpAndUdpRules);
                 activityLogger.LogChange("Rule Changed", action + " for " + appPath);
             }
         }
@@ -58,20 +64,26 @@ namespace MinimalFirewall
             if (string.IsNullOrEmpty(serviceName)) return;
             firewallService.DeleteRulesByServiceName(serviceName);
 
-            void createRule(string name, Directions dir, Actions act)
+            void createRuleForProtocol(string name, Directions dir, Actions act, short protocol)
             {
                 var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
                 firewallRule.WithName(name)
                             .ForService(serviceName)
                             .WithDirection(dir)
                             .WithAction(act)
-                            .WithProtocol(ProtocolTypes.Any.Value)
+                            .WithProtocol(protocol)
                             .WithGrouping(MFWConstants.MainRuleGroup)
                             .IsEnabled();
                 firewallService.CreateRule(firewallRule);
             }
 
-            ApplyRuleAction(serviceName, action, createRule);
+            void createTcpAndUdpRules(string baseName, Directions dir, Actions act)
+            {
+                createRuleForProtocol(baseName + " - TCP", dir, act, ProtocolTypes.TCP.Value);
+                createRuleForProtocol(baseName + " - UDP", dir, act, ProtocolTypes.UDP.Value);
+            }
+
+            ApplyRuleAction(serviceName, action, createTcpAndUdpRules);
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
         }
 
@@ -146,11 +158,21 @@ namespace MinimalFirewall
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
         }
 
-        public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision)
+        public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
+            TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
+            TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
+
+            if (trustPublisher && SignatureValidationService.GetPublisherInfo(pending.AppPath, out var publisherName) && publisherName != null)
+            {
+                _whitelistService.Add(publisherName);
+                activityLogger.LogChange("Publisher Whitelisted", $"Publisher '{publisherName}' was added to the whitelist.");
+            }
+
             switch (decision)
             {
                 case "Allow":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
                     string allowAction = "Allow (" + pending.Direction + ")";
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
@@ -162,7 +184,12 @@ namespace MinimalFirewall
                         ApplyApplicationRuleChange([pending.AppPath], allowAction);
                     }
                     break;
+                case "TemporaryAllow":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
+                    CreateTemporaryAllowRule(pending.AppPath, pending.Direction, duration);
+                    break;
                 case "Block":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
                     string blockAction = "Block (" + pending.Direction + ")";
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
@@ -175,10 +202,48 @@ namespace MinimalFirewall
                     }
                     break;
                 case "Ignore":
-                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, 2);
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
                     activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
                     break;
             }
+        }
+
+        private void CreateTemporaryAllowRule(string appPath, string direction, TimeSpan duration)
+        {
+            string appName = Path.GetFileNameWithoutExtension(appPath);
+            string ruleNameTcp = $"Temp Allow - {appName} - TCP - {Guid.NewGuid()}";
+            string ruleNameUdp = $"Temp Allow - {appName} - UDP - {Guid.NewGuid()}";
+            string action = $"Allow ({direction})";
+
+            ApplyRuleAction(appName, action, (baseName, dir, act) =>
+            {
+                CreateApplicationRule(ruleNameTcp, appPath, dir, act, ProtocolTypes.TCP.Value, $"Temporary rule, expires in {duration.TotalMinutes} minutes");
+                CreateApplicationRule(ruleNameUdp, appPath, dir, act, ProtocolTypes.UDP.Value, $"Temporary rule, expires in {duration.TotalMinutes} minutes");
+            });
+            activityLogger.LogChange("Temporary Rule Created", $"Allowed {appPath} for {duration.TotalMinutes} minutes.");
+
+            var timerTcp = new System.Threading.Timer(_ =>
+            {
+                firewallService.DeleteRulesByName([ruleNameTcp]);
+                if (_temporaryRuleTimers.ContainsKey(ruleNameTcp))
+                {
+                    _temporaryRuleTimers[ruleNameTcp].Dispose();
+                    _temporaryRuleTimers.Remove(ruleNameTcp);
+                }
+                activityLogger.LogDebug($"Temporary rule {ruleNameTcp} expired and was removed.");
+            }, null, duration, Timeout.InfiniteTimeSpan);
+            var timerUdp = new System.Threading.Timer(_ =>
+            {
+                firewallService.DeleteRulesByName([ruleNameUdp]);
+                if (_temporaryRuleTimers.ContainsKey(ruleNameUdp))
+                {
+                    _temporaryRuleTimers[ruleNameUdp].Dispose();
+                    _temporaryRuleTimers.Remove(ruleNameUdp);
+                }
+                activityLogger.LogDebug($"Temporary rule {ruleNameUdp} expired and was removed.");
+            }, null, duration, Timeout.InfiniteTimeSpan);
+            _temporaryRuleTimers[ruleNameTcp] = timerTcp;
+            _temporaryRuleTimers[ruleNameUdp] = timerUdp;
         }
 
         public void AcceptForeignRule(FirewallRuleChange change)
@@ -409,14 +474,14 @@ namespace MinimalFirewall
             }
         }
 
-        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, string description = "")
+        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, short protocol, string description = "")
         {
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
             firewallRule.WithName(name)
                         .ForApplication(appPath)
                         .WithDirection(direction)
                         .WithAction(action)
-                        .WithProtocol(ProtocolTypes.Any.Value)
+                        .WithProtocol(protocol)
                         .WithDescription(description)
                         .IsEnabled();
             if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
@@ -430,9 +495,9 @@ namespace MinimalFirewall
             return firewallRule;
         }
 
-        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, string description)
+        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, short protocol, string description)
         {
-            var newRule = CreateRuleObject(name, appPath, direction, action, description);
+            var newRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
             firewallService.CreateRule(newRule);
         }
 

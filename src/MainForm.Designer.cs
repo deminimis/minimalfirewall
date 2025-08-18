@@ -15,12 +15,14 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button lockdownButton;
         private System.Windows.Forms.Button rescanButton;
         private System.Windows.Forms.ListView dashboardListView;
+        private System.Windows.Forms.ColumnHeader dashIconColumn;
         private System.Windows.Forms.ColumnHeader dashActionColumn;
         private System.Windows.Forms.ColumnHeader dashAppColumn;
         private System.Windows.Forms.ColumnHeader dashServiceColumn;
         private System.Windows.Forms.ColumnHeader dashDirectionColumn;
         private System.Windows.Forms.ColumnHeader dashPathColumn;
         private System.Windows.Forms.ListView rulesListView;
+        private System.Windows.Forms.ColumnHeader advIconColumn;
         private System.Windows.Forms.ColumnHeader advNameColumn;
         private System.Windows.Forms.ColumnHeader advEnabledColumn;
         private System.Windows.Forms.ColumnHeader advStatusColumn;
@@ -93,12 +95,36 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem deleteGroupToolStripMenuItem;
         private System.Windows.Forms.CheckBox trafficMonitorSwitch;
         private System.Windows.Forms.ListView liveConnectionsListView;
+        private System.Windows.Forms.ColumnHeader liveIconColumn;
         private System.Windows.Forms.ColumnHeader processNameColumn;
         private System.Windows.Forms.ColumnHeader remoteAddressColumn;
         private System.Windows.Forms.ColumnHeader remotePortColumn;
         private System.Windows.Forms.ContextMenuStrip liveConnectionsContextMenu;
         private System.Windows.Forms.ToolStripMenuItem killProcessToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem blockRemoteIPToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip dashboardContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem tempAllowToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow2MinutesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow5MinutesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow15MinutesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow1HourToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow3HoursToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allow8HoursToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem permanentAllowToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem permanentBlockToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem ignoreToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripMenuItem createWildcardRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem allowAndTrustPublisherToolStripMenuItem;
+        private System.Windows.Forms.ImageList appIconList;
+        private System.Windows.Forms.CheckBox showAppIconsSwitch;
+        private System.Windows.Forms.GroupBox autoAllowGroupBox;
+        private System.Windows.Forms.RadioButton autoAllowWhitelistedRadio;
+        private System.Windows.Forms.RadioButton autoAllowSystemTrustedRadio;
+        private System.Windows.Forms.RadioButton autoAllowDisabledRadio;
+        private System.Windows.Forms.Button managePublishersButton;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -127,11 +153,27 @@ namespace MinimalFirewall
             arrowPictureBox = new PictureBox();
             instructionLabel = new Label();
             dashboardListView = new ListView();
+            dashIconColumn = new ColumnHeader();
             dashActionColumn = new ColumnHeader();
             dashAppColumn = new ColumnHeader();
             dashServiceColumn = new ColumnHeader();
             dashDirectionColumn = new ColumnHeader();
             dashPathColumn = new ColumnHeader();
+            dashboardContextMenu = new ContextMenuStrip(components);
+            tempAllowToolStripMenuItem = new ToolStripMenuItem();
+            allow2MinutesToolStripMenuItem = new ToolStripMenuItem();
+            allow5MinutesToolStripMenuItem = new ToolStripMenuItem();
+            allow15MinutesToolStripMenuItem = new ToolStripMenuItem();
+            allow1HourToolStripMenuItem = new ToolStripMenuItem();
+            allow3HoursToolStripMenuItem = new ToolStripMenuItem();
+            allow8HoursToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            permanentAllowToolStripMenuItem = new ToolStripMenuItem();
+            allowAndTrustPublisherToolStripMenuItem = new ToolStripMenuItem();
+            permanentBlockToolStripMenuItem = new ToolStripMenuItem();
+            ignoreToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator4 = new ToolStripSeparator();
+            createWildcardRuleToolStripMenuItem = new ToolStripMenuItem();
             rulesTabPage = new TabPage();
             advFilterAdvancedCheck = new CheckBox();
             advancedRuleButton = new Button();
@@ -141,6 +183,7 @@ namespace MinimalFirewall
             rulesSearchTextBox = new TextBox();
             createRuleButton = new Button();
             rulesListView = new ListView();
+            advIconColumn = new ColumnHeader();
             advNameColumn = new ColumnHeader();
             advEnabledColumn = new ColumnHeader();
             advStatusColumn = new ColumnHeader();
@@ -155,6 +198,19 @@ namespace MinimalFirewall
             advProfilesColumn = new ColumnHeader();
             advGroupingColumn = new ColumnHeader();
             advDescColumn = new ColumnHeader();
+            rulesContextMenu = new ContextMenuStrip(components);
+            allowToolStripMenuItem = new ToolStripMenuItem();
+            allowOutboundToolStripMenuItem = new ToolStripMenuItem();
+            allowInboundToolStripMenuItem = new ToolStripMenuItem();
+            allowAllToolStripMenuItem = new ToolStripMenuItem();
+            blockToolStripMenuItem = new ToolStripMenuItem();
+            blockOutboundToolStripMenuItem = new ToolStripMenuItem();
+            blockInboundToolStripMenuItem = new ToolStripMenuItem();
+            blockAllToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            deleteRuleToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             systemChangesTabPage = new TabPage();
             auditSearchTextBox = new TextBox();
             rebuildBaselineButton = new Button();
@@ -170,6 +226,7 @@ namespace MinimalFirewall
             deleteGroupToolStripMenuItem = new ToolStripMenuItem();
             liveConnectionsTabPage = new TabPage();
             liveConnectionsListView = new ListView();
+            liveIconColumn = new ColumnHeader();
             processNameColumn = new ColumnHeader();
             remoteAddressColumn = new ColumnHeader();
             remotePortColumn = new ColumnHeader();
@@ -177,6 +234,12 @@ namespace MinimalFirewall
             killProcessToolStripMenuItem = new ToolStripMenuItem();
             blockRemoteIPToolStripMenuItem = new ToolStripMenuItem();
             settingsTabPage = new TabPage();
+            managePublishersButton = new Button();
+            autoAllowGroupBox = new GroupBox();
+            autoAllowWhitelistedRadio = new RadioButton();
+            autoAllowSystemTrustedRadio = new RadioButton();
+            autoAllowDisabledRadio = new RadioButton();
+            showAppIconsSwitch = new CheckBox();
             trafficMonitorSwitch = new CheckBox();
             autoRefreshLabel1 = new Label();
             autoRefreshLabel2 = new Label();
@@ -198,43 +261,30 @@ namespace MinimalFirewall
             appImageList = new ImageList(components);
             lockdownButton = new Button();
             rescanButton = new Button();
-            rulesContextMenu = new ContextMenuStrip(components);
-            allowToolStripMenuItem = new ToolStripMenuItem();
-            allowOutboundToolStripMenuItem = new ToolStripMenuItem();
-            allowInboundToolStripMenuItem = new ToolStripMenuItem();
-            allowAllToolStripMenuItem = new ToolStripMenuItem();
-            blockToolStripMenuItem = new ToolStripMenuItem();
-            blockOutboundToolStripMenuItem = new ToolStripMenuItem();
-            blockInboundToolStripMenuItem = new ToolStripMenuItem();
-            blockAllToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator1 = new ToolStripSeparator();
-            deleteRuleToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator2 = new ToolStripSeparator();
-            openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             mainToolTip = new ToolTip(components);
             auditContextMenu = new ContextMenuStrip(components);
             acceptAllToolStripMenuItem = new ToolStripMenuItem();
             ignoreAllToolStripMenuItem = new ToolStripMenuItem();
+            appIconList = new ImageList(components);
             mainTabControl.SuspendLayout();
             dashboardTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)logoPictureBox).BeginInit();
             logoPictureBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)arrowPictureBox).BeginInit();
+            dashboardContextMenu.SuspendLayout();
             rulesTabPage.SuspendLayout();
+            rulesContextMenu.SuspendLayout();
             systemChangesTabPage.SuspendLayout();
             groupsTabPage.SuspendLayout();
             groupsContextMenu.SuspendLayout();
             liveConnectionsTabPage.SuspendLayout();
             liveConnectionsContextMenu.SuspendLayout();
             settingsTabPage.SuspendLayout();
+            autoAllowGroupBox.SuspendLayout();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
-            rulesContextMenu.SuspendLayout();
             auditContextMenu.SuspendLayout();
             SuspendLayout();
-            // 
-            // mainTabControl
-            // 
             mainTabControl.Alignment = TabAlignment.Left;
             mainTabControl.BorderColor = SystemColors.ControlDark;
             mainTabControl.Controls.Add(dashboardTabPage);
@@ -260,9 +310,6 @@ namespace MinimalFirewall
             mainTabControl.TabColor = SystemColors.ControlLight;
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
-            // 
-            // dashboardTabPage
-            // 
             dashboardTabPage.Controls.Add(logoPictureBox);
             dashboardTabPage.Controls.Add(dashboardListView);
             dashboardTabPage.ImageIndex = 7;
@@ -274,9 +321,6 @@ namespace MinimalFirewall
             dashboardTabPage.TabIndex = 0;
             dashboardTabPage.Text = "Dashboard";
             dashboardTabPage.UseVisualStyleBackColor = true;
-            // 
-            // logoPictureBox
-            // 
             logoPictureBox.Controls.Add(arrowPictureBox);
             logoPictureBox.Controls.Add(instructionLabel);
             logoPictureBox.Dock = DockStyle.Fill;
@@ -287,9 +331,6 @@ namespace MinimalFirewall
             logoPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             logoPictureBox.TabIndex = 1;
             logoPictureBox.TabStop = false;
-            // 
-            // arrowPictureBox
-            // 
             arrowPictureBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             arrowPictureBox.BackColor = Color.Transparent;
             arrowPictureBox.Location = new Point(23, 829);
@@ -299,9 +340,6 @@ namespace MinimalFirewall
             arrowPictureBox.TabIndex = 3;
             arrowPictureBox.TabStop = false;
             arrowPictureBox.Paint += ArrowPictureBox_Paint;
-            // 
-            // instructionLabel
-            // 
             instructionLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             instructionLabel.AutoSize = true;
             instructionLabel.BackColor = Color.Transparent;
@@ -311,11 +349,9 @@ namespace MinimalFirewall
             instructionLabel.Size = new Size(304, 20);
             instructionLabel.TabIndex = 2;
             instructionLabel.Text = "Press the lock key to initiate firewall defense.";
-            // 
-            // dashboardListView
-            // 
             dashboardListView.BorderStyle = BorderStyle.None;
-            dashboardListView.Columns.AddRange(new ColumnHeader[] { dashActionColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashPathColumn });
+            dashboardListView.Columns.AddRange(new ColumnHeader[] { dashIconColumn, dashActionColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashPathColumn });
+            dashboardListView.ContextMenuStrip = dashboardContextMenu;
             dashboardListView.Dock = DockStyle.Fill;
             dashboardListView.FullRowSelect = true;
             dashboardListView.Location = new Point(3, 4);
@@ -332,34 +368,81 @@ namespace MinimalFirewall
             dashboardListView.MouseClick += DashboardListView_MouseClick;
             dashboardListView.MouseLeave += ListView_MouseLeave;
             dashboardListView.MouseMove += DashboardListView_MouseMove;
-            // 
-            // dashActionColumn
-            // 
+            dashIconColumn.Text = "";
+            dashIconColumn.Width = 32;
             dashActionColumn.Text = "Action";
             dashActionColumn.Width = 250;
-            // 
-            // dashAppColumn
-            // 
             dashAppColumn.Text = "Application";
             dashAppColumn.Width = 150;
-            // 
-            // dashServiceColumn
-            // 
             dashServiceColumn.Text = "Service";
             dashServiceColumn.Width = 150;
-            // 
-            // dashDirectionColumn
-            // 
             dashDirectionColumn.Text = "Direction";
             dashDirectionColumn.Width = 100;
-            // 
-            // dashPathColumn
-            // 
             dashPathColumn.Text = "Path";
             dashPathColumn.Width = 300;
-            // 
-            // rulesTabPage
-            // 
+            dashboardContextMenu.ImageScalingSize = new Size(20, 20);
+            dashboardContextMenu.Items.AddRange(new ToolStripItem[] { tempAllowToolStripMenuItem, toolStripSeparator3, permanentAllowToolStripMenuItem, allowAndTrustPublisherToolStripMenuItem, permanentBlockToolStripMenuItem, ignoreToolStripMenuItem, toolStripSeparator4, createWildcardRuleToolStripMenuItem });
+            dashboardContextMenu.Name = "dashboardContextMenu";
+            dashboardContextMenu.Size = new Size(225, 166);
+            dashboardContextMenu.Opening += dashboardContextMenu_Opening;
+            tempAllowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allow2MinutesToolStripMenuItem, allow5MinutesToolStripMenuItem, allow15MinutesToolStripMenuItem, allow1HourToolStripMenuItem, allow3HoursToolStripMenuItem, allow8HoursToolStripMenuItem });
+            tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
+            tempAllowToolStripMenuItem.Size = new Size(224, 24);
+            tempAllowToolStripMenuItem.Text = "Allow Temporarily";
+            allow2MinutesToolStripMenuItem.Name = "allow2MinutesToolStripMenuItem";
+            allow2MinutesToolStripMenuItem.Size = new Size(162, 26);
+            allow2MinutesToolStripMenuItem.Tag = "2";
+            allow2MinutesToolStripMenuItem.Text = "2 minutes";
+            allow2MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            allow5MinutesToolStripMenuItem.Name = "allow5MinutesToolStripMenuItem";
+            allow5MinutesToolStripMenuItem.Size = new Size(162, 26);
+            allow5MinutesToolStripMenuItem.Tag = "5";
+            allow5MinutesToolStripMenuItem.Text = "5 minutes";
+            allow5MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            allow15MinutesToolStripMenuItem.Name = "allow15MinutesToolStripMenuItem";
+            allow15MinutesToolStripMenuItem.Size = new Size(162, 26);
+            allow15MinutesToolStripMenuItem.Tag = "15";
+            allow15MinutesToolStripMenuItem.Text = "15 minutes";
+            allow15MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            allow1HourToolStripMenuItem.Name = "allow1HourToolStripMenuItem";
+            allow1HourToolStripMenuItem.Size = new Size(162, 26);
+            allow1HourToolStripMenuItem.Tag = "60";
+            allow1HourToolStripMenuItem.Text = "1 hour";
+            allow1HourToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            allow3HoursToolStripMenuItem.Name = "allow3HoursToolStripMenuItem";
+            allow3HoursToolStripMenuItem.Size = new Size(162, 26);
+            allow3HoursToolStripMenuItem.Tag = "180";
+            allow3HoursToolStripMenuItem.Text = "3 hours";
+            allow3HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            allow8HoursToolStripMenuItem.Name = "allow8HoursToolStripMenuItem";
+            allow8HoursToolStripMenuItem.Size = new Size(162, 26);
+            allow8HoursToolStripMenuItem.Tag = "480";
+            allow8HoursToolStripMenuItem.Text = "8 hours";
+            allow8HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(221, 6);
+            permanentAllowToolStripMenuItem.Name = "permanentAllowToolStripMenuItem";
+            permanentAllowToolStripMenuItem.Size = new Size(224, 24);
+            permanentAllowToolStripMenuItem.Text = "Allow";
+            permanentAllowToolStripMenuItem.Click += PermanentAllowToolStripMenuItem_Click;
+            allowAndTrustPublisherToolStripMenuItem.Name = "allowAndTrustPublisherToolStripMenuItem";
+            allowAndTrustPublisherToolStripMenuItem.Size = new Size(224, 24);
+            allowAndTrustPublisherToolStripMenuItem.Text = "Allow and Trust Publisher";
+            allowAndTrustPublisherToolStripMenuItem.Click += AllowAndTrustPublisherToolStripMenuItem_Click;
+            permanentBlockToolStripMenuItem.Name = "permanentBlockToolStripMenuItem";
+            permanentBlockToolStripMenuItem.Size = new Size(224, 24);
+            permanentBlockToolStripMenuItem.Text = "Block";
+            permanentBlockToolStripMenuItem.Click += PermanentBlockToolStripMenuItem_Click;
+            ignoreToolStripMenuItem.Name = "ignoreToolStripMenuItem";
+            ignoreToolStripMenuItem.Size = new Size(224, 24);
+            ignoreToolStripMenuItem.Text = "Ignore";
+            ignoreToolStripMenuItem.Click += IgnoreToolStripMenuItem_Click;
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(221, 6);
+            createWildcardRuleToolStripMenuItem.Name = "createWildcardRuleToolStripMenuItem";
+            createWildcardRuleToolStripMenuItem.Size = new Size(224, 24);
+            createWildcardRuleToolStripMenuItem.Text = "Create Wildcard Rule...";
+            createWildcardRuleToolStripMenuItem.Click += createWildcardRuleToolStripMenuItem_Click;
             rulesTabPage.Controls.Add(advFilterAdvancedCheck);
             rulesTabPage.Controls.Add(advancedRuleButton);
             rulesTabPage.Controls.Add(advFilterWildcardCheck);
@@ -368,7 +451,7 @@ namespace MinimalFirewall
             rulesTabPage.Controls.Add(rulesSearchTextBox);
             rulesTabPage.Controls.Add(createRuleButton);
             rulesTabPage.Controls.Add(rulesListView);
-            rulesTabPage.ImageIndex = 2;
+            rulesTabPage.ImageIndex = 5;
             rulesTabPage.Location = new Point(124, 4);
             rulesTabPage.Margin = new Padding(3, 4, 3, 4);
             rulesTabPage.Name = "rulesTabPage";
@@ -377,9 +460,6 @@ namespace MinimalFirewall
             rulesTabPage.TabIndex = 1;
             rulesTabPage.Text = "Rules";
             rulesTabPage.UseVisualStyleBackColor = true;
-            // 
-            // advFilterAdvancedCheck
-            // 
             advFilterAdvancedCheck.AutoSize = true;
             advFilterAdvancedCheck.Checked = true;
             advFilterAdvancedCheck.CheckState = CheckState.Checked;
@@ -391,9 +471,6 @@ namespace MinimalFirewall
             advFilterAdvancedCheck.Text = "Advanced";
             advFilterAdvancedCheck.UseVisualStyleBackColor = true;
             advFilterAdvancedCheck.CheckedChanged += AdvFilter_CheckedChanged;
-            // 
-            // advancedRuleButton
-            // 
             advancedRuleButton.Location = new Point(157, 8);
             advancedRuleButton.Margin = new Padding(3, 4, 3, 4);
             advancedRuleButton.Name = "advancedRuleButton";
@@ -401,9 +478,6 @@ namespace MinimalFirewall
             advancedRuleButton.TabIndex = 8;
             advancedRuleButton.Text = "Advanced Rule";
             advancedRuleButton.Click += AdvancedRuleButton_Click;
-            // 
-            // advFilterWildcardCheck
-            // 
             advFilterWildcardCheck.AutoSize = true;
             advFilterWildcardCheck.Checked = true;
             advFilterWildcardCheck.CheckState = CheckState.Checked;
@@ -415,9 +489,6 @@ namespace MinimalFirewall
             advFilterWildcardCheck.Text = "Wildcard";
             advFilterWildcardCheck.UseVisualStyleBackColor = true;
             advFilterWildcardCheck.CheckedChanged += AdvFilter_CheckedChanged;
-            // 
-            // advFilterUwpCheck
-            // 
             advFilterUwpCheck.AutoSize = true;
             advFilterUwpCheck.Checked = true;
             advFilterUwpCheck.CheckState = CheckState.Checked;
@@ -429,9 +500,6 @@ namespace MinimalFirewall
             advFilterUwpCheck.Text = "UWP";
             advFilterUwpCheck.UseVisualStyleBackColor = true;
             advFilterUwpCheck.CheckedChanged += AdvFilter_CheckedChanged;
-            // 
-            // advFilterServiceCheck
-            // 
             advFilterServiceCheck.AutoSize = true;
             advFilterServiceCheck.Checked = true;
             advFilterServiceCheck.CheckState = CheckState.Checked;
@@ -443,9 +511,6 @@ namespace MinimalFirewall
             advFilterServiceCheck.Text = "Service";
             advFilterServiceCheck.UseVisualStyleBackColor = true;
             advFilterServiceCheck.CheckedChanged += AdvFilter_CheckedChanged;
-            // 
-            // rulesSearchTextBox
-            // 
             rulesSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             rulesSearchTextBox.Location = new Point(704, 17);
             rulesSearchTextBox.Margin = new Padding(3, 4, 3, 4);
@@ -454,9 +519,6 @@ namespace MinimalFirewall
             rulesSearchTextBox.Size = new Size(285, 27);
             rulesSearchTextBox.TabIndex = 5;
             rulesSearchTextBox.TextChanged += SearchTextBox_TextChanged;
-            // 
-            // createRuleButton
-            // 
             createRuleButton.Location = new Point(7, 8);
             createRuleButton.Margin = new Padding(3, 4, 3, 4);
             createRuleButton.Name = "createRuleButton";
@@ -464,12 +526,10 @@ namespace MinimalFirewall
             createRuleButton.TabIndex = 4;
             createRuleButton.Text = "Create Rule";
             createRuleButton.Click += CreateRuleButton_Click;
-            // 
-            // rulesListView
-            // 
             rulesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             rulesListView.BorderStyle = BorderStyle.None;
-            rulesListView.Columns.AddRange(new ColumnHeader[] { advNameColumn, advEnabledColumn, advStatusColumn, advDirectionColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn });
+            rulesListView.Columns.AddRange(new ColumnHeader[] { advIconColumn, advNameColumn, advEnabledColumn, advStatusColumn, advDirectionColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn });
+            rulesListView.ContextMenuStrip = rulesContextMenu;
             rulesListView.FullRowSelect = true;
             rulesListView.Location = new Point(7, 60);
             rulesListView.Margin = new Padding(3, 4, 3, 4);
@@ -485,79 +545,90 @@ namespace MinimalFirewall
             rulesListView.MouseClick += RulesListView_MouseClick;
             rulesListView.MouseLeave += ListView_MouseLeave;
             rulesListView.MouseMove += ListView_MouseMove;
-            // 
-            // advNameColumn
-            // 
+            advIconColumn.Text = "";
+            advIconColumn.Width = 32;
             advNameColumn.Text = "Name";
             advNameColumn.Width = 180;
-            // 
-            // advEnabledColumn
-            // 
             advEnabledColumn.Text = "Enabled";
             advEnabledColumn.Width = 70;
-            // 
-            // advStatusColumn
-            // 
             advStatusColumn.Text = "Action";
             advStatusColumn.Width = 70;
-            // 
-            // advDirectionColumn
-            // 
             advDirectionColumn.Text = "Direction";
             advDirectionColumn.Width = 80;
-            // 
-            // advProtocolColumn
-            // 
             advProtocolColumn.Text = "Protocol";
             advProtocolColumn.Width = 70;
-            // 
-            // advLocalPortsColumn
-            // 
             advLocalPortsColumn.Text = "Local Ports";
             advLocalPortsColumn.Width = 100;
-            // 
-            // advRemotePortsColumn
-            // 
             advRemotePortsColumn.Text = "Remote Ports";
             advRemotePortsColumn.Width = 100;
-            // 
-            // advLocalAddressColumn
-            // 
             advLocalAddressColumn.Text = "Local Address";
             advLocalAddressColumn.Width = 120;
-            // 
-            // advRemoteAddressColumn
-            // 
             advRemoteAddressColumn.Text = "Remote Address";
             advRemoteAddressColumn.Width = 120;
-            // 
-            // advProgramColumn
-            // 
             advProgramColumn.Text = "Program";
             advProgramColumn.Width = 200;
-            // 
-            // advServiceColumn
-            // 
             advServiceColumn.Text = "Service";
             advServiceColumn.Width = 150;
-            // 
-            // advProfilesColumn
-            // 
             advProfilesColumn.Text = "Profiles";
             advProfilesColumn.Width = 100;
-            // 
-            // advGroupingColumn
-            // 
             advGroupingColumn.Text = "Group";
             advGroupingColumn.Width = 150;
-            // 
-            // advDescColumn
-            // 
             advDescColumn.Text = "Description";
             advDescColumn.Width = 300;
-            // 
-            // systemChangesTabPage
-            // 
+            rulesContextMenu.ImageScalingSize = new Size(20, 20);
+            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem });
+            rulesContextMenu.Name = "rulesContextMenu";
+            rulesContextMenu.Size = new Size(203, 112);
+            allowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allowOutboundToolStripMenuItem, allowInboundToolStripMenuItem, allowAllToolStripMenuItem });
+            allowToolStripMenuItem.Name = "allowToolStripMenuItem";
+            allowToolStripMenuItem.Size = new Size(202, 24);
+            allowToolStripMenuItem.Text = "Allow";
+            allowOutboundToolStripMenuItem.Name = "allowOutboundToolStripMenuItem";
+            allowOutboundToolStripMenuItem.Size = new Size(159, 26);
+            allowOutboundToolStripMenuItem.Tag = "Allow (Outbound)";
+            allowOutboundToolStripMenuItem.Text = "Outbound";
+            allowOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            allowInboundToolStripMenuItem.Name = "allowInboundToolStripMenuItem";
+            allowInboundToolStripMenuItem.Size = new Size(159, 26);
+            allowInboundToolStripMenuItem.Tag = "Allow (Inbound)";
+            allowInboundToolStripMenuItem.Text = "Inbound";
+            allowInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            allowAllToolStripMenuItem.Name = "allowAllToolStripMenuItem";
+            allowAllToolStripMenuItem.Size = new Size(159, 26);
+            allowAllToolStripMenuItem.Tag = "Allow (All)";
+            allowAllToolStripMenuItem.Text = "All";
+            allowAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            blockToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { blockOutboundToolStripMenuItem, blockInboundToolStripMenuItem, blockAllToolStripMenuItem });
+            blockToolStripMenuItem.Name = "blockToolStripMenuItem";
+            blockToolStripMenuItem.Size = new Size(202, 24);
+            blockToolStripMenuItem.Text = "Block";
+            blockOutboundToolStripMenuItem.Name = "blockOutboundToolStripMenuItem";
+            blockOutboundToolStripMenuItem.Size = new Size(159, 26);
+            blockOutboundToolStripMenuItem.Tag = "Block (Outbound)";
+            blockOutboundToolStripMenuItem.Text = "Outbound";
+            blockOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            blockInboundToolStripMenuItem.Name = "blockInboundToolStripMenuItem";
+            blockInboundToolStripMenuItem.Size = new Size(159, 26);
+            blockInboundToolStripMenuItem.Tag = "Block (Inbound)";
+            blockInboundToolStripMenuItem.Text = "Inbound";
+            blockInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            blockAllToolStripMenuItem.Name = "blockAllToolStripMenuItem";
+            blockAllToolStripMenuItem.Size = new Size(159, 26);
+            blockAllToolStripMenuItem.Tag = "Block (All)";
+            blockAllToolStripMenuItem.Text = "All";
+            blockAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(199, 6);
+            deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
+            deleteRuleToolStripMenuItem.Size = new Size(202, 24);
+            deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
+            deleteRuleToolStripMenuItem.Click += DeleteRuleMenuItem_Click;
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(199, 6);
+            openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
+            openFileLocationToolStripMenuItem.Size = new Size(202, 24);
+            openFileLocationToolStripMenuItem.Text = "Open File Location";
+            openFileLocationToolStripMenuItem.Click += OpenFileLocationMenuItem_Click;
             systemChangesTabPage.Controls.Add(auditSearchTextBox);
             systemChangesTabPage.Controls.Add(rebuildBaselineButton);
             systemChangesTabPage.Controls.Add(systemChangesListView);
@@ -569,9 +640,6 @@ namespace MinimalFirewall
             systemChangesTabPage.TabIndex = 2;
             systemChangesTabPage.Text = "Audit";
             systemChangesTabPage.UseVisualStyleBackColor = true;
-            // 
-            // auditSearchTextBox
-            // 
             auditSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             auditSearchTextBox.Location = new Point(707, 27);
             auditSearchTextBox.Margin = new Padding(3, 4, 3, 4);
@@ -580,9 +648,6 @@ namespace MinimalFirewall
             auditSearchTextBox.Size = new Size(285, 27);
             auditSearchTextBox.TabIndex = 3;
             auditSearchTextBox.TextChanged += SearchTextBox_TextChanged;
-            // 
-            // rebuildBaselineButton
-            // 
             rebuildBaselineButton.Location = new Point(3, 17);
             rebuildBaselineButton.Margin = new Padding(3, 4, 3, 4);
             rebuildBaselineButton.Name = "rebuildBaselineButton";
@@ -590,9 +655,6 @@ namespace MinimalFirewall
             rebuildBaselineButton.TabIndex = 2;
             rebuildBaselineButton.Text = "Rebuild Baseline";
             rebuildBaselineButton.Click += RebuildBaselineButton_Click;
-            // 
-            // systemChangesListView
-            // 
             systemChangesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             systemChangesListView.BorderStyle = BorderStyle.None;
             systemChangesListView.Columns.AddRange(new ColumnHeader[] { changeActionColumn, changeNameColumn, changeStatusColumn });
@@ -611,24 +673,12 @@ namespace MinimalFirewall
             systemChangesListView.MouseClick += SystemChangesListView_MouseClick;
             systemChangesListView.MouseLeave += ListView_MouseLeave;
             systemChangesListView.MouseMove += SystemChangesListView_MouseMove;
-            // 
-            // changeActionColumn
-            // 
             changeActionColumn.Text = "Action";
             changeActionColumn.Width = 250;
-            // 
-            // changeNameColumn
-            // 
             changeNameColumn.Text = "Rule Name";
             changeNameColumn.Width = 350;
-            // 
-            // changeStatusColumn
-            // 
             changeStatusColumn.Text = "Status";
             changeStatusColumn.Width = 400;
-            // 
-            // groupsTabPage
-            // 
             groupsTabPage.Controls.Add(groupsListView);
             groupsTabPage.ImageIndex = 5;
             groupsTabPage.Location = new Point(124, 4);
@@ -639,9 +689,6 @@ namespace MinimalFirewall
             groupsTabPage.TabIndex = 5;
             groupsTabPage.Text = "Groups";
             groupsTabPage.UseVisualStyleBackColor = true;
-            // 
-            // groupsListView
-            // 
             groupsListView.BorderStyle = BorderStyle.None;
             groupsListView.Columns.AddRange(new ColumnHeader[] { groupNameColumn, groupEnabledColumn });
             groupsListView.ContextMenuStrip = groupsContextMenu;
@@ -662,33 +709,18 @@ namespace MinimalFirewall
             groupsListView.MouseClick += GroupsListView_MouseClick;
             groupsListView.MouseLeave += ListView_MouseLeave;
             groupsListView.MouseMove += ListView_MouseMove;
-            // 
-            // groupNameColumn
-            // 
             groupNameColumn.Text = "Group Name";
             groupNameColumn.Width = 400;
-            // 
-            // groupEnabledColumn
-            // 
             groupEnabledColumn.Text = "Enabled";
             groupEnabledColumn.Width = 120;
-            // 
-            // groupsContextMenu
-            // 
             groupsContextMenu.ImageScalingSize = new Size(20, 20);
             groupsContextMenu.Items.AddRange(new ToolStripItem[] { deleteGroupToolStripMenuItem });
             groupsContextMenu.Name = "groupsContextMenu";
             groupsContextMenu.Size = new Size(177, 28);
-            // 
-            // deleteGroupToolStripMenuItem
-            // 
             deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
             deleteGroupToolStripMenuItem.Size = new Size(176, 24);
             deleteGroupToolStripMenuItem.Text = "Delete Group...";
             deleteGroupToolStripMenuItem.Click += DeleteGroupToolStripMenuItem_Click;
-            // 
-            // liveConnectionsTabPage
-            // 
             liveConnectionsTabPage.Controls.Add(liveConnectionsListView);
             liveConnectionsTabPage.ImageIndex = 10;
             liveConnectionsTabPage.Location = new Point(124, 4);
@@ -699,62 +731,48 @@ namespace MinimalFirewall
             liveConnectionsTabPage.TabIndex = 6;
             liveConnectionsTabPage.Text = "Live Connections";
             liveConnectionsTabPage.UseVisualStyleBackColor = true;
-            // 
-            // liveConnectionsListView
-            // 
             liveConnectionsListView.BorderStyle = BorderStyle.None;
-            liveConnectionsListView.Columns.AddRange(new ColumnHeader[] { processNameColumn, remoteAddressColumn, remotePortColumn });
+            liveConnectionsListView.Columns.AddRange(new ColumnHeader[] { liveIconColumn, processNameColumn, remoteAddressColumn, remotePortColumn });
             liveConnectionsListView.ContextMenuStrip = liveConnectionsContextMenu;
             liveConnectionsListView.Dock = DockStyle.Fill;
             liveConnectionsListView.FullRowSelect = true;
             liveConnectionsListView.Location = new Point(3, 4);
             liveConnectionsListView.Margin = new Padding(3, 4, 3, 4);
             liveConnectionsListView.Name = "liveConnectionsListView";
+            liveConnectionsListView.OwnerDraw = true;
             liveConnectionsListView.Size = new Size(1009, 917);
             liveConnectionsListView.TabIndex = 0;
             liveConnectionsListView.UseCompatibleStateImageBehavior = false;
             liveConnectionsListView.View = View.Details;
             liveConnectionsListView.ColumnClick += ListView_ColumnClick;
+            liveConnectionsListView.DrawItem += LiveConnectionsListView_DrawItem;
+            liveConnectionsListView.DrawSubItem += LiveConnectionsListView_DrawSubItem;
             liveConnectionsListView.MouseClick += LiveConnectionsListView_MouseClick;
-            // 
-            // processNameColumn
-            // 
+            liveConnectionsListView.MouseLeave += ListView_MouseLeave;
+            liveConnectionsListView.MouseMove += ListView_MouseMove;
+            liveIconColumn.Text = "";
+            liveIconColumn.Width = 32;
             processNameColumn.Text = "Process Name";
             processNameColumn.Width = 200;
-            // 
-            // remoteAddressColumn
-            // 
             remoteAddressColumn.Text = "Remote Address";
             remoteAddressColumn.Width = 200;
-            // 
-            // remotePortColumn
-            // 
             remotePortColumn.Text = "Remote Port";
             remotePortColumn.Width = 100;
-            // 
-            // liveConnectionsContextMenu
-            // 
             liveConnectionsContextMenu.ImageScalingSize = new Size(20, 20);
             liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, blockRemoteIPToolStripMenuItem });
             liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
             liveConnectionsContextMenu.Size = new Size(187, 52);
-            // 
-            // killProcessToolStripMenuItem
-            // 
             killProcessToolStripMenuItem.Name = "killProcessToolStripMenuItem";
             killProcessToolStripMenuItem.Size = new Size(186, 24);
             killProcessToolStripMenuItem.Text = "Kill Process";
             killProcessToolStripMenuItem.Click += KillProcessToolStripMenuItem_Click;
-            // 
-            // blockRemoteIPToolStripMenuItem
-            // 
             blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
             blockRemoteIPToolStripMenuItem.Size = new Size(186, 24);
             blockRemoteIPToolStripMenuItem.Text = "Block Remote IP";
             blockRemoteIPToolStripMenuItem.Click += BlockRemoteIPToolStripMenuItem_Click;
-            // 
-            // settingsTabPage
-            // 
+            settingsTabPage.Controls.Add(managePublishersButton);
+            settingsTabPage.Controls.Add(autoAllowGroupBox);
+            settingsTabPage.Controls.Add(showAppIconsSwitch);
             settingsTabPage.Controls.Add(trafficMonitorSwitch);
             settingsTabPage.Controls.Add(autoRefreshLabel1);
             settingsTabPage.Controls.Add(autoRefreshLabel2);
@@ -779,66 +797,100 @@ namespace MinimalFirewall
             settingsTabPage.TabIndex = 4;
             settingsTabPage.Text = "Settings";
             settingsTabPage.UseVisualStyleBackColor = true;
-            // 
-            // trafficMonitorSwitch
-            // 
+            managePublishersButton.Location = new Point(318, 513);
+            managePublishersButton.Margin = new Padding(3, 4, 3, 4);
+            managePublishersButton.Name = "managePublishersButton";
+            managePublishersButton.Size = new Size(183, 37);
+            managePublishersButton.TabIndex = 23;
+            managePublishersButton.Text = "Manage Trusted Publishers";
+            managePublishersButton.UseVisualStyleBackColor = true;
+            managePublishersButton.Click += managePublishersButton_Click;
+            autoAllowGroupBox.Controls.Add(autoAllowWhitelistedRadio);
+            autoAllowGroupBox.Controls.Add(autoAllowSystemTrustedRadio);
+            autoAllowGroupBox.Controls.Add(autoAllowDisabledRadio);
+            autoAllowGroupBox.Location = new Point(29, 453);
+            autoAllowGroupBox.Name = "autoAllowGroupBox";
+            autoAllowGroupBox.Size = new System.Drawing.Size(273, 114);
+            autoAllowGroupBox.TabIndex = 22;
+            autoAllowGroupBox.TabStop = false;
+            autoAllowGroupBox.Text = "Auto-Allow Signed Apps";
+            autoAllowWhitelistedRadio.AutoSize = true;
+            autoAllowWhitelistedRadio.Location = new Point(6, 75);
+            autoAllowWhitelistedRadio.Name = "autoAllowWhitelistedRadio";
+            autoAllowWhitelistedRadio.Size = new System.Drawing.Size(188, 19);
+            autoAllowWhitelistedRadio.TabIndex = 2;
+            autoAllowWhitelistedRadio.Text = "Only from my trusted publishers";
+            autoAllowWhitelistedRadio.UseVisualStyleBackColor = true;
+            autoAllowWhitelistedRadio.CheckedChanged += AutoAllow_CheckedChanged;
+            autoAllowSystemTrustedRadio.AutoSize = true;
+            autoAllowSystemTrustedRadio.Location = new Point(6, 50);
+            autoAllowSystemTrustedRadio.Name = "autoAllowSystemTrustedRadio";
+            autoAllowSystemTrustedRadio.Size = new System.Drawing.Size(130, 19);
+            autoAllowSystemTrustedRadio.TabIndex = 1;
+            autoAllowSystemTrustedRadio.Text = "If trusted by Windows";
+            autoAllowSystemTrustedRadio.UseVisualStyleBackColor = true;
+            autoAllowSystemTrustedRadio.CheckedChanged += AutoAllow_CheckedChanged;
+            autoAllowDisabledRadio.AutoSize = true;
+            autoAllowDisabledRadio.Checked = true;
+            autoAllowDisabledRadio.Location = new Point(6, 25);
+            autoAllowDisabledRadio.Name = "autoAllowDisabledRadio";
+            autoAllowDisabledRadio.Size = new System.Drawing.Size(70, 19);
+            autoAllowDisabledRadio.TabIndex = 0;
+            autoAllowDisabledRadio.TabStop = true;
+            autoAllowDisabledRadio.Text = "Disabled";
+            autoAllowDisabledRadio.UseVisualStyleBackColor = true;
+            autoAllowDisabledRadio.CheckedChanged += AutoAllow_CheckedChanged;
+            showAppIconsSwitch.AutoSize = true;
+            showAppIconsSwitch.Location = new Point(29, 380);
+            showAppIconsSwitch.Margin = new Padding(3, 4, 3, 4);
+            showAppIconsSwitch.Name = "showAppIconsSwitch";
+            showAppIconsSwitch.Size = new System.Drawing.Size(177, 24);
+            showAppIconsSwitch.TabIndex = 21;
+            showAppIconsSwitch.Text = "Show application icons";
+            showAppIconsSwitch.UseVisualStyleBackColor = true;
+            showAppIconsSwitch.CheckedChanged += ShowAppIconsSwitch_CheckedChanged;
             trafficMonitorSwitch.AutoSize = true;
             trafficMonitorSwitch.Location = new Point(29, 347);
             trafficMonitorSwitch.Margin = new Padding(3, 4, 3, 4);
             trafficMonitorSwitch.Name = "trafficMonitorSwitch";
-            trafficMonitorSwitch.Size = new Size(191, 24);
+            trafficMonitorSwitch.Size = new System.Drawing.Size(191, 24);
             trafficMonitorSwitch.TabIndex = 20;
             trafficMonitorSwitch.Text = "Enable Live Connections";
             trafficMonitorSwitch.UseVisualStyleBackColor = true;
             trafficMonitorSwitch.CheckedChanged += TrafficMonitorSwitch_CheckedChanged;
-            // 
-            // autoRefreshLabel1
-            // 
             autoRefreshLabel1.AutoSize = true;
             autoRefreshLabel1.Location = new Point(29, 299);
             autoRefreshLabel1.Name = "autoRefreshLabel1";
-            autoRefreshLabel1.Size = new Size(117, 20);
+            autoRefreshLabel1.Size = new System.Drawing.Size(117, 20);
             autoRefreshLabel1.TabIndex = 18;
             autoRefreshLabel1.Text = "List refresh time:";
-            // 
-            // autoRefreshLabel2
-            // 
             autoRefreshLabel2.AutoSize = true;
             autoRefreshLabel2.Location = new Point(251, 299);
             autoRefreshLabel2.Name = "autoRefreshLabel2";
-            autoRefreshLabel2.Size = new Size(61, 20);
+            autoRefreshLabel2.Size = new System.Drawing.Size(61, 20);
             autoRefreshLabel2.TabIndex = 19;
             autoRefreshLabel2.Text = "minutes";
-            // 
-            // coffeePanel
-            // 
             coffeePanel.BackColor = Color.Transparent;
             coffeePanel.Controls.Add(coffeeLinkLabel);
             coffeePanel.Controls.Add(coffeePictureBox);
             coffeePanel.Cursor = Cursors.Hand;
-            coffeePanel.Location = new Point(21, 607);
+            coffeePanel.Location = new Point(21, 720);
             coffeePanel.Margin = new Padding(3, 4, 3, 4);
             coffeePanel.Name = "coffeePanel";
             coffeePanel.Size = new Size(434, 107);
             coffeePanel.TabIndex = 17;
             coffeePanel.Click += CoffeeLink_Click;
-            // 
-            // coffeeLinkLabel
-            // 
             coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
             coffeeLinkLabel.AutoSize = true;
             coffeeLinkLabel.Location = new Point(69, 24);
             coffeeLinkLabel.MaximumSize = new Size(366, 0);
             coffeeLinkLabel.Name = "coffeeLinkLabel";
-            coffeeLinkLabel.Size = new Size(335, 20);
+            coffeeLinkLabel.Size = new System.Drawing.Size(335, 20);
             coffeeLinkLabel.TabIndex = 15;
             coffeeLinkLabel.TabStop = true;
             coffeeLinkLabel.Tag = "https://www.buymeacoffee.com/deminimis";
             coffeeLinkLabel.Text = "Support my caffeine addiction if you like this app";
             coffeeLinkLabel.Click += CoffeeLink_Click;
-            // 
-            // coffeePictureBox
-            // 
             coffeePictureBox.Cursor = Cursors.Hand;
             coffeePictureBox.Location = new Point(0, 0);
             coffeePictureBox.Margin = new Padding(3, 4, 3, 4);
@@ -850,41 +902,29 @@ namespace MinimalFirewall
             coffeePictureBox.Click += CoffeeLink_Click;
             coffeePictureBox.MouseEnter += CoffeePictureBox_MouseEnter;
             coffeePictureBox.MouseLeave += CoffeePictureBox_MouseLeave;
-            // 
-            // versionLabel
-            // 
             versionLabel.AutoSize = true;
             versionLabel.Font = new Font("Segoe UI", 9F);
-            versionLabel.Location = new Point(223, 463);
+            versionLabel.Location = new Point(223, 620);
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(57, 20);
             versionLabel.TabIndex = 12;
             versionLabel.Text = "Version";
-            // 
-            // checkForUpdatesButton
-            // 
-            checkForUpdatesButton.Location = new Point(29, 453);
+            checkForUpdatesButton.Location = new Point(29, 610);
             checkForUpdatesButton.Margin = new Padding(3, 4, 3, 4);
             checkForUpdatesButton.Name = "checkForUpdatesButton";
             checkForUpdatesButton.Size = new Size(183, 37);
             checkForUpdatesButton.TabIndex = 11;
             checkForUpdatesButton.Text = "Check for Updates";
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
-            // 
-            // openFirewallButton
-            // 
-            openFirewallButton.Location = new Point(29, 400);
+            openFirewallButton.Location = new Point(29, 570);
             openFirewallButton.Margin = new Padding(3, 4, 3, 4);
             openFirewallButton.Name = "openFirewallButton";
             openFirewallButton.Size = new Size(183, 37);
             openFirewallButton.TabIndex = 10;
             openFirewallButton.Text = "Open Windows Firewall";
             openFirewallButton.Click += OpenFirewallButton_Click;
-            // 
-            // forumLink
-            // 
             forumLink.AutoSize = true;
-            forumLink.Location = new Point(29, 540);
+            forumLink.Location = new Point(29, 660);
             forumLink.Name = "forumLink";
             forumLink.Size = new Size(140, 20);
             forumLink.TabIndex = 9;
@@ -892,11 +932,8 @@ namespace MinimalFirewall
             forumLink.Tag = "https://github.com/deminimis/minimalfirewall/discussions";
             forumLink.Text = "Forum / Discussions";
             forumLink.LinkClicked += LinkLabel_LinkClicked;
-            // 
-            // reportProblemLink
-            // 
             reportProblemLink.AutoSize = true;
-            reportProblemLink.Location = new Point(29, 513);
+            reportProblemLink.Location = new Point(29, 680);
             reportProblemLink.Name = "reportProblemLink";
             reportProblemLink.Size = new Size(126, 20);
             reportProblemLink.TabIndex = 8;
@@ -904,11 +941,8 @@ namespace MinimalFirewall
             reportProblemLink.Tag = "https://github.com/deminimis/minimalfirewall/issues";
             reportProblemLink.Text = "Report a Problem";
             reportProblemLink.LinkClicked += LinkLabel_LinkClicked;
-            // 
-            // helpLink
-            // 
             helpLink.AutoSize = true;
-            helpLink.Location = new Point(29, 567);
+            helpLink.Location = new Point(29, 700);
             helpLink.Name = "helpLink";
             helpLink.Size = new Size(158, 20);
             helpLink.TabIndex = 7;
@@ -916,9 +950,6 @@ namespace MinimalFirewall
             helpLink.Tag = "https://github.com/deminimis/minimalfirewall";
             helpLink.Text = "Help / Documentation";
             helpLink.LinkClicked += LinkLabel_LinkClicked;
-            // 
-            // autoRefreshTextBox
-            // 
             autoRefreshTextBox.Location = new Point(171, 293);
             autoRefreshTextBox.Margin = new Padding(3, 4, 3, 4);
             autoRefreshTextBox.MaxLength = 3;
@@ -926,9 +957,6 @@ namespace MinimalFirewall
             autoRefreshTextBox.Size = new Size(68, 27);
             autoRefreshTextBox.TabIndex = 5;
             autoRefreshTextBox.Text = "10";
-            // 
-            // loggingSwitch
-            // 
             loggingSwitch.AutoSize = true;
             loggingSwitch.Location = new Point(29, 247);
             loggingSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -937,21 +965,15 @@ namespace MinimalFirewall
             loggingSwitch.TabIndex = 4;
             loggingSwitch.Text = "Enable logging";
             loggingSwitch.UseVisualStyleBackColor = true;
-            // 
-            // popupsSwitch
-            // 
             popupsSwitch.AutoSize = true;
             popupsSwitch.Location = new Point(29, 200);
             popupsSwitch.Margin = new Padding(3, 4, 3, 4);
             popupsSwitch.Name = "popupsSwitch";
-            popupsSwitch.Size = new Size(216, 24);
+            popupsSwitch.Size = new System.Drawing.Size(216, 24);
             popupsSwitch.TabIndex = 3;
             popupsSwitch.Text = "Enable pop-up notifications";
             popupsSwitch.UseVisualStyleBackColor = true;
             popupsSwitch.CheckedChanged += PopupsSwitch_CheckedChanged;
-            // 
-            // darkModeSwitch
-            // 
             darkModeSwitch.AutoSize = true;
             darkModeSwitch.Location = new Point(29, 153);
             darkModeSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -961,9 +983,6 @@ namespace MinimalFirewall
             darkModeSwitch.Text = "Dark Mode";
             darkModeSwitch.UseVisualStyleBackColor = true;
             darkModeSwitch.CheckedChanged += DarkModeSwitch_CheckedChanged;
-            // 
-            // startOnStartupSwitch
-            // 
             startOnStartupSwitch.AutoSize = true;
             startOnStartupSwitch.Location = new Point(29, 107);
             startOnStartupSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -972,9 +991,6 @@ namespace MinimalFirewall
             startOnStartupSwitch.TabIndex = 1;
             startOnStartupSwitch.Text = "Start with Windows";
             startOnStartupSwitch.UseVisualStyleBackColor = true;
-            // 
-            // closeToTraySwitch
-            // 
             closeToTraySwitch.AutoSize = true;
             closeToTraySwitch.Checked = true;
             closeToTraySwitch.CheckState = CheckState.Checked;
@@ -985,9 +1001,6 @@ namespace MinimalFirewall
             closeToTraySwitch.TabIndex = 0;
             closeToTraySwitch.Text = "Close to tray";
             closeToTraySwitch.UseVisualStyleBackColor = true;
-            // 
-            // appImageList
-            // 
             appImageList.ColorDepth = ColorDepth.Depth32Bit;
             appImageList.ImageStream = (ImageListStreamer)resources.GetObject("appImageList.ImageStream");
             appImageList.TransparentColor = Color.Transparent;
@@ -1002,9 +1015,6 @@ namespace MinimalFirewall
             appImageList.Images.SetKeyName(8, "unlocked.png");
             appImageList.Images.SetKeyName(9, "logo.png");
             appImageList.Images.SetKeyName(10, "antenna.png");
-            // 
-            // lockdownButton
-            // 
             lockdownButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lockdownButton.BackColor = Color.Transparent;
             lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
@@ -1019,9 +1029,6 @@ namespace MinimalFirewall
             lockdownButton.Click += ToggleLockdownButton_Click;
             lockdownButton.MouseEnter += LockdownButton_MouseEnter;
             lockdownButton.MouseLeave += LockdownButton_MouseLeave;
-            // 
-            // rescanButton
-            // 
             rescanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             rescanButton.BackColor = Color.Transparent;
             rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
@@ -1036,123 +1043,21 @@ namespace MinimalFirewall
             rescanButton.Click += RescanButton_Click;
             rescanButton.MouseEnter += RescanButton_MouseEnter;
             rescanButton.MouseLeave += RescanButton_MouseLeave;
-            // 
-            // rulesContextMenu
-            // 
-            rulesContextMenu.ImageScalingSize = new Size(20, 20);
-            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem });
-            rulesContextMenu.Name = "rulesContextMenu";
-            rulesContextMenu.Size = new Size(203, 112);
-            // 
-            // allowToolStripMenuItem
-            // 
-            allowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allowOutboundToolStripMenuItem, allowInboundToolStripMenuItem, allowAllToolStripMenuItem });
-            allowToolStripMenuItem.Name = "allowToolStripMenuItem";
-            allowToolStripMenuItem.Size = new Size(202, 24);
-            allowToolStripMenuItem.Text = "Allow";
-            // 
-            // allowOutboundToolStripMenuItem
-            // 
-            allowOutboundToolStripMenuItem.Name = "allowOutboundToolStripMenuItem";
-            allowOutboundToolStripMenuItem.Size = new Size(159, 26);
-            allowOutboundToolStripMenuItem.Tag = "Allow (Outbound)";
-            allowOutboundToolStripMenuItem.Text = "Outbound";
-            allowOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // allowInboundToolStripMenuItem
-            // 
-            allowInboundToolStripMenuItem.Name = "allowInboundToolStripMenuItem";
-            allowInboundToolStripMenuItem.Size = new Size(159, 26);
-            allowInboundToolStripMenuItem.Tag = "Allow (Inbound)";
-            allowInboundToolStripMenuItem.Text = "Inbound";
-            allowInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // allowAllToolStripMenuItem
-            // 
-            allowAllToolStripMenuItem.Name = "allowAllToolStripMenuItem";
-            allowAllToolStripMenuItem.Size = new Size(159, 26);
-            allowAllToolStripMenuItem.Tag = "Allow (All)";
-            allowAllToolStripMenuItem.Text = "All";
-            allowAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // blockToolStripMenuItem
-            // 
-            blockToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { blockOutboundToolStripMenuItem, blockInboundToolStripMenuItem, blockAllToolStripMenuItem });
-            blockToolStripMenuItem.Name = "blockToolStripMenuItem";
-            blockToolStripMenuItem.Size = new Size(202, 24);
-            blockToolStripMenuItem.Text = "Block";
-            // 
-            // blockOutboundToolStripMenuItem
-            // 
-            blockOutboundToolStripMenuItem.Name = "blockOutboundToolStripMenuItem";
-            blockOutboundToolStripMenuItem.Size = new Size(159, 26);
-            blockOutboundToolStripMenuItem.Tag = "Block (Outbound)";
-            blockOutboundToolStripMenuItem.Text = "Outbound";
-            blockOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // blockInboundToolStripMenuItem
-            // 
-            blockInboundToolStripMenuItem.Name = "blockInboundToolStripMenuItem";
-            blockInboundToolStripMenuItem.Size = new Size(159, 26);
-            blockInboundToolStripMenuItem.Tag = "Block (Inbound)";
-            blockInboundToolStripMenuItem.Text = "Inbound";
-            blockInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // blockAllToolStripMenuItem
-            // 
-            blockAllToolStripMenuItem.Name = "blockAllToolStripMenuItem";
-            blockAllToolStripMenuItem.Size = new Size(159, 26);
-            blockAllToolStripMenuItem.Tag = "Block (All)";
-            blockAllToolStripMenuItem.Text = "All";
-            blockAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
-            // 
-            // toolStripSeparator1
-            // 
-            toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(199, 6);
-            // 
-            // deleteRuleToolStripMenuItem
-            // 
-            deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
-            deleteRuleToolStripMenuItem.Size = new Size(202, 24);
-            deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
-            deleteRuleToolStripMenuItem.Click += DeleteRuleMenuItem_Click;
-            // 
-            // toolStripSeparator2
-            // 
-            toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(199, 6);
-            // 
-            // openFileLocationToolStripMenuItem
-            // 
-            openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
-            openFileLocationToolStripMenuItem.Size = new Size(202, 24);
-            openFileLocationToolStripMenuItem.Text = "Open File Location";
-            openFileLocationToolStripMenuItem.Click += OpenFileLocationMenuItem_Click;
-            // 
-            // auditContextMenu
-            // 
             auditContextMenu.ImageScalingSize = new Size(20, 20);
             auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, ignoreAllToolStripMenuItem });
             auditContextMenu.Name = "auditContextMenu";
             auditContextMenu.Size = new Size(207, 52);
-            // 
-            // acceptAllToolStripMenuItem
-            // 
             acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
             acceptAllToolStripMenuItem.Size = new Size(206, 24);
             acceptAllToolStripMenuItem.Text = "Accept All Changes";
             acceptAllToolStripMenuItem.Click += AcceptAllToolStripMenuItem_Click;
-            // 
-            // ignoreAllToolStripMenuItem
-            // 
             ignoreAllToolStripMenuItem.Name = "ignoreAllToolStripMenuItem";
             ignoreAllToolStripMenuItem.Size = new Size(206, 24);
             ignoreAllToolStripMenuItem.Text = "Ignore All Changes";
             ignoreAllToolStripMenuItem.Click += IgnoreAllToolStripMenuItem_Click;
-            // 
-            // MainForm
-            // 
+            appIconList.ColorDepth = ColorDepth.Depth32Bit;
+            appIconList.ImageSize = new Size(16, 16);
+            appIconList.TransparentColor = Color.Transparent;
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1143, 933);
@@ -1168,8 +1073,10 @@ namespace MinimalFirewall
             logoPictureBox.ResumeLayout(false);
             logoPictureBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)arrowPictureBox).EndInit();
+            dashboardContextMenu.ResumeLayout(false);
             rulesTabPage.ResumeLayout(false);
             rulesTabPage.PerformLayout();
+            rulesContextMenu.ResumeLayout(false);
             systemChangesTabPage.ResumeLayout(false);
             systemChangesTabPage.PerformLayout();
             groupsTabPage.ResumeLayout(false);
@@ -1178,10 +1085,11 @@ namespace MinimalFirewall
             liveConnectionsContextMenu.ResumeLayout(false);
             settingsTabPage.ResumeLayout(false);
             settingsTabPage.PerformLayout();
+            autoAllowGroupBox.ResumeLayout(false);
+            autoAllowGroupBox.PerformLayout();
             coffeePanel.ResumeLayout(false);
             coffeePanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
-            rulesContextMenu.ResumeLayout(false);
             auditContextMenu.ResumeLayout(false);
             ResumeLayout(false);
         }
