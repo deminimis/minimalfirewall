@@ -117,32 +117,21 @@ namespace MinimalFirewall
                     return;
                 }
 
-                if (_appSettings.AutoAllowSignedApps != AutoAllowSignedAppsOption.Disabled)
+                // 1. Check custom publisher whitelist (always active).
+                if (SignatureValidationService.GetPublisherInfo(appPath, out var publisherName) && publisherName != null && _whitelistService.IsTrusted(publisherName))
                 {
-                    bool shouldAutoAllow = false;
-                    string publisherNameToAllow = string.Empty;
+                    _logAction($"[EventListener] Auto-allowing whitelisted publisher application: {appPath} from {publisherName}");
+                    string allowAction = $"Allow ({eventDirection})";
+                    ActionsService.ApplyApplicationRuleChange([appPath], allowAction);
+                    return;
+                }
 
-                    if (_appSettings.AutoAllowSignedApps == AutoAllowSignedAppsOption.AllowSystemTrusted)
+                // 2. Check if auto-allowing apps trusted by Windows is enabled.
+                if (_appSettings.AutoAllowSystemTrusted)
+                {
+                    if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
                     {
-                        if (SignatureValidationService.IsSignatureTrusted(appPath, out var publisherName) && publisherName != null)
-                        {
-                            shouldAutoAllow = true;
-                            publisherNameToAllow = publisherName;
-                            _logAction($"[EventListener] Auto-allowing system-trusted application: {appPath} from {publisherNameToAllow}");
-                        }
-                    }
-                    else if (_appSettings.AutoAllowSignedApps == AutoAllowSignedAppsOption.AllowWhitelisted)
-                    {
-                        if (SignatureValidationService.GetPublisherInfo(appPath, out var publisherName) && publisherName != null && _whitelistService.IsTrusted(publisherName))
-                        {
-                            shouldAutoAllow = true;
-                            publisherNameToAllow = publisherName;
-                            _logAction($"[EventListener] Auto-allowing whitelisted publisher application: {appPath} from {publisherNameToAllow}");
-                        }
-                    }
-
-                    if (shouldAutoAllow)
-                    {
+                        _logAction($"[EventListener] Auto-allowing system-trusted application: {appPath} from {trustedPublisherName}");
                         string allowAction = $"Allow ({eventDirection})";
                         ActionsService.ApplyApplicationRuleChange([appPath], allowAction);
                         return;

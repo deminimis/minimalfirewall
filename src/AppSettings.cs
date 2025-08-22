@@ -1,4 +1,4 @@
-﻿// AppSettings.cs
+﻿// File: AppSettings.cs
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -10,13 +10,6 @@ using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
-    public enum AutoAllowSignedAppsOption
-    {
-        Disabled,
-        AllowSystemTrusted,
-        AllowWhitelisted
-    }
-
     public class AppSettings : INotifyPropertyChanged
     {
         private static readonly string _configPath = Path.Combine(AppContext.BaseDirectory, "settings.json");
@@ -26,9 +19,10 @@ namespace MinimalFirewall
         private bool _startOnSystemStartup;
         private bool _closeToTray = true;
         private int _autoRefreshIntervalMinutes = 10;
-        private bool _isTrafficMonitorEnabled = true;
+        private bool _isTrafficMonitorEnabled = false;
         private bool _showAppIcons = true;
-        private AutoAllowSignedAppsOption _autoAllowSignedApps = AutoAllowSignedAppsOption.Disabled;
+        private bool _autoAllowSystemTrusted = false;
+        private bool _alertOnForeignRules = true;
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
@@ -38,7 +32,8 @@ namespace MinimalFirewall
         public int AutoRefreshIntervalMinutes { get => _autoRefreshIntervalMinutes; set => SetField(ref _autoRefreshIntervalMinutes, value); }
         public bool IsTrafficMonitorEnabled { get => _isTrafficMonitorEnabled; set => SetField(ref _isTrafficMonitorEnabled, value); }
         public bool ShowAppIcons { get => _showAppIcons; set => SetField(ref _showAppIcons, value); }
-        public AutoAllowSignedAppsOption AutoAllowSignedApps { get => _autoAllowSignedApps; set => SetField(ref _autoAllowSignedApps, value); }
+        public bool AutoAllowSystemTrusted { get => _autoAllowSystemTrusted; set => SetField(ref _autoAllowSystemTrusted, value); }
+        public bool AlertOnForeignRules { get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value); }
 
         public Point WindowLocation { get; set; } = new Point(100, 100);
         public Size WindowSize { get; set; } = new Size(1280, 800);

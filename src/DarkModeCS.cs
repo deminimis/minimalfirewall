@@ -1,10 +1,12 @@
 // DarkModeCS.cs
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -13,8 +15,85 @@ using System.Windows.Forms;
 
 namespace DarkModeForms
 {
-    public class DarkModeCS
+    public class DarkModeCS : IDisposable
     {
+        private class NotificationInfo
+        {
+            public int Count { get; set; }
+        }
+        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
+
+        public void SetNotificationCount(Control control, int count)
+        {
+            if (count > 0)
+            {
+                if (_notificationInfo.TryGetValue(control, out var info))
+                {
+                    info.Count = count;
+                }
+                else
+                {
+                    _notificationInfo.Add(control, new NotificationInfo { Count = count });
+                }
+            }
+            else
+            {
+                if (_notificationInfo.TryGetValue(control, out _))
+                {
+                    _notificationInfo.Remove(control);
+                }
+            }
+
+            if (control is TabPage tabPage && tabPage.Parent is TabControl parentTab)
+            {
+                parentTab.Invalidate();
+            }
+        }
+
+        private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text)
+        {
+            using (Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold))
+            {
+                SizeF textSize = g.MeasureString(text, notifFont);
+                int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
+                int x = tabRect.Right - diameter - 3;
+                int y = tabRect.Top + 3;
+
+                Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
+
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                using (var path = new GraphicsPath())
+                {
+                    path.AddEllipse(bubbleRect);
+
+                    PointF point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
+                    PointF point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
+                    PointF point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
+
+                    path.AddPolygon(new[] { point1, point2, point3 });
+
+                    using (SolidBrush redBrush = new SolidBrush(Color.Red))
+                    {
+                        g.FillPath(redBrush, path);
+                    }
+                }
+
+                using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+                {
+                    using (StringFormat sf = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    })
+                    {
+                        g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
+                    }
+                }
+            }
+        }
+
+
         public struct DWMCOLORIZATIONcolors
         {
             public uint ColorizationColor,
@@ -31,6 +110,10 @@ namespace DarkModeForms
         {
             DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
         }
+
+        [DllImport("user32.dll")]
+        private static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
+        private const int WM_SETREDRAW = 0x000B;
 
         [DllImport("DwmApi")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
@@ -53,8 +136,8 @@ namespace DarkModeForms
         private const uint GW_CHILD = 5;
 
         private static readonly ControlStatusStorage controlStatusStorage = new();
-        private static ControlEventHandler? ownerFormControlAdded;
-        private static ControlEventHandler? controlControlAdded;
+        private ControlEventHandler? ownerFormControlAdded;
+        private ControlEventHandler? controlControlAdded;
         private bool _IsDarkMode;
 
         public enum DisplayMode
@@ -75,6 +158,8 @@ namespace DarkModeForms
         public DarkModeCS(Form _Form, bool _ColorizeIcons = true, bool _RoundedPanels = false)
         {
             OwnerForm = _Form;
+            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.SetValue(OwnerForm, true, null);
             Components = null;
             ColorizeIcons = _ColorizeIcons;
             RoundedPanels = _RoundedPanels;
@@ -91,6 +176,17 @@ namespace DarkModeForms
 
                 ApplyTheme(_IsDarkMode);
             };
+        }
+
+        private static void SuspendDrawing(Control parent)
+        {
+            SendMessage(parent.Handle, WM_SETREDRAW, false, 0);
+        }
+
+        private static void ResumeDrawing(Control parent)
+        {
+            SendMessage(parent.Handle, WM_SETREDRAW, true, 0);
+            parent.Refresh();
         }
 
         private void ApplyTitleBarTheme()
@@ -115,6 +211,9 @@ namespace DarkModeForms
                 _IsDarkMode = pIsDarkMode;
                 OScolors = GetSystemColors(pIsDarkMode ? 0 : 1);
 
+                SuspendDrawing(OwnerForm);
+                OwnerForm.SuspendLayout();
+
                 ApplyTitleBarTheme();
 
                 OwnerForm.BackColor = OScolors.Background;
@@ -126,7 +225,7 @@ namespace DarkModeForms
                         ThemeControl(_control);
                     }
 
-                    ownerFormControlAdded ??= (sender, e) =>
+                    ownerFormControlAdded = (sender, e) =>
                     {
                         if (e.Control != null)
                         {
@@ -142,6 +241,8 @@ namespace DarkModeForms
                     foreach (var item in Components.OfType<ContextMenuStrip>())
                         ThemeControl(item);
                 }
+                OwnerForm.ResumeLayout(true);
+                ResumeDrawing(OwnerForm);
             }
             catch (Exception ex)
             {
@@ -192,9 +293,9 @@ namespace DarkModeForms
             {
                 controlStatusStorage.RegisterProcessedControl(control, IsDarkMode);
             }
-
+            control.SuspendLayout();
             BorderStyle BStyle = (IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D);
-            controlControlAdded ??= (sender, e) =>
+            controlControlAdded = (sender, e) =>
             {
                 if (e.Control != null)
                 {
@@ -212,24 +313,8 @@ namespace DarkModeForms
             {
                 control.BackColor = control.Parent.BackColor;
                 control.GetType().GetProperty("BorderStyle")?.SetValue(control, BorderStyle.None);
-                control.Paint += (sender, e) =>
-                {
-                    if (!control.Enabled && IsDarkMode && control.Parent != null)
-                    {
-                        e.Graphics.Clear(control.Parent.BackColor);
-                        e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-
-                        using Brush B = new SolidBrush(control.ForeColor);
-                        MethodInfo? mi = lbl.GetType().GetMethod("CreateStringFormat", BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (mi != null)
-                        {
-                            if (mi.Invoke(lbl, []) is StringFormat sf)
-                            {
-                                e.Graphics.DrawString(lbl.Text ?? "", lbl.Font, B, new PointF(1, 0), sf);
-                            }
-                        }
-                    }
-                };
+                lbl.Paint -= Label_Paint;
+                lbl.Paint += Label_Paint;
             }
             else if (control is LinkLabel linkLabel && linkLabel.Parent != null)
             {
@@ -294,14 +379,8 @@ namespace DarkModeForms
             {
                 groupBox.BackColor = groupBox.Parent.BackColor;
                 groupBox.ForeColor = OScolors.TextActive;
-                groupBox.Paint += (sender, e) =>
-                {
-                    if (sender is GroupBox senderGroupBox && !control.Enabled && IsDarkMode)
-                    {
-                        using Brush B = new SolidBrush(control.ForeColor);
-                        e.Graphics.DrawString(senderGroupBox.Text, senderGroupBox.Font, B, new PointF(6, 0));
-                    }
-                };
+                groupBox.Paint -= GroupBox_Paint;
+                groupBox.Paint += GroupBox_Paint;
             }
             else if (control is TableLayoutPanel tablePanel && tablePanel.Parent != null)
             {
@@ -312,82 +391,8 @@ namespace DarkModeForms
             {
                 tab.Appearance = TabAppearance.Normal;
                 tab.DrawMode = TabDrawMode.OwnerDrawFixed;
-                tab.DrawItem += (sender, e) =>
-                {
-                    using (SolidBrush headerBrush = new SolidBrush(tab.Parent.BackColor))
-                    {
-                        e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
-                    }
-
-                    for (int i = 0; i < tab.TabPages.Count; i++)
-                    {
-                        TabPage tabPage = tab.TabPages[i];
-                        if (tabPage.Tag == null)
-                        {
-                            tabPage.BackColor = OScolors.Surface;
-                            tabPage.BorderStyle = BorderStyle.FixedSingle;
-                            foreach (Control child in tabPage.Controls)
-                            {
-                                ThemeControl(child);
-                            }
-                            tabPage.ControlAdded += (_s, _e) =>
-                            {
-                                if (_e.Control != null) ThemeControl(_e.Control);
-                            };
-                            tabPage.Tag = "themed";
-                        }
-                        Rectangle tabRect = tab.GetTabRect(i);
-                        bool isSelected = tab.SelectedIndex == i;
-                        if (isSelected)
-                        {
-                            using (SolidBrush tabBackColor = new SolidBrush(OScolors.Surface))
-                            {
-                                e.Graphics.FillRectangle(tabBackColor, tabRect);
-                            }
-                        }
-                        Image? icon = null;
-                        if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
-                        {
-                            icon = tab.ImageList.Images[tabPage.ImageIndex];
-                        }
-                        Rectangle textBounds;
-                        TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
-                        Color textColor = isSelected ? OScolors.TextActive : OScolors.TextInactive;
-                        if (tab.Alignment == TabAlignment.Left || tab.Alignment == TabAlignment.Right)
-                        {
-                            if (icon != null)
-                            {
-                                int iconHeight = tab.ImageList.ImageSize.Height;
-                                int iconWidth = tab.ImageList.ImageSize.Width;
-                                int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
-                                int iconY = tabRect.Y + 15;
-                                Image imageToDraw = icon;
-                                bool shouldDispose = false;
-                                if (IsDarkMode && tabPage.ImageKey != "locked.png")
-                                {
-                                    imageToDraw = ChangeToColor(icon, Color.White);
-                                    shouldDispose = true;
-                                }
-                                e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
-                                if (shouldDispose)
-                                {
-                                    imageToDraw.Dispose();
-                                }
-                                textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
-                                textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
-                            }
-                            else
-                            {
-                                textBounds = tabRect;
-                            }
-                        }
-                        else
-                        {
-                            textBounds = tabRect;
-                        }
-                        TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
-                    }
-                };
+                tab.DrawItem -= Tab_DrawItem;
+                tab.DrawItem += Tab_DrawItem;
             }
             else if (control is PictureBox pictureBox && pictureBox.Parent != null)
             {
@@ -402,27 +407,15 @@ namespace DarkModeForms
             {
                 checkBox.BackColor = checkBox.Parent.BackColor;
                 checkBox.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
-                checkBox.Paint += (sender, e) =>
-                {
-                    if (sender is CheckBox senderCheckBox && !control.Enabled && IsDarkMode)
-                    {
-                        using Brush B = new SolidBrush(control.ForeColor);
-                        e.Graphics.DrawString(senderCheckBox.Text, senderCheckBox.Font, B, new PointF(16, 0));
-                    }
-                };
+                checkBox.Paint -= CheckBox_Paint;
+                checkBox.Paint += CheckBox_Paint;
             }
             else if (control is RadioButton radioButton && radioButton.Parent != null)
             {
                 radioButton.BackColor = radioButton.Parent.BackColor;
                 radioButton.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
-                radioButton.Paint += (sender, e) =>
-                {
-                    if (sender is RadioButton senderRadioButton && !control.Enabled && IsDarkMode)
-                    {
-                        using Brush B = new SolidBrush(control.ForeColor);
-                        e.Graphics.DrawString(senderRadioButton.Text, senderRadioButton.Font, B, new PointF(16, 0));
-                    }
-                };
+                radioButton.Paint -= RadioButton_Paint;
+                radioButton.Paint += RadioButton_Paint;
             }
             else if (control is MenuStrip menuStrip)
             {
@@ -498,22 +491,9 @@ namespace DarkModeForms
                 grid.BackgroundColor = OScolors.Control;
                 grid.GridColor = OScolors.Control;
 
-                grid.Paint += (sender, e) =>
-                {
-                    if (sender is DataGridView dgv)
-                    {
-                        PropertyInfo? hsp = typeof(DataGridView).GetProperty("HorizontalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
-                        PropertyInfo? vsp = typeof(DataGridView).GetProperty("VerticalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
-                        if (hsp?.GetValue(dgv) is HScrollBar hs && hs.Visible && vsp?.GetValue(dgv) is VScrollBar vs && vs.Visible)
-                        {
-                            using Brush brush = new SolidBrush(OScolors.SurfaceDark);
-                            var w = vs.Size.Width;
-                            var h = hs.Size.Height;
-                            e.Graphics.FillRectangle(brush, dgv.ClientRectangle.X + dgv.ClientRectangle.Width - w - 1,
-                              dgv.ClientRectangle.Y + dgv.ClientRectangle.Height - h - 1, w, h);
-                        }
-                    }
-                };
+                grid.Paint -= DataGridView_Paint;
+                grid.Paint += DataGridView_Paint;
+
                 grid.DefaultCellStyle.BackColor = OScolors.Surface;
                 grid.DefaultCellStyle.ForeColor = OScolors.TextActive;
                 grid.ColumnHeadersDefaultCellStyle.BackColor = OScolors.Surface;
@@ -541,6 +521,137 @@ namespace DarkModeForms
             {
                 ThemeControl(childControl);
             }
+            control.ResumeLayout(false);
+        }
+
+        private void Label_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Label lbl || !(!lbl.Enabled && IsDarkMode && lbl.Parent != null)) return;
+            e.Graphics.Clear(lbl.Parent.BackColor);
+            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+            using Brush B = new SolidBrush(lbl.ForeColor);
+            MethodInfo? mi = lbl.GetType().GetMethod("CreateStringFormat", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (mi?.Invoke(lbl, []) is StringFormat sf)
+            {
+                e.Graphics.DrawString(lbl.Text ?? "", lbl.Font, B, new PointF(1, 0), sf);
+            }
+        }
+
+        private void GroupBox_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not GroupBox gBox || !(!gBox.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(gBox.ForeColor);
+            e.Graphics.DrawString(gBox.Text, gBox.Font, B, new PointF(6, 0));
+        }
+
+        private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
+        {
+            if (sender is not TabControl tab || tab.Parent == null) return;
+            using (SolidBrush headerBrush = new SolidBrush(tab.Parent.BackColor))
+            {
+                e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
+            }
+            for (int i = 0; i < tab.TabPages.Count; i++)
+            {
+                TabPage tabPage = tab.TabPages[i];
+                if (tabPage.Tag == null)
+                {
+                    tabPage.BackColor = OScolors.Surface;
+                    tabPage.BorderStyle = BorderStyle.FixedSingle;
+                    foreach (Control child in tabPage.Controls)
+                    {
+                        ThemeControl(child);
+                    }
+                    tabPage.ControlAdded += (_s, _e) => { if (_e.Control != null) ThemeControl(_e.Control); };
+                    tabPage.Tag = "themed";
+                }
+                Rectangle tabRect = tab.GetTabRect(i);
+                bool isSelected = tab.SelectedIndex == i;
+                if (isSelected)
+                {
+                    using (SolidBrush tabBackColor = new SolidBrush(OScolors.Surface))
+                    {
+                        e.Graphics.FillRectangle(tabBackColor, tabRect);
+                    }
+                }
+                Image? icon = null;
+                if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
+                {
+                    icon = tab.ImageList.Images[tabPage.ImageIndex];
+                }
+                Rectangle textBounds;
+                TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
+                Color textColor = isSelected ? OScolors.TextActive : OScolors.TextInactive;
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+                if (tab.Alignment == TabAlignment.Left || tab.Alignment == TabAlignment.Right)
+                {
+                    if (icon != null)
+                    {
+                        int iconHeight = tab.ImageList.ImageSize.Height;
+                        int iconWidth = tab.ImageList.ImageSize.Width;
+                        int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
+                        int iconY = tabRect.Y + 15;
+                        Image imageToDraw = icon;
+                        bool shouldDispose = false;
+                        if (IsDarkMode && tabPage.ImageKey != "locked.png")
+                        {
+                            imageToDraw = RecolorImage(icon, Color.White);
+                            shouldDispose = true;
+                        }
+                        e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
+                        if (shouldDispose)
+                        {
+                            imageToDraw.Dispose();
+                        }
+                        textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
+                        textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
+                    }
+                    else
+                    {
+                        textBounds = tabRect;
+                    }
+                }
+                else
+                {
+                    textBounds = tabRect;
+                }
+                TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
+                if (_notificationInfo.TryGetValue(tabPage, out var info) && info.Count > 0)
+                {
+                    DrawNotificationBubble(e.Graphics, tabRect, info.Count.ToString());
+                }
+            }
+        }
+
+        private void CheckBox_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not CheckBox chkBox || !(!chkBox.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(chkBox.ForeColor);
+            e.Graphics.DrawString(chkBox.Text, chkBox.Font, B, new PointF(16, 0));
+        }
+
+        private void RadioButton_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not RadioButton rdoBtn || !(!rdoBtn.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(rdoBtn.ForeColor);
+            e.Graphics.DrawString(rdoBtn.Text, rdoBtn.Font, B, new PointF(16, 0));
+        }
+
+        private void DataGridView_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not DataGridView dgv) return;
+            PropertyInfo? hsp = typeof(DataGridView).GetProperty("HorizontalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
+            PropertyInfo? vsp = typeof(DataGridView).GetProperty("VerticalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (hsp?.GetValue(dgv) is HScrollBar hs && hs.Visible && vsp?.GetValue(dgv) is VScrollBar vs && vs.Visible)
+            {
+                using Brush brush = new SolidBrush(OScolors.SurfaceDark);
+                var w = vs.Size.Width;
+                var h = hs.Size.Height;
+                e.Graphics.FillRectangle(brush, dgv.ClientRectangle.X + dgv.ClientRectangle.Width - w - 1, dgv.ClientRectangle.Y + dgv.ClientRectangle.Height - h - 1, w, h);
+            }
         }
 
         public static void ExcludeFromProcessing(Control control)
@@ -553,8 +664,8 @@ namespace DarkModeForms
             try
             {
                 return (int?)Registry.GetValue(
-                  @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
-                  GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
+                   @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                   GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
                   -1) ?? 1;
             }
             catch
@@ -592,7 +703,6 @@ namespace DarkModeForms
         {
             DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
             DwmGetColorizationParameters(ref colors);
-
             if (IsWindows10orGreater())
             {
                 var color = colors.ColorizationColor;
@@ -674,37 +784,37 @@ namespace DarkModeForms
             }
         }
 
-        public static Bitmap ChangeToColor(Bitmap bmp, Color c)
+        public static Image RecolorImage(Image sourceImage, Color newColor)
         {
-            Bitmap bmp2 = new(bmp.Width, bmp.Height);
-            using (Graphics g = Graphics.FromImage(bmp2))
+            var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(newBitmap))
             {
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 g.CompositingQuality = CompositingQuality.HighQuality;
-                g.SmoothingMode = SmoothingMode.HighQuality;
-
-                float tR = c.R / 255f;
-                float tG = c.G / 255f;
-                float tB = c.B / 255f;
-
-                System.Drawing.Imaging.ColorMatrix colorMatrix = new(new float[][]
+                float r = newColor.R / 255f;
+                float g_ = newColor.G / 255f;
+                float b = newColor.B / 255f;
+                var colorMatrix = new ColorMatrix(
+                new float[][]
                 {
-                    new float[] { 1,    0,  0,  0,  0 },
-                    new float[] { 0,    1,  0,  0,  0 },
-                    new float[] { 0,    0,  1,  0,  0 },
-                    new float[] { 0,    0,  0,  1,  0 },
-                    new float[] { tR,   tG, tB, 0,  1 }
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 1, 0},
+                    new float[] {r, g_, b, 0, 1}
                 });
 
-                System.Drawing.Imaging.ImageAttributes attributes = new();
-                attributes.SetColorMatrix(colorMatrix);
-                g.DrawImage(bmp, new Rectangle(0, 0, bmp.Width, bmp.Height),
-                  0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel, attributes);
+                using (var attributes = new ImageAttributes())
+                {
+                    attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                    g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                                0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+                }
             }
-            return bmp2;
+            return newBitmap;
         }
 
-        public static Image ChangeToColor(Image bmp, Color c) => ChangeToColor((Bitmap)bmp, c);
         private void Tsdd_Opening(object? sender, CancelEventArgs e)
         {
             if (sender is ToolStripDropDown tsdd)
@@ -775,6 +885,29 @@ namespace DarkModeForms
             path.AddArc(rect.X, rect.Bottom - curveSize, curveSize, curveSize, 90, 90);
             path.CloseFigure();
             return path;
+        }
+
+        private bool disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (OwnerForm != null && ownerFormControlAdded != null)
+                    {
+                        OwnerForm.ControlAdded -= ownerFormControlAdded;
+                    }
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 
@@ -990,7 +1123,7 @@ namespace DarkModeForms
             if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
             {
                 Color _ClearColor = e.Item.Enabled ? MyColors.TextActive : MyColors.SurfaceDark;
-                using (Image adjustedImage = DarkModeCS.ChangeToColor(e.Image, _ClearColor))
+                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
                 {
                     e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
                     e.Graphics.CompositingQuality = CompositingQuality.AssumeLinear;
@@ -1003,7 +1136,7 @@ namespace DarkModeForms
             if (ColorizeIcons)
             {
                 Color _ClearColor = e.Item.Enabled ? MyColors.TextInactive : MyColors.SurfaceDark;
-                using (Image adjustedImage = DarkModeCS.ChangeToColor(e.Image, _ClearColor))
+                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
                 {
                     e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
                     e.Graphics.CompositingQuality = CompositingQuality.HighQuality;

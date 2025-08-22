@@ -39,6 +39,25 @@ namespace MinimalFirewall
             _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
         }
 
+        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, string appPath, string direction)
+        : this(firewallPolicy, actionsService)
+        {
+            programPathTextBox.Text = appPath;
+
+            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+            {
+                inboundRadioButton.Checked = true;
+            }
+            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+            {
+                outboundRadioButton.Checked = true;
+            }
+            else
+            {
+                bothDirRadioButton.Checked = true;
+            }
+        }
+
         private void LoadFirewallGroups()
         {
             var groups = _groupManager.GetAllGroups();

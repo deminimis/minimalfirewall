@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿// File: WildcardRuleService.cs
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
@@ -23,7 +24,7 @@ namespace MinimalFirewall
 
         public void AddRule(WildcardRule rule)
         {
-            if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase)))
+            if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
             {
                 _rules.Add(rule);
                 SaveRules();
@@ -81,11 +82,37 @@ namespace MinimalFirewall
                 return null;
             }
 
+            string fileName = Path.GetFileName(path);
+
             foreach (var rule in _rules)
             {
-                if (path.StartsWith(rule.FolderPath, StringComparison.OrdinalIgnoreCase))
+                string expandedFolderPath = Environment.ExpandEnvironmentVariables(rule.FolderPath);
+
+                if (path.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    return rule;
+                    string exePattern = string.IsNullOrWhiteSpace(rule.ExeName) ? "*" : rule.ExeName.Trim();
+
+                    if (exePattern == "*" || exePattern == "*.exe")
+                    {
+                        return rule;
+                    }
+
+                    if (exePattern.StartsWith("*") && exePattern.EndsWith("*"))
+                    {
+                        if (fileName.Contains(exePattern.Trim('*'), StringComparison.OrdinalIgnoreCase)) return rule;
+                    }
+                    else if (exePattern.StartsWith("*"))
+                    {
+                        if (fileName.EndsWith(exePattern.TrimStart('*'), StringComparison.OrdinalIgnoreCase)) return rule;
+                    }
+                    else if (exePattern.EndsWith("*"))
+                    {
+                        if (fileName.StartsWith(exePattern.TrimEnd('*'), StringComparison.OrdinalIgnoreCase)) return rule;
+                    }
+                    else
+                    {
+                        if (fileName.Equals(exePattern, StringComparison.OrdinalIgnoreCase)) return rule;
+                    }
                 }
             }
             return null;
