@@ -1,4 +1,5 @@
 ﻿// FirewallSentryService.cs
+using System.IO;
 using System.Management;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,14 +12,17 @@ namespace MinimalFirewall
     {
         private readonly FirewallRuleService firewallService;
         private ManagementEventWatcher? _watcher;
-        private readonly Dictionary<string, string> _ruleBaseline = [];
+        private Dictionary<string, string> _ruleBaseline = [];
         private bool _isStarted = false;
+        private readonly string _baselinePath;
 
         public event Action? RuleSetChanged;
 
         public FirewallSentryService(FirewallRuleService firewallService)
         {
             this.firewallService = firewallService;
+            _baselinePath = Path.Combine(AppContext.BaseDirectory, "sentry_baseline.json");
+            LoadBaseline();
         }
 
         public void Start()
@@ -30,7 +34,11 @@ namespace MinimalFirewall
 
             try
             {
-                CreateBaseline();
+                if (!_ruleBaseline.Any())
+                {
+                    CreateBaseline();
+                }
+
                 var scope = new ManagementScope(@"root\StandardCimv2");
                 var query = new WqlEventQuery(
                     "SELECT * FROM __InstanceOperationEvent WITHIN 1 " +
@@ -82,11 +90,43 @@ namespace MinimalFirewall
                     _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
                 }
             }
+            SaveBaseline();
         }
 
         public void ClearBaseline()
         {
             _ruleBaseline.Clear();
+            SaveBaseline();
+        }
+
+        private void LoadBaseline()
+        {
+            try
+            {
+                if (File.Exists(_baselinePath))
+                {
+                    string json = File.ReadAllText(_baselinePath);
+                    _ruleBaseline = JsonSerializer.Deserialize(json, SentryJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to load Sentry baseline: {ex.Message}");
+                _ruleBaseline = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private void SaveBaseline()
+        {
+            try
+            {
+                string json = JsonSerializer.Serialize(_ruleBaseline, SentryJsonContext.Default.DictionaryStringString);
+                File.WriteAllText(_baselinePath, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to save Sentry baseline: {ex.Message}");
+            }
         }
 
         public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker)
@@ -173,6 +213,7 @@ namespace MinimalFirewall
 
     [JsonSourceGenerationOptions(WriteIndented = false, PropertyNameCaseInsensitive = true)]
     [JsonSerializable(typeof(FirewallRuleHashModel))]
+    [JsonSerializable(typeof(Dictionary<string, string>))]
     internal partial class SentryJsonContext : JsonSerializerContext
     {
     }

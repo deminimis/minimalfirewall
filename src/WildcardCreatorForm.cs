@@ -1,4 +1,4 @@
-﻿// WildcardCreatorForm.cs
+﻿// File: WildcardCreatorForm.cs
 using System.IO;
 using DarkModeForms;
 
@@ -42,9 +42,11 @@ namespace MinimalFirewall
 
         private void okButton_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_folderPath) || !Directory.Exists(_folderPath))
+            _folderPath = folderPathTextBox.Text;
+            string expandedPath = Environment.ExpandEnvironmentVariables(_folderPath);
+            if (string.IsNullOrWhiteSpace(_folderPath) || !Directory.Exists(expandedPath))
             {
-                Messenger.MessageBox("Please select a valid folder path.", "Invalid Path", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("Please select or enter a valid folder path.", "Invalid Path", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 

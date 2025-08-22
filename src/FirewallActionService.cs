@@ -18,9 +18,12 @@ namespace MinimalFirewall
         private readonly ForeignRuleTracker foreignRuleTracker;
         private readonly FirewallSentryService sentryService;
         private readonly PublisherWhitelistService _whitelistService;
+        private readonly INetFwPolicy2 _firewallPolicy;
         private readonly Dictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
 
-        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService)
+        private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
+
+        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, INetFwPolicy2 firewallPolicy)
         {
             this.firewallService = firewallService;
             this.activityLogger = activityLogger;
@@ -28,6 +31,7 @@ namespace MinimalFirewall
             this.foreignRuleTracker = foreignRuleTracker;
             this.sentryService = sentryService;
             this._whitelistService = whitelistService;
+            this._firewallPolicy = firewallPolicy;
         }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
@@ -68,7 +72,7 @@ namespace MinimalFirewall
             {
                 var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
                 firewallRule.WithName(name)
-                            .ForService(serviceName)
+                             .ForService(serviceName)
                             .WithDirection(dir)
                             .WithAction(act)
                             .WithProtocol(protocol)
@@ -128,12 +132,50 @@ namespace MinimalFirewall
             foreach (var name in ruleNames) activityLogger.LogChange("Advanced Rule Deleted", name);
         }
 
+        private void ManageCryptoServiceRule(bool enable)
+        {
+            var rule = firewallService.GetAllRules().FirstOrDefault(r => r.Name == CryptoRuleName) as INetFwRule2;
+
+            if (enable)
+            {
+                if (rule == null)
+                {
+                    var newRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                    newRule.WithName(CryptoRuleName)
+                           .WithDescription("Allows Windows to check for certificate revocation online. Essential for the 'auto-allow trusted' feature in Lockdown Mode.")
+                           .ForService("CryptSvc")
+                           .WithDirection(Directions.Outgoing)
+                           .WithAction(Actions.Allow)
+                           .WithProtocol(ProtocolTypes.TCP.Value)
+                           .WithRemotePorts("80,443")
+                           .WithGrouping(MFWConstants.MainRuleGroup)
+                           .IsEnabled();
+                    firewallService.CreateRule(newRule);
+                    activityLogger.LogDebug("Created system rule for certificate checks.");
+                }
+                else if (!rule.Enabled)
+                {
+                    rule.Enabled = true;
+                    activityLogger.LogDebug("Enabled system rule for certificate checks.");
+                }
+            }
+            else
+            {
+                if (rule != null && rule.Enabled)
+                {
+                    rule.Enabled = false;
+                    activityLogger.LogDebug("Disabled system rule for certificate checks.");
+                }
+            }
+        }
+
         public void ToggleLockdown()
         {
             var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
 
             AdminTaskService.SetAuditPolicy(newLockdownState);
+            ManageCryptoServiceRule(newLockdownState);
 
             if (newLockdownState)
             {
@@ -156,6 +198,28 @@ namespace MinimalFirewall
 
             firewallService.SetDefaultOutboundAction(newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
+
+            if (!newLockdownState)
+            {
+                var mfwRules = firewallService.GetApplicationRules();
+                var mfwGroupNames = mfwRules.Select(r => r.Grouping).Distinct();
+
+                foreach (var groupName in mfwGroupNames)
+                {
+                    if (!string.IsNullOrEmpty(groupName))
+                    {
+                        try
+                        {
+                            _firewallPolicy.EnableRuleGroup((int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL, groupName, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to re-enable group '{groupName}': {ex.Message}");
+                        }
+                    }
+                }
+                activityLogger.LogDebug("All MFW rule groups have been re-enabled to ensure persistence.");
+            }
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)

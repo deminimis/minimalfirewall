@@ -36,6 +36,18 @@ namespace MinimalFirewall
             return rule;
         }
 
+        public static INetFwRule2 WithLocalPorts(this INetFwRule2 rule, string ports)
+        {
+            rule.LocalPorts = ports;
+            return rule;
+        }
+
+        public static INetFwRule2 WithRemotePorts(this INetFwRule2 rule, string ports)
+        {
+            rule.RemotePorts = ports;
+            return rule;
+        }
+
         public static INetFwRule2 ForApplication(this INetFwRule2 rule, string applicationPath)
         {
             rule.ApplicationName = applicationPath;

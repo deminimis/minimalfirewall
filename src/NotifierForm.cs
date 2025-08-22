@@ -123,12 +123,5 @@ namespace MinimalFirewall
             ignoreButton.Visible = !isWildcard;
             trustPublisherCheckBox.Visible = !isWildcard && trustPublisherCheckBox.Text.Length > 0;
         }
-
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
-            this.TopMost = true;
-            this.Activate();
-        }
     }
 }
