@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿// File: FlatTabControl.cs
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
@@ -36,6 +37,8 @@ namespace DarkModeForms
             }
             catch { }
         }
+
+        private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -82,7 +85,7 @@ namespace DarkModeForms
                 }
                 using (Pen p = new Pen(this.BorderColor))
                 {
-                    g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - 1);
+                    g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - Scale(1, g));
                 }
 
                 if (this.ImageList != null && customTabPage.ImageIndex >= 0 && customTabPage.ImageIndex < this.ImageList.Images.Count)
@@ -100,22 +103,23 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    using (Pen p = new Pen(this.LineColor, 2))
+                    using (Pen p = new Pen(this.LineColor, Scale(2, g)))
                     {
-                        g.DrawLine(p, tabRect.Right - 1, tabRect.Top, tabRect.Right - 1, tabRect.Bottom - 1);
+                        g.DrawLine(p, tabRect.Right - Scale(1, g), tabRect.Top, tabRect.Right - Scale(1, g), tabRect.Bottom - Scale(1, g));
                     }
                 }
             }
             else
             {
+                int scaled3 = Scale(3, g);
                 Point[] points;
                 points = new[]
                 {
                     new Point(tabRect.Left, tabRect.Bottom),
-                    new Point(tabRect.Left, tabRect.Top + 3),
-                    new Point(tabRect.Left + 3, tabRect.Top),
-                    new Point(tabRect.Right - 3, tabRect.Top),
-                    new Point(tabRect.Right, tabRect.Top + 3),
+                    new Point(tabRect.Left, tabRect.Top + scaled3),
+                    new Point(tabRect.Left + scaled3, tabRect.Top),
+                    new Point(tabRect.Right - scaled3, tabRect.Top),
+                    new Point(tabRect.Right, tabRect.Top + scaled3),
                     new Point(tabRect.Right, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Bottom)
                 };
@@ -131,7 +135,7 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    g.DrawLine(new Pen(SelectTabColor, 2), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
+                    g.DrawLine(new Pen(SelectTabColor, Scale(2, g)), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
                 }
 
                 TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
