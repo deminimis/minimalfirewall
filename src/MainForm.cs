@@ -88,6 +88,17 @@ namespace MinimalFirewall
         public MainForm()
         {
             InitializeComponent();
+            using (Graphics g = this.CreateGraphics())
+            {
+                float dpiScale = g.DpiY / 96f;
+                if (dpiScale > 1f)
+                {
+                    int newTabWidth = (int)(mainTabControl.ItemSize.Width * dpiScale);
+                    int newTabHeight = (int)(mainTabControl.ItemSize.Height * dpiScale);
+                    mainTabControl.ItemSize = new Size(newTabWidth, newTabHeight);
+                }
+            }
+
             this.DoubleBuffered = true;
             dashboardListView.Resize += ListView_Resize;
             rulesListView.Resize += ListView_Resize;
@@ -196,6 +207,8 @@ namespace MinimalFirewall
             rescanButton.BackColor = Color.Transparent;
             DarkModeCS.ExcludeFromProcessing(lockdownButton);
             lockdownButton.BackColor = Color.Transparent;
+            lockdownButton.Paint += OwnerDrawnButton_Paint;
+            rescanButton.Paint += OwnerDrawnButton_Paint;
 
             SetupAppIcons();
             await _ruleCacheService.LoadCacheFromDiskAsync();
@@ -291,6 +304,8 @@ namespace MinimalFirewall
             lockdownButton.Size = new Size(40, 40);
             rescanButton.AutoSize = false;
             rescanButton.Size = new Size(40, 40);
+            lockdownButton.Image = null;
+            rescanButton.Image = null;
             using (var stream = assembly.GetManifestResourceStream("MinimalFirewall.logo.png"))
             {
                 if (stream != null)
@@ -335,7 +350,7 @@ namespace MinimalFirewall
                 oldImage?.Dispose();
             }
 
-            rescanButton.Image = isDark ? _refreshWhiteIcon ?? appImageList.Images["refresh.png"] : appImageList.Images["refresh.png"];
+            rescanButton.Invalidate();
             UpdateTrayStatus();
             this.ResumeLayout(true);
             this.Refresh();
@@ -446,14 +461,7 @@ namespace MinimalFirewall
             logoPictureBox.Visible = !locked;
             dashboardListView.Visible = locked;
 
-            if (locked)
-            {
-                lockdownButton.Image = _lockedGreenIcon;
-            }
-            else
-            {
-                lockdownButton.Image = (_appSettings.Theme == "Dark") ? _unlockedWhiteIcon ?? appImageList.Images["unlocked.png"] : appImageList.Images["unlocked.png"];
-            }
+            lockdownButton.Invalidate();
 
             if (notifyIcon != null)
             {
@@ -1261,22 +1269,22 @@ namespace MinimalFirewall
 
         private void LockdownButton_MouseEnter(object? sender, EventArgs e)
         {
-            lockdownButton.FlatAppearance.BorderColor = dm.OScolors.Accent;
+            lockdownButton.Invalidate();
         }
 
         private void LockdownButton_MouseLeave(object? sender, EventArgs e)
         {
-            lockdownButton.FlatAppearance.BorderColor = this.BackColor;
+            lockdownButton.Invalidate();
         }
 
         private void RescanButton_MouseEnter(object? sender, EventArgs e)
         {
-            rescanButton.FlatAppearance.BorderColor = dm.OScolors.Accent;
+            rescanButton.Invalidate();
         }
 
         private void RescanButton_MouseLeave(object? sender, EventArgs e)
         {
-            rescanButton.FlatAppearance.BorderColor = this.BackColor;
+            rescanButton.Invalidate();
         }
 
         private void CheckForUpdatesButton_Click(object sender, EventArgs e)
@@ -2430,6 +2438,38 @@ namespace MinimalFirewall
                 }
             }
             return newBitmap;
+        }
+
+        private void OwnerDrawnButton_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Button button) return;
+
+            e.Graphics.Clear(this.BackColor);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            Image? imageToDraw = null;
+            if (button.Name == "lockdownButton")
+            {
+                imageToDraw = IsLockedDown() ? _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
+            }
+            else if (button.Name == "rescanButton")
+            {
+                imageToDraw = (_appSettings.Theme == "Dark") ? _refreshWhiteIcon : appImageList.Images["refresh.png"];
+            }
+
+            if (imageToDraw != null)
+            {
+                int imgX = (button.ClientSize.Width - imageToDraw.Width) / 2;
+                int imgY = (button.ClientSize.Height - imageToDraw.Height) / 2;
+                e.Graphics.DrawImage(imageToDraw, imgX, imgY, imageToDraw.Width, imageToDraw.Height);
+            }
+
+            if (button.ClientRectangle.Contains(button.PointToClient(Cursor.Position)))
+            {
+                using var p = new Pen(dm.OScolors.Accent, 2);
+                e.Graphics.DrawRectangle(p, 0, 0, button.Width - 1, button.Height - 1);
+            }
         }
     }
 }

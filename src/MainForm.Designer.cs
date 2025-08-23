@@ -281,6 +281,7 @@ namespace MinimalFirewall
             blockRemoteIPToolStripMenuItem = new ToolStripMenuItem();
             copyRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator8 = new ToolStripSeparator();
+            openFileLocationToolStripMenuItem1 = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem1 = new ToolStripMenuItem();
             settingsTabPage = new TabPage();
             auditAlertsSwitch = new CheckBox();
@@ -930,6 +931,7 @@ namespace MinimalFirewall
             settingsTabPage.TabIndex = 4;
             settingsTabPage.Text = "Settings";
             settingsTabPage.UseVisualStyleBackColor = true;
+            settingsTabPage.AutoScroll = true;
             auditAlertsSwitch.AutoSize = true;
             auditAlertsSwitch.Location = new Point(29, 420);
             auditAlertsSwitch.Margin = new Padding(3, 4, 3, 4);
