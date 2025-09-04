@@ -21,10 +21,7 @@ namespace MinimalFirewall
 
         public void LogChange(string action, string details)
         {
-            if (!IsEnabled)
-            {
-                return;
-            }
+            if (!IsEnabled) return;
 
             try
             {
@@ -53,10 +50,8 @@ namespace MinimalFirewall
 
         public void LogDebug(string message)
         {
-            if (!IsEnabled)
-            {
-                return;
-            }
+            if (!IsEnabled) return;
+
             try
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -65,7 +60,26 @@ namespace MinimalFirewall
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[FATAL DEBUG LOGGING ERROR] {ex.Message}");
+                Debug.WriteLine($"[FATAL DEBUG LOGGING ERROR] {ex.Message}");
+            }
+        }
+
+        public void LogException(string context, Exception ex)
+        {
+            if (!IsEnabled) return;
+
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                string hex = $"0x{ex.HResult:X8}";
+                string type = ex.GetType().Name;
+                string msg = ex.Message?.Replace(Environment.NewLine, " ").Trim() ?? "";
+                string line = $"[{timestamp}] ERROR {context} {type} HResult={hex} Message={msg}{Environment.NewLine}";
+                File.AppendAllText(_debugLogFilePath, line);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"[FATAL EXCEPTION LOGGING ERROR] {e.Message}");
             }
         }
     }

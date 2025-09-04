@@ -38,13 +38,25 @@ namespace MinimalFirewall
 
         public void SetDefaultOutboundAction(NET_FW_ACTION_ action)
         {
-            if (_firewallPolicy == null) return;
-            NET_FW_PROFILE_TYPE2_[] profiles = [NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN, NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE, NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC];
-            foreach (var profile in profiles)
+            foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
             {
-                _firewallPolicy.DefaultOutboundAction[profile] = action;
+        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
+        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE,
+        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
+    })
+            {
+                try
+                {
+                    _firewallPolicy.set_DefaultOutboundAction(profile, action);
+                }
+                catch (Exception ex)
+                {
+                    // optional: if you have a logger, call it here
+                    System.Diagnostics.Debug.WriteLine($"Failed to set outbound action for {profile}: {ex.HResult:X8} {ex.Message}");
+                }
             }
         }
+
 
         public NET_FW_ACTION_ GetDefaultOutboundAction()
         {

@@ -24,6 +24,10 @@
 		<ServerGarbageCollection>false</ServerGarbageCollection>
 		<TieredCompilation>false</TieredCompilation>
 		<GenerateResourceWarnOnBinaryFormatterUse>false</GenerateResourceWarnOnBinaryFormatterUse>
+
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -1,4 +1,4 @@
-﻿// FirewallActionsService.cs
+﻿// File: FirewallActionService.cs
 using NetFwTypeLib;
 using System.Data;
 using System.IO;
@@ -72,7 +72,7 @@ namespace MinimalFirewall
             {
                 var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
                 firewallRule.WithName(name)
-                             .ForService(serviceName)
+                            .ForService(serviceName)
                             .WithDirection(dir)
                             .WithAction(act)
                             .WithProtocol(protocol)
@@ -174,53 +174,62 @@ namespace MinimalFirewall
             var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
 
-            AdminTaskService.SetAuditPolicy(newLockdownState);
-            ManageCryptoServiceRule(newLockdownState);
-
-            if (newLockdownState)
+            try
             {
-                string? policyState = AdminTaskService.GetAuditPolicy();
-                if (policyState == null || !policyState.Contains("Failure", StringComparison.OrdinalIgnoreCase))
-                {
-                    MessageBox.Show(
-                        "Failed to verify that Windows Security Auditing was enabled.\n\n" +
-                        "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
-                        "Potential Causes:\n" +
-                        "1. A local or domain Group Policy is preventing this change.\n" +
-                        "2. Other security software is blocking this action.\n\n" +
-                        "The firewall's default policy will be set back to 'Allow' for safety.",
-                        "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    firewallService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
-                    activityLogger.LogDebug("Lockdown Mode Failed: Could not enable audit policy.");
-                    return;
-                }
+                AdminTaskService.SetAuditPolicy(newLockdownState);
+            }
+            catch (Exception ex)
+            {
+                activityLogger.LogException("SetAuditPolicy", ex);
             }
 
-            firewallService.SetDefaultOutboundAction(newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            ManageCryptoServiceRule(newLockdownState);
+
+            if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
+            {
+                MessageBox.Show(
+                    "Failed to verify that Windows Security Auditing was enabled.\n\n" +
+                    "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
+                    "Potential Causes:\n" +
+                    "1. A local or domain Group Policy is preventing this change.\n" +
+                    "2. Other security software is blocking this action.\n\n" +
+                    "The firewall's default policy will be set back to 'Allow' for safety.",
+                    "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    firewallService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                }
+                catch (Exception ex)
+                {
+                    activityLogger.LogException("SetDefaultOutboundAction(Allow) after audit failure", ex);
+                }
+                activityLogger.LogDebug("Lockdown Mode Failed: Could not enable audit policy.");
+                return;
+            }
+
+            try
+            {
+                firewallService.SetDefaultOutboundAction(
+                    newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            }
+            catch (Exception ex)
+            {
+                activityLogger.LogException("SetDefaultOutboundAction", ex);
+                MessageBox.Show("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
+                    "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
 
             if (!newLockdownState)
             {
-                var mfwRules = firewallService.GetApplicationRules();
-                var mfwGroupNames = mfwRules.Select(r => r.Grouping).Distinct();
-
-                foreach (var groupName in mfwGroupNames)
-                {
-                    if (!string.IsNullOrEmpty(groupName))
-                    {
-                        try
-                        {
-                            _firewallPolicy.EnableRuleGroup((int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL, groupName, true);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to re-enable group '{groupName}': {ex.Message}");
-                        }
-                    }
-                }
-                activityLogger.LogDebug("All MFW rule groups have been re-enabled to ensure persistence.");
+                ReenableMfwRules();
+                activityLogger.LogDebug("All MFW rules re-enabled by per-rule toggle.");
             }
         }
+
+
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
@@ -269,6 +278,22 @@ namespace MinimalFirewall
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
                     activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
                     break;
+            }
+        }
+
+        private void ReenableMfwRules()
+        {
+            var mfwRules = firewallService.GetApplicationRules();
+            foreach (var rule in mfwRules)
+            {
+                try
+                {
+                    if (!rule.Enabled) rule.Enabled = true;
+                }
+                catch (Exception ex)
+                {
+                    activityLogger.LogException($"Enable rule '{rule.Name}'", ex);
+                }
             }
         }
 
@@ -409,6 +434,7 @@ namespace MinimalFirewall
             bool isProtocolTcpUdpOrAny = vm.Protocol == ProtocolTypes.TCP.Value ||
                                      vm.Protocol == ProtocolTypes.UDP.Value ||
                                      vm.Protocol == ProtocolTypes.Any.Value;
+
             if (hasProgramOrService && !isProtocolTcpUdpOrAny)
             {
                 MessageBox.Show(
@@ -417,21 +443,32 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (hasProgramOrService && vm.Protocol == ProtocolTypes.Any.Value)
-            {
-                var tcpVm = CopyViewModel(vm);
-                tcpVm.Protocol = ProtocolTypes.TCP.Value;
-                tcpVm.Name = vm.Name + " - TCP";
-                CreateSingleAdvancedRule(tcpVm, interfaceTypes, icmpTypesAndCodes);
+            var directionsToCreate = new List<Directions>();
+            if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
+            if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
 
-                var udpVm = CopyViewModel(vm);
-                udpVm.Protocol = ProtocolTypes.UDP.Value;
-                udpVm.Name = vm.Name + " - UDP";
-                CreateSingleAdvancedRule(udpVm, interfaceTypes, icmpTypesAndCodes);
-            }
-            else
+            foreach (var direction in directionsToCreate)
             {
-                CreateSingleAdvancedRule(vm, interfaceTypes, icmpTypesAndCodes);
+                var directedVm = CopyViewModel(vm);
+                directedVm.Direction = direction;
+                directedVm.Name = vm.Name + (directionsToCreate.Count > 1 ? $" - {direction}" : "");
+
+                if (hasProgramOrService && directedVm.Protocol == ProtocolTypes.Any.Value)
+                {
+                    var tcpVm = CopyViewModel(directedVm);
+                    tcpVm.Protocol = ProtocolTypes.TCP.Value;
+                    tcpVm.Name = directedVm.Name + " - TCP";
+                    CreateSingleAdvancedRule(tcpVm, interfaceTypes, icmpTypesAndCodes);
+
+                    var udpVm = CopyViewModel(directedVm);
+                    udpVm.Protocol = ProtocolTypes.UDP.Value;
+                    udpVm.Name = directedVm.Name + " - UDP";
+                    CreateSingleAdvancedRule(udpVm, interfaceTypes, icmpTypesAndCodes);
+                }
+                else
+                {
+                    CreateSingleAdvancedRule(directedVm, interfaceTypes, icmpTypesAndCodes);
+                }
             }
         }
 

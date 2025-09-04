@@ -50,26 +50,54 @@ namespace DarkModeForms
             }
         }
 
-        private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text)
+        private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
         {
             using (Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold))
             {
                 SizeF textSize = g.MeasureString(text, notifFont);
                 int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
-                int x = tabRect.Right - diameter - 3;
-                int y = tabRect.Top + 3;
+                int x, y;
+
+                switch (alignment)
+                {
+                    case TabAlignment.Left:
+                    case TabAlignment.Right:
+                        x = tabRect.Left + 5;
+                        y = tabRect.Bottom - diameter - 5;
+                        break;
+                    default:
+                        x = tabRect.Right - diameter - 3;
+                        y = tabRect.Top + 3;
+                        break;
+                }
+
 
                 Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
-
                 g.SmoothingMode = SmoothingMode.AntiAlias;
 
                 using (var path = new GraphicsPath())
                 {
                     path.AddEllipse(bubbleRect);
+                    PointF point1 = PointF.Empty, point2 = PointF.Empty, point3 = PointF.Empty;
 
-                    PointF point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
-                    PointF point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
-                    PointF point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
+                    switch (alignment)
+                    {
+                        case TabAlignment.Left:
+                            point1 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.2f);
+                            point2 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.4f);
+                            point3 = new PointF(bubbleRect.Right + 6, bubbleRect.Top - 4);
+                            break;
+                        case TabAlignment.Right:
+                            point1 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.2f);
+                            point2 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.4f);
+                            point3 = new PointF(bubbleRect.Left - 6, bubbleRect.Top - 4);
+                            break;
+                        default:
+                            point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
+                            point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
+                            point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
+                            break;
+                    }
 
                     path.AddPolygon(new[] { point1, point2, point3 });
 
@@ -621,7 +649,7 @@ namespace DarkModeForms
                 TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
                 if (_notificationInfo.TryGetValue(tabPage, out var info) && info.Count > 0)
                 {
-                    DrawNotificationBubble(e.Graphics, tabRect, info.Count.ToString());
+                    DrawNotificationBubble(e.Graphics, tabRect, info.Count.ToString(), tab.Alignment);
                 }
             }
         }
