@@ -1,5 +1,4 @@
-﻿// File: MainForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     public partial class MainForm
     {
@@ -119,7 +118,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox autoAllowSystemTrustedCheck;
         private System.Windows.Forms.Button managePublishersButton;
         private ColumnHeader changeActionColumn;
-        private ColumnHeader changeTypeColumn;
         private ColumnHeader changeNameColumn;
         private ColumnHeader changeAction2Column;
         private ColumnHeader changeDirectionColumn;
@@ -247,7 +245,6 @@ namespace MinimalFirewall
             rebuildBaselineButton = new Button();
             systemChangesListView = new ListView();
             changeActionColumn = new ColumnHeader();
-            changeTypeColumn = new ColumnHeader();
             changeNameColumn = new ColumnHeader();
             changeAction2Column = new ColumnHeader();
             changeDirectionColumn = new ColumnHeader();
@@ -415,7 +412,7 @@ namespace MinimalFirewall
             dashIconColumn.Text = "";
             dashIconColumn.Width = 32;
             dashActionColumn.Text = "Action";
-            dashActionColumn.Width = 250;
+            dashActionColumn.Width = 300;
             dashAppColumn.Text = "Application";
             dashAppColumn.Width = 150;
             dashServiceColumn.Text = "Service";
@@ -724,7 +721,7 @@ namespace MinimalFirewall
             rebuildBaselineButton.Click += RebuildBaselineButton_Click;
             systemChangesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             systemChangesListView.BorderStyle = BorderStyle.None;
-            systemChangesListView.Columns.AddRange(new ColumnHeader[] { changeActionColumn, changeTypeColumn, changeNameColumn, changeAction2Column, changeDirectionColumn, changeProtocolColumn, changeAppColumn, changeRemoteAddressColumn, changeDescColumn });
+            systemChangesListView.Columns.AddRange(new ColumnHeader[] { changeActionColumn, changeNameColumn, changeAction2Column, changeDirectionColumn, changeProtocolColumn, changeAppColumn, changeRemoteAddressColumn, changeDescColumn });
             systemChangesListView.ContextMenuStrip = auditContextMenu;
             systemChangesListView.FullRowSelect = true;
             systemChangesListView.Location = new Point(3, 77);
@@ -742,9 +739,7 @@ namespace MinimalFirewall
             systemChangesListView.MouseLeave += ListView_MouseLeave;
             systemChangesListView.MouseMove += SystemChangesListView_MouseMove;
             changeActionColumn.Text = "Action";
-            changeActionColumn.Width = 250;
-            changeTypeColumn.Text = "Change Type";
-            changeTypeColumn.Width = 100;
+            changeActionColumn.Width = 300;
             changeNameColumn.Text = "Rule Name";
             changeNameColumn.Width = 200;
             changeAction2Column.Text = "Action";
@@ -1210,3 +1205,4 @@ namespace MinimalFirewall
         #endregion
     }
 }
+

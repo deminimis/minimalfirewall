@@ -1,5 +1,4 @@
-﻿// File: MainForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -726,7 +725,7 @@ namespace MinimalFirewall
             {
                 Icon = this.Icon,
                 Text = "Minimal Firewall",
-                Visible = false,
+                Visible = true,
                 ContextMenuStrip = contextMenu
             };
             notifyIcon.DoubleClick += ShowWindow;
@@ -815,10 +814,6 @@ namespace MinimalFirewall
         {
             this.Show();
             ApplyLastWindowState();
-            if (notifyIcon != null)
-            {
-                notifyIcon.Visible = false;
-            }
             this.Activate();
             if (_appSettings.IsTrafficMonitorEnabled)
             {
@@ -1114,7 +1109,6 @@ namespace MinimalFirewall
                     new[]
                     {
                         "",
-                        change.Type.ToString(),
                         change.Rule?.Name ?? "N/A",
                         change.Rule?.Status,
                         change.Rule?.Direction.ToString(),
@@ -2473,3 +2467,4 @@ namespace MinimalFirewall
         }
     }
 }
+
