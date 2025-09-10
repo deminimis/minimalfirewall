@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows8.0</TargetFramework>
+		<TargetPlatformVersion>8.0</TargetPlatformVersion>
+		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
+		<RootNamespace>MinimalFirewall</RootNamespace>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ApplicationIcon>logo.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<AssemblyVersion>2.1.3.0</AssemblyVersion>
+		<FileVersion>2.1.3.0</FileVersion>
+		<Company>Deminimis</Company>
+		<Product>Minimal Firewall</Product>
+		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
+		<PackageTags>firewall, security, privacy</PackageTags>
+		<StartupObject>MinimalFirewall.Program</StartupObject>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>AnyCPU;x64</Platforms>
+		<ServerGarbageCollection>false</ServerGarbageCollection>
+		<TieredCompilation>false</TieredCompilation>
+		<GenerateResourceWarnOnBinaryFormatterUse>false</GenerateResourceWarnOnBinaryFormatterUse>
+
+		<PublishSingleFile>true</PublishSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="logo.ico" />
+		<EmbeddedResource Include="logo.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<COMReference Include="NetFwTypeLib">
+			<WrapperTool>tlbimp</WrapperTool>
+			<VersionMinor>0</VersionMinor>
+			<VersionMajor>1</VersionMajor>
+			<Guid>58fbcf7c-e7a9-467c-80b3-fc65e8fcca08</Guid>
+			<Lcid>0</Lcid>
+			<Isolated>false</Isolated>
+			<EmbedInteropTypes>true</EmbedInteropTypes>
+		</COMReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
+		<PackageReference Include="System.Management" Version="9.0.8" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+</Project>
