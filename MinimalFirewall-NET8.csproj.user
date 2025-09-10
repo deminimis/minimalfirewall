@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_LastSelectedProfileId>C:\Users\anon\PROGRAMMING\C#\SimpleFirewall\VS Minimal Firewall\MinimalFirewall-NET8\MinimalFirewall-NET8\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="AddRuleSelectionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CreateAdvancedRuleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CreateProgramRuleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CreateProgramRuleForm.Designer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="FlatComboBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="FlatProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="FlatTabControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="IconService.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="ManagePublishersForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="NotifierForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="SignatureValidationService.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="StatusForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="WildcardCreatorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="IconService.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Update="ManagePublishersForm.resx">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>
