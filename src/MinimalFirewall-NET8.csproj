@@ -3,6 +3,8 @@
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net8.0-windows8.0</TargetFramework>
+		<TargetPlatformVersion>8.0</TargetPlatformVersion>
+		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
 		<RootNamespace>MinimalFirewall</RootNamespace>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -11,13 +13,12 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.1.3.0</AssemblyVersion>
-		<FileVersion>2.1.3.0</FileVersion>
+		<AssemblyVersion>2.1.5.0</AssemblyVersion>
+		<FileVersion>2.1.5.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
-		<Copyright>Copyright © 2025</Copyright>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
-		<PackageTags>firewall, security</PackageTags>
+		<PackageTags>firewall, security, privacy</PackageTags>
 		<StartupObject>MinimalFirewall.Program</StartupObject>
 		<Configurations>Debug;Release</Configurations>
 		<Platforms>AnyCPU;x64</Platforms>
@@ -27,8 +28,13 @@
 
 		<PublishSingleFile>true</PublishSingleFile>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove="1-adminnhelper-allfiles.txt" />
+	  <None Remove="1allfiles.txt" />
+	  <None Remove="1file_combiner.py" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="logo.ico" />
@@ -48,8 +54,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
-		<PackageReference Include="System.Management" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.8" />
+		<PackageReference Include="System.Management" Version="9.0.8" />
 	</ItemGroup>
 
 	<ItemGroup>

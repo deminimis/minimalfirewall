@@ -21,7 +21,6 @@ namespace Firewall.Traffic
 
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
         private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, int ulAf, int TableClass, uint Reserved);
-
         public static List<TcpTrafficRow> GetConnections()
         {
             var connections = new List<TcpTrafficRow>();
@@ -135,7 +134,6 @@ namespace Firewall.Traffic.ViewModels
         public string ProcessPath { get; private set; } = string.Empty;
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
-
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
@@ -224,10 +222,10 @@ namespace Firewall.Traffic.ViewModels
             try
             {
                 var latestConnections = await Task.Run(() => TcpTrafficTracker.GetConnections());
-
                 _syncContext?.Post(_ =>
                 {
                     var latestViewModelMap = latestConnections
+                        .Distinct()
                         .Select(c => new TcpConnectionViewModel(c))
                         .ToDictionary(vm => vm.Connection);
 

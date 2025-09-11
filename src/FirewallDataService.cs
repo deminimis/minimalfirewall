@@ -1,4 +1,4 @@
-﻿// FirewallDataService.cs
+﻿// File: FirewallDataService.cs
 using NetFwTypeLib;
 using System.IO;
 using System.Linq;
@@ -101,6 +101,7 @@ namespace MinimalFirewall
                     Grouping = firstRule.Grouping,
                     Description = firstRule.Description,
                     Type = firstRule.Type,
+                    WildcardDefinition = firstRule.WildcardDefinition,
                     UnderlyingRules = group.ToList()
                 };
 
@@ -162,19 +163,21 @@ namespace MinimalFirewall
                 advancedRules.Add(new AdvancedRuleViewModel
                 {
                     Name = $"*{wildcard.ExeName} in {Path.GetFileName(wildcard.FolderPath)}",
-                    Description = $"[WILDCARD DEFINITION]",
+                    Description = $"[WILDCARD DEFINITION] Path: {wildcard.FolderPath}",
                     Grouping = MFWConstants.WildcardRuleGroup,
-                    Status = wildcard.Action,
+                    Status = wildcard.Action.Contains("Allow") ? "Allow" : "Block",
                     Direction = Directions.Outgoing,
                     Protocol = ProtocolTypes.Any.Value,
                     ProtocolName = ProtocolTypes.Any.Name,
+                    ApplicationName = wildcard.FolderPath,
                     LocalPorts = [],
                     RemotePorts = [],
                     LocalAddresses = [],
                     RemoteAddresses = [],
                     Profiles = "All",
                     ServiceName = "N/A",
-                    Type = RuleType.Wildcard
+                    Type = RuleType.Wildcard,
+                    WildcardDefinition = wildcard
                 });
             }
 
@@ -222,7 +225,7 @@ namespace MinimalFirewall
                 IsEnabled = rule.Enabled,
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = (Directions)rule.Direction,
-                ApplicationName = rule.ApplicationName ?? string.Empty,
+                ApplicationName = PathResolver.NormalizePath(rule.ApplicationName ?? string.Empty),
                 LocalPorts = ParseStringToList<PortRange>(rule.LocalPorts, PortRange.TryParse),
                 RemotePorts = ParseStringToList<PortRange>(rule.RemotePorts, PortRange.TryParse),
                 Protocol = (short)rule.Protocol,

@@ -1,4 +1,4 @@
-﻿// FirewallEventListenerService.cs
+﻿// File: FirewallEventListenerService.cs
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -101,6 +101,15 @@ namespace MinimalFirewall
 
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
+
+                if (appPath.Equals("System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(appPath))
+                {
+                    _logAction($"[EventListener] Event for '{rawAppPath}' process ignored.");
+                    return;
+                }
+
+                appPath = PathResolver.NormalizePath(appPath);
+
                 _logAction($"[EventListener] Event Path: {appPath} (Raw: {rawAppPath})");
                 if (!ShouldProcessEvent(appPath))
                 {
@@ -240,3 +249,4 @@ namespace MinimalFirewall
         }
     }
 }
+

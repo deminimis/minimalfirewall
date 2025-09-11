@@ -11,7 +11,6 @@ namespace MinimalFirewall
         public PendingConnectionViewModel PendingConnection { get; private set; }
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
-
         private readonly DarkModeCS dm;
 
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
@@ -32,7 +31,8 @@ namespace MinimalFirewall
             allowButton.Text = $"Allow {pending.Direction}";
             blockButton.Text = $"Block {pending.Direction}";
 
-            // Customize button colors
+            this.AcceptButton = this.ignoreButton;
+
             allowButton.FlatStyle = FlatStyle.Flat;
             blockButton.FlatStyle = FlatStyle.Flat;
 

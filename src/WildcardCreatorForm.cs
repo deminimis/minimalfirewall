@@ -55,7 +55,7 @@ namespace MinimalFirewall
             string finalAction = $"{action} ({direction})";
             var newRule = new WildcardRule
             {
-                FolderPath = _folderPath,
+                FolderPath = PathResolver.NormalizePath(_folderPath),
                 ExeName = exeNameTextBox.Text,
                 Action = finalAction
             };

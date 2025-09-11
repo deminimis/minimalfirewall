@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// MainForm.Designer.cs
+namespace MinimalFirewall
 {
     public partial class MainForm
     {
@@ -42,6 +43,7 @@
         private System.Windows.Forms.ListView groupsListView;
         private System.Windows.Forms.ColumnHeader groupNameColumn;
         private System.Windows.Forms.Button rebuildBaselineButton;
+        private System.Windows.Forms.CheckBox advFilterProgramCheck;
         private System.Windows.Forms.CheckBox advFilterServiceCheck;
         private System.Windows.Forms.CheckBox advFilterUwpCheck;
         private System.Windows.Forms.CheckBox advFilterWildcardCheck;
@@ -208,6 +210,7 @@
             advFilterWildcardCheck = new CheckBox();
             advFilterUwpCheck = new CheckBox();
             advFilterServiceCheck = new CheckBox();
+            advFilterProgramCheck = new CheckBox();
             rulesSearchTextBox = new TextBox();
             createRuleButton = new Button();
             rulesListView = new ListView();
@@ -409,6 +412,8 @@
             dashboardListView.MouseClick += DashboardListView_MouseClick;
             dashboardListView.MouseLeave += ListView_MouseLeave;
             dashboardListView.MouseMove += DashboardListView_MouseMove;
+            dashboardListView.MouseDown += ButtonListView_MouseDown;
+            dashboardListView.MouseUp += ButtonListView_MouseUp;
             dashIconColumn.Text = "";
             dashIconColumn.Width = 32;
             dashActionColumn.Text = "Action";
@@ -503,10 +508,11 @@
             copyDetailsToolStripMenuItem.Text = "Copy Details";
             copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
             rulesTabPage.Controls.Add(advFilterAdvancedCheck);
-            rulesTabPage.Controls.Add(advancedRuleButton);
             rulesTabPage.Controls.Add(advFilterWildcardCheck);
             rulesTabPage.Controls.Add(advFilterUwpCheck);
             rulesTabPage.Controls.Add(advFilterServiceCheck);
+            rulesTabPage.Controls.Add(advFilterProgramCheck);
+            rulesTabPage.Controls.Add(advancedRuleButton);
             rulesTabPage.Controls.Add(rulesSearchTextBox);
             rulesTabPage.Controls.Add(createRuleButton);
             rulesTabPage.Controls.Add(rulesListView);
@@ -522,11 +528,11 @@
             advFilterAdvancedCheck.AutoSize = true;
             advFilterAdvancedCheck.Checked = true;
             advFilterAdvancedCheck.CheckState = CheckState.Checked;
-            advFilterAdvancedCheck.Location = new Point(617, 20);
+            advFilterAdvancedCheck.Location = new Point(639, 20);
             advFilterAdvancedCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterAdvancedCheck.Name = "advFilterAdvancedCheck";
             advFilterAdvancedCheck.Size = new Size(97, 24);
-            advFilterAdvancedCheck.TabIndex = 9;
+            advFilterAdvancedCheck.TabIndex = 6;
             advFilterAdvancedCheck.Text = "Advanced";
             advFilterAdvancedCheck.UseVisualStyleBackColor = true;
             advFilterAdvancedCheck.CheckedChanged += AdvFilter_CheckedChanged;
@@ -534,55 +540,66 @@
             advancedRuleButton.Margin = new Padding(3, 4, 3, 4);
             advancedRuleButton.Name = "advancedRuleButton";
             advancedRuleButton.Size = new Size(143, 48);
-            advancedRuleButton.TabIndex = 8;
+            advancedRuleButton.TabIndex = 1;
             advancedRuleButton.Text = "Advanced Rule";
             advancedRuleButton.Click += AdvancedRuleButton_Click;
             advFilterWildcardCheck.AutoSize = true;
             advFilterWildcardCheck.Checked = true;
             advFilterWildcardCheck.CheckState = CheckState.Checked;
-            advFilterWildcardCheck.Location = new Point(527, 20);
+            advFilterWildcardCheck.Location = new Point(544, 20);
             advFilterWildcardCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterWildcardCheck.Name = "advFilterWildcardCheck";
             advFilterWildcardCheck.Size = new Size(91, 24);
-            advFilterWildcardCheck.TabIndex = 4;
+            advFilterWildcardCheck.TabIndex = 5;
             advFilterWildcardCheck.Text = "Wildcard";
             advFilterWildcardCheck.UseVisualStyleBackColor = true;
             advFilterWildcardCheck.CheckedChanged += AdvFilter_CheckedChanged;
             advFilterUwpCheck.AutoSize = true;
             advFilterUwpCheck.Checked = true;
             advFilterUwpCheck.CheckState = CheckState.Checked;
-            advFilterUwpCheck.Location = new Point(461, 20);
+            advFilterUwpCheck.Location = new Point(477, 20);
             advFilterUwpCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterUwpCheck.Name = "advFilterUwpCheck";
             advFilterUwpCheck.Size = new Size(63, 24);
-            advFilterUwpCheck.TabIndex = 3;
+            advFilterUwpCheck.TabIndex = 4;
             advFilterUwpCheck.Text = "UWP";
             advFilterUwpCheck.UseVisualStyleBackColor = true;
             advFilterUwpCheck.CheckedChanged += AdvFilter_CheckedChanged;
             advFilterServiceCheck.AutoSize = true;
             advFilterServiceCheck.Checked = true;
             advFilterServiceCheck.CheckState = CheckState.Checked;
-            advFilterServiceCheck.Location = new Point(382, 20);
+            advFilterServiceCheck.Location = new Point(395, 20);
             advFilterServiceCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterServiceCheck.Name = "advFilterServiceCheck";
             advFilterServiceCheck.Size = new Size(78, 24);
-            advFilterServiceCheck.TabIndex = 2;
+            advFilterServiceCheck.TabIndex = 3;
             advFilterServiceCheck.Text = "Service";
             advFilterServiceCheck.UseVisualStyleBackColor = true;
             advFilterServiceCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            advFilterProgramCheck.AutoSize = true;
+            advFilterProgramCheck.Checked = true;
+            advFilterProgramCheck.CheckState = CheckState.Checked;
+            advFilterProgramCheck.Location = new Point(306, 20);
+            advFilterProgramCheck.Margin = new Padding(3, 4, 3, 4);
+            advFilterProgramCheck.Name = "advFilterProgramCheck";
+            advFilterProgramCheck.Size = new System.Drawing.Size(85, 24);
+            advFilterProgramCheck.TabIndex = 2;
+            advFilterProgramCheck.Text = "Program";
+            advFilterProgramCheck.UseVisualStyleBackColor = true;
+            advFilterProgramCheck.CheckedChanged += AdvFilter_CheckedChanged;
             rulesSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             rulesSearchTextBox.Location = new Point(704, 17);
             rulesSearchTextBox.Margin = new Padding(3, 4, 3, 4);
             rulesSearchTextBox.Name = "rulesSearchTextBox";
             rulesSearchTextBox.PlaceholderText = "Search rules...";
             rulesSearchTextBox.Size = new Size(285, 27);
-            rulesSearchTextBox.TabIndex = 5;
+            rulesSearchTextBox.TabIndex = 7;
             rulesSearchTextBox.TextChanged += SearchTextBox_TextChanged;
             createRuleButton.Location = new Point(7, 8);
             createRuleButton.Margin = new Padding(3, 4, 3, 4);
             createRuleButton.Name = "createRuleButton";
             createRuleButton.Size = new Size(143, 48);
-            createRuleButton.TabIndex = 4;
+            createRuleButton.TabIndex = 0;
             createRuleButton.Text = "Create Rule";
             createRuleButton.Click += CreateRuleButton_Click;
             rulesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -595,7 +612,7 @@
             rulesListView.Name = "rulesListView";
             rulesListView.OwnerDraw = true;
             rulesListView.Size = new Size(983, 855);
-            rulesListView.TabIndex = 2;
+            rulesListView.TabIndex = 8;
             rulesListView.UseCompatibleStateImageBehavior = false;
             rulesListView.View = View.Details;
             rulesListView.ColumnClick += ListView_ColumnClick;
@@ -738,6 +755,8 @@
             systemChangesListView.MouseClick += SystemChangesListView_MouseClick;
             systemChangesListView.MouseLeave += ListView_MouseLeave;
             systemChangesListView.MouseMove += SystemChangesListView_MouseMove;
+            systemChangesListView.MouseDown += ButtonListView_MouseDown;
+            systemChangesListView.MouseUp += ButtonListView_MouseUp;
             changeActionColumn.Text = "Action";
             changeActionColumn.Width = 300;
             changeNameColumn.Text = "Rule Name";
@@ -1205,4 +1224,3 @@
         #endregion
     }
 }
-

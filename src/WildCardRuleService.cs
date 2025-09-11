@@ -82,13 +82,14 @@ namespace MinimalFirewall
                 return null;
             }
 
-            string fileName = Path.GetFileName(path);
+            string normalizedPath = PathResolver.NormalizePath(path);
+            string fileName = Path.GetFileName(normalizedPath);
 
             foreach (var rule in _rules)
             {
-                string expandedFolderPath = Environment.ExpandEnvironmentVariables(rule.FolderPath);
+                string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
 
-                if (path.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
                 {
                     string exePattern = string.IsNullOrWhiteSpace(rule.ExeName) ? "*" : rule.ExeName.Trim();
 

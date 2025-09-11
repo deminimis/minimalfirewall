@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace MinimalFirewall
 {
@@ -19,8 +20,8 @@ namespace MinimalFirewall
         private readonly FirewallSentryService sentryService;
         private readonly PublisherWhitelistService _whitelistService;
         private readonly INetFwPolicy2 _firewallPolicy;
-        private readonly Dictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
-
+        private readonly TemporaryRuleManager _temporaryRuleManager;
+        private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
 
         public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, INetFwPolicy2 firewallPolicy)
@@ -32,11 +33,28 @@ namespace MinimalFirewall
             this.sentryService = sentryService;
             this._whitelistService = whitelistService;
             this._firewallPolicy = firewallPolicy;
+            _temporaryRuleManager = new TemporaryRuleManager();
+        }
+
+        public void CleanupTemporaryRulesOnStartup()
+        {
+            var expiredRules = _temporaryRuleManager.GetExpiredRules();
+            if (expiredRules.Any())
+            {
+                var ruleNamesToRemove = expiredRules.Keys.ToList();
+                firewallService.DeleteRulesByName(ruleNamesToRemove);
+                foreach (var ruleName in ruleNamesToRemove)
+                {
+                    _temporaryRuleManager.Remove(ruleName);
+                }
+                activityLogger.LogDebug($"Cleaned up {ruleNamesToRemove.Count} expired temporary rules on startup.");
+            }
         }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
         {
-            foreach (var appPath in appPaths)
+            var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var appPath in normalizedAppPaths)
             {
                 if (string.IsNullOrEmpty(wildcardSourcePath))
                 {
@@ -135,7 +153,6 @@ namespace MinimalFirewall
         private void ManageCryptoServiceRule(bool enable)
         {
             var rule = firewallService.GetAllRules().FirstOrDefault(r => r.Name == CryptoRuleName) as INetFwRule2;
-
             if (enable)
             {
                 if (rule == null)
@@ -184,7 +201,6 @@ namespace MinimalFirewall
             }
 
             ManageCryptoServiceRule(newLockdownState);
-
             if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
             {
                 MessageBox.Show(
@@ -221,7 +237,6 @@ namespace MinimalFirewall
             }
 
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
-
             if (!newLockdownState)
             {
                 ReenableMfwRules();
@@ -303,34 +318,41 @@ namespace MinimalFirewall
             string ruleNameTcp = $"Temp Allow - {appName} - TCP - {Guid.NewGuid()}";
             string ruleNameUdp = $"Temp Allow - {appName} - UDP - {Guid.NewGuid()}";
             string action = $"Allow ({direction})";
+            DateTime expiry = DateTime.UtcNow.Add(duration);
+            string description = "Temporarily allowed by Minimal Firewall.";
 
             ApplyRuleAction(appName, action, (baseName, dir, act) =>
             {
-                CreateApplicationRule(ruleNameTcp, appPath, dir, act, ProtocolTypes.TCP.Value, $"Temporary rule, expires in {duration.TotalMinutes} minutes");
-                CreateApplicationRule(ruleNameUdp, appPath, dir, act, ProtocolTypes.UDP.Value, $"Temporary rule, expires in {duration.TotalMinutes} minutes");
+                CreateApplicationRule(ruleNameTcp, appPath, dir, act, ProtocolTypes.TCP.Value, description);
+                CreateApplicationRule(ruleNameUdp, appPath, dir, act, ProtocolTypes.UDP.Value, description);
             });
+
+            _temporaryRuleManager.Add(ruleNameTcp, expiry);
+            _temporaryRuleManager.Add(ruleNameUdp, expiry);
             activityLogger.LogChange("Temporary Rule Created", $"Allowed {appPath} for {duration.TotalMinutes} minutes.");
 
             var timerTcp = new System.Threading.Timer(_ =>
             {
                 firewallService.DeleteRulesByName([ruleNameTcp]);
-                if (_temporaryRuleTimers.ContainsKey(ruleNameTcp))
+                _temporaryRuleManager.Remove(ruleNameTcp);
+                if (_temporaryRuleTimers.TryRemove(ruleNameTcp, out var timer))
                 {
-                    _temporaryRuleTimers[ruleNameTcp].Dispose();
-                    _temporaryRuleTimers.Remove(ruleNameTcp);
+                    timer.Dispose();
                 }
                 activityLogger.LogDebug($"Temporary rule {ruleNameTcp} expired and was removed.");
             }, null, duration, Timeout.InfiniteTimeSpan);
+
             var timerUdp = new System.Threading.Timer(_ =>
             {
                 firewallService.DeleteRulesByName([ruleNameUdp]);
-                if (_temporaryRuleTimers.ContainsKey(ruleNameUdp))
+                _temporaryRuleManager.Remove(ruleNameUdp);
+                if (_temporaryRuleTimers.TryRemove(ruleNameUdp, out var timer))
                 {
-                    _temporaryRuleTimers[ruleNameUdp].Dispose();
-                    _temporaryRuleTimers.Remove(ruleNameUdp);
+                    timer.Dispose();
                 }
                 activityLogger.LogDebug($"Temporary rule {ruleNameUdp} expired and was removed.");
             }, null, duration, Timeout.InfiniteTimeSpan);
+
             _temporaryRuleTimers[ruleNameTcp] = timerTcp;
             _temporaryRuleTimers[ruleNameUdp] = timerUdp;
         }
@@ -430,11 +452,15 @@ namespace MinimalFirewall
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
+            if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
+            {
+                vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
+            }
+
             bool hasProgramOrService = !string.IsNullOrWhiteSpace(vm.ApplicationName) || !string.IsNullOrWhiteSpace(vm.ServiceName);
             bool isProtocolTcpUdpOrAny = vm.Protocol == ProtocolTypes.TCP.Value ||
                                      vm.Protocol == ProtocolTypes.UDP.Value ||
                                      vm.Protocol == ProtocolTypes.Any.Value;
-
             if (hasProgramOrService && !isProtocolTcpUdpOrAny)
             {
                 MessageBox.Show(
@@ -452,7 +478,6 @@ namespace MinimalFirewall
                 var directedVm = CopyViewModel(vm);
                 directedVm.Direction = direction;
                 directedVm.Name = vm.Name + (directionsToCreate.Count > 1 ? $" - {direction}" : "");
-
                 if (hasProgramOrService && directedVm.Protocol == ProtocolTypes.Any.Value)
                 {
                     var tcpVm = CopyViewModel(directedVm);
@@ -549,7 +574,14 @@ namespace MinimalFirewall
             }
             else
             {
-                return false;
+                if (action.Contains("In", StringComparison.OrdinalIgnoreCase))
+                {
+                    parsedDirection = Directions.Incoming;
+                }
+                else
+                {
+                    parsedDirection = Directions.Outgoing;
+                }
             }
 
             return true;
@@ -598,8 +630,8 @@ namespace MinimalFirewall
 
         private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, short protocol, string description)
         {
-            var newRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
-            firewallService.CreateRule(newRule);
+            var firewallRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
+            firewallService.CreateRule(firewallRule);
         }
 
         private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action)

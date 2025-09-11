@@ -2,7 +2,6 @@
 using NetFwTypeLib;
 using System.ComponentModel;
 using System.Linq;
-
 namespace MinimalFirewall.Groups
 {
     public class FirewallGroup : INotifyPropertyChanged
@@ -14,7 +13,6 @@ namespace MinimalFirewall.Groups
         public int RuleCount { get; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
         public FirewallGroup(string name, INetFwPolicy2 firewallPolicy)
         {
             Name = name;
@@ -54,13 +52,13 @@ namespace MinimalFirewall.Groups
 
         public List<FirewallGroup> GetAllGroups()
         {
+            var mfwRules = _policy.Rules.Cast<INetFwRule2>()
+                .Where(r => r?.Grouping is { Length: > 0 } && r.Grouping.EndsWith(MFWConstants.MfwRuleSuffix));
+
             var groups = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
-            foreach (INetFwRule2 rule in _policy.Rules)
+            foreach (INetFwRule2 rule in mfwRules)
             {
-                if (rule?.Grouping is { Length: > 0 })
-                {
-                    groups[rule.Grouping] = groups.TryGetValue(rule.Grouping, out var c) ? c + 1 : 1;
-                }
+                groups[rule.Grouping] = groups.TryGetValue(rule.Grouping, out var c) ? c + 1 : 1;
             }
 
             var list = new List<FirewallGroup>();
