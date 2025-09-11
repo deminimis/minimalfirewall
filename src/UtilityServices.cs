@@ -166,6 +166,29 @@ namespace MinimalFirewall
             }
         }
 
+        public static string NormalizePath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return string.Empty;
+
+            try
+            {
+                string expandedPath = Environment.ExpandEnvironmentVariables(path);
+
+                if (Path.IsPathRooted(expandedPath))
+                {
+                    return Path.GetFullPath(expandedPath);
+                }
+
+                string basePath = AppContext.BaseDirectory;
+                return Path.GetFullPath(Path.Combine(basePath, expandedPath));
+            }
+            catch (ArgumentException)
+            {
+                // Path contains invalid characters, return it as is.
+                return path;
+            }
+        }
+
         public static string ConvertDevicePathToDrivePath(string devicePath)
         {
             if (string.IsNullOrEmpty(devicePath) || (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0])))
@@ -219,3 +242,4 @@ namespace MinimalFirewall
         }
     }
 }
+

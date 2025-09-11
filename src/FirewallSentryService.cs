@@ -5,7 +5,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
 namespace MinimalFirewall
 {
     public partial class FirewallSentryService : IDisposable
@@ -15,7 +14,6 @@ namespace MinimalFirewall
         private Dictionary<string, string> _ruleBaseline = [];
         private bool _isStarted = false;
         private readonly string _baselinePath;
-
         public event Action? RuleSetChanged;
 
         public FirewallSentryService(FirewallRuleService firewallService)
@@ -83,12 +81,9 @@ namespace MinimalFirewall
         {
             _ruleBaseline.Clear();
             var allRules = firewallService.GetAllRules();
-            foreach (var rule in allRules)
+            foreach (var rule in allRules.Where(r => r != null && !string.IsNullOrEmpty(r.Name) && !IsMfwRule(r)))
             {
-                if (rule != null && !string.IsNullOrEmpty(rule.Name))
-                {
-                    _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
-                }
+                _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
             }
             SaveBaseline();
         }
@@ -136,7 +131,6 @@ namespace MinimalFirewall
                 .Where(r => r != null && !string.IsNullOrEmpty(r.Name))
                 .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-
             foreach (var rule in currentRules.Values)
             {
                 if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(rule.Name))
@@ -160,7 +154,7 @@ namespace MinimalFirewall
 
             foreach (var baselineRuleName in _ruleBaseline.Keys)
             {
-                if (!IsMfwRule(baselineRuleName) && !acknowledgedTracker.IsAcknowledged(baselineRuleName) && !currentRules.ContainsKey(baselineRuleName))
+                if (!acknowledgedTracker.IsAcknowledged(baselineRuleName) && !currentRules.ContainsKey(baselineRuleName))
                 {
                     changes.Add(new FirewallRuleChange { Type = ChangeType.Deleted, Rule = new AdvancedRuleViewModel { Name = baselineRuleName, Description = "This rule was deleted by an external process." } });
                 }
@@ -175,11 +169,6 @@ namespace MinimalFirewall
             return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
                    rule.Grouping == "Minimal Firewall" ||
                    rule.Grouping == "Minimal Firewall (Wildcard)";
-        }
-
-        private static bool IsMfwRule(string ruleName)
-        {
-            return ruleName.EndsWith("(MFW)") || ruleName.StartsWith("Temp Allow");
         }
 
         private static string GenerateRuleHash(NetFwTypeLib.INetFwRule2 rule)

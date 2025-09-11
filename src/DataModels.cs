@@ -69,6 +69,7 @@ namespace MinimalFirewall
         public string Description { get; set; } = string.Empty;
         public string Grouping { get; set; } = string.Empty;
         public RuleType Type { get; set; }
+        public WildcardRule? WildcardDefinition { get; set; }
     }
 
     public class FirewallRuleHashModel
