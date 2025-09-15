@@ -1,7 +1,6 @@
 ﻿// UtilityServices.cs
 using DarkModeForms;
 using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -21,10 +20,9 @@ namespace MinimalFirewall
         {
             string[] guids =
             {
-                "{0CCE9225-69AE-11D9-BED3-505054503030}", // Packet Drop
-                "{0CCE9226-69AE-11D9-BED3-505054503030}"  // Connection
-             };
-
+                "{0CCE9225-69AE-11D9-BED3-505054503030}",
+                "{0CCE9226-69AE-11D9-BED3-505054503030}"
+            };
             foreach (var guid in guids)
             {
                 string arguments = $"/set /subcategory:{guid} /failure:{(enable ? "enable" : "disable")}";
@@ -40,28 +38,23 @@ namespace MinimalFirewall
             return IsAuditingEnabledForSubcategory(packetDropGuid) && IsAuditingEnabledForSubcategory(connectionGuid);
         }
 
-        #region P/Invoke for Audit Policy
         private const uint AUDIT_FAILURE = 0x00000002;
-
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool AuditQuerySystemPolicy(
             [In] Guid pSubCategoryGuids,
             [In] uint PolicyCount,
             [Out] out IntPtr ppPolicy
         );
-
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool AuditFree(
             [In] IntPtr pBuffer
         );
-
         [StructLayout(LayoutKind.Sequential)]
         private struct AUDIT_POLICY_INFORMATION
         {
             public Guid AuditSubCategoryGuid;
             public uint AuditingInformation;
         }
-        #endregion
 
         private static bool IsAuditingEnabledForSubcategory(Guid subcategoryGuid)
         {
@@ -130,7 +123,6 @@ namespace MinimalFirewall
                     Debug.WriteLine($"[AdminTask] Exit Code: {process.ExitCode}");
                     if (!string.IsNullOrWhiteSpace(output))
                         Debug.WriteLine($"[AdminTask] Standard Output:\n{output}");
-
                     if (!string.IsNullOrWhiteSpace(errors))
                         Messenger.MessageBox($"An error occurred during an administrative task:\n\n{errors}", "Admin Task Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
@@ -150,58 +142,6 @@ namespace MinimalFirewall
         }
     }
 
-    public static partial class PathResolver
-    {
-        private static readonly Dictionary<string, string> _deviceMap = [];
-        static PathResolver()
-        {
-            var driveLetters = Directory.GetLogicalDrives().Select(d => d[0..2]);
-            foreach (var drive in driveLetters)
-            {
-                var targetPath = new StringBuilder(260);
-                if (QueryDosDevice(drive, targetPath, targetPath.Capacity) != 0)
-                {
-                    _deviceMap[targetPath.ToString()] = drive;
-                }
-            }
-        }
-
-        public static string NormalizePath(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return string.Empty;
-
-            try
-            {
-                string expandedPath = Environment.ExpandEnvironmentVariables(path);
-
-                if (Path.IsPathRooted(expandedPath))
-                {
-                    return Path.GetFullPath(expandedPath);
-                }
-
-                string basePath = AppContext.BaseDirectory;
-                return Path.GetFullPath(Path.Combine(basePath, expandedPath));
-            }
-            catch (ArgumentException)
-            {
-                // Path contains invalid characters, return it as is.
-                return path;
-            }
-        }
-
-        public static string ConvertDevicePathToDrivePath(string devicePath)
-        {
-            if (string.IsNullOrEmpty(devicePath) || (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0])))
-                return devicePath;
-
-            var matchingDevice = _deviceMap.Keys.FirstOrDefault(d => devicePath.StartsWith(d, StringComparison.OrdinalIgnoreCase));
-            return matchingDevice != null ? string.Concat(_deviceMap[matchingDevice], devicePath.AsSpan(matchingDevice.Length)) : devicePath;
-        }
-
-        [DllImport("kernel32.dll", EntryPoint = "QueryDosDeviceW", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern uint QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
-    }
-
     public class StartupService
     {
         private const string RegistryKeyPath = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -211,7 +151,7 @@ namespace MinimalFirewall
         public StartupService()
         {
             _appName = Assembly.GetExecutingAssembly().GetName().Name;
-            _appPath = Environment.ProcessPath;
+            _appPath = Process.GetCurrentProcess().MainModule?.FileName;
         }
 
         public void SetStartup(bool isEnabled)
@@ -242,4 +182,3 @@ namespace MinimalFirewall
         }
     }
 }
-

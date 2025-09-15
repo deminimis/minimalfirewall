@@ -1,4 +1,4 @@
-﻿// AdaptiveUI.cs
+﻿// File: AdaptiveUI.cs
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -14,14 +14,9 @@ namespace MinimalFirewall
         public static ProtocolTypes ICMPv6 { get; } = new ProtocolTypes("ICMPv6", 58, false, true);
         public static ProtocolTypes IGMP { get; } = new ProtocolTypes("IGMP", 2, false, false);
 
-
-   
         public string Name { get; }
         public short Value { get; }
-
-
         public bool SupportsPorts { get; }
-
         public bool SupportsIcmp { get; }
 
         private ProtocolTypes(string name, short value, bool supportsPorts, bool supportsIcmp)
@@ -42,7 +37,6 @@ namespace MinimalFirewall
     public class FirewallRuleViewModel : INotifyPropertyChanged
     {
         private ProtocolTypes _selectedProtocol;
-
         public ProtocolTypes SelectedProtocol
         {
             get => _selectedProtocol;
@@ -51,15 +45,13 @@ namespace MinimalFirewall
                 if (_selectedProtocol.Equals(value)) return;
                 _selectedProtocol = value;
 
-
-                OnPropertyChanged(); // Notify that SelectedProtocol changed
-                OnPropertyChanged(nameof(IsPortSectionVisible)); // Notify that port visibility might have changed
-                OnPropertyChanged(nameof(IsIcmpSectionVisible)); // Notify that ICMP visibility might have changed
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsPortSectionVisible));
+                OnPropertyChanged(nameof(IsIcmpSectionVisible));
             }
         }
 
         public bool IsPortSectionVisible => SelectedProtocol.SupportsPorts;
-
         public bool IsIcmpSectionVisible => SelectedProtocol.SupportsIcmp;
 
         public FirewallRuleViewModel()

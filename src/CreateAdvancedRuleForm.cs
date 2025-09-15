@@ -1,4 +1,4 @@
-﻿// CreateAdvancedRuleForm.cs
+﻿// File: CreateAdvancedRuleForm.cs
 using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
@@ -43,7 +43,6 @@ namespace MinimalFirewall
         : this(firewallPolicy, actionsService)
         {
             programPathTextBox.Text = appPath;
-
             if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
             {
                 inboundRadioButton.Checked = true;
@@ -136,10 +135,10 @@ namespace MinimalFirewall
                 Protocol = selectedProtocol.Value,
                 ApplicationName = programPathTextBox.Text,
                 ServiceName = serviceNameTextBox.Text,
-                LocalPorts = ParsePorts(localPortsTextBox.Text),
-                RemotePorts = ParsePorts(remotePortsTextBox.Text),
-                LocalAddresses = ParseAddresses(localAddressTextBox.Text),
-                RemoteAddresses = ParseAddresses(remoteAddressTextBox.Text),
+                LocalPorts = ParsingUtility.ParseStringToList<PortRange>(localPortsTextBox.Text, PortRange.TryParse),
+                RemotePorts = ParsingUtility.ParseStringToList<PortRange>(remotePortsTextBox.Text, PortRange.TryParse),
+                LocalAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(localAddressTextBox.Text, IPAddressRange.TryParse),
+                RemoteAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(remoteAddressTextBox.Text, IPAddressRange.TryParse),
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced
             };
@@ -173,36 +172,6 @@ namespace MinimalFirewall
             if (lanCheckBox.Checked) types.Add("Lan");
             if (types.Count == 3 || types.Count == 0) return "All";
             return string.Join(",", types);
-        }
-
-        private static List<PortRange> ParsePorts(string ports)
-        {
-            if (string.IsNullOrWhiteSpace(ports) || ports.Trim() == "*") return [];
-            var result = new List<PortRange>();
-            var parts = ports.Split(',');
-            foreach (var part in parts)
-            {
-                if (PortRange.TryParse(part.Trim(), out var range) && range != null)
-                {
-                    result.Add(range);
-                }
-            }
-            return result;
-        }
-
-        private static List<IPAddressRange> ParseAddresses(string addresses)
-        {
-            if (string.IsNullOrWhiteSpace(addresses) || addresses.Trim() == "*") return [];
-            var result = new List<IPAddressRange>();
-            var parts = addresses.Split(',');
-            foreach (var part in parts)
-            {
-                if (IPAddressRange.TryParse(part.Trim(), out var range) && range != null)
-                {
-                    result.Add(range);
-                }
-            }
-            return result;
         }
 
         private void BrowseButton_Click(object sender, EventArgs e)

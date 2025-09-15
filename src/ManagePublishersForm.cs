@@ -1,4 +1,4 @@
-﻿// ManagePublishersForm.cs
+﻿// File: ManagePublishersForm.cs
 using DarkModeForms;
 
 namespace MinimalFirewall

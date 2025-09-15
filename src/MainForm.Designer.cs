@@ -1,4 +1,4 @@
-﻿// MainForm.Designer.cs
+﻿// File: MainForm.Designer.cs
 namespace MinimalFirewall
 {
     public partial class MainForm
@@ -14,7 +14,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.TabPage liveConnectionsTabPage;
         private System.Windows.Forms.Button lockdownButton;
         private System.Windows.Forms.Button rescanButton;
-        private System.Windows.Forms.ListView dashboardListView;
+        private MinimalFirewall.ButtonListView dashboardListView;
         private System.Windows.Forms.ColumnHeader dashIconColumn;
         private System.Windows.Forms.ColumnHeader dashActionColumn;
         private System.Windows.Forms.ColumnHeader dashAppColumn;
@@ -39,7 +39,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ColumnHeader advDescColumn;
         private System.Windows.Forms.Button createRuleButton;
         private System.Windows.Forms.TextBox rulesSearchTextBox;
-        private System.Windows.Forms.ListView systemChangesListView;
+        private MinimalFirewall.ButtonListView systemChangesListView;
         private System.Windows.Forms.ListView groupsListView;
         private System.Windows.Forms.ColumnHeader groupNameColumn;
         private System.Windows.Forms.Button rebuildBaselineButton;
@@ -176,7 +176,7 @@ namespace MinimalFirewall
             logoPictureBox = new PictureBox();
             arrowPictureBox = new PictureBox();
             instructionLabel = new Label();
-            dashboardListView = new ListView();
+            dashboardListView = new MinimalFirewall.ButtonListView();
             dashIconColumn = new ColumnHeader();
             dashActionColumn = new ColumnHeader();
             dashAppColumn = new ColumnHeader();
@@ -246,7 +246,7 @@ namespace MinimalFirewall
             systemChangesTabPage = new TabPage();
             auditSearchTextBox = new TextBox();
             rebuildBaselineButton = new Button();
-            systemChangesListView = new ListView();
+            systemChangesListView = new MinimalFirewall.ButtonListView();
             changeActionColumn = new ColumnHeader();
             changeNameColumn = new ColumnHeader();
             changeAction2Column = new ColumnHeader();
@@ -281,7 +281,6 @@ namespace MinimalFirewall
             blockRemoteIPToolStripMenuItem = new ToolStripMenuItem();
             copyRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator8 = new ToolStripSeparator();
-            openFileLocationToolStripMenuItem1 = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem1 = new ToolStripMenuItem();
             settingsTabPage = new TabPage();
             auditAlertsSwitch = new CheckBox();
@@ -396,24 +395,18 @@ namespace MinimalFirewall
             dashboardListView.BorderStyle = BorderStyle.None;
             dashboardListView.Columns.AddRange(new ColumnHeader[] { dashIconColumn, dashActionColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashPathColumn });
             dashboardListView.ContextMenuStrip = dashboardContextMenu;
+            dashboardListView.DarkMode = null;
             dashboardListView.Dock = DockStyle.Fill;
             dashboardListView.FullRowSelect = true;
             dashboardListView.Location = new Point(3, 4);
             dashboardListView.Margin = new Padding(3, 4, 3, 4);
             dashboardListView.Name = "dashboardListView";
-            dashboardListView.OwnerDraw = true;
             dashboardListView.Size = new Size(1009, 917);
             dashboardListView.TabIndex = 0;
             dashboardListView.UseCompatibleStateImageBehavior = false;
             dashboardListView.View = View.Details;
+            dashboardListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Dashboard;
             dashboardListView.ColumnClick += ListView_ColumnClick;
-            dashboardListView.DrawItem += ButtonListView_DrawItem;
-            dashboardListView.DrawSubItem += ButtonListView_DrawSubItem;
-            dashboardListView.MouseClick += DashboardListView_MouseClick;
-            dashboardListView.MouseLeave += ListView_MouseLeave;
-            dashboardListView.MouseMove += DashboardListView_MouseMove;
-            dashboardListView.MouseDown += ButtonListView_MouseDown;
-            dashboardListView.MouseUp += ButtonListView_MouseUp;
             dashIconColumn.Text = "";
             dashIconColumn.Width = 32;
             dashActionColumn.Text = "Action";
@@ -560,7 +553,7 @@ namespace MinimalFirewall
             advFilterUwpCheck.Location = new Point(477, 20);
             advFilterUwpCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterUwpCheck.Name = "advFilterUwpCheck";
-            advFilterUwpCheck.Size = new Size(63, 24);
+            advFilterUwpCheck.Size = new System.Drawing.Size(63, 24);
             advFilterUwpCheck.TabIndex = 4;
             advFilterUwpCheck.Text = "UWP";
             advFilterUwpCheck.UseVisualStyleBackColor = true;
@@ -571,7 +564,7 @@ namespace MinimalFirewall
             advFilterServiceCheck.Location = new Point(395, 20);
             advFilterServiceCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterServiceCheck.Name = "advFilterServiceCheck";
-            advFilterServiceCheck.Size = new Size(78, 24);
+            advFilterServiceCheck.Size = new System.Drawing.Size(78, 24);
             advFilterServiceCheck.TabIndex = 3;
             advFilterServiceCheck.Text = "Service";
             advFilterServiceCheck.UseVisualStyleBackColor = true;
@@ -740,23 +733,17 @@ namespace MinimalFirewall
             systemChangesListView.BorderStyle = BorderStyle.None;
             systemChangesListView.Columns.AddRange(new ColumnHeader[] { changeActionColumn, changeNameColumn, changeAction2Column, changeDirectionColumn, changeProtocolColumn, changeAppColumn, changeRemoteAddressColumn, changeDescColumn });
             systemChangesListView.ContextMenuStrip = auditContextMenu;
+            systemChangesListView.DarkMode = null;
             systemChangesListView.FullRowSelect = true;
             systemChangesListView.Location = new Point(3, 77);
             systemChangesListView.Margin = new Padding(3, 4, 3, 4);
             systemChangesListView.Name = "systemChangesListView";
-            systemChangesListView.OwnerDraw = true;
             systemChangesListView.Size = new Size(990, 837);
             systemChangesListView.TabIndex = 1;
             systemChangesListView.UseCompatibleStateImageBehavior = false;
             systemChangesListView.View = View.Details;
+            systemChangesListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Audit;
             systemChangesListView.ColumnClick += ListView_ColumnClick;
-            systemChangesListView.DrawItem += ButtonListView_DrawItem;
-            systemChangesListView.DrawSubItem += ButtonListView_DrawSubItem;
-            systemChangesListView.MouseClick += SystemChangesListView_MouseClick;
-            systemChangesListView.MouseLeave += ListView_MouseLeave;
-            systemChangesListView.MouseMove += SystemChangesListView_MouseMove;
-            systemChangesListView.MouseDown += ButtonListView_MouseDown;
-            systemChangesListView.MouseUp += ButtonListView_MouseUp;
             changeActionColumn.Text = "Action";
             changeActionColumn.Width = 300;
             changeNameColumn.Text = "Rule Name";

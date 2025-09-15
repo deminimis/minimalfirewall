@@ -23,7 +23,6 @@ namespace MinimalFirewall
         public FirewallActionsService? ActionsService { get; set; }
 
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
-
         public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService)
         {
             _dataService = dataService;
@@ -95,13 +94,11 @@ namespace MinimalFirewall
             try
             {
                 if (ActionsService == null) return;
-
                 _logAction("[EventListener] Firing OnFirewallBlockEvent.");
                 string xmlContent = eventRecord.ToXml();
 
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
-
                 if (appPath.Equals("System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(appPath))
                 {
                     _logAction($"[EventListener] Event for '{rawAppPath}' process ignored.");
@@ -109,7 +106,6 @@ namespace MinimalFirewall
                 }
 
                 appPath = PathResolver.NormalizePath(appPath);
-
                 _logAction($"[EventListener] Event Path: {appPath} (Raw: {rawAppPath})");
                 if (!ShouldProcessEvent(appPath))
                 {
@@ -126,7 +122,6 @@ namespace MinimalFirewall
                     return;
                 }
 
-                // 1. Check custom publisher whitelist (always active).
                 if (SignatureValidationService.GetPublisherInfo(appPath, out var publisherName) && publisherName != null && _whitelistService.IsTrusted(publisherName))
                 {
                     _logAction($"[EventListener] Auto-allowing whitelisted publisher application: {appPath} from {publisherName}");
@@ -135,7 +130,6 @@ namespace MinimalFirewall
                     return;
                 }
 
-                // 2. Check if auto-allowing apps trusted by Windows is enabled.
                 if (_appSettings.AutoAllowSystemTrusted)
                 {
                     if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
@@ -249,4 +243,3 @@ namespace MinimalFirewall
         }
     }
 }
-

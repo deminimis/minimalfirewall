@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File: AddRuleSelectionForm.Designer.cs
+namespace MinimalFirewall
 {
     public partial class AddRuleSelectionForm
     {

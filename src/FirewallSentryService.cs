@@ -1,10 +1,11 @@
-﻿// FirewallSentryService.cs
+﻿// File: FirewallSentryService.cs
 using System.IO;
 using System.Management;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 namespace MinimalFirewall
 {
     public partial class FirewallSentryService : IDisposable

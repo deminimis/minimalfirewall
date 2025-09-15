@@ -39,7 +39,6 @@ namespace DarkModeForms
         }
 
         private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
-
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -123,7 +122,6 @@ namespace DarkModeForms
                     new Point(tabRect.Right, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Bottom)
                 };
-
                 using (Brush brush = new SolidBrush(isSelected ? SelectTabColor : this.TabColor))
                 {
                     g.FillPolygon(brush, points);

@@ -15,7 +15,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.GroupBox actionGroupBox;
         private System.Windows.Forms.Label instructionLabel;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -42,9 +41,7 @@ namespace MinimalFirewall
             this.instructionLabel = new System.Windows.Forms.Label();
             this.actionGroupBox.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // browseButton
-            // 
+
             this.browseButton.Location = new System.Drawing.Point(377, 120);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(100, 23);
@@ -52,25 +49,19 @@ namespace MinimalFirewall
             this.browseButton.Text = "Browse...";
             this.browseButton.UseVisualStyleBackColor = true;
             this.browseButton.Click += new System.EventHandler(this.browseButton_Click);
-            // 
-            // folderPathTextBox
-            // 
+
             this.folderPathTextBox.Location = new System.Drawing.Point(23, 120);
             this.folderPathTextBox.Name = "folderPathTextBox";
             this.folderPathTextBox.Size = new System.Drawing.Size(347, 23);
             this.folderPathTextBox.TabIndex = 1;
             this.folderPathTextBox.PlaceholderText = "Enter folder path";
-            // 
-            // exeNameTextBox
-            // 
+
             this.exeNameTextBox.Location = new System.Drawing.Point(23, 170);
             this.exeNameTextBox.Name = "exeNameTextBox";
             this.exeNameTextBox.Size = new System.Drawing.Size(454, 23);
             this.exeNameTextBox.TabIndex = 2;
             this.exeNameTextBox.PlaceholderText = "Optional: Filter by .exe name (e.g., svchost.exe or vs_*.exe)";
-            // 
-            // actionGroupBox
-            // 
+
             this.actionGroupBox.Controls.Add(this.blockDirectionCombo);
             this.actionGroupBox.Controls.Add(this.allowDirectionCombo);
             this.actionGroupBox.Controls.Add(this.blockRadio);
@@ -81,9 +72,7 @@ namespace MinimalFirewall
             this.actionGroupBox.TabIndex = 3;
             this.actionGroupBox.TabStop = false;
             this.actionGroupBox.Text = "Action";
-            // 
-            // blockDirectionCombo
-            // 
+
             this.blockDirectionCombo.BorderColor = System.Drawing.Color.Gray;
             this.blockDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
             this.blockDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -96,9 +85,7 @@ namespace MinimalFirewall
             this.blockDirectionCombo.Name = "blockDirectionCombo";
             this.blockDirectionCombo.Size = new System.Drawing.Size(280, 23);
             this.blockDirectionCombo.TabIndex = 3;
-            // 
-            // allowDirectionCombo
-            // 
+
             this.allowDirectionCombo.BorderColor = System.Drawing.Color.Gray;
             this.allowDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
             this.allowDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -111,9 +98,7 @@ namespace MinimalFirewall
             this.allowDirectionCombo.Name = "allowDirectionCombo";
             this.allowDirectionCombo.Size = new System.Drawing.Size(280, 23);
             this.allowDirectionCombo.TabIndex = 2;
-            // 
-            // blockRadio
-            // 
+
             this.blockRadio.AutoSize = true;
             this.blockRadio.Location = new System.Drawing.Point(20, 90);
             this.blockRadio.Name = "blockRadio";
@@ -122,9 +107,7 @@ namespace MinimalFirewall
             this.blockRadio.TabStop = true;
             this.blockRadio.Text = "Block";
             this.blockRadio.UseVisualStyleBackColor = true;
-            // 
-            // allowRadio
-            // 
+
             this.allowRadio.AutoSize = true;
             this.allowRadio.Checked = true;
             this.allowRadio.Location = new System.Drawing.Point(20, 30);
@@ -134,9 +117,7 @@ namespace MinimalFirewall
             this.allowRadio.TabStop = true;
             this.allowRadio.Text = "Allow";
             this.allowRadio.UseVisualStyleBackColor = true;
-            // 
-            // okButton
-            // 
+
             this.okButton.Location = new System.Drawing.Point(260, 390);
             this.okButton.Name = "okButton";
             this.okButton.Size = new System.Drawing.Size(100, 36);
@@ -144,9 +125,7 @@ namespace MinimalFirewall
             this.okButton.Text = "OK";
             this.okButton.UseVisualStyleBackColor = true;
             this.okButton.Click += new System.EventHandler(this.okButton_Click);
-            // 
-            // cancelButton
-            // 
+
             this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.cancelButton.Location = new System.Drawing.Point(377, 390);
             this.cancelButton.Name = "cancelButton";
@@ -155,9 +134,7 @@ namespace MinimalFirewall
             this.cancelButton.Text = "Cancel";
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
-            // 
-            // instructionLabel
-            // 
+
             this.instructionLabel.Location = new System.Drawing.Point(23, 20);
             this.instructionLabel.Name = "instructionLabel";
             this.instructionLabel.Size = new System.Drawing.Size(454, 80);
@@ -165,9 +142,7 @@ namespace MinimalFirewall
             this.instructionLabel.Text = @"Enter a folder path below, or use the Browse button. The rule will apply to all matching executables within that folder and its subfolders.
 
 For temporary folders, you can type in environment variables directly. Common examples: %APPDATA% ; %Temp% ;  %LOCALAPPDATA%\Temp ";
-            // 
-            // WildcardCreatorForm
-            // 
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(500, 450);

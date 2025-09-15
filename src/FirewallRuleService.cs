@@ -7,7 +7,6 @@ namespace MinimalFirewall
     public class FirewallRuleService
     {
         private readonly INetFwPolicy2 _firewallPolicy;
-
         public FirewallRuleService(INetFwPolicy2 firewallPolicy)
         {
             _firewallPolicy = firewallPolicy;
@@ -40,10 +39,10 @@ namespace MinimalFirewall
         {
             foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
             {
-        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
-        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE,
-        NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
-    })
+                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
+                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE,
+                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
+            })
             {
                 try
                 {
@@ -51,12 +50,23 @@ namespace MinimalFirewall
                 }
                 catch (Exception ex)
                 {
-                    // optional: if you have a logger, call it here
                     System.Diagnostics.Debug.WriteLine($"Failed to set outbound action for {profile}: {ex.HResult:X8} {ex.Message}");
                 }
             }
         }
 
+        public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        {
+            if (_firewallPolicy == null || string.IsNullOrEmpty(appPath)) return [];
+            string normalizedAppPath = PathResolver.NormalizePath(appPath);
+            return _firewallPolicy.Rules.Cast<INetFwRule>()
+                .Where(r => r != null &&
+                            !string.IsNullOrEmpty(r.ApplicationName) &&
+                            string.Equals(PathResolver.NormalizePath(r.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+                            r.Direction == direction)
+                 .Select(r => r.Name)
+                .ToList();
+        }
 
         public NET_FW_ACTION_ GetDefaultOutboundAction()
         {
@@ -85,9 +95,9 @@ namespace MinimalFirewall
             return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
         }
 
-        public void DeleteRulesByPath(List<string> appPaths)
+        public List<string> DeleteRulesByPath(List<string> appPaths)
         {
-            if (_firewallPolicy == null || appPaths.Count == 0) return;
+            if (_firewallPolicy == null || appPaths.Count == 0) return [];
             var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
             var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
                 .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName) && pathSet.Contains(PathResolver.NormalizePath(r.ApplicationName)))
@@ -97,6 +107,7 @@ namespace MinimalFirewall
             {
                 try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
             }
+            return rulesToRemove;
         }
 
         public void DeleteRuleByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
@@ -116,9 +127,9 @@ namespace MinimalFirewall
             }
         }
 
-        public void DeleteRulesByServiceName(string serviceName)
+        public List<string> DeleteRulesByServiceName(string serviceName)
         {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(serviceName)) return;
+            if (_firewallPolicy == null || string.IsNullOrEmpty(serviceName)) return [];
             var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule2>()
                 .Where(r => r != null && string.Equals(r.serviceName, serviceName, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Name)
@@ -127,11 +138,12 @@ namespace MinimalFirewall
             {
                 try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
             }
+            return rulesToRemove;
         }
 
-        public void DeleteUwpRules(List<string> packageFamilyNames)
+        public List<string> DeleteUwpRules(List<string> packageFamilyNames)
         {
-            if (_firewallPolicy == null || packageFamilyNames.Count == 0) return;
+            if (_firewallPolicy == null || packageFamilyNames.Count == 0) return [];
             var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
             var rulesToRemove = new List<string>();
             foreach (INetFwRule2 rule in _firewallPolicy.Rules)
@@ -150,6 +162,7 @@ namespace MinimalFirewall
             {
                 try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
             }
+            return rulesToRemove;
         }
 
         public void DeleteRulesByName(List<string> ruleNames)
@@ -173,9 +186,9 @@ namespace MinimalFirewall
             }
         }
 
-        public void DeleteRulesByDescription(string description)
+        public List<string> DeleteRulesByDescription(string description)
         {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(description)) return;
+            if (_firewallPolicy == null || string.IsNullOrEmpty(description)) return [];
             var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
                 .Where(r => r != null && string.Equals(r.Description, description, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Name)
@@ -184,11 +197,12 @@ namespace MinimalFirewall
             {
                 try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
             }
+            return rulesToRemove;
         }
 
-        public void DeleteRulesByGroup(string groupName)
+        public List<string> DeleteRulesByGroup(string groupName)
         {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(groupName)) return;
+            if (_firewallPolicy == null || string.IsNullOrEmpty(groupName)) return [];
             var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
                 .Where(r => r != null && string.Equals(r.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
                 .Select(r => r.Name)
@@ -197,7 +211,7 @@ namespace MinimalFirewall
             {
                 try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
             }
+            return rulesToRemove;
         }
     }
 }
-
