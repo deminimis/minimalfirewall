@@ -1,4 +1,4 @@
-﻿// NotifierForm.cs
+﻿// File: NotifierForm.cs
 using DarkModeForms;
 using System.Drawing;
 

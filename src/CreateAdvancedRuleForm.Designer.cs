@@ -1,4 +1,4 @@
-﻿// CreateAdvancedRuleForm.Designer.cs
+﻿// File: CreateAdvancedRuleForm.Designer.cs
 namespace MinimalFirewall
 {
     partial class CreateAdvancedRuleForm
@@ -51,8 +51,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.Label labelGroup;
         private DarkModeForms.FlatComboBox groupComboBox;
         private System.Windows.Forms.Button addGroupButton;
-
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -123,45 +121,35 @@ namespace MinimalFirewall
             this.profilesGroupBox.SuspendLayout();
             this.interfaceTypesGroupBox.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // labelName
-            // 
+
             this.labelName.AutoSize = true;
             this.labelName.Location = new System.Drawing.Point(12, 15);
             this.labelName.Name = "labelName";
             this.labelName.Size = new System.Drawing.Size(39, 15);
             this.labelName.TabIndex = 0;
             this.labelName.Text = "Name";
-            // 
-            // ruleNameTextBox
-            // 
+
             this.ruleNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.ruleNameTextBox.Location = new System.Drawing.Point(80, 12);
             this.ruleNameTextBox.Name = "ruleNameTextBox";
             this.ruleNameTextBox.Size = new System.Drawing.Size(692, 23);
             this.ruleNameTextBox.TabIndex = 1;
-            // 
-            // labelDescription
-            // 
+
             this.labelDescription.AutoSize = true;
             this.labelDescription.Location = new System.Drawing.Point(12, 44);
             this.labelDescription.Name = "labelDescription";
             this.labelDescription.Size = new System.Drawing.Size(67, 15);
             this.labelDescription.TabIndex = 2;
             this.labelDescription.Text = "Description";
-            // 
-            // descriptionTextBox
-            // 
+
             this.descriptionTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.descriptionTextBox.Location = new System.Drawing.Point(80, 41);
             this.descriptionTextBox.Name = "descriptionTextBox";
             this.descriptionTextBox.Size = new System.Drawing.Size(692, 23);
             this.descriptionTextBox.TabIndex = 3;
-            // 
-            // enabledCheckBox
-            // 
+
             this.enabledCheckBox.AutoSize = true;
             this.enabledCheckBox.Checked = true;
             this.enabledCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -171,9 +159,7 @@ namespace MinimalFirewall
             this.enabledCheckBox.TabIndex = 4;
             this.enabledCheckBox.Text = "Enabled";
             this.enabledCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // actionGroupBox
-            // 
+
             this.actionGroupBox.Controls.Add(this.blockRadioButton);
             this.actionGroupBox.Controls.Add(this.allowRadioButton);
             this.actionGroupBox.Location = new System.Drawing.Point(15, 100);
@@ -182,9 +168,7 @@ namespace MinimalFirewall
             this.actionGroupBox.TabIndex = 5;
             this.actionGroupBox.TabStop = false;
             this.actionGroupBox.Text = "Action";
-            // 
-            // blockRadioButton
-            // 
+
             this.blockRadioButton.AutoSize = true;
             this.blockRadioButton.Location = new System.Drawing.Point(15, 60);
             this.blockRadioButton.Name = "blockRadioButton";
@@ -192,9 +176,7 @@ namespace MinimalFirewall
             this.blockRadioButton.TabIndex = 1;
             this.blockRadioButton.Text = "Block";
             this.blockRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // allowRadioButton
-            // 
+
             this.allowRadioButton.AutoSize = true;
             this.allowRadioButton.Checked = true;
             this.allowRadioButton.Location = new System.Drawing.Point(15, 30);
@@ -204,9 +186,7 @@ namespace MinimalFirewall
             this.allowRadioButton.TabStop = true;
             this.allowRadioButton.Text = "Allow";
             this.allowRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // directionGroupBox
-            // 
+
             this.directionGroupBox.Controls.Add(this.bothDirRadioButton);
             this.directionGroupBox.Controls.Add(this.outboundRadioButton);
             this.directionGroupBox.Controls.Add(this.inboundRadioButton);
@@ -216,9 +196,7 @@ namespace MinimalFirewall
             this.directionGroupBox.TabIndex = 6;
             this.directionGroupBox.TabStop = false;
             this.directionGroupBox.Text = "Direction";
-            // 
-            // bothDirRadioButton
-            // 
+
             this.bothDirRadioButton.AutoSize = true;
             this.bothDirRadioButton.Location = new System.Drawing.Point(15, 72);
             this.bothDirRadioButton.Name = "bothDirRadioButton";
@@ -226,9 +204,7 @@ namespace MinimalFirewall
             this.bothDirRadioButton.TabIndex = 2;
             this.bothDirRadioButton.Text = "Both";
             this.bothDirRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // outboundRadioButton
-            // 
+
             this.outboundRadioButton.AutoSize = true;
             this.outboundRadioButton.Checked = true;
             this.outboundRadioButton.Location = new System.Drawing.Point(15, 47);
@@ -238,9 +214,7 @@ namespace MinimalFirewall
             this.outboundRadioButton.TabStop = true;
             this.outboundRadioButton.Text = "Outbound";
             this.outboundRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // inboundRadioButton
-            // 
+
             this.inboundRadioButton.AutoSize = true;
             this.inboundRadioButton.Location = new System.Drawing.Point(15, 22);
             this.inboundRadioButton.Name = "inboundRadioButton";
@@ -248,9 +222,7 @@ namespace MinimalFirewall
             this.inboundRadioButton.TabIndex = 0;
             this.inboundRadioButton.Text = "Inbound";
             this.inboundRadioButton.UseVisualStyleBackColor = true;
-            // 
-            // programGroupBox
-            // 
+
             this.programGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.programGroupBox.Controls.Add(this.serviceNameTextBox);
@@ -264,27 +236,21 @@ namespace MinimalFirewall
             this.programGroupBox.TabIndex = 7;
             this.programGroupBox.TabStop = false;
             this.programGroupBox.Text = "Program / Service";
-            // 
-            // serviceNameTextBox
-            // 
+
             this.serviceNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.serviceNameTextBox.Location = new System.Drawing.Point(75, 53);
             this.serviceNameTextBox.Name = "serviceNameTextBox";
             this.serviceNameTextBox.Size = new System.Drawing.Size(576, 23);
             this.serviceNameTextBox.TabIndex = 4;
-            // 
-            // labelService
-            // 
+
             this.labelService.AutoSize = true;
             this.labelService.Location = new System.Drawing.Point(15, 56);
             this.labelService.Name = "labelService";
             this.labelService.Size = new System.Drawing.Size(44, 15);
             this.labelService.TabIndex = 3;
             this.labelService.Text = "Service";
-            // 
-            // browseButton
-            // 
+
             this.browseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.browseButton.Location = new System.Drawing.Point(657, 22);
             this.browseButton.Name = "browseButton";
@@ -293,27 +259,21 @@ namespace MinimalFirewall
             this.browseButton.Text = "Browse...";
             this.browseButton.UseVisualStyleBackColor = true;
             this.browseButton.Click += new System.EventHandler(this.BrowseButton_Click);
-            // 
-            // programPathTextBox
-            // 
+
             this.programPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.programPathTextBox.Location = new System.Drawing.Point(75, 22);
             this.programPathTextBox.Name = "programPathTextBox";
             this.programPathTextBox.Size = new System.Drawing.Size(576, 23);
             this.programPathTextBox.TabIndex = 1;
-            // 
-            // labelProgram
-            // 
+
             this.labelProgram.AutoSize = true;
             this.labelProgram.Location = new System.Drawing.Point(15, 25);
             this.labelProgram.Name = "labelProgram";
             this.labelProgram.Size = new System.Drawing.Size(53, 15);
             this.labelProgram.TabIndex = 0;
             this.labelProgram.Text = "Program";
-            // 
-            // protocolGroupBox
-            // 
+
             this.protocolGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.protocolGroupBox.Controls.Add(this.protocolComboBox);
@@ -324,9 +284,7 @@ namespace MinimalFirewall
             this.protocolGroupBox.TabIndex = 8;
             this.protocolGroupBox.TabStop = false;
             this.protocolGroupBox.Text = "Protocol";
-            // 
-            // protocolComboBox
-            // 
+
             this.protocolComboBox.BorderColor = System.Drawing.Color.Gray;
             this.protocolComboBox.ButtonColor = System.Drawing.Color.LightGray;
             this.protocolComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
@@ -336,18 +294,14 @@ namespace MinimalFirewall
             this.protocolComboBox.Size = new System.Drawing.Size(150, 23);
             this.protocolComboBox.TabIndex = 1;
             this.protocolComboBox.SelectedIndexChanged += new System.EventHandler(this.ProtocolComboBox_SelectedIndexChanged);
-            // 
-            // labelProtocol
-            // 
+
             this.labelProtocol.AutoSize = true;
             this.labelProtocol.Location = new System.Drawing.Point(15, 25);
             this.labelProtocol.Name = "labelProtocol";
             this.labelProtocol.Size = new System.Drawing.Size(52, 15);
             this.labelProtocol.TabIndex = 0;
             this.labelProtocol.Text = "Protocol";
-            // 
-            // portsGroupBox
-            // 
+
             this.portsGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.portsGroupBox.Controls.Add(this.remotePortsTextBox);
@@ -361,9 +315,7 @@ namespace MinimalFirewall
             this.portsGroupBox.TabStop = false;
             this.portsGroupBox.Text = "Ports";
             this.portsGroupBox.Visible = false;
-            // 
-            // remotePortsTextBox
-            // 
+
             this.remotePortsTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remotePortsTextBox.Location = new System.Drawing.Point(90, 53);
@@ -371,18 +323,14 @@ namespace MinimalFirewall
             this.remotePortsTextBox.Size = new System.Drawing.Size(657, 23);
             this.remotePortsTextBox.TabIndex = 3;
             this.remotePortsTextBox.Text = "*";
-            // 
-            // labelRemotePorts
-            // 
+
             this.labelRemotePorts.AutoSize = true;
             this.labelRemotePorts.Location = new System.Drawing.Point(6, 56);
             this.labelRemotePorts.Name = "labelRemotePorts";
             this.labelRemotePorts.Size = new System.Drawing.Size(77, 15);
             this.labelRemotePorts.TabIndex = 2;
             this.labelRemotePorts.Text = "Remote Ports";
-            // 
-            // localPortsTextBox
-            // 
+
             this.localPortsTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localPortsTextBox.Location = new System.Drawing.Point(90, 22);
@@ -390,18 +338,14 @@ namespace MinimalFirewall
             this.localPortsTextBox.Size = new System.Drawing.Size(657, 23);
             this.localPortsTextBox.TabIndex = 1;
             this.localPortsTextBox.Text = "*";
-            // 
-            // labelLocalPorts
-            // 
+
             this.labelLocalPorts.AutoSize = true;
             this.labelLocalPorts.Location = new System.Drawing.Point(6, 25);
             this.labelLocalPorts.Name = "labelLocalPorts";
             this.labelLocalPorts.Size = new System.Drawing.Size(65, 15);
             this.labelLocalPorts.TabIndex = 0;
             this.labelLocalPorts.Text = "Local Ports";
-            // 
-            // icmpGroupBox
-            // 
+
             this.icmpGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
@@ -413,9 +357,7 @@ namespace MinimalFirewall
             this.icmpGroupBox.TabStop = false;
             this.icmpGroupBox.Text = "ICMP Settings";
             this.icmpGroupBox.Visible = false;
-            // 
-            // icmpTypesAndCodesTextBox
-            // 
+
             this.icmpTypesAndCodesTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpTypesAndCodesTextBox.Location = new System.Drawing.Point(110, 22);
@@ -423,18 +365,14 @@ namespace MinimalFirewall
             this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(637, 23);
             this.icmpTypesAndCodesTextBox.TabIndex = 1;
             this.icmpTypesAndCodesTextBox.Text = "*";
-            // 
-            // labelIcmpInfo
-            // 
+
             this.labelIcmpInfo.AutoSize = true;
             this.labelIcmpInfo.Location = new System.Drawing.Point(15, 25);
             this.labelIcmpInfo.Name = "labelIcmpInfo";
             this.labelIcmpInfo.Size = new System.Drawing.Size(89, 15);
             this.labelIcmpInfo.TabIndex = 0;
             this.labelIcmpInfo.Text = "Type:Code (e.g. 8:0)";
-            // 
-            // scopeGroupBox
-            // 
+
             this.scopeGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.scopeGroupBox.Controls.Add(this.remoteAddressTextBox);
@@ -447,9 +385,7 @@ namespace MinimalFirewall
             this.scopeGroupBox.TabIndex = 11;
             this.scopeGroupBox.TabStop = false;
             this.scopeGroupBox.Text = "Scope (Addresses)";
-            // 
-            // remoteAddressTextBox
-            // 
+
             this.remoteAddressTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remoteAddressTextBox.Location = new System.Drawing.Point(105, 53);
@@ -457,18 +393,14 @@ namespace MinimalFirewall
             this.remoteAddressTextBox.Size = new System.Drawing.Size(642, 23);
             this.remoteAddressTextBox.TabIndex = 3;
             this.remoteAddressTextBox.Text = "*";
-            // 
-            // labelRemoteAddress
-            // 
+
             this.labelRemoteAddress.AutoSize = true;
             this.labelRemoteAddress.Location = new System.Drawing.Point(6, 56);
             this.labelRemoteAddress.Name = "labelRemoteAddress";
             this.labelRemoteAddress.Size = new System.Drawing.Size(93, 15);
             this.labelRemoteAddress.TabIndex = 2;
             this.labelRemoteAddress.Text = "Remote Address";
-            // 
-            // localAddressTextBox
-            // 
+
             this.localAddressTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localAddressTextBox.Location = new System.Drawing.Point(105, 22);
@@ -476,18 +408,14 @@ namespace MinimalFirewall
             this.localAddressTextBox.Size = new System.Drawing.Size(642, 23);
             this.localAddressTextBox.TabIndex = 1;
             this.localAddressTextBox.Text = "*";
-            // 
-            // labelLocalAddress
-            // 
+
             this.labelLocalAddress.AutoSize = true;
             this.labelLocalAddress.Location = new System.Drawing.Point(6, 25);
             this.labelLocalAddress.Name = "labelLocalAddress";
             this.labelLocalAddress.Size = new System.Drawing.Size(81, 15);
             this.labelLocalAddress.TabIndex = 0;
             this.labelLocalAddress.Text = "Local Address";
-            // 
-            // profilesGroupBox
-            // 
+
             this.profilesGroupBox.Controls.Add(this.publicCheckBox);
             this.profilesGroupBox.Controls.Add(this.privateCheckBox);
             this.profilesGroupBox.Controls.Add(this.domainCheckBox);
@@ -497,9 +425,7 @@ namespace MinimalFirewall
             this.profilesGroupBox.TabIndex = 12;
             this.profilesGroupBox.TabStop = false;
             this.profilesGroupBox.Text = "Profiles";
-            // 
-            // publicCheckBox
-            // 
+
             this.publicCheckBox.AutoSize = true;
             this.publicCheckBox.Checked = true;
             this.publicCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -509,9 +435,7 @@ namespace MinimalFirewall
             this.publicCheckBox.TabIndex = 2;
             this.publicCheckBox.Text = "Public";
             this.publicCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // privateCheckBox
-            // 
+
             this.privateCheckBox.AutoSize = true;
             this.privateCheckBox.Checked = true;
             this.privateCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -521,9 +445,7 @@ namespace MinimalFirewall
             this.privateCheckBox.TabIndex = 1;
             this.privateCheckBox.Text = "Private";
             this.privateCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // domainCheckBox
-            // 
+
             this.domainCheckBox.AutoSize = true;
             this.domainCheckBox.Checked = true;
             this.domainCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -533,9 +455,7 @@ namespace MinimalFirewall
             this.domainCheckBox.TabIndex = 0;
             this.domainCheckBox.Text = "Domain";
             this.domainCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // okButton
-            // 
+
             this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.okButton.Location = new System.Drawing.Point(556, 572);
             this.okButton.Name = "okButton";
@@ -544,9 +464,7 @@ namespace MinimalFirewall
             this.okButton.Text = "OK";
             this.okButton.UseVisualStyleBackColor = true;
             this.okButton.Click += new System.EventHandler(this.OkButton_Click);
-            // 
-            // cancelButton
-            // 
+
             this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cancelButton.Location = new System.Drawing.Point(672, 572);
             this.cancelButton.Name = "cancelButton";
@@ -555,9 +473,7 @@ namespace MinimalFirewall
             this.cancelButton.Text = "Cancel";
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
-            // 
-            // interfaceTypesGroupBox
-            // 
+
             this.interfaceTypesGroupBox.Controls.Add(this.lanCheckBox);
             this.interfaceTypesGroupBox.Controls.Add(this.wirelessCheckBox);
             this.interfaceTypesGroupBox.Controls.Add(this.remoteAccessCheckBox);
@@ -567,9 +483,7 @@ namespace MinimalFirewall
             this.interfaceTypesGroupBox.TabIndex = 15;
             this.interfaceTypesGroupBox.TabStop = false;
             this.interfaceTypesGroupBox.Text = "Interface Types";
-            // 
-            // lanCheckBox
-            // 
+
             this.lanCheckBox.AutoSize = true;
             this.lanCheckBox.Checked = true;
             this.lanCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -579,9 +493,7 @@ namespace MinimalFirewall
             this.lanCheckBox.TabIndex = 2;
             this.lanCheckBox.Text = "Wired (LAN)";
             this.lanCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // wirelessCheckBox
-            // 
+
             this.wirelessCheckBox.AutoSize = true;
             this.wirelessCheckBox.Checked = true;
             this.wirelessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -591,9 +503,7 @@ namespace MinimalFirewall
             this.wirelessCheckBox.TabIndex = 1;
             this.wirelessCheckBox.Text = "Wireless";
             this.wirelessCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // remoteAccessCheckBox
-            // 
+
             this.remoteAccessCheckBox.AutoSize = true;
             this.remoteAccessCheckBox.Checked = true;
             this.remoteAccessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
@@ -603,9 +513,7 @@ namespace MinimalFirewall
             this.remoteAccessCheckBox.TabIndex = 0;
             this.remoteAccessCheckBox.Text = "Remote (VPN)";
             this.remoteAccessCheckBox.UseVisualStyleBackColor = true;
-            // 
-            // labelGroup
-            // 
+
             this.labelGroup.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.labelGroup.AutoSize = true;
             this.labelGroup.Location = new System.Drawing.Point(12, 582);
@@ -613,9 +521,7 @@ namespace MinimalFirewall
             this.labelGroup.Size = new System.Drawing.Size(40, 15);
             this.labelGroup.TabIndex = 16;
             this.labelGroup.Text = "Group";
-            // 
-            // groupComboBox
-            // 
+
             this.groupComboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupComboBox.BorderColor = System.Drawing.Color.Gray;
@@ -625,9 +531,7 @@ namespace MinimalFirewall
             this.groupComboBox.Name = "groupComboBox";
             this.groupComboBox.Size = new System.Drawing.Size(350, 23);
             this.groupComboBox.TabIndex = 17;
-            // 
-            // addGroupButton
-            // 
+
             this.addGroupButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.addGroupButton.Location = new System.Drawing.Point(436, 579);
             this.addGroupButton.Name = "addGroupButton";
@@ -636,9 +540,7 @@ namespace MinimalFirewall
             this.addGroupButton.Text = "Add Group";
             this.addGroupButton.UseVisualStyleBackColor = true;
             this.addGroupButton.Click += new System.EventHandler(this.AddGroupButton_Click);
-            // 
-            // CreateAdvancedRuleForm
-            // 
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 620);

@@ -1,4 +1,4 @@
-﻿// StatusForm.cs
+﻿// File: StatusForm.cs
 using DarkModeForms;
 
 namespace MinimalFirewall
@@ -6,7 +6,6 @@ namespace MinimalFirewall
     public partial class StatusForm : Form
     {
         private readonly DarkModeCS dm;
-
         public StatusForm(string title)
         {
             InitializeComponent();

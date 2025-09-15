@@ -1,4 +1,4 @@
-﻿// ManagePublishersForm.Designer.cs
+﻿// File: ManagePublishersForm.Designer.cs
 namespace MinimalFirewall
 {
     partial class ManagePublishersForm
@@ -8,7 +8,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button removeButton;
         private System.Windows.Forms.Button closeButton;
         private System.Windows.Forms.Label infoLabel;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -27,18 +26,14 @@ namespace MinimalFirewall
             this.closeButton = new System.Windows.Forms.Button();
             this.infoLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
-            // 
-            // publishersListBox
-            // 
+
             this.publishersListBox.FormattingEnabled = true;
             this.publishersListBox.ItemHeight = 15;
             this.publishersListBox.Location = new System.Drawing.Point(12, 35);
             this.publishersListBox.Name = "publishersListBox";
             this.publishersListBox.Size = new System.Drawing.Size(460, 199);
             this.publishersListBox.TabIndex = 0;
-            // 
-            // removeButton
-            // 
+
             this.removeButton.Location = new System.Drawing.Point(12, 240);
             this.removeButton.Name = "removeButton";
             this.removeButton.Size = new System.Drawing.Size(120, 29);
@@ -46,9 +41,7 @@ namespace MinimalFirewall
             this.removeButton.Text = "Remove Selected";
             this.removeButton.UseVisualStyleBackColor = true;
             this.removeButton.Click += new System.EventHandler(this.removeButton_Click);
-            // 
-            // closeButton
-            // 
+
             this.closeButton.Location = new System.Drawing.Point(397, 240);
             this.closeButton.Name = "closeButton";
             this.closeButton.Size = new System.Drawing.Size(75, 29);
@@ -56,18 +49,14 @@ namespace MinimalFirewall
             this.closeButton.Text = "Close";
             this.closeButton.UseVisualStyleBackColor = true;
             this.closeButton.Click += new System.EventHandler(this.closeButton_Click);
-            // 
-            // infoLabel
-            // 
+
             this.infoLabel.AutoSize = true;
             this.infoLabel.Location = new System.Drawing.Point(12, 9);
             this.infoLabel.Name = "infoLabel";
             this.infoLabel.Size = new System.Drawing.Size(262, 15);
             this.infoLabel.TabIndex = 3;
             this.infoLabel.Text = "Applications from these publishers will be allowed automatically.";
-            // 
-            // ManagePublishersForm
-            // 
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(484, 281);

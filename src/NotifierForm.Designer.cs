@@ -1,4 +1,4 @@
-﻿// NotifierForm.Designer.cs
+﻿// File: NotifierForm.Designer.cs
 namespace MinimalFirewall
 {
     partial class NotifierForm
@@ -14,7 +14,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.ContextMenuStrip tempAllowContextMenu;
         private System.Windows.Forms.CheckBox wildcardCheckBox;
         private System.Windows.Forms.CheckBox trustPublisherCheckBox;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -40,26 +39,20 @@ namespace MinimalFirewall
             this.wildcardCheckBox = new System.Windows.Forms.CheckBox();
             this.trustPublisherCheckBox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
-            // 
-            // infoLabel
-            // 
+
             this.infoLabel.Location = new System.Drawing.Point(12, 9);
             this.infoLabel.Name = "infoLabel";
             this.infoLabel.Size = new System.Drawing.Size(532, 20);
             this.infoLabel.TabIndex = 0;
             this.infoLabel.Text = "Blocked a connection for:";
-            // 
-            // appNameLabel
-            // 
+
             this.appNameLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.appNameLabel.Location = new System.Drawing.Point(12, 38);
             this.appNameLabel.Name = "appNameLabel";
             this.appNameLabel.Size = new System.Drawing.Size(532, 21);
             this.appNameLabel.TabIndex = 1;
             this.appNameLabel.Text = "Application Name";
-            // 
-            // pathLabel
-            // 
+
             this.pathLabel.AutoEllipsis = true;
             this.pathLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.pathLabel.Location = new System.Drawing.Point(12, 65);
@@ -67,9 +60,7 @@ namespace MinimalFirewall
             this.pathLabel.Size = new System.Drawing.Size(532, 20);
             this.pathLabel.TabIndex = 2;
             this.pathLabel.Text = "C:\\Path\\To\\Application.exe";
-            // 
-            // allowButton
-            // 
+
             this.allowButton.Location = new System.Drawing.Point(16, 104);
             this.allowButton.Name = "allowButton";
             this.allowButton.Size = new System.Drawing.Size(120, 31);
@@ -77,9 +68,7 @@ namespace MinimalFirewall
             this.allowButton.Text = "Allow";
             this.allowButton.UseVisualStyleBackColor = true;
             this.allowButton.Click += new System.EventHandler(this.allowButton_Click);
-            // 
-            // blockButton
-            // 
+
             this.blockButton.Location = new System.Drawing.Point(296, 104);
             this.blockButton.Name = "blockButton";
             this.blockButton.Size = new System.Drawing.Size(120, 31);
@@ -87,9 +76,7 @@ namespace MinimalFirewall
             this.blockButton.Text = "Block";
             this.blockButton.UseVisualStyleBackColor = true;
             this.blockButton.Click += new System.EventHandler(this.blockButton_Click);
-            // 
-            // ignoreButton
-            // 
+
             this.ignoreButton.Location = new System.Drawing.Point(424, 104);
             this.ignoreButton.Name = "ignoreButton";
             this.ignoreButton.Size = new System.Drawing.Size(120, 31);
@@ -97,9 +84,7 @@ namespace MinimalFirewall
             this.ignoreButton.Text = "Ignore";
             this.ignoreButton.UseVisualStyleBackColor = true;
             this.ignoreButton.Click += new System.EventHandler(this.ignoreButton_Click);
-            // 
-            // tempAllowButton
-            // 
+
             this.tempAllowButton.Location = new System.Drawing.Point(144, 104);
             this.tempAllowButton.Name = "tempAllowButton";
             this.tempAllowButton.Size = new System.Drawing.Size(144, 31);
@@ -107,14 +92,10 @@ namespace MinimalFirewall
             this.tempAllowButton.Text = "Allow Temporarily ▼";
             this.tempAllowButton.UseVisualStyleBackColor = true;
             this.tempAllowButton.Click += new System.EventHandler(this.tempAllowButton_Click);
-            // 
-            // tempAllowContextMenu
-            // 
+
             this.tempAllowContextMenu.Name = "tempAllowContextMenu";
             this.tempAllowContextMenu.Size = new System.Drawing.Size(61, 4);
-            // 
-            // wildcardCheckBox
-            // 
+
             this.wildcardCheckBox.AutoSize = true;
             this.wildcardCheckBox.Location = new System.Drawing.Point(16, 148);
             this.wildcardCheckBox.Name = "wildcardCheckBox";
@@ -123,9 +104,7 @@ namespace MinimalFirewall
             this.wildcardCheckBox.Text = "Create Wildcard Rule";
             this.wildcardCheckBox.UseVisualStyleBackColor = true;
             this.wildcardCheckBox.CheckedChanged += new System.EventHandler(this.wildcardCheckBox_CheckedChanged);
-            // 
-            // trustPublisherCheckBox
-            // 
+
             this.trustPublisherCheckBox.AutoSize = true;
             this.trustPublisherCheckBox.Location = new System.Drawing.Point(16, 175);
             this.trustPublisherCheckBox.Name = "trustPublisherCheckBox";
@@ -134,9 +113,7 @@ namespace MinimalFirewall
             this.trustPublisherCheckBox.Text = "Always trust publisher";
             this.trustPublisherCheckBox.UseVisualStyleBackColor = true;
             this.trustPublisherCheckBox.Visible = false;
-            // 
-            // NotifierForm
-            // 
+
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(556, 211);

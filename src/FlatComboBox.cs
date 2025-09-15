@@ -26,7 +26,6 @@ namespace DarkModeForms
         }
 
         private Color buttonColor = Color.LightGray;
-
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor
         {
@@ -42,7 +41,6 @@ namespace DarkModeForms
         }
 
         private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
-
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == WM_PAINT && DropDownStyle != ComboBoxStyle.Simple)
@@ -152,7 +150,6 @@ namespace DarkModeForms
         }
 
         private const int WM_PAINT = 0xF;
-
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
         {
@@ -183,16 +180,12 @@ namespace DarkModeForms
         [DllImport("user32.dll")]
         private static extern IntPtr BeginPaint(IntPtr hWnd,
             [In, Out] ref PAINTSTRUCT lpPaint);
-
         [DllImport("user32.dll")]
         private static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT lpPaint);
-
         [DllImport("gdi32.dll")]
         public static extern int SelectClipRgn(IntPtr hDC, IntPtr hRgn);
-
         [DllImport("user32.dll")]
         public static extern int GetUpdateRgn(IntPtr hwnd, IntPtr hrgn, bool fErase);
-
         public enum RegionFlags
         {
             ERROR = 0,
@@ -203,7 +196,6 @@ namespace DarkModeForms
 
         [DllImport("gdi32.dll")]
         internal static extern bool DeleteObject(IntPtr hObject);
-
         [DllImport("gdi32.dll")]
         private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
     }

@@ -14,17 +14,43 @@ namespace MinimalFirewall
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly RuleCacheService _ruleCacheService;
         private readonly HashSet<string> _knownRulePaths = new(StringComparer.OrdinalIgnoreCase);
-
-        private List<AdvancedRuleViewModel> _appRulesCache = [];
-        private List<AdvancedRuleViewModel> _serviceRulesCache = [];
-
-        private delegate bool TryParseHandler<T>(string value, [NotNullWhen(true)] out T? result);
-
         public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService, RuleCacheService ruleCacheService)
         {
             _firewallService = firewallService;
             _wildcardRuleService = wildcardRuleService;
             _ruleCacheService = ruleCacheService;
+        }
+
+        public void RemoveRulesFromCache(List<string> ruleNames)
+        {
+            var rules = LoadAdvancedRules();
+            if (rules.Count == 0) return;
+
+            var nameSet = new HashSet<string>(ruleNames, StringComparer.OrdinalIgnoreCase);
+            var updatedRules = rules.Where(r => !nameSet.Contains(r.Name)).ToList();
+            if (updatedRules.Count < rules.Count)
+            {
+                _ruleCacheService.UpdateCache(null, updatedRules);
+            }
+        }
+
+        public void AddRulesToCache(List<AdvancedRuleViewModel> newRules)
+        {
+            var rules = LoadAdvancedRules();
+            rules.AddRange(newRules);
+            var sortedRules = rules.OrderBy(r => r.Name).ToList();
+            _ruleCacheService.UpdateCache(null, sortedRules);
+        }
+
+        public async Task InitialLoadAsync()
+        {
+            var appRules = await Task.Run(() => _firewallService.GetApplicationRules()).ConfigureAwait(false);
+            var allWildcards = _wildcardRuleService.GetRules();
+            var uwpService = new UwpService();
+            var uwpApps = uwpService.LoadUwpAppsFromCache();
+
+            var advancedRules = ProcessAndGetAdvancedRules(appRules, uwpApps, allWildcards);
+            _ruleCacheService.UpdateCache(null, advancedRules);
         }
 
         public bool DoesManagedRuleExist(string appPath, string serviceName, string direction)
@@ -34,8 +60,8 @@ namespace MinimalFirewall
                 return false;
             }
 
-            if (_appRulesCache.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase) &&
-                                       r.Direction.HasFlag(dirEnum)))
+            var allManagedRules = _ruleCacheService.GetAdvancedRules();
+            if (allManagedRules.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase) && r.Direction.HasFlag(dirEnum)))
             {
                 return true;
             }
@@ -45,8 +71,7 @@ namespace MinimalFirewall
                 var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
                 foreach (var sName in serviceNames)
                 {
-                    if (_serviceRulesCache.Any(r => r.ServiceName.Equals(sName, StringComparison.OrdinalIgnoreCase) &&
-                                                  r.Direction.HasFlag(dirEnum)))
+                    if (allManagedRules.Any(r => r.ServiceName.Equals(sName, StringComparison.OrdinalIgnoreCase) && r.Direction.HasFlag(dirEnum)))
                     {
                         return true;
                     }
@@ -78,7 +103,6 @@ namespace MinimalFirewall
                 var firstRule = group.First();
                 var protocols = group.Select(r => r.ProtocolName).Distinct().OrderBy(p => p).ToList();
                 var protocolString = string.Join(", ", protocols);
-
                 if (protocols.Contains("TCP") && protocols.Contains("UDP"))
                 {
                     protocolString = "TCP, UDP";
@@ -104,7 +128,6 @@ namespace MinimalFirewall
                     WildcardDefinition = firstRule.WildcardDefinition,
                     UnderlyingRules = group.ToList()
                 };
-
                 aggregatedRules.Add(aggregatedRule);
             }
 
@@ -114,8 +137,6 @@ namespace MinimalFirewall
         public void ClearLocalCaches()
         {
             _knownRulePaths.Clear();
-            _appRulesCache.Clear();
-            _serviceRulesCache.Clear();
         }
 
         public async Task RefreshAndCacheAsync(bool forceFullScan = false)
@@ -139,12 +160,6 @@ namespace MinimalFirewall
             }
 
             var advancedRules = ProcessAndGetAdvancedRules(appRules, uwpApps, allWildcards);
-            _appRulesCache = advancedRules
-                .Where(r => r.IsEnabled && !string.IsNullOrEmpty(r.ApplicationName) && r.ServiceName.Equals("Any", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            _serviceRulesCache = advancedRules
-                .Where(r => r.IsEnabled && !string.IsNullOrEmpty(r.ServiceName) && !r.ServiceName.Equals("Any", StringComparison.OrdinalIgnoreCase))
-                .ToList();
             _ruleCacheService.UpdateCache(null, advancedRules);
         }
 
@@ -198,24 +213,6 @@ namespace MinimalFirewall
             return RuleType.Advanced;
         }
 
-        private static ICollection<T> ParseStringToList<T>(string? input, TryParseHandler<T> tryParse)
-        {
-            if (string.IsNullOrEmpty(input) || input == "*")
-            {
-                return new List<T>();
-            }
-            var results = new List<T>();
-            var parts = input.Split(',');
-            foreach (var part in parts)
-            {
-                if (tryParse(part.Trim(), out T? result))
-                {
-                    if (result != null) results.Add(result);
-                }
-            }
-            return results;
-        }
-
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
         {
             return new AdvancedRuleViewModel
@@ -226,13 +223,13 @@ namespace MinimalFirewall
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = (Directions)rule.Direction,
                 ApplicationName = PathResolver.NormalizePath(rule.ApplicationName ?? string.Empty),
-                LocalPorts = ParseStringToList<PortRange>(rule.LocalPorts, PortRange.TryParse),
-                RemotePorts = ParseStringToList<PortRange>(rule.RemotePorts, PortRange.TryParse),
+                LocalPorts = ParsingUtility.ParseStringToList<PortRange>(rule.LocalPorts, PortRange.TryParse),
+                RemotePorts = ParsingUtility.ParseStringToList<PortRange>(rule.RemotePorts, PortRange.TryParse),
                 Protocol = (short)rule.Protocol,
                 ProtocolName = GetProtocolName(rule.Protocol),
                 ServiceName = string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*" ? "Any" : rule.serviceName,
-                LocalAddresses = ParseStringToList<IPAddressRange>(rule.LocalAddresses, IPAddressRange.TryParse),
-                RemoteAddresses = ParseStringToList<IPAddressRange>(rule.RemoteAddresses, IPAddressRange.TryParse),
+                LocalAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(rule.LocalAddresses, IPAddressRange.TryParse),
+                RemoteAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(rule.RemoteAddresses, IPAddressRange.TryParse),
                 Profiles = GetProfileString(rule.Profiles),
                 Grouping = rule.Grouping ?? string.Empty
             };

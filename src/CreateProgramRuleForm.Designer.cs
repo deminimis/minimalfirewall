@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File: CreateProgramRuleForm.Designer.cs
+namespace MinimalFirewall
 {
     public partial class CreateProgramRuleForm
     {
