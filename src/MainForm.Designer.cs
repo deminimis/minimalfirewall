@@ -1,5 +1,4 @@
-﻿// File: MainForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     public partial class MainForm
     {
@@ -144,6 +143,8 @@ namespace MinimalFirewall
         private ToolStripMenuItem openFileLocationToolStripMenuItem2;
         private CheckBox auditAlertsSwitch;
         private System.Windows.Forms.Label liveConnectionsDisabledLabel;
+        private StatusStrip statusStrip1;
+        private ToolStripStatusLabel backgroundTaskStatusLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -151,6 +152,7 @@ namespace MinimalFirewall
             {
                 _ruleCacheService?.Dispose();
                 _autoRefreshTimer?.Dispose();
+                _backgroundTaskService?.Dispose();
                 _lockedGreenIcon?.Dispose();
                 _unlockedWhiteIcon?.Dispose();
                 _refreshWhiteIcon?.Dispose();
@@ -310,6 +312,8 @@ namespace MinimalFirewall
             rescanButton = new Button();
             mainToolTip = new ToolTip(components);
             appIconList = new ImageList(components);
+            statusStrip1 = new StatusStrip();
+            backgroundTaskStatusLabel = new ToolStripStatusLabel();
             mainTabControl.SuspendLayout();
             dashboardTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)logoPictureBox).BeginInit();
@@ -327,7 +331,11 @@ namespace MinimalFirewall
             settingsTabPage.SuspendLayout();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
+            statusStrip1.SuspendLayout();
             SuspendLayout();
+            // 
+            // mainTabControl
+            // 
             mainTabControl.Alignment = TabAlignment.Left;
             mainTabControl.BorderColor = SystemColors.ControlDark;
             mainTabControl.Controls.Add(dashboardTabPage);
@@ -353,6 +361,9 @@ namespace MinimalFirewall
             mainTabControl.TabColor = SystemColors.ControlLight;
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
+            // 
+            // dashboardTabPage
+            // 
             dashboardTabPage.Controls.Add(logoPictureBox);
             dashboardTabPage.Controls.Add(dashboardListView);
             dashboardTabPage.ImageIndex = 7;
@@ -364,6 +375,9 @@ namespace MinimalFirewall
             dashboardTabPage.TabIndex = 0;
             dashboardTabPage.Text = "Dashboard";
             dashboardTabPage.UseVisualStyleBackColor = true;
+            // 
+            // logoPictureBox
+            // 
             logoPictureBox.Controls.Add(arrowPictureBox);
             logoPictureBox.Controls.Add(instructionLabel);
             logoPictureBox.Dock = DockStyle.Fill;
@@ -374,6 +388,9 @@ namespace MinimalFirewall
             logoPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             logoPictureBox.TabIndex = 1;
             logoPictureBox.TabStop = false;
+            // 
+            // arrowPictureBox
+            // 
             arrowPictureBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             arrowPictureBox.BackColor = Color.Transparent;
             arrowPictureBox.Location = new Point(23, 829);
@@ -383,6 +400,9 @@ namespace MinimalFirewall
             arrowPictureBox.TabIndex = 3;
             arrowPictureBox.TabStop = false;
             arrowPictureBox.Paint += ArrowPictureBox_Paint;
+            // 
+            // instructionLabel
+            // 
             instructionLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             instructionLabel.AutoSize = true;
             instructionLabel.BackColor = Color.Transparent;
@@ -392,6 +412,9 @@ namespace MinimalFirewall
             instructionLabel.Size = new Size(304, 20);
             instructionLabel.TabIndex = 2;
             instructionLabel.Text = "Press the lock key to initiate firewall defense.";
+            // 
+            // dashboardListView
+            // 
             dashboardListView.BorderStyle = BorderStyle.None;
             dashboardListView.Columns.AddRange(new ColumnHeader[] { dashIconColumn, dashActionColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashPathColumn });
             dashboardListView.ContextMenuStrip = dashboardContextMenu;
@@ -407,105 +430,189 @@ namespace MinimalFirewall
             dashboardListView.View = View.Details;
             dashboardListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Dashboard;
             dashboardListView.ColumnClick += ListView_ColumnClick;
+            // 
+            // dashIconColumn
+            // 
             dashIconColumn.Text = "";
             dashIconColumn.Width = 32;
+            // 
+            // dashActionColumn
+            // 
             dashActionColumn.Text = "Action";
             dashActionColumn.Width = 300;
+            // 
+            // dashAppColumn
+            // 
             dashAppColumn.Text = "Application";
             dashAppColumn.Width = 150;
+            // 
+            // dashServiceColumn
+            // 
             dashServiceColumn.Text = "Service";
             dashServiceColumn.Width = 150;
+            // 
+            // dashDirectionColumn
+            // 
             dashDirectionColumn.Text = "Direction";
             dashDirectionColumn.Width = 100;
+            // 
+            // dashPathColumn
+            // 
             dashPathColumn.Text = "Path";
             dashPathColumn.Width = 300;
+            // 
+            // dashboardContextMenu
+            // 
             dashboardContextMenu.ImageScalingSize = new Size(20, 20);
             dashboardContextMenu.Items.AddRange(new ToolStripItem[] { tempAllowToolStripMenuItem, toolStripSeparator3, permanentAllowToolStripMenuItem, allowAndTrustPublisherToolStripMenuItem, permanentBlockToolStripMenuItem, ignoreToolStripMenuItem, toolStripSeparator4, createWildcardRuleToolStripMenuItem, toolStripSeparator5, createAdvancedRuleToolStripMenuItem, toolStripSeparator7, openFileLocationToolStripMenuItem1, toolStripSeparator6, copyDetailsToolStripMenuItem });
             dashboardContextMenu.Name = "dashboardContextMenu";
             dashboardContextMenu.Size = new Size(228, 290);
             dashboardContextMenu.Opening += ContextMenu_Opening;
+            // 
+            // tempAllowToolStripMenuItem
+            // 
             tempAllowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allow2MinutesToolStripMenuItem, allow5MinutesToolStripMenuItem, allow15MinutesToolStripMenuItem, allow1HourToolStripMenuItem, allow3HoursToolStripMenuItem, allow8HoursToolStripMenuItem });
             tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
             tempAllowToolStripMenuItem.Size = new Size(227, 24);
             tempAllowToolStripMenuItem.Text = "Allow Temporarily";
+            // 
+            // allow2MinutesToolStripMenuItem
+            // 
             allow2MinutesToolStripMenuItem.Name = "allow2MinutesToolStripMenuItem";
             allow2MinutesToolStripMenuItem.Size = new Size(162, 26);
             allow2MinutesToolStripMenuItem.Tag = "2";
             allow2MinutesToolStripMenuItem.Text = "2 minutes";
             allow2MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // allow5MinutesToolStripMenuItem
+            // 
             allow5MinutesToolStripMenuItem.Name = "allow5MinutesToolStripMenuItem";
             allow5MinutesToolStripMenuItem.Size = new Size(162, 26);
             allow5MinutesToolStripMenuItem.Tag = "5";
             allow5MinutesToolStripMenuItem.Text = "5 minutes";
             allow5MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // allow15MinutesToolStripMenuItem
+            // 
             allow15MinutesToolStripMenuItem.Name = "allow15MinutesToolStripMenuItem";
             allow15MinutesToolStripMenuItem.Size = new Size(162, 26);
             allow15MinutesToolStripMenuItem.Tag = "15";
             allow15MinutesToolStripMenuItem.Text = "15 minutes";
             allow15MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // allow1HourToolStripMenuItem
+            // 
             allow1HourToolStripMenuItem.Name = "allow1HourToolStripMenuItem";
             allow1HourToolStripMenuItem.Size = new Size(162, 26);
             allow1HourToolStripMenuItem.Tag = "60";
             allow1HourToolStripMenuItem.Text = "1 hour";
             allow1HourToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // allow3HoursToolStripMenuItem
+            // 
             allow3HoursToolStripMenuItem.Name = "allow3HoursToolStripMenuItem";
             allow3HoursToolStripMenuItem.Size = new Size(162, 26);
             allow3HoursToolStripMenuItem.Tag = "180";
             allow3HoursToolStripMenuItem.Text = "3 hours";
             allow3HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // allow8HoursToolStripMenuItem
+            // 
             allow8HoursToolStripMenuItem.Name = "allow8HoursToolStripMenuItem";
             allow8HoursToolStripMenuItem.Size = new Size(162, 26);
             allow8HoursToolStripMenuItem.Tag = "480";
             allow8HoursToolStripMenuItem.Text = "8 hours";
             allow8HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
+            // 
+            // toolStripSeparator3
+            // 
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(224, 6);
+            // 
+            // permanentAllowToolStripMenuItem
+            // 
             permanentAllowToolStripMenuItem.Name = "permanentAllowToolStripMenuItem";
             permanentAllowToolStripMenuItem.Size = new Size(227, 24);
             permanentAllowToolStripMenuItem.Text = "Allow";
             permanentAllowToolStripMenuItem.Click += PermanentAllowToolStripMenuItem_Click;
+            // 
+            // allowAndTrustPublisherToolStripMenuItem
+            // 
             allowAndTrustPublisherToolStripMenuItem.Name = "allowAndTrustPublisherToolStripMenuItem";
             allowAndTrustPublisherToolStripMenuItem.Size = new Size(227, 24);
             allowAndTrustPublisherToolStripMenuItem.Text = "Allow and Trust Publisher";
             allowAndTrustPublisherToolStripMenuItem.Click += AllowAndTrustPublisherToolStripMenuItem_Click;
+            // 
+            // permanentBlockToolStripMenuItem
+            // 
             permanentBlockToolStripMenuItem.Name = "permanentBlockToolStripMenuItem";
             permanentBlockToolStripMenuItem.Size = new Size(227, 24);
             permanentBlockToolStripMenuItem.Text = "Block";
             permanentBlockToolStripMenuItem.Click += PermanentBlockToolStripMenuItem_Click;
+            // 
+            // ignoreToolStripMenuItem
+            // 
             ignoreToolStripMenuItem.Name = "ignoreToolStripMenuItem";
             ignoreToolStripMenuItem.Size = new Size(227, 24);
             ignoreToolStripMenuItem.Text = "Ignore";
             ignoreToolStripMenuItem.Click += IgnoreToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator4
+            // 
             toolStripSeparator4.Name = "toolStripSeparator4";
             toolStripSeparator4.Size = new Size(224, 6);
+            // 
+            // createWildcardRuleToolStripMenuItem
+            // 
             createWildcardRuleToolStripMenuItem.Name = "createWildcardRuleToolStripMenuItem";
             createWildcardRuleToolStripMenuItem.Size = new Size(227, 24);
             createWildcardRuleToolStripMenuItem.Text = "Create Wildcard Rule...";
             createWildcardRuleToolStripMenuItem.Click += createWildcardRuleToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator5
+            // 
             toolStripSeparator5.Name = "toolStripSeparator5";
             toolStripSeparator5.Size = new Size(224, 6);
+            // 
+            // createAdvancedRuleToolStripMenuItem
+            // 
             createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
             createAdvancedRuleToolStripMenuItem.Size = new Size(227, 24);
             createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
             createAdvancedRuleToolStripMenuItem.Click += createAdvancedRuleToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator7
+            // 
             toolStripSeparator7.Name = "toolStripSeparator7";
             toolStripSeparator7.Size = new Size(224, 6);
+            // 
+            // openFileLocationToolStripMenuItem1
+            // 
             openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
             openFileLocationToolStripMenuItem1.Size = new Size(227, 24);
             openFileLocationToolStripMenuItem1.Text = "Open File Location";
             openFileLocationToolStripMenuItem1.Click += OpenFileLocationMenuItem_Click;
+            // 
+            // toolStripSeparator6
+            // 
             toolStripSeparator6.Name = "toolStripSeparator6";
             toolStripSeparator6.Size = new Size(224, 6);
+            // 
+            // copyDetailsToolStripMenuItem
+            // 
             copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             copyDetailsToolStripMenuItem.Size = new Size(227, 24);
             copyDetailsToolStripMenuItem.Text = "Copy Details";
             copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
+            // 
+            // rulesTabPage
+            // 
             rulesTabPage.Controls.Add(advFilterAdvancedCheck);
+            rulesTabPage.Controls.Add(advancedRuleButton);
             rulesTabPage.Controls.Add(advFilterWildcardCheck);
             rulesTabPage.Controls.Add(advFilterUwpCheck);
             rulesTabPage.Controls.Add(advFilterServiceCheck);
             rulesTabPage.Controls.Add(advFilterProgramCheck);
-            rulesTabPage.Controls.Add(advancedRuleButton);
             rulesTabPage.Controls.Add(rulesSearchTextBox);
             rulesTabPage.Controls.Add(createRuleButton);
             rulesTabPage.Controls.Add(rulesListView);
@@ -518,6 +625,9 @@ namespace MinimalFirewall
             rulesTabPage.TabIndex = 1;
             rulesTabPage.Text = "Rules";
             rulesTabPage.UseVisualStyleBackColor = true;
+            // 
+            // advFilterAdvancedCheck
+            // 
             advFilterAdvancedCheck.AutoSize = true;
             advFilterAdvancedCheck.Checked = true;
             advFilterAdvancedCheck.CheckState = CheckState.Checked;
@@ -529,13 +639,20 @@ namespace MinimalFirewall
             advFilterAdvancedCheck.Text = "Advanced";
             advFilterAdvancedCheck.UseVisualStyleBackColor = true;
             advFilterAdvancedCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            // 
+            // advancedRuleButton
+            // 
             advancedRuleButton.Location = new Point(157, 8);
             advancedRuleButton.Margin = new Padding(3, 4, 3, 4);
             advancedRuleButton.Name = "advancedRuleButton";
             advancedRuleButton.Size = new Size(143, 48);
             advancedRuleButton.TabIndex = 1;
             advancedRuleButton.Text = "Advanced Rule";
+            advancedRuleButton.UseVisualStyleBackColor = true;
             advancedRuleButton.Click += AdvancedRuleButton_Click;
+            // 
+            // advFilterWildcardCheck
+            // 
             advFilterWildcardCheck.AutoSize = true;
             advFilterWildcardCheck.Checked = true;
             advFilterWildcardCheck.CheckState = CheckState.Checked;
@@ -547,6 +664,9 @@ namespace MinimalFirewall
             advFilterWildcardCheck.Text = "Wildcard";
             advFilterWildcardCheck.UseVisualStyleBackColor = true;
             advFilterWildcardCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            // 
+            // advFilterUwpCheck
+            // 
             advFilterUwpCheck.AutoSize = true;
             advFilterUwpCheck.Checked = true;
             advFilterUwpCheck.CheckState = CheckState.Checked;
@@ -558,6 +678,9 @@ namespace MinimalFirewall
             advFilterUwpCheck.Text = "UWP";
             advFilterUwpCheck.UseVisualStyleBackColor = true;
             advFilterUwpCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            // 
+            // advFilterServiceCheck
+            // 
             advFilterServiceCheck.AutoSize = true;
             advFilterServiceCheck.Checked = true;
             advFilterServiceCheck.CheckState = CheckState.Checked;
@@ -569,6 +692,9 @@ namespace MinimalFirewall
             advFilterServiceCheck.Text = "Service";
             advFilterServiceCheck.UseVisualStyleBackColor = true;
             advFilterServiceCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            // 
+            // advFilterProgramCheck
+            // 
             advFilterProgramCheck.AutoSize = true;
             advFilterProgramCheck.Checked = true;
             advFilterProgramCheck.CheckState = CheckState.Checked;
@@ -580,6 +706,9 @@ namespace MinimalFirewall
             advFilterProgramCheck.Text = "Program";
             advFilterProgramCheck.UseVisualStyleBackColor = true;
             advFilterProgramCheck.CheckedChanged += AdvFilter_CheckedChanged;
+            // 
+            // rulesSearchTextBox
+            // 
             rulesSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             rulesSearchTextBox.Location = new Point(704, 17);
             rulesSearchTextBox.Margin = new Padding(3, 4, 3, 4);
@@ -588,13 +717,20 @@ namespace MinimalFirewall
             rulesSearchTextBox.Size = new Size(285, 27);
             rulesSearchTextBox.TabIndex = 7;
             rulesSearchTextBox.TextChanged += SearchTextBox_TextChanged;
+            // 
+            // createRuleButton
+            // 
             createRuleButton.Location = new Point(7, 8);
             createRuleButton.Margin = new Padding(3, 4, 3, 4);
             createRuleButton.Name = "createRuleButton";
             createRuleButton.Size = new Size(143, 48);
             createRuleButton.TabIndex = 0;
             createRuleButton.Text = "Create Rule";
+            createRuleButton.UseVisualStyleBackColor = true;
             createRuleButton.Click += CreateRuleButton_Click;
+            // 
+            // rulesListView
+            // 
             rulesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             rulesListView.BorderStyle = BorderStyle.None;
             rulesListView.Columns.AddRange(new ColumnHeader[] { advIconColumn, advNameColumn, advEnabledColumn, advStatusColumn, advDirectionColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn });
@@ -608,101 +744,193 @@ namespace MinimalFirewall
             rulesListView.TabIndex = 8;
             rulesListView.UseCompatibleStateImageBehavior = false;
             rulesListView.View = View.Details;
+            rulesListView.VirtualMode = true;
             rulesListView.ColumnClick += ListView_ColumnClick;
             rulesListView.DrawItem += RulesListView_DrawItem;
             rulesListView.DrawSubItem += RulesListView_DrawSubItem;
             rulesListView.MouseClick += RulesListView_MouseClick;
             rulesListView.MouseLeave += ListView_MouseLeave;
             rulesListView.MouseMove += ListView_MouseMove;
+            rulesListView.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler(ListView_RetrieveVirtualItem);
+            // 
+            // advIconColumn
+            // 
             advIconColumn.Text = "";
             advIconColumn.Width = 32;
+            // 
+            // advNameColumn
+            // 
             advNameColumn.Text = "Name";
             advNameColumn.Width = 180;
+            // 
+            // advEnabledColumn
+            // 
             advEnabledColumn.Text = "Enabled";
             advEnabledColumn.Width = 70;
+            // 
+            // advStatusColumn
+            // 
             advStatusColumn.Text = "Action";
             advStatusColumn.Width = 70;
+            // 
+            // advDirectionColumn
+            // 
             advDirectionColumn.Text = "Direction";
             advDirectionColumn.Width = 80;
+            // 
+            // advProtocolColumn
+            // 
             advProtocolColumn.Text = "Protocol";
             advProtocolColumn.Width = 70;
+            // 
+            // advLocalPortsColumn
+            // 
             advLocalPortsColumn.Text = "Local Ports";
             advLocalPortsColumn.Width = 100;
+            // 
+            // advRemotePortsColumn
+            // 
             advRemotePortsColumn.Text = "Remote Ports";
             advRemotePortsColumn.Width = 100;
+            // 
+            // advLocalAddressColumn
+            // 
             advLocalAddressColumn.Text = "Local Address";
             advLocalAddressColumn.Width = 120;
+            // 
+            // advRemoteAddressColumn
+            // 
             advRemoteAddressColumn.Text = "Remote Address";
             advRemoteAddressColumn.Width = 120;
+            // 
+            // advProgramColumn
+            // 
             advProgramColumn.Text = "Program";
             advProgramColumn.Width = 200;
+            // 
+            // advServiceColumn
+            // 
             advServiceColumn.Text = "Service";
             advServiceColumn.Width = 150;
+            // 
+            // advProfilesColumn
+            // 
             advProfilesColumn.Text = "Profiles";
             advProfilesColumn.Width = 100;
+            // 
+            // advGroupingColumn
+            // 
             advGroupingColumn.Text = "Group";
             advGroupingColumn.Width = 150;
+            // 
+            // advDescColumn
+            // 
             advDescColumn.Text = "Description";
             advDescColumn.Width = 300;
+            // 
+            // rulesContextMenu
+            // 
             rulesContextMenu.ImageScalingSize = new Size(20, 20);
             rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem2 });
             rulesContextMenu.Name = "rulesContextMenu";
             rulesContextMenu.Size = new Size(203, 142);
             rulesContextMenu.Opening += ContextMenu_Opening;
+            // 
+            // allowToolStripMenuItem
+            // 
             allowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allowOutboundToolStripMenuItem, allowInboundToolStripMenuItem, allowAllToolStripMenuItem });
             allowToolStripMenuItem.Name = "allowToolStripMenuItem";
             allowToolStripMenuItem.Size = new Size(202, 24);
             allowToolStripMenuItem.Text = "Allow";
+            // 
+            // allowOutboundToolStripMenuItem
+            // 
             allowOutboundToolStripMenuItem.Name = "allowOutboundToolStripMenuItem";
             allowOutboundToolStripMenuItem.Size = new Size(159, 26);
             allowOutboundToolStripMenuItem.Tag = "Allow (Outbound)";
             allowOutboundToolStripMenuItem.Text = "Outbound";
             allowOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // allowInboundToolStripMenuItem
+            // 
             allowInboundToolStripMenuItem.Name = "allowInboundToolStripMenuItem";
             allowInboundToolStripMenuItem.Size = new Size(159, 26);
             allowInboundToolStripMenuItem.Tag = "Allow (Inbound)";
             allowInboundToolStripMenuItem.Text = "Inbound";
             allowInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // allowAllToolStripMenuItem
+            // 
             allowAllToolStripMenuItem.Name = "allowAllToolStripMenuItem";
             allowAllToolStripMenuItem.Size = new Size(159, 26);
             allowAllToolStripMenuItem.Tag = "Allow (All)";
             allowAllToolStripMenuItem.Text = "All";
             allowAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // blockToolStripMenuItem
+            // 
             blockToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { blockOutboundToolStripMenuItem, blockInboundToolStripMenuItem, blockAllToolStripMenuItem });
             blockToolStripMenuItem.Name = "blockToolStripMenuItem";
             blockToolStripMenuItem.Size = new Size(202, 24);
             blockToolStripMenuItem.Text = "Block";
+            // 
+            // blockOutboundToolStripMenuItem
+            // 
             blockOutboundToolStripMenuItem.Name = "blockOutboundToolStripMenuItem";
             blockOutboundToolStripMenuItem.Size = new Size(159, 26);
             blockOutboundToolStripMenuItem.Tag = "Block (Outbound)";
             blockOutboundToolStripMenuItem.Text = "Outbound";
             blockOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // blockInboundToolStripMenuItem
+            // 
             blockInboundToolStripMenuItem.Name = "blockInboundToolStripMenuItem";
             blockInboundToolStripMenuItem.Size = new Size(159, 26);
             blockInboundToolStripMenuItem.Tag = "Block (Inbound)";
             blockInboundToolStripMenuItem.Text = "Inbound";
             blockInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // blockAllToolStripMenuItem
+            // 
             blockAllToolStripMenuItem.Name = "blockAllToolStripMenuItem";
             blockAllToolStripMenuItem.Size = new Size(159, 26);
             blockAllToolStripMenuItem.Tag = "Block (All)";
             blockAllToolStripMenuItem.Text = "All";
             blockAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
+            // 
+            // toolStripSeparator1
+            // 
             toolStripSeparator1.Name = "toolStripSeparator1";
             toolStripSeparator1.Size = new Size(199, 6);
+            // 
+            // deleteRuleToolStripMenuItem
+            // 
             deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
             deleteRuleToolStripMenuItem.Size = new Size(202, 24);
             deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
             deleteRuleToolStripMenuItem.Click += DeleteRuleMenuItem_Click;
+            // 
+            // toolStripSeparator2
+            // 
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new Size(199, 6);
+            // 
+            // openFileLocationToolStripMenuItem
+            // 
             openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
             openFileLocationToolStripMenuItem.Size = new Size(202, 24);
             openFileLocationToolStripMenuItem.Text = "Open File Location";
             openFileLocationToolStripMenuItem.Click += OpenFileLocationMenuItem_Click;
+            // 
+            // copyDetailsToolStripMenuItem2
+            // 
             copyDetailsToolStripMenuItem2.Name = "copyDetailsToolStripMenuItem2";
             copyDetailsToolStripMenuItem2.Size = new Size(202, 24);
             copyDetailsToolStripMenuItem2.Text = "Copy Details";
             copyDetailsToolStripMenuItem2.Click += copyDetailsToolStripMenuItem_Click;
+            // 
+            // systemChangesTabPage
+            // 
             systemChangesTabPage.Controls.Add(auditSearchTextBox);
             systemChangesTabPage.Controls.Add(rebuildBaselineButton);
             systemChangesTabPage.Controls.Add(systemChangesListView);
@@ -714,6 +942,9 @@ namespace MinimalFirewall
             systemChangesTabPage.TabIndex = 2;
             systemChangesTabPage.Text = "Audit";
             systemChangesTabPage.UseVisualStyleBackColor = true;
+            // 
+            // auditSearchTextBox
+            // 
             auditSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             auditSearchTextBox.Location = new Point(707, 27);
             auditSearchTextBox.Margin = new Padding(3, 4, 3, 4);
@@ -722,6 +953,9 @@ namespace MinimalFirewall
             auditSearchTextBox.Size = new Size(285, 27);
             auditSearchTextBox.TabIndex = 3;
             auditSearchTextBox.TextChanged += SearchTextBox_TextChanged;
+            // 
+            // rebuildBaselineButton
+            // 
             rebuildBaselineButton.Location = new Point(3, 17);
             rebuildBaselineButton.Margin = new Padding(3, 4, 3, 4);
             rebuildBaselineButton.Name = "rebuildBaselineButton";
@@ -729,6 +963,9 @@ namespace MinimalFirewall
             rebuildBaselineButton.TabIndex = 2;
             rebuildBaselineButton.Text = "Rebuild Baseline";
             rebuildBaselineButton.Click += RebuildBaselineButton_Click;
+            // 
+            // systemChangesListView
+            // 
             systemChangesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             systemChangesListView.BorderStyle = BorderStyle.None;
             systemChangesListView.Columns.AddRange(new ColumnHeader[] { changeActionColumn, changeNameColumn, changeAction2Column, changeDirectionColumn, changeProtocolColumn, changeAppColumn, changeRemoteAddressColumn, changeDescColumn });
@@ -744,44 +981,89 @@ namespace MinimalFirewall
             systemChangesListView.View = View.Details;
             systemChangesListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Audit;
             systemChangesListView.ColumnClick += ListView_ColumnClick;
+            // 
+            // changeActionColumn
+            // 
             changeActionColumn.Text = "Action";
             changeActionColumn.Width = 300;
+            // 
+            // changeNameColumn
+            // 
             changeNameColumn.Text = "Rule Name";
             changeNameColumn.Width = 200;
+            // 
+            // changeAction2Column
+            // 
             changeAction2Column.Text = "Action";
             changeAction2Column.Width = 70;
+            // 
+            // changeDirectionColumn
+            // 
             changeDirectionColumn.Text = "Direction";
             changeDirectionColumn.Width = 80;
+            // 
+            // changeProtocolColumn
+            // 
             changeProtocolColumn.Text = "Protocol";
+            // 
+            // changeAppColumn
+            // 
             changeAppColumn.Text = "Application";
             changeAppColumn.Width = 200;
+            // 
+            // changeRemoteAddressColumn
+            // 
             changeRemoteAddressColumn.Text = "Remote Address";
             changeRemoteAddressColumn.Width = 120;
+            // 
+            // changeDescColumn
+            // 
             changeDescColumn.Text = "Description";
             changeDescColumn.Width = 250;
+            // 
+            // auditContextMenu
+            // 
             auditContextMenu.ImageScalingSize = new Size(20, 20);
             auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, ignoreAllToolStripMenuItem, copyDetailsToolStripMenuItem3, toolStripSeparator10, openFileLocationToolStripMenuItem2 });
             auditContextMenu.Name = "auditContextMenu";
             auditContextMenu.Size = new Size(207, 110);
             auditContextMenu.Opening += ContextMenu_Opening;
+            // 
+            // acceptAllToolStripMenuItem
+            // 
             acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
             acceptAllToolStripMenuItem.Size = new Size(206, 24);
             acceptAllToolStripMenuItem.Text = "Accept All Changes";
             acceptAllToolStripMenuItem.Click += AcceptAllToolStripMenuItem_Click;
+            // 
+            // ignoreAllToolStripMenuItem
+            // 
             ignoreAllToolStripMenuItem.Name = "ignoreAllToolStripMenuItem";
             ignoreAllToolStripMenuItem.Size = new Size(206, 24);
             ignoreAllToolStripMenuItem.Text = "Ignore All Changes";
             ignoreAllToolStripMenuItem.Click += IgnoreAllToolStripMenuItem_Click;
+            // 
+            // copyDetailsToolStripMenuItem3
+            // 
             copyDetailsToolStripMenuItem3.Name = "copyDetailsToolStripMenuItem3";
             copyDetailsToolStripMenuItem3.Size = new Size(206, 24);
             copyDetailsToolStripMenuItem3.Text = "Copy Details";
             copyDetailsToolStripMenuItem3.Click += copyDetailsToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator10
+            // 
             toolStripSeparator10.Name = "toolStripSeparator10";
             toolStripSeparator10.Size = new Size(203, 6);
+            // 
+            // openFileLocationToolStripMenuItem2
+            // 
             openFileLocationToolStripMenuItem2.Name = "openFileLocationToolStripMenuItem2";
             openFileLocationToolStripMenuItem2.Size = new Size(206, 24);
             openFileLocationToolStripMenuItem2.Text = "Open File Location";
             openFileLocationToolStripMenuItem2.Click += OpenFileLocationMenuItem_Click;
+            // 
+            // groupsTabPage
+            // 
             groupsTabPage.Controls.Add(groupsListView);
             groupsTabPage.ImageIndex = 5;
             groupsTabPage.Location = new Point(124, 4);
@@ -792,6 +1074,9 @@ namespace MinimalFirewall
             groupsTabPage.TabIndex = 5;
             groupsTabPage.Text = "Groups";
             groupsTabPage.UseVisualStyleBackColor = true;
+            // 
+            // groupsListView
+            // 
             groupsListView.BorderStyle = BorderStyle.None;
             groupsListView.Columns.AddRange(new ColumnHeader[] { groupNameColumn, groupEnabledColumn });
             groupsListView.ContextMenuStrip = groupsContextMenu;
@@ -812,18 +1097,33 @@ namespace MinimalFirewall
             groupsListView.MouseClick += GroupsListView_MouseClick;
             groupsListView.MouseLeave += ListView_MouseLeave;
             groupsListView.MouseMove += ListView_MouseMove;
+            // 
+            // groupNameColumn
+            // 
             groupNameColumn.Text = "Group Name";
             groupNameColumn.Width = 400;
+            // 
+            // groupEnabledColumn
+            // 
             groupEnabledColumn.Text = "Enabled";
             groupEnabledColumn.Width = 120;
+            // 
+            // groupsContextMenu
+            // 
             groupsContextMenu.ImageScalingSize = new Size(20, 20);
             groupsContextMenu.Items.AddRange(new ToolStripItem[] { deleteGroupToolStripMenuItem });
             groupsContextMenu.Name = "groupsContextMenu";
             groupsContextMenu.Size = new Size(177, 28);
+            // 
+            // deleteGroupToolStripMenuItem
+            // 
             deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
             deleteGroupToolStripMenuItem.Size = new Size(176, 24);
             deleteGroupToolStripMenuItem.Text = "Delete Group...";
             deleteGroupToolStripMenuItem.Click += DeleteGroupToolStripMenuItem_Click;
+            // 
+            // liveConnectionsTabPage
+            // 
             liveConnectionsTabPage.Controls.Add(liveConnectionsDisabledLabel);
             liveConnectionsTabPage.Controls.Add(liveConnectionsListView);
             liveConnectionsTabPage.ImageIndex = 10;
@@ -835,6 +1135,9 @@ namespace MinimalFirewall
             liveConnectionsTabPage.TabIndex = 6;
             liveConnectionsTabPage.Text = "Live Connections";
             liveConnectionsTabPage.UseVisualStyleBackColor = true;
+            // 
+            // liveConnectionsDisabledLabel
+            // 
             liveConnectionsDisabledLabel.Dock = DockStyle.Fill;
             liveConnectionsDisabledLabel.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
             liveConnectionsDisabledLabel.Location = new Point(3, 4);
@@ -844,6 +1147,9 @@ namespace MinimalFirewall
             liveConnectionsDisabledLabel.Text = "Please turn on Live Connections in the Settings tab.";
             liveConnectionsDisabledLabel.TextAlign = ContentAlignment.MiddleCenter;
             liveConnectionsDisabledLabel.Visible = false;
+            // 
+            // liveConnectionsListView
+            // 
             liveConnectionsListView.BorderStyle = BorderStyle.None;
             liveConnectionsListView.Columns.AddRange(new ColumnHeader[] { liveIconColumn, processNameColumn, remoteAddressColumn, remotePortColumn });
             liveConnectionsListView.ContextMenuStrip = liveConnectionsContextMenu;
@@ -857,53 +1163,90 @@ namespace MinimalFirewall
             liveConnectionsListView.TabIndex = 0;
             liveConnectionsListView.UseCompatibleStateImageBehavior = false;
             liveConnectionsListView.View = View.Details;
+            liveConnectionsListView.VirtualMode = true;
             liveConnectionsListView.ColumnClick += ListView_ColumnClick;
             liveConnectionsListView.DrawItem += LiveConnectionsListView_DrawItem;
             liveConnectionsListView.DrawSubItem += LiveConnectionsListView_DrawSubItem;
             liveConnectionsListView.MouseClick += LiveConnectionsListView_MouseClick;
             liveConnectionsListView.MouseLeave += ListView_MouseLeave;
             liveConnectionsListView.MouseMove += ListView_MouseMove;
+            liveConnectionsListView.RetrieveVirtualItem += new RetrieveVirtualItemEventHandler(ListView_RetrieveVirtualItem);
+            // 
+            // liveIconColumn
+            // 
             liveIconColumn.Text = "";
             liveIconColumn.Width = 32;
+            // 
+            // processNameColumn
+            // 
             processNameColumn.Text = "Process Name";
             processNameColumn.Width = 200;
+            // 
+            // remoteAddressColumn
+            // 
             remoteAddressColumn.Text = "Remote Address";
             remoteAddressColumn.Width = 200;
+            // 
+            // remotePortColumn
+            // 
             remotePortColumn.Text = "Remote Port";
             remotePortColumn.Width = 100;
+            // 
+            // liveConnectionsContextMenu
+            // 
             liveConnectionsContextMenu.ImageScalingSize = new Size(20, 20);
             liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { createAdvancedRuleToolStripMenuItem1, toolStripSeparator9, killProcessToolStripMenuItem, blockRemoteIPToolStripMenuItem, copyRemoteAddressToolStripMenuItem, toolStripSeparator8, openFileLocationToolStripMenuItem1, copyDetailsToolStripMenuItem1 });
             liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
             liveConnectionsContextMenu.Size = new Size(228, 166);
             liveConnectionsContextMenu.Opening += ContextMenu_Opening;
+            // 
+            // createAdvancedRuleToolStripMenuItem1
+            // 
             createAdvancedRuleToolStripMenuItem1.Name = "createAdvancedRuleToolStripMenuItem1";
             createAdvancedRuleToolStripMenuItem1.Size = new Size(227, 24);
             createAdvancedRuleToolStripMenuItem1.Text = "Create Advanced Rule...";
             createAdvancedRuleToolStripMenuItem1.Click += createAdvancedRuleToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator9
+            // 
             toolStripSeparator9.Name = "toolStripSeparator9";
             toolStripSeparator9.Size = new Size(224, 6);
+            // 
+            // killProcessToolStripMenuItem
+            // 
             killProcessToolStripMenuItem.Name = "killProcessToolStripMenuItem";
             killProcessToolStripMenuItem.Size = new Size(227, 24);
             killProcessToolStripMenuItem.Text = "Kill Process";
             killProcessToolStripMenuItem.Click += KillProcessToolStripMenuItem_Click;
+            // 
+            // blockRemoteIPToolStripMenuItem
+            // 
             blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
             blockRemoteIPToolStripMenuItem.Size = new Size(227, 24);
             blockRemoteIPToolStripMenuItem.Text = "Block Remote IP";
             blockRemoteIPToolStripMenuItem.Click += BlockRemoteIPToolStripMenuItem_Click;
+            // 
+            // copyRemoteAddressToolStripMenuItem
+            // 
             copyRemoteAddressToolStripMenuItem.Name = "copyRemoteAddressToolStripMenuItem";
             copyRemoteAddressToolStripMenuItem.Size = new Size(227, 24);
             copyRemoteAddressToolStripMenuItem.Text = "Copy Remote Address";
             copyRemoteAddressToolStripMenuItem.Click += copyRemoteAddressToolStripMenuItem_Click;
+            // 
+            // toolStripSeparator8
+            // 
             toolStripSeparator8.Name = "toolStripSeparator8";
             toolStripSeparator8.Size = new Size(224, 6);
-            openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
-            openFileLocationToolStripMenuItem1.Size = new Size(227, 24);
-            openFileLocationToolStripMenuItem1.Text = "Open File Location";
-            openFileLocationToolStripMenuItem1.Click += OpenFileLocationMenuItem_Click;
+            // 
+            // copyDetailsToolStripMenuItem1
+            // 
             copyDetailsToolStripMenuItem1.Name = "copyDetailsToolStripMenuItem1";
             copyDetailsToolStripMenuItem1.Size = new Size(227, 24);
             copyDetailsToolStripMenuItem1.Text = "Copy Details";
             copyDetailsToolStripMenuItem1.Click += copyDetailsToolStripMenuItem_Click;
+            // 
+            // settingsTabPage
+            // 
             settingsTabPage.Controls.Add(auditAlertsSwitch);
             settingsTabPage.Controls.Add(managePublishersButton);
             settingsTabPage.Controls.Add(autoAllowSystemTrustedCheck);
@@ -933,6 +1276,9 @@ namespace MinimalFirewall
             settingsTabPage.Text = "Settings";
             settingsTabPage.UseVisualStyleBackColor = true;
             settingsTabPage.AutoScroll = true;
+            // 
+            // auditAlertsSwitch
+            // 
             auditAlertsSwitch.AutoSize = true;
             auditAlertsSwitch.Location = new Point(29, 420);
             auditAlertsSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -941,6 +1287,9 @@ namespace MinimalFirewall
             auditAlertsSwitch.TabIndex = 24;
             auditAlertsSwitch.Text = "Alert on new system rules";
             auditAlertsSwitch.UseVisualStyleBackColor = true;
+            // 
+            // managePublishersButton
+            // 
             managePublishersButton.Location = new Point(29, 500);
             managePublishersButton.Margin = new Padding(3, 4, 3, 4);
             managePublishersButton.Name = "managePublishersButton";
@@ -949,6 +1298,9 @@ namespace MinimalFirewall
             managePublishersButton.Text = "Manage Trusted Publishers";
             managePublishersButton.UseVisualStyleBackColor = true;
             managePublishersButton.Click += managePublishersButton_Click;
+            // 
+            // autoAllowSystemTrustedCheck
+            // 
             autoAllowSystemTrustedCheck.AutoSize = true;
             autoAllowSystemTrustedCheck.Location = new Point(29, 460);
             autoAllowSystemTrustedCheck.Margin = new Padding(3, 4, 3, 4);
@@ -957,6 +1309,9 @@ namespace MinimalFirewall
             autoAllowSystemTrustedCheck.TabIndex = 22;
             autoAllowSystemTrustedCheck.Text = "Auto-allow apps trusted by Windows";
             autoAllowSystemTrustedCheck.UseVisualStyleBackColor = true;
+            // 
+            // showAppIconsSwitch
+            // 
             showAppIconsSwitch.AutoSize = true;
             showAppIconsSwitch.Location = new Point(29, 380);
             showAppIconsSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -966,6 +1321,9 @@ namespace MinimalFirewall
             showAppIconsSwitch.Text = "Show application icons";
             showAppIconsSwitch.UseVisualStyleBackColor = true;
             showAppIconsSwitch.CheckedChanged += ShowAppIconsSwitch_CheckedChanged;
+            // 
+            // trafficMonitorSwitch
+            // 
             trafficMonitorSwitch.AutoSize = true;
             trafficMonitorSwitch.Location = new Point(29, 347);
             trafficMonitorSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -975,18 +1333,27 @@ namespace MinimalFirewall
             trafficMonitorSwitch.Text = "Enable Live Connections";
             trafficMonitorSwitch.UseVisualStyleBackColor = true;
             trafficMonitorSwitch.CheckedChanged += TrafficMonitorSwitch_CheckedChanged;
+            // 
+            // autoRefreshLabel1
+            // 
             autoRefreshLabel1.AutoSize = true;
             autoRefreshLabel1.Location = new Point(29, 299);
             autoRefreshLabel1.Name = "autoRefreshLabel1";
             autoRefreshLabel1.Size = new Size(117, 20);
             autoRefreshLabel1.TabIndex = 18;
             autoRefreshLabel1.Text = "List refresh time:";
+            // 
+            // autoRefreshLabel2
+            // 
             autoRefreshLabel2.AutoSize = true;
             autoRefreshLabel2.Location = new Point(251, 299);
             autoRefreshLabel2.Name = "autoRefreshLabel2";
             autoRefreshLabel2.Size = new Size(61, 20);
             autoRefreshLabel2.TabIndex = 19;
             autoRefreshLabel2.Text = "minutes";
+            // 
+            // coffeePanel
+            // 
             coffeePanel.BackColor = Color.Transparent;
             coffeePanel.Controls.Add(coffeeLinkLabel);
             coffeePanel.Controls.Add(coffeePictureBox);
@@ -997,6 +1364,9 @@ namespace MinimalFirewall
             coffeePanel.Size = new Size(434, 107);
             coffeePanel.TabIndex = 17;
             coffeePanel.Click += CoffeeLink_Click;
+            // 
+            // coffeeLinkLabel
+            // 
             coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
             coffeeLinkLabel.AutoSize = true;
             coffeeLinkLabel.Location = new Point(69, 24);
@@ -1008,6 +1378,9 @@ namespace MinimalFirewall
             coffeeLinkLabel.Tag = "https://www.buymeacoffee.com/deminimis";
             coffeeLinkLabel.Text = "Support my caffeine addiction if you like this app";
             coffeeLinkLabel.Click += CoffeeLink_Click;
+            // 
+            // coffeePictureBox
+            // 
             coffeePictureBox.Cursor = Cursors.Hand;
             coffeePictureBox.Location = new Point(0, 0);
             coffeePictureBox.Margin = new Padding(3, 4, 3, 4);
@@ -1019,6 +1392,9 @@ namespace MinimalFirewall
             coffeePictureBox.Click += CoffeeLink_Click;
             coffeePictureBox.MouseEnter += CoffeePictureBox_MouseEnter;
             coffeePictureBox.MouseLeave += CoffeePictureBox_MouseLeave;
+            // 
+            // versionLabel
+            // 
             versionLabel.AutoSize = true;
             versionLabel.Font = new Font("Segoe UI", 9F);
             versionLabel.Location = new Point(223, 620);
@@ -1026,6 +1402,9 @@ namespace MinimalFirewall
             versionLabel.Size = new Size(57, 20);
             versionLabel.TabIndex = 12;
             versionLabel.Text = "Version";
+            // 
+            // checkForUpdatesButton
+            // 
             checkForUpdatesButton.Location = new Point(29, 610);
             checkForUpdatesButton.Margin = new Padding(3, 4, 3, 4);
             checkForUpdatesButton.Name = "checkForUpdatesButton";
@@ -1033,6 +1412,9 @@ namespace MinimalFirewall
             checkForUpdatesButton.TabIndex = 11;
             checkForUpdatesButton.Text = "Check for Updates";
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
+            // 
+            // openFirewallButton
+            // 
             openFirewallButton.Location = new Point(29, 570);
             openFirewallButton.Margin = new Padding(3, 4, 3, 4);
             openFirewallButton.Name = "openFirewallButton";
@@ -1040,6 +1422,9 @@ namespace MinimalFirewall
             openFirewallButton.TabIndex = 10;
             openFirewallButton.Text = "Open Windows Firewall";
             openFirewallButton.Click += OpenFirewallButton_Click;
+            // 
+            // forumLink
+            // 
             forumLink.AutoSize = true;
             forumLink.Location = new Point(29, 660);
             forumLink.Name = "forumLink";
@@ -1049,6 +1434,9 @@ namespace MinimalFirewall
             forumLink.Tag = "https://github.com/deminimis/minimalfirewall/discussions";
             forumLink.Text = "Forum / Discussions";
             forumLink.LinkClicked += LinkLabel_LinkClicked;
+            // 
+            // reportProblemLink
+            // 
             reportProblemLink.AutoSize = true;
             reportProblemLink.Location = new Point(29, 680);
             reportProblemLink.Name = "reportProblemLink";
@@ -1058,6 +1446,9 @@ namespace MinimalFirewall
             reportProblemLink.Tag = "https://github.com/deminimis/minimalfirewall/issues";
             reportProblemLink.Text = "Report a Problem";
             reportProblemLink.LinkClicked += LinkLabel_LinkClicked;
+            // 
+            // helpLink
+            // 
             helpLink.AutoSize = true;
             helpLink.Location = new Point(29, 700);
             helpLink.Name = "helpLink";
@@ -1067,6 +1458,9 @@ namespace MinimalFirewall
             helpLink.Tag = "https://github.com/deminimis/minimalfirewall";
             helpLink.Text = "Help / Documentation";
             helpLink.LinkClicked += LinkLabel_LinkClicked;
+            // 
+            // autoRefreshTextBox
+            // 
             autoRefreshTextBox.Location = new Point(171, 293);
             autoRefreshTextBox.Margin = new Padding(3, 4, 3, 4);
             autoRefreshTextBox.MaxLength = 3;
@@ -1074,6 +1468,9 @@ namespace MinimalFirewall
             autoRefreshTextBox.Size = new Size(68, 27);
             autoRefreshTextBox.TabIndex = 5;
             autoRefreshTextBox.Text = "10";
+            // 
+            // loggingSwitch
+            // 
             loggingSwitch.AutoSize = true;
             loggingSwitch.Location = new Point(29, 247);
             loggingSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -1082,6 +1479,9 @@ namespace MinimalFirewall
             loggingSwitch.TabIndex = 4;
             loggingSwitch.Text = "Enable logging";
             loggingSwitch.UseVisualStyleBackColor = true;
+            // 
+            // popupsSwitch
+            // 
             popupsSwitch.AutoSize = true;
             popupsSwitch.Location = new Point(29, 200);
             popupsSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -1091,6 +1491,9 @@ namespace MinimalFirewall
             popupsSwitch.Text = "Enable pop-up notifications";
             popupsSwitch.UseVisualStyleBackColor = true;
             popupsSwitch.CheckedChanged += PopupsSwitch_CheckedChanged;
+            // 
+            // darkModeSwitch
+            // 
             darkModeSwitch.AutoSize = true;
             darkModeSwitch.Location = new Point(29, 153);
             darkModeSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -1100,6 +1503,9 @@ namespace MinimalFirewall
             darkModeSwitch.Text = "Dark Mode";
             darkModeSwitch.UseVisualStyleBackColor = true;
             darkModeSwitch.CheckedChanged += DarkModeSwitch_CheckedChanged;
+            // 
+            // startOnStartupSwitch
+            // 
             startOnStartupSwitch.AutoSize = true;
             startOnStartupSwitch.Location = new Point(29, 107);
             startOnStartupSwitch.Margin = new Padding(3, 4, 3, 4);
@@ -1108,6 +1514,9 @@ namespace MinimalFirewall
             startOnStartupSwitch.TabIndex = 1;
             startOnStartupSwitch.Text = "Start with Windows";
             startOnStartupSwitch.UseVisualStyleBackColor = true;
+            // 
+            // closeToTraySwitch
+            // 
             closeToTraySwitch.AutoSize = true;
             closeToTraySwitch.Checked = true;
             closeToTraySwitch.CheckState = CheckState.Checked;
@@ -1118,6 +1527,9 @@ namespace MinimalFirewall
             closeToTraySwitch.TabIndex = 0;
             closeToTraySwitch.Text = "Close to tray";
             closeToTraySwitch.UseVisualStyleBackColor = true;
+            // 
+            // appImageList
+            // 
             appImageList.ColorDepth = ColorDepth.Depth32Bit;
             appImageList.ImageStream = (ImageListStreamer)resources.GetObject("appImageList.ImageStream");
             appImageList.TransparentColor = Color.Transparent;
@@ -1132,6 +1544,9 @@ namespace MinimalFirewall
             appImageList.Images.SetKeyName(8, "unlocked.png");
             appImageList.Images.SetKeyName(9, "logo.png");
             appImageList.Images.SetKeyName(10, "antenna.png");
+            // 
+            // lockdownButton
+            // 
             lockdownButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lockdownButton.BackColor = Color.Transparent;
             lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
@@ -1146,6 +1561,9 @@ namespace MinimalFirewall
             lockdownButton.Click += ToggleLockdownButton_Click;
             lockdownButton.MouseEnter += LockdownButton_MouseEnter;
             lockdownButton.MouseLeave += LockdownButton_MouseLeave;
+            // 
+            // rescanButton
+            // 
             rescanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             rescanButton.BackColor = Color.Transparent;
             rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
@@ -1160,24 +1578,42 @@ namespace MinimalFirewall
             rescanButton.Click += RescanButton_Click;
             rescanButton.MouseEnter += RescanButton_MouseEnter;
             rescanButton.MouseLeave += RescanButton_MouseLeave;
+            // 
+            // auditContextMenu
+            // 
             auditContextMenu.ImageScalingSize = new Size(20, 20);
             auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, ignoreAllToolStripMenuItem });
             auditContextMenu.Name = "auditContextMenu";
             auditContextMenu.Size = new Size(207, 52);
-            acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
-            acceptAllToolStripMenuItem.Size = new Size(206, 24);
-            acceptAllToolStripMenuItem.Text = "Accept All Changes";
-            acceptAllToolStripMenuItem.Click += AcceptAllToolStripMenuItem_Click;
-            ignoreAllToolStripMenuItem.Name = "ignoreAllToolStripMenuItem";
-            ignoreAllToolStripMenuItem.Size = new Size(206, 24);
-            ignoreAllToolStripMenuItem.Text = "Ignore All Changes";
-            ignoreAllToolStripMenuItem.Click += IgnoreAllToolStripMenuItem_Click;
+            // 
+            // appIconList
+            // 
             appIconList.ColorDepth = ColorDepth.Depth32Bit;
             appIconList.ImageSize = new Size(16, 16);
             appIconList.TransparentColor = Color.Transparent;
+            // 
+            // statusStrip1
+            // 
+            statusStrip1.ImageScalingSize = new Size(20, 20);
+            statusStrip1.Items.AddRange(new ToolStripItem[] { backgroundTaskStatusLabel });
+            statusStrip1.Location = new Point(0, 907);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Size = new Size(1143, 26);
+            statusStrip1.TabIndex = 4;
+            statusStrip1.Text = "statusStrip1";
+            // 
+            // backgroundTaskStatusLabel
+            // 
+            backgroundTaskStatusLabel.Name = "backgroundTaskStatusLabel";
+            backgroundTaskStatusLabel.Size = new Size(50, 20);
+            backgroundTaskStatusLabel.Text = "Ready";
+            // 
+            // MainForm
+            // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1143, 933);
+            Controls.Add(statusStrip1);
             Controls.Add(rescanButton);
             Controls.Add(lockdownButton);
             Controls.Add(mainTabControl);
@@ -1206,8 +1642,12 @@ namespace MinimalFirewall
             coffeePanel.ResumeLayout(false);
             coffeePanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
+            statusStrip1.ResumeLayout(false);
+            statusStrip1.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
         #endregion
     }
 }
+

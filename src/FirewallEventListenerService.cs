@@ -23,6 +23,7 @@ namespace MinimalFirewall
         public FirewallActionsService? ActionsService { get; set; }
 
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
+
         public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService)
         {
             _dataService = dataService;
@@ -57,10 +58,6 @@ namespace MinimalFirewall
             {
                 _logAction($"[EventListener ERROR] You may not have permission to read the Security event log: {ex.Message}");
                 MessageBox.Show("Could not start firewall event listener. Please run as Administrator.", "Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Exception ex)
-            {
-                _logAction($"[EventListener FATAL ERROR] Could not start event watcher: {ex.Message}");
             }
         }
 
@@ -116,9 +113,39 @@ namespace MinimalFirewall
                 string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
                 string serviceName = SystemDiscoveryService.GetServicesByPID(GetValueFromXml(xmlContent, "ProcessID"));
 
-                if (_dataService.DoesManagedRuleExist(appPath, serviceName, eventDirection))
+                var matchingWildcard = _wildcardRuleService.Match(appPath);
+                if (matchingWildcard != null)
                 {
-                    _logAction("[EventListener] Event SKIPPED: A managed rule already exists.");
+                    _logAction($"[EventListener] Matched wildcard rule for {appPath}. Action: {matchingWildcard.Action}");
+                    if (matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logAction($"[EventListener] Proactively creating 'Allow' rule for {appPath} based on wildcard.");
+                        ActionsService.ApplyApplicationRuleChange([appPath], matchingWildcard.Action, matchingWildcard.FolderPath);
+                        return;
+                    }
+                    else
+                    {
+                        _logAction($"[EventListener] App {appPath} is covered by a 'Block' wildcard. Suppressing notification.");
+                        return;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(appPath))
+                {
+                    var allServices = _dataService.GetCachedServicesWithExePaths();
+                    var possibleServices = allServices
+                        .Where(s => PathResolver.NormalizePath(s.ExePath).Equals(appPath, StringComparison.OrdinalIgnoreCase))
+                        .Select(s => s.ServiceName)
+                        .ToList();
+                    if (possibleServices.Any())
+                    {
+                        serviceName = string.Join(", ", possibleServices);
+                    }
+                }
+
+                if (_dataService.DoesAnyRuleExist(appPath, serviceName, eventDirection))
+                {
+                    _logAction("[EventListener] Event SKIPPED: A rule already exists.");
                     return;
                 }
 
@@ -220,7 +247,7 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch (Exception ex)
+            catch (XmlException ex)
             {
                 Debug.WriteLine($"[XML PARSE ERROR] Failed to parse event XML for element '{elementName}': {ex.Message}");
             }

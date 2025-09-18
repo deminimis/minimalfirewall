@@ -16,6 +16,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.IO;
 using System.Text;
+using System.ComponentModel;
 
 namespace MinimalFirewall
 {
@@ -37,6 +38,7 @@ namespace MinimalFirewall
         private readonly FirewallGroupManager _groupManager;
         private readonly IconService _iconService;
         private readonly PublisherWhitelistService _whitelistService;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
         private readonly List<PendingConnectionViewModel> _pendingConnections = [];
         private readonly Queue<PendingConnectionViewModel> _popupQueue = new();
         private volatile bool _isPopupVisible = false;
@@ -67,6 +69,10 @@ namespace MinimalFirewall
         private int _unseenSystemChangesCount = 0;
         private Icon? _alertTrayIcon;
         private bool _isRefreshingData = false;
+
+        private List<AggregatedRuleViewModel> _virtualRulesData = [];
+        private List<AggregatedRuleViewModel> _allAggregatedRules = [];
+        private List<TcpConnectionViewModel> _virtualLiveConnectionsData = [];
         #endregion
 
         #region Native Methods
@@ -124,7 +130,7 @@ namespace MinimalFirewall
                     throw new InvalidOperationException("Firewall policy type could not be retrieved.");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is COMException or InvalidOperationException)
             {
                 MessageBox.Show("Could not initialize Windows Firewall policy management. The application cannot continue.\n\nError: " + ex.Message, "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Environment.Exit(1);
@@ -148,7 +154,8 @@ namespace MinimalFirewall
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
             _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _firewallPolicy, _dataService);
             _eventListenerService.ActionsService = _actionsService;
-
+            _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService);
+            _backgroundTaskService.QueueCountChanged += OnQueueCountChanged;
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
             _trafficMonitorViewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
@@ -171,6 +178,25 @@ namespace MinimalFirewall
             systemChangesListView.IgnoreClicked += SystemChanges_IgnoreClicked;
 
             SetupTrayIcon();
+        }
+
+        private void OnQueueCountChanged(int count)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(() => OnQueueCountChanged(count));
+                return;
+            }
+
+            if (count > 0)
+            {
+                backgroundTaskStatusLabel.Text = $"Processing {count} background task(s)...";
+            }
+            else
+            {
+                backgroundTaskStatusLabel.Text = "Ready";
+                _ = ForceDataRefreshAsync(showStatus: false);
+            }
         }
 
         private void ListView_Resize(object? sender, EventArgs e)
@@ -198,6 +224,12 @@ namespace MinimalFirewall
             lastColumn.Width = newLastColumnWidth;
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            ApplyLastWindowState();
+        }
+
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
@@ -216,6 +248,8 @@ namespace MinimalFirewall
             _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
 
             await _ruleCacheService.LoadCacheFromDiskAsync();
+            await _dataService.RefreshAndCacheAsync(forceFullScan: true);
+            _allAggregatedRules = _dataService.GetAggregatedAdvancedRules();
             await DisplayCurrentTabData();
             UpdateThemeAndColors();
 
@@ -231,29 +265,14 @@ namespace MinimalFirewall
                 AdminTaskService.SetAuditPolicy(true);
             }
 
-            await Task.Run(() =>
-            {
-                _eventListenerService.Start();
-                _firewallSentryService.Start();
-            });
-            _ = LoadNonEssentialDataInBackgroundAsync();
+            _eventListenerService.Start();
+            _firewallSentryService.Start();
 
             UpdateTrayStatus();
             _activityLogger.LogDebug("Application Started: " + versionLabel.Text);
             LoadSettingsToUI();
             SetupAutoRefreshTimer();
             UpdateIconColumnVisibility();
-            ApplyLastWindowState();
-        }
-
-        private async Task LoadNonEssentialDataInBackgroundAsync()
-        {
-            await _dataService.RefreshAndCacheAsync(forceFullScan: true);
-            await CheckForInitialSystemChangesAsync();
-            if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                this.Invoke(async () => await DisplayCurrentTabData());
-            }
         }
 
         private Icon CreateRecoloredIcon(Icon originalIcon, Color color)
@@ -286,7 +305,8 @@ namespace MinimalFirewall
                     _alertTrayIcon = CreateRecoloredIcon(icon, Color.Orange);
                     if (notifyIcon != null)
                     {
-                        notifyIcon.Icon = IsLockedDown() ? _defaultTrayIcon : _unlockedTrayIcon;
+                        notifyIcon.Icon = IsLockedDown() ?
+                        _defaultTrayIcon : _unlockedTrayIcon;
                     }
                 }
             }
@@ -335,7 +355,8 @@ namespace MinimalFirewall
         #region Settings and Theme
         private void DarkModeSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            _appSettings.Theme = darkModeSwitch.Checked ? "Dark" : "Light";
+            _appSettings.Theme = darkModeSwitch.Checked ?
+            "Dark" : "Light";
             UpdateThemeAndColors();
         }
 
@@ -345,8 +366,14 @@ namespace MinimalFirewall
             bool isDark = _appSettings.Theme == "Dark";
             dm.ColorMode = isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
             dm.ApplyTheme(isDark);
+            if (isDark)
+            {
+                createRuleButton.ForeColor = Color.White;
+                advancedRuleButton.ForeColor = Color.White;
+            }
 
-            var linkColor = isDark ? Color.SkyBlue : SystemColors.HotTrack;
+            var linkColor = isDark ?
+            Color.SkyBlue : SystemColors.HotTrack;
             helpLink.LinkColor = linkColor;
             reportProblemLink.LinkColor = linkColor;
             forumLink.LinkColor = linkColor;
@@ -360,7 +387,8 @@ namespace MinimalFirewall
             Image? coffeeImage = appImageList.Images["coffee.png"];
             if (coffeeImage != null)
             {
-                Color coffeeColor = isDark ? Color.LightGray : Color.Black;
+                Color coffeeColor = isDark ?
+                Color.LightGray : Color.Black;
                 Image? oldImage = coffeePictureBox.Image;
                 coffeePictureBox.Image = DarkModeCS.RecolorImage(coffeeImage, coffeeColor);
                 oldImage?.Dispose();
@@ -539,20 +567,6 @@ namespace MinimalFirewall
             });
         }
 
-        private async Task CheckForInitialSystemChangesAsync()
-        {
-            if (!_appSettings.AlertOnForeignRules) return;
-            _activityLogger.LogDebug("Performing initial check for system changes on startup.");
-            var changes = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker));
-            if (changes.Count > 0)
-            {
-                _unseenSystemChangesCount = changes.Count;
-                _masterSystemChanges = changes;
-                _systemChangesLoaded = true;
-                UpdateUiWithChangesCount();
-            }
-        }
-
         private void UpdateUiWithChangesCount()
         {
             if (this.InvokeRequired)
@@ -587,7 +601,13 @@ namespace MinimalFirewall
             {
                 if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
                 {
-                    _actionsService.ApplyApplicationRuleChange([pending.AppPath], matchingRule.Action, matchingRule.FolderPath);
+                    var payload = new ApplyApplicationRulePayload
+                    {
+                        AppPaths = [pending.AppPath],
+                        Action = matchingRule.Action,
+                        WildcardSourcePath = matchingRule.FolderPath
+                    };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
                     return;
                 }
                 if (matchingRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase))
@@ -597,7 +617,7 @@ namespace MinimalFirewall
             }
 
             bool alreadyPending = _pendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase)) ||
-                                  _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase));
+            _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase));
 
             if (alreadyPending)
             {
@@ -622,51 +642,17 @@ namespace MinimalFirewall
 
         private void ActiveConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (liveConnectionsListView is null || !this.Visible || IsDisposed) return;
-            if (liveConnectionsListView.InvokeRequired)
+            if (mainTabControl.SelectedTab == liveConnectionsTabPage)
             {
-                liveConnectionsListView.Invoke(new Action(() => ActiveConnections_CollectionChanged(sender, e)));
-                return;
-            }
-
-            liveConnectionsListView.BeginUpdate();
-            if (e.Action == NotifyCollectionChangedAction.Reset)
-            {
-                liveConnectionsListView.Items.Clear();
-            }
-
-            if (e.OldItems != null)
-            {
-                foreach (TcpConnectionViewModel oldVm in e.OldItems)
+                if (InvokeRequired)
                 {
-                    var itemToRemove = liveConnectionsListView.Items.Cast<ListViewItem>()
-                        .FirstOrDefault(item => item.Tag == oldVm);
-                    if (itemToRemove != null)
-                    {
-                        liveConnectionsListView.Items.Remove(itemToRemove);
-                    }
+                    Invoke(new Action(UpdateLiveConnectionsView));
+                }
+                else
+                {
+                    UpdateLiveConnectionsView();
                 }
             }
-
-            if (e.NewItems != null)
-            {
-                foreach (TcpConnectionViewModel newVm in e.NewItems)
-                {
-                    int iconIndex = -1;
-                    if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(newVm.ProcessPath))
-                    {
-                        iconIndex = _iconService.GetIconIndex(newVm.ProcessPath);
-                    }
-                    var newItem = new ListViewItem("", iconIndex)
-                    {
-                        Tag = newVm
-                    };
-                    newItem.SubItems.AddRange(new[] { newVm.ProcessName, newVm.RemoteAddress, newVm.RemotePort.ToString() });
-                    liveConnectionsListView.Items.Add(newItem);
-                }
-            }
-
-            liveConnectionsListView.EndUpdate();
         }
 
         private void ProcessNextPopup()
@@ -690,47 +676,55 @@ namespace MinimalFirewall
 
         private void Notifier_FormClosed(object? sender, FormClosedEventArgs e)
         {
-            if (sender is not NotifierForm notifier) return;
-            notifier.FormClosed -= Notifier_FormClosed;
+            try
+            {
+                if (sender is not NotifierForm notifier) return;
+                notifier.FormClosed -= Notifier_FormClosed;
 
-            var pending = notifier.PendingConnection;
-            var result = notifier.Result;
-            if (result == NotifierForm.NotifierResult.CreateWildcard)
-            {
-                _actionsService.ProcessPendingConnection(pending, "Ignore");
-                this.BeginInvoke(new Action(async () =>
+                var pending = notifier.PendingConnection;
+                var result = notifier.Result;
+                var payload = new ProcessPendingConnectionPayload
                 {
-                    using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
-                    if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
+                    PendingConnection = pending,
+                    Decision = result.ToString(),
+                    Duration = (result == NotifierForm.NotifierResult.TemporaryAllow) ?
+                    notifier.TemporaryDuration : default,
+                    TrustPublisher = notifier.TrustPublisher
+                };
+                if (result == NotifierForm.NotifierResult.CreateWildcard)
+                {
+                    payload.Decision = "Ignore";
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
+                    this.BeginInvoke(new Action(() =>
                     {
-                        await ForceDataRefreshAsync(showStatus: false);
-                    }
-                }));
-            }
-            else
-            {
-                string decision = result.ToString();
-                if (result == NotifierForm.NotifierResult.TemporaryAllow)
-                {
-                    _actionsService.ProcessPendingConnection(pending, "TemporaryAllow", notifier.TemporaryDuration);
+                        using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
+                        if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
+                        {
+                            var newRule = new WildcardRule
+                            {
+                                FolderPath = wildcardDialog.FolderPath,
+                                ExeName = wildcardDialog.ExeName,
+                                Action = wildcardDialog.FinalAction
+                            };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
+                        }
+                    }));
                 }
                 else
                 {
-                    _actionsService.ProcessPendingConnection(pending, decision, trustPublisher: notifier.TrustPublisher);
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 }
 
-                if (decision != "Ignore")
+                lock (_popupLock)
                 {
-                    _ = ForceDataRefreshAsync(showStatus: false);
+                    _isPopupVisible = false;
                 }
-            }
 
-            lock (_popupLock)
+                BeginInvoke(new Action(ProcessNextPopup));
+            }
+            catch (Exception)
             {
-                _isPopupVisible = false;
             }
-
-            BeginInvoke(new Action(ProcessNextPopup));
         }
         #endregion
 
@@ -763,7 +757,8 @@ namespace MinimalFirewall
         {
             if (lockdownTrayMenuItem != null)
             {
-                lockdownTrayMenuItem.Text = IsLockedDown() ? "Disable Lockdown" : "Enable Lockdown";
+                lockdownTrayMenuItem.Text = IsLockedDown() ?
+                "Disable Lockdown" : "Enable Lockdown";
             }
         }
 
@@ -834,23 +829,22 @@ namespace MinimalFirewall
 
         private void ShowWindow(object? sender, EventArgs e)
         {
-            this.Show();
             ApplyLastWindowState();
+            this.Show();
             this.Activate();
-            if (_appSettings.IsTrafficMonitorEnabled)
-            {
-                _trafficMonitorViewModel.StartMonitoring();
-            }
             _eventListenerService.Start();
             _firewallSentryService.Start();
-            SetupAutoRefreshTimer();
             RefreshOnRestoreAsync(sender, e);
         }
 
         private async void RefreshOnRestoreAsync(object? sender, EventArgs e)
         {
-            _firewallSentryService.CreateBaseline();
-            await _ruleCacheService.LoadCacheFromDiskAsync();
+            if (_appSettings.IsTrafficMonitorEnabled)
+            {
+                _trafficMonitorViewModel.StartMonitoring();
+            }
+            SetupAutoRefreshTimer();
+
             await DisplayCurrentTabData();
             _ = ForceDataRefreshAsync(forceFullScan: true, showStatus: false);
         }
@@ -897,6 +891,7 @@ namespace MinimalFirewall
                 _firewallSentryService.RuleSetChanged -= OnRuleSetChanged;
                 _eventListenerService.PendingConnectionDetected -= OnPendingConnectionDetected;
                 _trafficMonitorViewModel.ActiveConnections.CollectionChanged -= ActiveConnections_CollectionChanged;
+                _backgroundTaskService.QueueCountChanged -= OnQueueCountChanged;
                 Application.Exit();
             }
         }
@@ -909,23 +904,24 @@ namespace MinimalFirewall
 
             _pendingConnections.Clear();
             _masterSystemChanges.Clear();
-            rulesListView.Items.Clear();
+
+            _virtualRulesData.Clear();
+            _virtualLiveConnectionsData.Clear();
+            rulesListView.VirtualListSize = 0;
             dashboardListView.Items.Clear();
             systemChangesListView.Items.Clear();
-            liveConnectionsListView.Items.Clear();
+            liveConnectionsListView.VirtualListSize = 0;
             _iconService.ClearCache();
             _dataService.ClearLocalCaches();
-
-            SystemDiscoveryService.ClearCache();
-            _firewallSentryService.ClearBaseline();
-            await _ruleCacheService.PersistCacheToDiskAsync(clearMemoryCache: true);
-
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
-            GC.WaitForPendingFinalizers();
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            await Task.Run(() =>
             {
-                SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1);
-            }
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+                GC.WaitForPendingFinalizers();
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1);
+                }
+            });
         }
         #endregion
 
@@ -962,10 +958,11 @@ namespace MinimalFirewall
                     if (_appSettings.IsTrafficMonitorEnabled)
                     {
                         _trafficMonitorViewModel.StartMonitoring();
+                        UpdateLiveConnectionsView();
                     }
                     else
                     {
-                        liveConnectionsListView.Items.Clear();
+                        liveConnectionsListView.VirtualListSize = 0;
                     }
                     break;
             }
@@ -981,6 +978,7 @@ namespace MinimalFirewall
                 UpdateUIForRefresh(showStatus);
 
                 await _dataService.RefreshAndCacheAsync(forceFullScan);
+                _allAggregatedRules = _dataService.GetAggregatedAdvancedRules();
                 _systemChangesLoaded = false;
                 if (this.Visible)
                 {
@@ -1026,7 +1024,7 @@ namespace MinimalFirewall
 
         private async Task DisplayRulesAsync()
         {
-            var rules = _dataService.GetAggregatedAdvancedRules();
+            var rules = _allAggregatedRules;
             ApplyRulesFilters(rules);
             await Task.CompletedTask;
         }
@@ -1057,50 +1055,36 @@ namespace MinimalFirewall
             if (advFilterWildcardCheck.Checked) enabledTypes.Add(RuleType.Wildcard);
             if (advFilterAdvancedCheck.Checked) enabledTypes.Add(RuleType.Advanced);
 
-            rulesListView.BeginUpdate();
-            rulesListView.Items.Clear();
+            IEnumerable<AggregatedRuleViewModel> filteredRules = rules;
             if (enabledTypes.Count > 0)
             {
-                var filteredRules = rules.Where(r => enabledTypes.Contains(r.Type));
-                if (!string.IsNullOrWhiteSpace(rulesSearchTextBox.Text))
+                filteredRules = rules.Where(r => enabledTypes.Contains(r.Type));
+            }
+
+            if (!string.IsNullOrWhiteSpace(rulesSearchTextBox.Text))
+            {
+                filteredRules = filteredRules.Where(r =>
+                    r.Name.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase) ||
+                    r.Description.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase) ||
+                    r.ApplicationName.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_rulesSortOrder != SortOrder.None && _rulesSortColumn != -1)
+            {
+                Func<AggregatedRuleViewModel, object> keySelector = GetRuleKeySelector(_rulesSortColumn);
+                if (_rulesSortOrder == SortOrder.Ascending)
                 {
-                    filteredRules = filteredRules.Where(r =>
-                        r.Name.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase) ||
-                        r.Description.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase) ||
-                        r.ApplicationName.Contains(rulesSearchTextBox.Text, StringComparison.OrdinalIgnoreCase));
+                    filteredRules = filteredRules.OrderBy(keySelector);
                 }
-
-                foreach (var rule in filteredRules)
+                else
                 {
-                    int iconIndex = -1;
-                    if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(rule.ApplicationName))
-                    {
-                        iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
-                    }
-
-                    var item = new ListViewItem("", iconIndex) { Tag = rule };
-                    item.SubItems.AddRange(new[]
-                    {
-                        rule.Name,
-                        rule.IsEnabled.ToString(),
-                        rule.Status,
-                        rule.Direction.ToString(),
-                        rule.ProtocolName,
-                        rule.LocalPorts.Count > 0 ? string.Join(",", rule.LocalPorts) : "Any",
-                        rule.RemotePorts.Count > 0 ? string.Join(",",
-                        rule.RemotePorts) : "Any",
-                        rule.LocalAddresses.Count > 0 ? string.Join(",", rule.LocalAddresses) : "Any",
-                        rule.RemoteAddresses.Count > 0 ? string.Join(",", rule.RemoteAddresses) : "Any",
-                        rule.ApplicationName,
-                        rule.ServiceName,
-                        rule.Profiles,
-                        rule.Grouping,
-                        rule.Description
-                    });
-                    rulesListView.Items.Add(item);
+                    filteredRules = filteredRules.OrderByDescending(keySelector);
                 }
             }
-            rulesListView.EndUpdate();
+
+            _virtualRulesData = filteredRules.ToList();
+            rulesListView.VirtualListSize = _virtualRulesData.Count;
+            rulesListView.Invalidate();
         }
 
         private void ApplyDashboardSearchFilter()
@@ -1190,6 +1174,13 @@ namespace MinimalFirewall
             }
             else
             {
+                if (_systemChangesLoaded)
+                {
+                    _masterSystemChanges.Clear();
+                    systemChangesListView.Items.Clear();
+                    _systemChangesLoaded = false;
+                    _activityLogger.LogDebug("Unloaded audit tab data to save memory.");
+                }
                 await DisplayCurrentTabData();
             }
 
@@ -1242,21 +1233,19 @@ namespace MinimalFirewall
             }
         }
 
-        private async void CreateRuleButton_Click(object sender, EventArgs e)
+        private void CreateRuleButton_Click(object sender, EventArgs e)
         {
             using var dialog = new AddRuleSelectionForm(_actionsService, _wildcardRuleService);
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
-                await ForceDataRefreshAsync();
             }
         }
 
-        private async void AdvancedRuleButton_Click(object sender, EventArgs e)
+        private void AdvancedRuleButton_Click(object sender, EventArgs e)
         {
             using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService);
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
-                await ForceDataRefreshAsync();
             }
         }
 
@@ -1276,7 +1265,7 @@ namespace MinimalFirewall
                 };
                 Process.Start(startInfo);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
             {
                 Messenger.MessageBox($"Could not open Windows Firewall console.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -1289,7 +1278,7 @@ namespace MinimalFirewall
             {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
             {
                 Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -1301,7 +1290,7 @@ namespace MinimalFirewall
             {
                 Process.Start(new ProcessStartInfo("https://www.buymeacoffee.com/deminimis") { UseShellExecute = true });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
             {
                 Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -1341,7 +1330,7 @@ namespace MinimalFirewall
             {
                 Process.Start(new ProcessStartInfo("https://github.com/deminimis/minimalfirewall/releases") { UseShellExecute = true });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
             {
                 Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -1384,7 +1373,56 @@ namespace MinimalFirewall
         private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
         #endregion
 
-        #region ListView Custom Drawing
+        #region ListView Custom Drawing & Virtual Mode
+        private void ListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            if (sender is not ListView listView) return;
+            if (listView.Name == "rulesListView")
+            {
+                if (e.ItemIndex >= 0 && e.ItemIndex < _virtualRulesData.Count)
+                {
+                    var rule = _virtualRulesData[e.ItemIndex];
+                    int iconIndex = _appSettings.ShowAppIcons && !string.IsNullOrEmpty(rule.ApplicationName)
+                                    ?
+                                    _iconService.GetIconIndex(rule.ApplicationName) : -1;
+
+                    var item = new ListViewItem("", iconIndex) { Tag = rule };
+                    item.SubItems.AddRange(new[]
+                    {
+                        rule.Name,
+                        rule.IsEnabled.ToString(),
+                        rule.Status,
+                        rule.Direction.ToString(),
+                        rule.ProtocolName,
+                        rule.LocalPorts.Count > 0 ? string.Join(",", rule.LocalPorts) : "Any",
+                        rule.RemotePorts.Count > 0 ? string.Join(",", rule.RemotePorts) : "Any",
+                        rule.LocalAddresses.Count > 0 ? string.Join(",", rule.LocalAddresses) : "Any",
+                        rule.RemoteAddresses.Count > 0 ? string.Join(",", rule.RemoteAddresses) : "Any",
+                        rule.ApplicationName,
+                        rule.ServiceName,
+                        rule.Profiles,
+                        rule.Grouping,
+                        rule.Description
+                    });
+                    e.Item = item;
+                }
+            }
+            else if (listView.Name == "liveConnectionsListView")
+            {
+                if (e.ItemIndex >= 0 && e.ItemIndex < _virtualLiveConnectionsData.Count)
+                {
+                    var connection = _virtualLiveConnectionsData[e.ItemIndex];
+                    int iconIndex = _appSettings.ShowAppIcons && !string.IsNullOrEmpty(connection.ProcessPath)
+                                    ?
+                                    _iconService.GetIconIndex(connection.ProcessPath) : -1;
+
+                    var item = new ListViewItem("", iconIndex) { Tag = connection };
+                    item.SubItems.AddRange(new[] { connection.ProcessName, connection.RemoteAddress, connection.RemotePort.ToString() });
+                    e.Item = item;
+                }
+            }
+        }
+
         private void RulesListView_DrawItem(object sender, DrawListViewItemEventArgs e)
         {
             e.DrawDefault = false;
@@ -1406,6 +1444,10 @@ namespace MinimalFirewall
                 if (e.Item.Tag is AdvancedRuleViewModel advancedRule)
                 {
                     statusText = advancedRule.Status;
+                }
+                else if (e.Item.Tag is AggregatedRuleViewModel aggregatedRule)
+                {
+                    statusText = aggregatedRule.Status;
                 }
 
                 bool isAllow = statusText.Contains("Allow", StringComparison.OrdinalIgnoreCase);
@@ -1489,25 +1531,25 @@ namespace MinimalFirewall
         #endregion
 
         #region ButtonListView Event Handlers
-        private async void Dashboard_AllowClicked(object? sender, ListViewItemEventArgs e)
+        private void Dashboard_AllowClicked(object? sender, ListViewItemEventArgs e)
         {
             if (e.Item.Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Allow");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Allow" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                await ForceDataRefreshAsync(showStatus: false);
             }
         }
 
-        private async void Dashboard_BlockClicked(object? sender, ListViewItemEventArgs e)
+        private void Dashboard_BlockClicked(object? sender, ListViewItemEventArgs e)
         {
             if (e.Item.Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Block");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Block" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                await ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -1515,7 +1557,8 @@ namespace MinimalFirewall
         {
             if (e.Item.Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Ignore");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Ignore" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
             }
@@ -1525,7 +1568,8 @@ namespace MinimalFirewall
         {
             if (e.Item.Tag is FirewallRuleChange change)
             {
-                _actionsService.AcceptForeignRule(change);
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptForeignRule, payload));
                 systemChangesListView.Items.Remove(e.Item);
                 _masterSystemChanges.Remove(change);
                 _unseenSystemChangesCount = _masterSystemChanges.Count;
@@ -1537,7 +1581,8 @@ namespace MinimalFirewall
         {
             if (e.Item.Tag is FirewallRuleChange change)
             {
-                _actionsService.DeleteForeignRule(change);
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteForeignRule, payload));
                 systemChangesListView.Items.Remove(e.Item);
                 _masterSystemChanges.Remove(change);
                 _unseenSystemChangesCount = _masterSystemChanges.Count;
@@ -1549,7 +1594,8 @@ namespace MinimalFirewall
         {
             if (e.Item.Tag is FirewallRuleChange change)
             {
-                _actionsService.AcknowledgeForeignRule(change);
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcknowledgeForeignRule, payload));
                 systemChangesListView.Items.Remove(e.Item);
                 _masterSystemChanges.Remove(change);
                 _unseenSystemChangesCount = _masterSystemChanges.Count;
@@ -1563,7 +1609,8 @@ namespace MinimalFirewall
             var result = Messenger.MessageBox($"Are you sure you want to accept all {_masterSystemChanges.Count} detected changes?", "Confirm Accept All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
             {
-                _actionsService.AcceptAllForeignRules(_masterSystemChanges);
+                var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(_masterSystemChanges) };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload));
                 _masterSystemChanges.Clear();
                 _unseenSystemChangesCount = 0;
                 UpdateUiWithChangesCount();
@@ -1577,7 +1624,8 @@ namespace MinimalFirewall
             var result = Messenger.MessageBox($"Are you sure you want to ignore all {_masterSystemChanges.Count} detected changes? They will not be shown again.", "Confirm Ignore All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
             {
-                _actionsService.AcknowledgeAllForeignRules(_masterSystemChanges);
+                var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(_masterSystemChanges) };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcknowledgeAllForeignRules, payload));
                 _masterSystemChanges.Clear();
                 _unseenSystemChangesCount = 0;
                 UpdateUiWithChangesCount();
@@ -1613,7 +1661,7 @@ namespace MinimalFirewall
                     {
                         if (item.Tag is FirewallGroup group)
                         {
-                            await _actionsService.DeleteGroupAsync(group.Name);
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
                         }
                     }
                     await DisplayGroupsAsync();
@@ -1692,7 +1740,8 @@ namespace MinimalFirewall
                 g.FillPath(new SolidBrush(backColor), path);
             }
 
-            int thumbX = isChecked ? switchRect.Right - thumbSize - Scale(2, g) : switchRect.X + Scale(2, g);
+            int thumbX = isChecked ?
+            switchRect.Right - thumbSize - Scale(2, g) : switchRect.X + Scale(2, g);
             Rectangle thumbRect = new Rectangle(
                 thumbX,
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
@@ -1717,14 +1766,18 @@ namespace MinimalFirewall
             }
         }
 
-        private async void ApplyRuleMenuItem_Click(object sender, EventArgs e)
+        private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesListView.SelectedItems.Count == 0) return;
-            var items = rulesListView.SelectedItems.Cast<ListViewItem>()
-                .Select(i => i.Tag as AggregatedRuleViewModel)
-                .Where(r => r != null)
-                .Select(r => r!)
-                .ToList();
+            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesListView.SelectedIndices.Count == 0) return;
+            var items = new List<AggregatedRuleViewModel>(rulesListView.SelectedIndices.Count);
+            foreach (int index in rulesListView.SelectedIndices)
+            {
+                if (index >= 0 && index < _virtualRulesData.Count)
+                {
+                    items.Add(_virtualRulesData[index]);
+                }
+            }
+
             if (items.Count > 0)
             {
                 foreach (var item in items)
@@ -1735,33 +1788,39 @@ namespace MinimalFirewall
                     switch (firstRule.Type)
                     {
                         case RuleType.Program:
-                            _actionsService.ApplyApplicationRuleChange([firstRule.ApplicationName], action);
+                            var appPayload = new ApplyApplicationRulePayload { AppPaths = [firstRule.ApplicationName], Action = action };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
                             break;
                         case RuleType.Service:
-                            _actionsService.ApplyServiceRuleChange(firstRule.ServiceName, action);
+                            var servicePayload = new ApplyServiceRulePayload { ServiceName = firstRule.ServiceName, Action = action };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload));
                             break;
                         case RuleType.UWP:
                             if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
                             {
                                 var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
                                 var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
-                                _actionsService.ApplyUwpRuleChange([uwpApp], action);
+                                var uwpPayload = new ApplyUwpRulePayload { UwpApps = [uwpApp], Action = action };
+                                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload));
                             }
                             break;
                     }
                 }
-                await ForceDataRefreshAsync();
             }
         }
 
         private void DeleteRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesListView.SelectedItems.Count == 0) return;
-            var items = rulesListView.SelectedItems.Cast<ListViewItem>()
-                .Select(i => i.Tag as AggregatedRuleViewModel)
-                .Where(r => r != null)
-                .Select(r => r!)
-                .ToList();
+            if (rulesListView.SelectedIndices.Count == 0) return;
+            var items = new List<AggregatedRuleViewModel>(rulesListView.SelectedIndices.Count);
+            foreach (int index in rulesListView.SelectedIndices)
+            {
+                if (index >= 0 && index < _virtualRulesData.Count)
+                {
+                    items.Add(_virtualRulesData[index]);
+                }
+            }
+
             if (items.Count > 0)
             {
                 var result = Messenger.MessageBox($"Are you sure you want to delete the {items.Count} selected rule(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -1777,24 +1836,25 @@ namespace MinimalFirewall
                     .ToList();
                 foreach (var wildcardRule in wildcardRulesToDelete)
                 {
-                    _actionsService.DeleteRulesForWildcard(wildcardRule);
+                    var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload));
                     _wildcardRuleService.RemoveRule(wildcardRule);
                 }
 
                 if (standardRuleNamesToDelete.Count > 0)
                 {
-                    _actionsService.DeleteAdvancedRules(standardRuleNamesToDelete);
+                    var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload));
                 }
 
-                rulesListView.BeginUpdate();
-                foreach (ListViewItem item in rulesListView.SelectedItems)
-                {
-                    rulesListView.Items.Remove(item);
-                }
-                rulesListView.EndUpdate();
+                var nameSet = new HashSet<string>(standardRuleNamesToDelete);
+                var wildcardSet = new HashSet<WildcardRule>(wildcardRulesToDelete);
+                _virtualRulesData.RemoveAll(r => nameSet.Contains(r.Name) || (r.WildcardDefinition != null && wildcardSet.Contains(r.WildcardDefinition)));
+                _allAggregatedRules.RemoveAll(r => nameSet.Contains(r.Name) || (r.WildcardDefinition != null && wildcardSet.Contains(r.WildcardDefinition)));
+                rulesListView.VirtualListSize = _virtualRulesData.Count;
+                rulesListView.Invalidate();
             }
         }
-
         #endregion
 
         #region Live Connections & Sorting
@@ -1820,7 +1880,8 @@ namespace MinimalFirewall
             Color foreColor;
             if (e.Item.Selected)
             {
-                backColor = e.Item.ListView.Focused ? SystemColors.Highlight : SystemColors.ControlDark;
+                backColor = e.Item.ListView.Focused ?
+                SystemColors.Highlight : SystemColors.ControlDark;
                 foreColor = e.Item.ListView.Focused ? SystemColors.HighlightText : SystemColors.ControlText;
             }
             else
@@ -1854,73 +1915,85 @@ namespace MinimalFirewall
 
         private void KillProcessToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (liveConnectionsListView.SelectedItems.Count > 0 && liveConnectionsListView.SelectedItems[0].Tag is TcpConnectionViewModel vm)
+            if (liveConnectionsListView.SelectedIndices.Count > 0)
             {
-                vm.KillProcessCommand.Execute(null);
+                int index = liveConnectionsListView.SelectedIndices[0];
+                if (index >= 0 && index < _virtualLiveConnectionsData.Count)
+                {
+                    var vm = _virtualLiveConnectionsData[index];
+                    vm.KillProcessCommand.Execute(null);
+                }
             }
         }
 
         private void BlockRemoteIPToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (liveConnectionsListView.SelectedItems.Count > 0 && liveConnectionsListView.SelectedItems[0].Tag is TcpConnectionViewModel vm)
+            if (liveConnectionsListView.SelectedIndices.Count > 0)
             {
-                var rule = new AdvancedRuleViewModel
+                int index = liveConnectionsListView.SelectedIndices[0];
+                if (index >= 0 && index < _virtualLiveConnectionsData.Count)
                 {
-                    Name = $"Block {vm.RemoteAddress}",
-                    Description = "Blocked from Live Connections",
-                    IsEnabled = true,
-                    Grouping = MFWConstants.MainRuleGroup,
-                    Status = "Block",
-                    Direction = Directions.Outgoing,
-                    Protocol = 6,
-                    RemoteAddresses = [new(System.Net.IPAddress.Parse(vm.RemoteAddress))],
-                    Profiles = "All",
-                    Type = RuleType.Advanced
-                };
-                _actionsService.CreateAdvancedRule(rule, "All", "");
-                _ = ForceDataRefreshAsync(showStatus: false);
+                    var vm = _virtualLiveConnectionsData[index];
+                    var rule = new AdvancedRuleViewModel
+                    {
+                        Name = $"Block {vm.RemoteAddress}",
+                        Description = "Blocked from Live Connections",
+                        IsEnabled = true,
+                        Grouping = MFWConstants.MainRuleGroup,
+                        Status = "Block",
+                        Direction = Directions.Outgoing,
+                        Protocol = 6,
+                        RemoteAddresses = [new(System.Net.IPAddress.Parse(vm.RemoteAddress))],
+                        Profiles = "All",
+                        Type = RuleType.Advanced
+                    };
+                    var payload = new CreateAdvancedRulePayload { ViewModel = rule, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                }
             }
         }
 
         private void ListView_ColumnClick(object sender, ColumnClickEventArgs e)
         {
             if (sender is not ListView listView) return;
-            int sortColumn;
+            int sortColumn = e.Column;
             SortOrder sortOrder;
 
+            int currentSortColumn = 0;
+            SortOrder currentSortOrder = SortOrder.None;
             switch (listView.Name)
             {
                 case "rulesListView":
-                    sortColumn = _rulesSortColumn;
-                    sortOrder = _rulesSortOrder;
+                    currentSortColumn = _rulesSortColumn;
+                    currentSortOrder = _rulesSortOrder;
                     break;
                 case "dashboardListView":
-                    sortColumn = _dashboardSortColumn;
-                    sortOrder = _dashboardSortOrder;
+                    currentSortColumn = _dashboardSortColumn;
+                    currentSortOrder = _dashboardSortOrder;
                     break;
                 case "systemChangesListView":
-                    sortColumn = _systemChangesSortColumn;
-                    sortOrder = _systemChangesSortOrder;
+                    currentSortColumn = _systemChangesSortColumn;
+                    currentSortOrder = _systemChangesSortOrder;
                     break;
                 case "groupsListView":
-                    sortColumn = _groupsSortColumn;
-                    sortOrder = _groupsSortOrder;
+                    currentSortColumn = _groupsSortColumn;
+                    currentSortOrder = _groupsSortOrder;
                     break;
                 case "liveConnectionsListView":
-                    sortColumn = _liveConnectionsSortColumn;
-                    sortOrder = _liveConnectionsSortOrder;
+                    currentSortColumn = _liveConnectionsSortColumn;
+                    currentSortOrder = _liveConnectionsSortOrder;
                     break;
                 default:
                     return;
             }
 
-            if (e.Column == sortColumn)
+            if (e.Column == currentSortColumn)
             {
-                sortOrder = (sortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
+                sortOrder = (currentSortOrder == SortOrder.Ascending) ?
+                SortOrder.Descending : SortOrder.Ascending;
             }
             else
             {
-                sortColumn = e.Column;
                 sortOrder = SortOrder.Ascending;
             }
 
@@ -1929,41 +2002,32 @@ namespace MinimalFirewall
                 case "rulesListView":
                     _rulesSortColumn = sortColumn;
                     _rulesSortOrder = sortOrder;
+                    ApplyRulesFilters(_dataService.GetAggregatedAdvancedRules());
                     break;
                 case "dashboardListView":
                     _dashboardSortColumn = sortColumn;
                     _dashboardSortOrder = sortOrder;
+                    listView.ListViewItemSorter = new ListViewItemComparer(e.Column > 1 ? e.Column : 2, sortOrder);
+                    listView.Sort();
                     break;
                 case "systemChangesListView":
                     _systemChangesSortColumn = sortColumn;
                     _systemChangesSortOrder = sortOrder;
+                    listView.ListViewItemSorter = new ListViewItemComparer(e.Column > 0 ? e.Column : 1, sortOrder);
+                    listView.Sort();
                     break;
                 case "groupsListView":
                     _groupsSortColumn = sortColumn;
                     _groupsSortOrder = sortOrder;
+                    listView.ListViewItemSorter = new ListViewItemComparer(e.Column, sortOrder);
+                    listView.Sort();
                     break;
                 case "liveConnectionsListView":
                     _liveConnectionsSortColumn = sortColumn;
                     _liveConnectionsSortOrder = sortOrder;
+                    UpdateLiveConnectionsView();
                     break;
             }
-
-            int columnToSort = e.Column;
-            if (listView == rulesListView)
-            {
-                columnToSort = e.Column > 0 ? e.Column : 1;
-            }
-            if (listView == dashboardListView)
-            {
-                columnToSort = e.Column > 1 ? e.Column : 2;
-            }
-            if (listView == liveConnectionsListView)
-            {
-                columnToSort = e.Column > 0 ? e.Column : 1;
-            }
-
-            listView.ListViewItemSorter = new ListViewItemComparer(columnToSort, sortOrder);
-            listView.Sort();
         }
         #endregion
 
@@ -1974,34 +2038,41 @@ namespace MinimalFirewall
             direction = "Outbound";
 
             ListView? activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
-            if (activeListView?.SelectedItems.Count == 0)
+            if (activeListView?.SelectedIndices.Count == 0 && activeListView?.SelectedItems.Count == 0)
             {
                 return false;
             }
 
-            var selectedItem = activeListView.SelectedItems[0];
-            if (selectedItem.Tag == null)
+            if (activeListView.VirtualMode)
             {
-                return false;
+                int index = activeListView.SelectedIndices[0];
+                if (activeListView.Name == "rulesListView" && index < _virtualRulesData.Count)
+                {
+                    var rule = _virtualRulesData[index];
+                    appPath = rule.ApplicationName;
+                }
+                else if (activeListView.Name == "liveConnectionsListView" && index < _virtualLiveConnectionsData.Count)
+                {
+                    var conn = _virtualLiveConnectionsData[index];
+                    appPath = conn.ProcessPath;
+                }
             }
-
-            switch (selectedItem.Tag)
+            else
             {
-                case PendingConnectionViewModel pending:
-                    appPath = pending.AppPath;
-                    direction = pending.Direction;
-                    break;
-                case TcpConnectionViewModel live:
-                    appPath = live.ProcessPath;
-                    break;
-                case AggregatedRuleViewModel agg:
-                    appPath = agg.ApplicationName;
-                    break;
-                case FirewallRuleChange change:
-                    appPath = change.Rule?.ApplicationName;
-                    break;
-                default:
-                    return false;
+                var selectedItem = activeListView.SelectedItems[0];
+                if (selectedItem.Tag == null) return false;
+                switch (selectedItem.Tag)
+                {
+                    case PendingConnectionViewModel pending:
+                        appPath = pending.AppPath;
+                        direction = pending.Direction;
+                        break;
+                    case FirewallRuleChange change:
+                        appPath = change.Rule?.ApplicationName;
+                        break;
+                    default:
+                        return false;
+                }
             }
 
             return !string.IsNullOrEmpty(appPath);
@@ -2010,7 +2081,6 @@ namespace MinimalFirewall
         private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (sender is not ContextMenuStrip contextMenu) return;
-
             if (!TryGetSelectedAppContext(out string? appPath, out _))
             {
                 e.Cancel = true;
@@ -2018,7 +2088,6 @@ namespace MinimalFirewall
             }
 
             bool isProgramOrWildcard = !string.IsNullOrEmpty(appPath);
-
             foreach (ToolStripItem item in contextMenu.Items)
             {
                 if (item.Name.Contains("openFileLocation"))
@@ -2037,34 +2106,50 @@ namespace MinimalFirewall
             }
         }
 
-        private async void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedAppContext(out string? appPath, out string? direction))
             {
                 using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, appPath!, direction!);
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
-                    await ForceDataRefreshAsync();
                 }
             }
         }
 
         private void copyRemoteAddressToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (liveConnectionsListView.SelectedItems.Count > 0 && liveConnectionsListView.SelectedItems[0].Tag is TcpConnectionViewModel vm)
+            if (liveConnectionsListView.SelectedIndices.Count > 0)
             {
-                Clipboard.SetText(vm.RemoteAddress);
+                int index = liveConnectionsListView.SelectedIndices[0];
+                if (index >= 0 && index < _virtualLiveConnectionsData.Count)
+                {
+                    var vm = _virtualLiveConnectionsData[index];
+                    Clipboard.SetText(vm.RemoteAddress);
+                }
             }
         }
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ListView? activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
-            if (activeListView?.SelectedItems.Count == 0) return;
-
-            var selectedItem = activeListView.SelectedItems[0];
+            if (activeListView == null || (activeListView.SelectedItems.Count == 0 && activeListView.SelectedIndices.Count == 0)) return;
             var details = new StringBuilder();
-            switch (selectedItem.Tag)
+            object? tag = null;
+
+            if (activeListView.VirtualMode)
+            {
+                int index = activeListView.SelectedIndices[0];
+                if (activeListView.Name == "rulesListView" && index < _virtualRulesData.Count) tag = _virtualRulesData[index];
+                else if (activeListView.Name == "liveConnectionsListView" && index < _virtualLiveConnectionsData.Count) tag = _virtualLiveConnectionsData[index];
+            }
+            else
+            {
+                tag = activeListView.SelectedItems[0].Tag;
+            }
+
+            if (tag == null) return;
+            switch (tag)
             {
                 case PendingConnectionViewModel pending:
                     details.AppendLine($"Type: Pending Connection");
@@ -2136,7 +2221,7 @@ namespace MinimalFirewall
             {
                 Process.Start("explorer.exe", $"/select, \"{appPath}\"");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
             {
                 Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -2151,10 +2236,15 @@ namespace MinimalFirewall
                 sender is ToolStripMenuItem menuItem &&
                 int.TryParse(menuItem.Tag?.ToString(), out int minutes))
             {
-                _actionsService.ProcessPendingConnection(pending, "TemporaryAllow", TimeSpan.FromMinutes(minutes));
+                var payload = new ProcessPendingConnectionPayload
+                {
+                    PendingConnection = pending,
+                    Decision = "TemporaryAllow",
+                    Duration = TimeSpan.FromMinutes(minutes)
+                };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                _ = ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -2163,10 +2253,10 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Allow");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Allow" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                _ = ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -2175,11 +2265,10 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Allow",
-                trustPublisher: true);
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Allow", TrustPublisher = true };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                _ = ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -2188,10 +2277,10 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Block");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Block" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
-                _ = ForceDataRefreshAsync(showStatus: false);
             }
         }
 
@@ -2200,13 +2289,14 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                _actionsService.ProcessPendingConnection(pending, "Ignore");
+                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Ignore" };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
                 _pendingConnections.Remove(pending);
                 ApplyDashboardSearchFilter();
             }
         }
 
-        private async void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
@@ -2214,9 +2304,15 @@ namespace MinimalFirewall
                 using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
                 if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
                 {
+                    var newRule = new WildcardRule
+                    {
+                        FolderPath = wildcardDialog.FolderPath,
+                        ExeName = wildcardDialog.ExeName,
+                        Action = wildcardDialog.FinalAction
+                    };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
                     _pendingConnections.Remove(pending);
                     ApplyDashboardSearchFilter();
-                    await ForceDataRefreshAsync(showStatus: false);
                 }
             }
         }
@@ -2258,7 +2354,8 @@ namespace MinimalFirewall
             Image? imageToDraw = null;
             if (button.Name == "lockdownButton")
             {
-                imageToDraw = IsLockedDown() ? _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
+                imageToDraw = IsLockedDown() ?
+                _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
             }
             else if (button.Name == "rescanButton")
             {
@@ -2267,7 +2364,8 @@ namespace MinimalFirewall
                     TextRenderer.DrawText(e.Graphics, "...", button.Font, button.ClientRectangle, button.ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                     return;
                 }
-                imageToDraw = (_appSettings.Theme == "Dark") ? _refreshWhiteIcon : appImageList.Images["refresh.png"];
+                imageToDraw = (_appSettings.Theme == "Dark") ?
+                _refreshWhiteIcon : appImageList.Images["refresh.png"];
             }
 
             if (imageToDraw != null)
@@ -2283,5 +2381,55 @@ namespace MinimalFirewall
                 e.Graphics.DrawRectangle(p, 0, 0, button.Width - 1, button.Height - 1);
             }
         }
+
+        #region Virtual Mode Sorting Helpers
+        private Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
+        {
+            return columnIndex switch
+            {
+                2 => rule => rule.IsEnabled,
+                3 => rule => rule.Status,
+                4 => rule => rule.Direction,
+                5 => rule => rule.ProtocolName,
+                10 => rule => rule.ApplicationName,
+                11 => rule => rule.ServiceName,
+                12 => rule => rule.Profiles,
+                13 => rule => rule.Grouping,
+                14 => rule => rule.Description,
+                _ => rule => rule.Name,
+            };
+        }
+
+        private Func<TcpConnectionViewModel, object> GetLiveConnectionKeySelector(int columnIndex)
+        {
+            return columnIndex switch
+            {
+                2 => conn => conn.RemoteAddress,
+                3 => conn => conn.RemotePort,
+                _ => conn => conn.ProcessName,
+            };
+        }
+
+        private void UpdateLiveConnectionsView()
+        {
+            IEnumerable<TcpConnectionViewModel> connections = _trafficMonitorViewModel.ActiveConnections;
+            if (_liveConnectionsSortOrder != SortOrder.None && _liveConnectionsSortColumn != -1)
+            {
+                Func<TcpConnectionViewModel, object> keySelector = GetLiveConnectionKeySelector(_liveConnectionsSortColumn);
+                if (_liveConnectionsSortOrder == SortOrder.Ascending)
+                {
+                    connections = connections.OrderBy(keySelector);
+                }
+                else
+                {
+                    connections = connections.OrderByDescending(keySelector);
+                }
+            }
+
+            _virtualLiveConnectionsData = connections.ToList();
+            liveConnectionsListView.VirtualListSize = _virtualLiveConnectionsData.Count;
+            liveConnectionsListView.Invalidate();
+        }
+        #endregion
     }
 }

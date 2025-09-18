@@ -1,4 +1,5 @@
-﻿using DarkModeForms;
+﻿// File: SystemDiscoveryService.cs
+using DarkModeForms;
 using System.IO;
 using System.Management;
 using System.Diagnostics;
@@ -7,16 +8,10 @@ namespace MinimalFirewall
 {
     public static class SystemDiscoveryService
     {
-        private static List<ServiceViewModel>? _serviceCache;
         private static bool _wmiQueryFailedMessageShown = false;
 
         public static List<ServiceViewModel> GetServicesWithExePaths()
         {
-            if (_serviceCache != null)
-            {
-                return _serviceCache;
-            }
-
             var services = new List<ServiceViewModel>();
             try
             {
@@ -45,7 +40,7 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ManagementException or System.Runtime.InteropServices.COMException)
             {
                 Debug.WriteLine("WMI Query failed: " + ex.Message);
                 if (!_wmiQueryFailedMessageShown)
@@ -54,8 +49,6 @@ namespace MinimalFirewall
                     _wmiQueryFailedMessageShown = true;
                 }
             }
-
-            _serviceCache = services;
             return services;
         }
 
@@ -71,7 +64,7 @@ namespace MinimalFirewall
                                            .Where(n => !string.IsNullOrEmpty(n));
                 return string.Join(", ", serviceNames);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is ManagementException or System.Runtime.InteropServices.COMException)
             {
                 Debug.WriteLine($"WMI Query for PID failed: {ex.Message}");
                 return string.Empty;
@@ -97,15 +90,10 @@ namespace MinimalFirewall
                 }
             }
             catch (UnauthorizedAccessException) { }
-            catch (Exception ex)
+            catch (IOException ex)
             {
                 Debug.WriteLine($"Error scanning folder {directoryPath}: {ex.Message}");
             }
-        }
-
-        public static void ClearCache()
-        {
-            _serviceCache = null;
         }
     }
 }

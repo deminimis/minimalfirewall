@@ -5,6 +5,7 @@ using System.Linq;
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MinimalFirewall
 {
@@ -14,11 +15,29 @@ namespace MinimalFirewall
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly RuleCacheService _ruleCacheService;
         private readonly HashSet<string> _knownRulePaths = new(StringComparer.OrdinalIgnoreCase);
+        private readonly MemoryCache _localCache;
+        private const string ServicesCacheKey = "ServicesList";
+
         public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService, RuleCacheService ruleCacheService)
         {
             _firewallService = firewallService;
             _wildcardRuleService = wildcardRuleService;
             _ruleCacheService = ruleCacheService;
+            _localCache = new MemoryCache(new MemoryCacheOptions());
+        }
+
+        public List<ServiceViewModel> GetCachedServicesWithExePaths()
+        {
+            if (_localCache.TryGetValue(ServicesCacheKey, out List<ServiceViewModel>? services) && services != null)
+            {
+                return services;
+            }
+
+            services = SystemDiscoveryService.GetServicesWithExePaths();
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+            _localCache.Set(ServicesCacheKey, services, cacheOptions);
+            return services;
         }
 
         public void RemoveRulesFromCache(List<string> ruleNames)
@@ -27,7 +46,7 @@ namespace MinimalFirewall
             if (rules.Count == 0) return;
 
             var nameSet = new HashSet<string>(ruleNames, StringComparer.OrdinalIgnoreCase);
-            var updatedRules = rules.Where(r => !nameSet.Contains(r.Name)).ToList();
+            var updatedRules = rules.Where(r => r != null && !nameSet.Contains(r.Name)).ToList();
             if (updatedRules.Count < rules.Count)
             {
                 _ruleCacheService.UpdateCache(null, updatedRules);
@@ -37,8 +56,13 @@ namespace MinimalFirewall
         public void AddRulesToCache(List<AdvancedRuleViewModel> newRules)
         {
             var rules = LoadAdvancedRules();
-            rules.AddRange(newRules);
-            var sortedRules = rules.OrderBy(r => r.Name).ToList();
+            var validNewRules = newRules.Where(r => r != null).ToList();
+            if (validNewRules.Any())
+            {
+                rules.AddRange(validNewRules);
+            }
+
+            var sortedRules = rules.Where(r => r != null).OrderBy(r => r.Name).ToList();
             _ruleCacheService.UpdateCache(null, sortedRules);
         }
 
@@ -53,27 +77,36 @@ namespace MinimalFirewall
             _ruleCacheService.UpdateCache(null, advancedRules);
         }
 
-        public bool DoesManagedRuleExist(string appPath, string serviceName, string direction)
+        public bool DoesAnyRuleExist(string appPath, string serviceName, string direction)
         {
             if (!Enum.TryParse<Directions>(direction, true, out var dirEnum))
             {
                 return false;
             }
 
-            var allManagedRules = _ruleCacheService.GetAdvancedRules();
-            if (allManagedRules.Any(r => r.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase) && r.Direction.HasFlag(dirEnum)))
-            {
-                return true;
-            }
+            var allCurrentRules = _firewallService.GetAllRules();
 
-            if (!string.IsNullOrEmpty(serviceName))
+            foreach (INetFwRule2 rule in allCurrentRules)
             {
-                var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-                foreach (var sName in serviceNames)
+                if (rule == null || !rule.Enabled) continue;
+
+                var ruleDirection = (Directions)rule.Direction;
+                if (!ruleDirection.HasFlag(dirEnum)) continue;
+
+                if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (allManagedRules.Any(r => r.ServiceName.Equals(sName, StringComparison.OrdinalIgnoreCase) && r.Direction.HasFlag(dirEnum)))
+                    return true;
+                }
+
+                if (!string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(rule.serviceName))
+                {
+                    var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var sName in serviceNames)
                     {
-                        return true;
+                        if (rule.serviceName.Equals(sName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -89,14 +122,14 @@ namespace MinimalFirewall
         public List<AggregatedRuleViewModel> GetAggregatedAdvancedRules()
         {
             var advancedRules = LoadAdvancedRules();
-            var aggregatedRules = new List<AggregatedRuleViewModel>();
-
             var groups = advancedRules.GroupBy(r =>
             {
                 var name = r.Name ?? string.Empty;
                 var baseName = name.Replace(" - TCP", "").Replace(" - UDP", "");
                 return new { BaseName = baseName, r.ApplicationName, r.ServiceName, r.Direction, r.Status, r.Type };
             });
+
+            var aggregatedRules = new List<AggregatedRuleViewModel>(groups.Count());
 
             foreach (var group in groups)
             {
@@ -165,7 +198,7 @@ namespace MinimalFirewall
 
         private List<AdvancedRuleViewModel> ProcessAndGetAdvancedRules(List<INetFwRule2> appRules, List<UwpApp> uwpApps, List<WildcardRule> allWildcards)
         {
-            var advancedRules = new List<AdvancedRuleViewModel>();
+            var advancedRules = new List<AdvancedRuleViewModel>(appRules.Count + allWildcards.Count);
             foreach (var rule in appRules)
             {
                 var vm = CreateAdvancedRuleViewModel(rule);
@@ -252,7 +285,7 @@ namespace MinimalFirewall
         private static string GetProfileString(int profiles)
         {
             if (profiles == (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL) return "All";
-            var profileNames = new List<string>();
+            var profileNames = new List<string>(3);
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0) profileNames.Add("Domain");
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0) profileNames.Add("Private");
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0) profileNames.Add("Public");

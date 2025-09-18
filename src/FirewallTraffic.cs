@@ -1,4 +1,4 @@
-﻿// FirewallTraffic.cs
+﻿// File: FirewallTraffic.cs
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,7 +31,6 @@ namespace Firewall.Traffic
 
         private static List<TcpTrafficRow> GetConnectionsForFamily(int family)
         {
-            var connections = new List<TcpTrafficRow>();
             IntPtr pTcpTable = IntPtr.Zero;
             int pdwSize = 0;
             _ = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
@@ -41,6 +40,7 @@ namespace Firewall.Traffic
                 if (GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0) == 0)
                 {
                     int rowCount = Marshal.ReadInt32(pTcpTable);
+                    var connections = new List<TcpTrafficRow>(rowCount);
                     IntPtr rowPtr = pTcpTable + 4;
 
                     for (int i = 0; i < rowCount; i++)
@@ -58,13 +58,14 @@ namespace Firewall.Traffic
                             rowPtr += Marshal.SizeOf(typeof(MIB_TCP6ROW_OWNER_PID));
                         }
                     }
+                    return connections;
                 }
             }
             finally
             {
                 Marshal.FreeHGlobal(pTcpTable);
             }
-            return connections;
+            return [];
         }
 
         #region Native Structures

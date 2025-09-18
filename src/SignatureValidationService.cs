@@ -1,5 +1,6 @@
-﻿// SignatureValidationService.cs
+﻿// File: SignatureValidationService.cs
 using System.Diagnostics;
+using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -7,10 +8,6 @@ namespace MinimalFirewall
 {
     public static class SignatureValidationService
     {
-
-        /// Checks if a file has a digital signature and extracts the publisher name.
-        /// This is a lenient check and does not validate the trust chain.
- 
         public static bool GetPublisherInfo(string filePath, out string? publisherName)
         {
             publisherName = null;
@@ -27,19 +24,14 @@ namespace MinimalFirewall
             }
             catch (CryptographicException)
             {
-                // File is not signed
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Debug.WriteLine($"[ERROR] Signature extraction failed for {filePath}: {ex.Message}");
                 return false;
             }
         }
-
-
-        /// Checks if a file has a digital signature that is valid and trusted by the local machine.
-        /// This is a strict check.
 
         public static bool IsSignatureTrusted(string filePath, out string? publisherName)
         {
@@ -55,7 +47,7 @@ namespace MinimalFirewall
                 var chain = new X509Chain();
                 return chain.Build(new X509Certificate2(cert));
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is CryptographicException or IOException or UnauthorizedAccessException)
             {
                 Debug.WriteLine($"[ERROR] Signature chain validation failed for {filePath}: {ex.Message}");
                 return false;

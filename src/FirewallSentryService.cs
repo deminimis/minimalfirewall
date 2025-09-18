@@ -47,7 +47,7 @@ namespace MinimalFirewall
                 _watcher.Start();
                 _isStarted = true;
             }
-            catch (Exception ex)
+            catch (ManagementException ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[SENTRY ERROR] Failed to start WMI watcher: {ex.Message}");
             }
@@ -67,7 +67,7 @@ namespace MinimalFirewall
                 _watcher = null;
                 _isStarted = false;
             }
-            catch (Exception ex)
+            catch (ManagementException ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[SENTRY ERROR] Failed to stop WMI watcher: {ex.Message}");
             }
@@ -105,7 +105,7 @@ namespace MinimalFirewall
                     _ruleBaseline = JsonSerializer.Deserialize(json, SentryJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to load Sentry baseline: {ex.Message}");
                 _ruleBaseline = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -119,7 +119,7 @@ namespace MinimalFirewall
                 string json = JsonSerializer.Serialize(_ruleBaseline, SentryJsonContext.Default.DictionaryStringString);
                 File.WriteAllText(_baselinePath, json);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to save Sentry baseline: {ex.Message}");
             }

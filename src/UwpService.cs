@@ -1,4 +1,4 @@
-﻿// UwpService.cs
+﻿// File: UwpService.cs
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -49,7 +49,7 @@ namespace MinimalFirewall
                         return sortedApps;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or JsonException)
                 {
                     Debug.WriteLine("[ERROR] Failed to scan for UWP apps via PowerShell: " + ex.Message);
                     return new List<UwpApp>();
@@ -68,7 +68,7 @@ namespace MinimalFirewall
                     return apps ?? new List<UwpApp>();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 Debug.WriteLine("[ERROR] Failed to load UWP cache: " + ex.Message);
             }
@@ -82,7 +82,7 @@ namespace MinimalFirewall
                 string json = JsonSerializer.Serialize(apps, UwpAppJsonContext.Default.ListUwpApp);
                 File.WriteAllText(_cachePath, json);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Debug.WriteLine("[ERROR] Failed to save UWP cache: " + ex.Message);
             }
