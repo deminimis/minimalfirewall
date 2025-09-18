@@ -157,4 +157,47 @@ namespace MinimalFirewall
     [JsonSerializable(typeof(List<AdvancedRuleViewModel>))]
     [JsonSerializable(typeof(RuleCacheModel))]
     internal partial class CacheJsonContext : JsonSerializerContext { }
+
+    public enum FirewallTaskType
+    {
+        ApplyApplicationRule,
+        ApplyServiceRule,
+        ApplyUwpRule,
+        DeleteApplicationRules,
+        DeleteUwpRules,
+        DeleteAdvancedRules,
+        DeleteGroup,
+        DeleteWildcardRules,
+        ProcessPendingConnection,
+        AcceptForeignRule,
+        AcknowledgeForeignRule,
+        DeleteForeignRule,
+        AcceptAllForeignRules,
+        AcknowledgeAllForeignRules,
+        CreateAdvancedRule,
+        AddWildcardRule
+    }
+
+    public class FirewallTask
+    {
+        public FirewallTaskType TaskType { get; set; }
+        public object Payload { get; set; }
+
+        public FirewallTask(FirewallTaskType taskType, object payload)
+        {
+            TaskType = taskType;
+            Payload = payload;
+        }
+    }
+
+    public class ApplyApplicationRulePayload { public List<string> AppPaths { get; set; } = []; public string Action { get; set; } = ""; public string? WildcardSourcePath { get; set; } }
+    public class ApplyServiceRulePayload { public string ServiceName { get; set; } = ""; public string Action { get; set; } = ""; }
+    public class ApplyUwpRulePayload { public List<UwpApp> UwpApps { get; set; } = []; public string Action { get; set; } = ""; }
+    public class DeleteRulesPayload { public List<string> RuleIdentifiers { get; set; } = []; }
+    public class DeleteWildcardRulePayload { public WildcardRule Wildcard { get; set; } = new(); }
+    public class ProcessPendingConnectionPayload { public PendingConnectionViewModel PendingConnection { get; set; } = new(); public string Decision { get; set; } = ""; public TimeSpan Duration { get; set; } = default; public bool TrustPublisher { get; set; } = false; }
+    public class ForeignRuleChangePayload { public FirewallRuleChange Change { get; set; } = new(); }
+    public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
+    public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
 }
+

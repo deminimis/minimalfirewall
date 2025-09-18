@@ -1,4 +1,4 @@
-﻿// UserActivityLogger.cs
+﻿// File: UserActivityLogger.cs
 using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
@@ -22,7 +22,6 @@ namespace MinimalFirewall
         public void LogChange(string action, string details)
         {
             if (!IsEnabled) return;
-
             try
             {
                 var newLogEntry = new { Timestamp = DateTime.Now, Action = action, Details = details };
@@ -42,7 +41,7 @@ namespace MinimalFirewall
                 string newJson = JsonSerializer.Serialize(logEntries, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_changeLogFilePath, newJson);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 Debug.WriteLine($"[FATAL LOGGING ERROR] {ex.Message}");
             }
@@ -51,14 +50,13 @@ namespace MinimalFirewall
         public void LogDebug(string message)
         {
             if (!IsEnabled) return;
-
             try
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 string logEntry = $"[{timestamp}] {message}{Environment.NewLine}";
                 File.AppendAllText(_debugLogFilePath, logEntry);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Debug.WriteLine($"[FATAL DEBUG LOGGING ERROR] {ex.Message}");
             }
@@ -67,7 +65,6 @@ namespace MinimalFirewall
         public void LogException(string context, Exception ex)
         {
             if (!IsEnabled) return;
-
             try
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -77,7 +74,7 @@ namespace MinimalFirewall
                 string line = $"[{timestamp}] ERROR {context} {type} HResult={hex} Message={msg}{Environment.NewLine}";
                 File.AppendAllText(_debugLogFilePath, line);
             }
-            catch (Exception e)
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
                 Debug.WriteLine($"[FATAL EXCEPTION LOGGING ERROR] {e.Message}");
             }

@@ -1,4 +1,4 @@
-﻿// UtilityServices.cs
+﻿// File: UtilityServices.cs
 using DarkModeForms;
 using System.Diagnostics;
 using System.Reflection;
@@ -134,7 +134,7 @@ namespace MinimalFirewall
                 }
                 Debug.WriteLine($"[AdminTask] Execution finished for: {fileName}");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or ObjectDisposedException or InvalidOperationException)
             {
                 Debug.WriteLine($"[AdminTask FATAL ERROR] {ex}");
                 Messenger.MessageBox($"A critical error occurred while trying to run an administrative task:\n\n{ex.Message}", "Execution Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -175,7 +175,7 @@ namespace MinimalFirewall
                     key.DeleteValue(_appName, false);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
             {
                 Debug.WriteLine($"[ERROR] Failed to update startup settings: {ex.Message}");
             }

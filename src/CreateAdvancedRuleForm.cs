@@ -156,7 +156,7 @@ namespace MinimalFirewall
 
         private string GetProfileString()
         {
-            var profiles = new List<string>();
+            var profiles = new List<string>(3);
             if (domainCheckBox.Checked) profiles.Add("Domain");
             if (privateCheckBox.Checked) profiles.Add("Private");
             if (publicCheckBox.Checked) profiles.Add("Public");
@@ -166,7 +166,7 @@ namespace MinimalFirewall
 
         private string GetInterfaceTypes()
         {
-            var types = new List<string>();
+            var types = new List<string>(3);
             if (remoteAccessCheckBox.Checked) types.Add("RemoteAccess");
             if (wirelessCheckBox.Checked) types.Add("Wireless");
             if (lanCheckBox.Checked) types.Add("Lan");

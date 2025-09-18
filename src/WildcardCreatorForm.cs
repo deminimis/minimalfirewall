@@ -10,6 +10,10 @@ namespace MinimalFirewall
         private string _folderPath = string.Empty;
         private readonly DarkModeCS dm;
 
+        public string FolderPath { get; private set; } = string.Empty;
+        public string ExeName { get; private set; } = string.Empty;
+        public string FinalAction { get; private set; } = string.Empty;
+
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService)
         {
             InitializeComponent();
@@ -50,16 +54,12 @@ namespace MinimalFirewall
                 return;
             }
 
+            this.FolderPath = PathResolver.NormalizePath(_folderPath);
+            this.ExeName = exeNameTextBox.Text;
+
             string action = allowRadio.Checked ? "Allow" : "Block";
             string direction = allowRadio.Checked ? allowDirectionCombo.Text : blockDirectionCombo.Text;
-            string finalAction = $"{action} ({direction})";
-            var newRule = new WildcardRule
-            {
-                FolderPath = PathResolver.NormalizePath(_folderPath),
-                ExeName = exeNameTextBox.Text,
-                Action = finalAction
-            };
-            _wildcardRuleService.AddRule(newRule);
+            this.FinalAction = $"{action} ({direction})";
 
             DialogResult = DialogResult.OK;
         }
