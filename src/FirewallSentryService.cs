@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Runtime.InteropServices;
 
 namespace MinimalFirewall
 {
@@ -82,10 +83,19 @@ namespace MinimalFirewall
         {
             _ruleBaseline.Clear();
             var allRules = firewallService.GetAllRules();
-            foreach (var rule in allRules.Where(r => r != null && !string.IsNullOrEmpty(r.Name) && !IsMfwRule(r)))
+            foreach (var rule in allRules)
             {
-                _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
+                if (rule != null && !string.IsNullOrEmpty(rule.Name) && !IsMfwRule(rule))
+                {
+                    _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
+                }
             }
+
+            foreach (var rule in allRules)
+            {
+                Marshal.ReleaseComObject(rule);
+            }
+
             SaveBaseline();
         }
 
@@ -128,37 +138,49 @@ namespace MinimalFirewall
         public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker)
         {
             var changes = new List<FirewallRuleChange>();
-            var currentRules = firewallService.GetAllRules()
-                .Where(r => r != null && !string.IsNullOrEmpty(r.Name))
-                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-            foreach (var rule in currentRules.Values)
+            var currentRules = firewallService.GetAllRules();
+            var currentRuleNamesAndHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var rule in currentRules)
             {
-                if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(rule.Name))
+                if (rule != null && !string.IsNullOrEmpty(rule.Name))
+                {
+                    currentRuleNamesAndHashes[rule.Name] = GenerateRuleHash(rule);
+                }
+            }
+
+            foreach (var rule in currentRules)
+            {
+                var ruleName = rule.Name;
+                if (string.IsNullOrEmpty(ruleName)) continue;
+
+                var currentHash = currentRuleNamesAndHashes[ruleName];
+                if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(ruleName))
                 {
                     continue;
                 }
 
-                if (!_ruleBaseline.ContainsKey(rule.Name))
+                if (!_ruleBaseline.TryGetValue(ruleName, out var oldHash))
                 {
                     changes.Add(new FirewallRuleChange { Type = ChangeType.New, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
                 }
-                else
+                else if (oldHash != currentHash)
                 {
-                    var newHash = GenerateRuleHash(rule);
-                    if (_ruleBaseline.TryGetValue(rule.Name, out var oldHash) && oldHash != newHash)
-                    {
-                        changes.Add(new FirewallRuleChange { Type = ChangeType.Modified, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
-                    }
+                    changes.Add(new FirewallRuleChange { Type = ChangeType.Modified, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
                 }
             }
 
             foreach (var baselineRuleName in _ruleBaseline.Keys)
             {
-                if (!acknowledgedTracker.IsAcknowledged(baselineRuleName) && !currentRules.ContainsKey(baselineRuleName))
+                if (!acknowledgedTracker.IsAcknowledged(baselineRuleName) && !currentRuleNamesAndHashes.ContainsKey(baselineRuleName))
                 {
                     changes.Add(new FirewallRuleChange { Type = ChangeType.Deleted, Rule = new AdvancedRuleViewModel { Name = baselineRuleName, Description = "This rule was deleted by an external process." } });
                 }
+            }
+
+            foreach (var rule in currentRules)
+            {
+                Marshal.ReleaseComObject(rule);
             }
 
             return changes;

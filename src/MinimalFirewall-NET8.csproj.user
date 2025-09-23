@@ -16,6 +16,9 @@
     <Compile Update="CreateProgramRuleForm.Designer.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="DashboardControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="FlatComboBox.cs">
       <SubType>Component</SubType>
     </Compile>

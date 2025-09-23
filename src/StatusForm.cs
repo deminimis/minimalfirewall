@@ -6,14 +6,21 @@ namespace MinimalFirewall
     public partial class StatusForm : Form
     {
         private readonly DarkModeCS dm;
+
         public StatusForm(string title)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
             this.Text = title;
-            this.statusLabel.Text = "Scanning, please wait...";
+            this.statusLabel.Text = title;
             this.progressBar.Style = ProgressBarStyle.Marquee;
             this.progressBar.MarqueeAnimationSpeed = 30;
+        }
+
+        public void UpdateStatus(string message)
+        {
+            this.statusLabel.Text = message;
+            Application.DoEvents();
         }
 
         protected override void OnLoad(EventArgs e)

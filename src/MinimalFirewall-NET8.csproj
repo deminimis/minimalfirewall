@@ -12,9 +12,10 @@
 		<ApplicationIcon>logo.ico</ApplicationIcon>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<PlatformTarget>AnyCPU</PlatformTarget>
+		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.2.0.0</AssemblyVersion>
-		<FileVersion>2.2.0.0</FileVersion>
+		<AssemblyVersion>2.2.1.0</AssemblyVersion>
+		<FileVersion>2.2.1.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
@@ -31,9 +32,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="1-adminnhelper-allfiles.txt" />
-	  <None Remove="1allfiles.txt" />
-	  <None Remove="1file_combiner.py" />
+		<None Remove="1-adminnhelper-allfiles.txt" />
+		<None Remove="1allfiles.txt" />
+		<None Remove="1file_combiner.py" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -64,6 +65,11 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -71,6 +77,13 @@
 			<Generator>ResXFileCodeGenerator</Generator>
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Properties\Settings.settings">
+	    <Generator>SettingsSingleFileGenerator</Generator>
+	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+	  </None>
 	</ItemGroup>
 
 </Project>
