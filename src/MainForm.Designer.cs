@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File: MainForm.Designer.cs
+namespace MinimalFirewall
 {
     public partial class MainForm
     {
@@ -13,13 +14,6 @@
         private System.Windows.Forms.TabPage liveConnectionsTabPage;
         private System.Windows.Forms.Button lockdownButton;
         private System.Windows.Forms.Button rescanButton;
-        private MinimalFirewall.ButtonListView dashboardListView;
-        private System.Windows.Forms.ColumnHeader dashIconColumn;
-        private System.Windows.Forms.ColumnHeader dashActionColumn;
-        private System.Windows.Forms.ColumnHeader dashAppColumn;
-        private System.Windows.Forms.ColumnHeader dashServiceColumn;
-        private System.Windows.Forms.ColumnHeader dashDirectionColumn;
-        private System.Windows.Forms.ColumnHeader dashPathColumn;
         private System.Windows.Forms.ListView rulesListView;
         private System.Windows.Forms.ColumnHeader advIconColumn;
         private System.Windows.Forms.ColumnHeader advNameColumn;
@@ -99,21 +93,6 @@
         private System.Windows.Forms.ContextMenuStrip liveConnectionsContextMenu;
         private System.Windows.Forms.ToolStripMenuItem killProcessToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem blockRemoteIPToolStripMenuItem;
-        private System.Windows.Forms.ContextMenuStrip dashboardContextMenu;
-        private System.Windows.Forms.ToolStripMenuItem tempAllowToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow2MinutesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow5MinutesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow15MinutesToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow1HourToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow3HoursToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allow8HoursToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-        private System.Windows.Forms.ToolStripMenuItem permanentAllowToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem permanentBlockToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem ignoreToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
-        private System.Windows.Forms.ToolStripMenuItem createWildcardRuleToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem allowAndTrustPublisherToolStripMenuItem;
         private System.Windows.Forms.ImageList appIconList;
         private System.Windows.Forms.CheckBox showAppIconsSwitch;
         private System.Windows.Forms.CheckBox autoAllowSystemTrustedCheck;
@@ -143,14 +122,12 @@
         private ToolStripMenuItem openFileLocationToolStripMenuItem2;
         private CheckBox auditAlertsSwitch;
         private System.Windows.Forms.Label liveConnectionsDisabledLabel;
-        private StatusStrip statusStrip1;
-        private ToolStripStatusLabel backgroundTaskStatusLabel;
+        private DashboardControl dashboardControl1;
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _ruleCacheService?.Dispose();
                 _autoRefreshTimer?.Dispose();
                 _backgroundTaskService?.Dispose();
                 _lockedGreenIcon?.Dispose();
@@ -175,37 +152,10 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             mainTabControl = new DarkModeForms.FlatTabControl();
             dashboardTabPage = new TabPage();
+            dashboardControl1 = new DashboardControl();
             logoPictureBox = new PictureBox();
             arrowPictureBox = new PictureBox();
             instructionLabel = new Label();
-            dashboardListView = new MinimalFirewall.ButtonListView();
-            dashIconColumn = new ColumnHeader();
-            dashActionColumn = new ColumnHeader();
-            dashAppColumn = new ColumnHeader();
-            dashServiceColumn = new ColumnHeader();
-            dashDirectionColumn = new ColumnHeader();
-            dashPathColumn = new ColumnHeader();
-            dashboardContextMenu = new ContextMenuStrip(components);
-            tempAllowToolStripMenuItem = new ToolStripMenuItem();
-            allow2MinutesToolStripMenuItem = new ToolStripMenuItem();
-            allow5MinutesToolStripMenuItem = new ToolStripMenuItem();
-            allow15MinutesToolStripMenuItem = new ToolStripMenuItem();
-            allow1HourToolStripMenuItem = new ToolStripMenuItem();
-            allow3HoursToolStripMenuItem = new ToolStripMenuItem();
-            allow8HoursToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator3 = new ToolStripSeparator();
-            permanentAllowToolStripMenuItem = new ToolStripMenuItem();
-            allowAndTrustPublisherToolStripMenuItem = new ToolStripMenuItem();
-            permanentBlockToolStripMenuItem = new ToolStripMenuItem();
-            ignoreToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator4 = new ToolStripSeparator();
-            createWildcardRuleToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator5 = new ToolStripSeparator();
-            createAdvancedRuleToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator7 = new ToolStripSeparator();
-            openFileLocationToolStripMenuItem1 = new ToolStripMenuItem();
-            toolStripSeparator6 = new ToolStripSeparator();
-            copyDetailsToolStripMenuItem = new ToolStripMenuItem();
             rulesTabPage = new TabPage();
             advFilterAdvancedCheck = new CheckBox();
             advancedRuleButton = new Button();
@@ -283,6 +233,7 @@
             blockRemoteIPToolStripMenuItem = new ToolStripMenuItem();
             copyRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator8 = new ToolStripSeparator();
+            openFileLocationToolStripMenuItem1 = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem1 = new ToolStripMenuItem();
             settingsTabPage = new TabPage();
             auditAlertsSwitch = new CheckBox();
@@ -312,14 +263,11 @@
             rescanButton = new Button();
             mainToolTip = new ToolTip(components);
             appIconList = new ImageList(components);
-            statusStrip1 = new StatusStrip();
-            backgroundTaskStatusLabel = new ToolStripStatusLabel();
             mainTabControl.SuspendLayout();
             dashboardTabPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)logoPictureBox).BeginInit();
             logoPictureBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)arrowPictureBox).BeginInit();
-            dashboardContextMenu.SuspendLayout();
             rulesTabPage.SuspendLayout();
             rulesContextMenu.SuspendLayout();
             systemChangesTabPage.SuspendLayout();
@@ -331,7 +279,6 @@
             settingsTabPage.SuspendLayout();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
-            statusStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // mainTabControl
@@ -365,7 +312,7 @@
             // dashboardTabPage
             // 
             dashboardTabPage.Controls.Add(logoPictureBox);
-            dashboardTabPage.Controls.Add(dashboardListView);
+            dashboardTabPage.Controls.Add(this.dashboardControl1);
             dashboardTabPage.ImageIndex = 7;
             dashboardTabPage.Location = new Point(124, 4);
             dashboardTabPage.Margin = new Padding(3, 4, 3, 4);
@@ -375,6 +322,14 @@
             dashboardTabPage.TabIndex = 0;
             dashboardTabPage.Text = "Dashboard";
             dashboardTabPage.UseVisualStyleBackColor = true;
+            // 
+            // dashboardControl1
+            // 
+            this.dashboardControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dashboardControl1.Location = new System.Drawing.Point(3, 4);
+            this.dashboardControl1.Name = "dashboardControl1";
+            this.dashboardControl1.Size = new System.Drawing.Size(1009, 917);
+            this.dashboardControl1.TabIndex = 2;
             // 
             // logoPictureBox
             // 
@@ -412,198 +367,6 @@
             instructionLabel.Size = new Size(304, 20);
             instructionLabel.TabIndex = 2;
             instructionLabel.Text = "Press the lock key to initiate firewall defense.";
-            // 
-            // dashboardListView
-            // 
-            dashboardListView.BorderStyle = BorderStyle.None;
-            dashboardListView.Columns.AddRange(new ColumnHeader[] { dashIconColumn, dashActionColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashPathColumn });
-            dashboardListView.ContextMenuStrip = dashboardContextMenu;
-            dashboardListView.DarkMode = null;
-            dashboardListView.Dock = DockStyle.Fill;
-            dashboardListView.FullRowSelect = true;
-            dashboardListView.Location = new Point(3, 4);
-            dashboardListView.Margin = new Padding(3, 4, 3, 4);
-            dashboardListView.Name = "dashboardListView";
-            dashboardListView.Size = new Size(1009, 917);
-            dashboardListView.TabIndex = 0;
-            dashboardListView.UseCompatibleStateImageBehavior = false;
-            dashboardListView.View = View.Details;
-            dashboardListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Dashboard;
-            dashboardListView.ColumnClick += ListView_ColumnClick;
-            // 
-            // dashIconColumn
-            // 
-            dashIconColumn.Text = "";
-            dashIconColumn.Width = 32;
-            // 
-            // dashActionColumn
-            // 
-            dashActionColumn.Text = "Action";
-            dashActionColumn.Width = 300;
-            // 
-            // dashAppColumn
-            // 
-            dashAppColumn.Text = "Application";
-            dashAppColumn.Width = 150;
-            // 
-            // dashServiceColumn
-            // 
-            dashServiceColumn.Text = "Service";
-            dashServiceColumn.Width = 150;
-            // 
-            // dashDirectionColumn
-            // 
-            dashDirectionColumn.Text = "Direction";
-            dashDirectionColumn.Width = 100;
-            // 
-            // dashPathColumn
-            // 
-            dashPathColumn.Text = "Path";
-            dashPathColumn.Width = 300;
-            // 
-            // dashboardContextMenu
-            // 
-            dashboardContextMenu.ImageScalingSize = new Size(20, 20);
-            dashboardContextMenu.Items.AddRange(new ToolStripItem[] { tempAllowToolStripMenuItem, toolStripSeparator3, permanentAllowToolStripMenuItem, allowAndTrustPublisherToolStripMenuItem, permanentBlockToolStripMenuItem, ignoreToolStripMenuItem, toolStripSeparator4, createWildcardRuleToolStripMenuItem, toolStripSeparator5, createAdvancedRuleToolStripMenuItem, toolStripSeparator7, openFileLocationToolStripMenuItem1, toolStripSeparator6, copyDetailsToolStripMenuItem });
-            dashboardContextMenu.Name = "dashboardContextMenu";
-            dashboardContextMenu.Size = new Size(228, 290);
-            dashboardContextMenu.Opening += ContextMenu_Opening;
-            // 
-            // tempAllowToolStripMenuItem
-            // 
-            tempAllowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allow2MinutesToolStripMenuItem, allow5MinutesToolStripMenuItem, allow15MinutesToolStripMenuItem, allow1HourToolStripMenuItem, allow3HoursToolStripMenuItem, allow8HoursToolStripMenuItem });
-            tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
-            tempAllowToolStripMenuItem.Size = new Size(227, 24);
-            tempAllowToolStripMenuItem.Text = "Allow Temporarily";
-            // 
-            // allow2MinutesToolStripMenuItem
-            // 
-            allow2MinutesToolStripMenuItem.Name = "allow2MinutesToolStripMenuItem";
-            allow2MinutesToolStripMenuItem.Size = new Size(162, 26);
-            allow2MinutesToolStripMenuItem.Tag = "2";
-            allow2MinutesToolStripMenuItem.Text = "2 minutes";
-            allow2MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // allow5MinutesToolStripMenuItem
-            // 
-            allow5MinutesToolStripMenuItem.Name = "allow5MinutesToolStripMenuItem";
-            allow5MinutesToolStripMenuItem.Size = new Size(162, 26);
-            allow5MinutesToolStripMenuItem.Tag = "5";
-            allow5MinutesToolStripMenuItem.Text = "5 minutes";
-            allow5MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // allow15MinutesToolStripMenuItem
-            // 
-            allow15MinutesToolStripMenuItem.Name = "allow15MinutesToolStripMenuItem";
-            allow15MinutesToolStripMenuItem.Size = new Size(162, 26);
-            allow15MinutesToolStripMenuItem.Tag = "15";
-            allow15MinutesToolStripMenuItem.Text = "15 minutes";
-            allow15MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // allow1HourToolStripMenuItem
-            // 
-            allow1HourToolStripMenuItem.Name = "allow1HourToolStripMenuItem";
-            allow1HourToolStripMenuItem.Size = new Size(162, 26);
-            allow1HourToolStripMenuItem.Tag = "60";
-            allow1HourToolStripMenuItem.Text = "1 hour";
-            allow1HourToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // allow3HoursToolStripMenuItem
-            // 
-            allow3HoursToolStripMenuItem.Name = "allow3HoursToolStripMenuItem";
-            allow3HoursToolStripMenuItem.Size = new Size(162, 26);
-            allow3HoursToolStripMenuItem.Tag = "180";
-            allow3HoursToolStripMenuItem.Text = "3 hours";
-            allow3HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // allow8HoursToolStripMenuItem
-            // 
-            allow8HoursToolStripMenuItem.Name = "allow8HoursToolStripMenuItem";
-            allow8HoursToolStripMenuItem.Size = new Size(162, 26);
-            allow8HoursToolStripMenuItem.Tag = "480";
-            allow8HoursToolStripMenuItem.Text = "8 hours";
-            allow8HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
-            // 
-            // toolStripSeparator3
-            // 
-            toolStripSeparator3.Name = "toolStripSeparator3";
-            toolStripSeparator3.Size = new Size(224, 6);
-            // 
-            // permanentAllowToolStripMenuItem
-            // 
-            permanentAllowToolStripMenuItem.Name = "permanentAllowToolStripMenuItem";
-            permanentAllowToolStripMenuItem.Size = new Size(227, 24);
-            permanentAllowToolStripMenuItem.Text = "Allow";
-            permanentAllowToolStripMenuItem.Click += PermanentAllowToolStripMenuItem_Click;
-            // 
-            // allowAndTrustPublisherToolStripMenuItem
-            // 
-            allowAndTrustPublisherToolStripMenuItem.Name = "allowAndTrustPublisherToolStripMenuItem";
-            allowAndTrustPublisherToolStripMenuItem.Size = new Size(227, 24);
-            allowAndTrustPublisherToolStripMenuItem.Text = "Allow and Trust Publisher";
-            allowAndTrustPublisherToolStripMenuItem.Click += AllowAndTrustPublisherToolStripMenuItem_Click;
-            // 
-            // permanentBlockToolStripMenuItem
-            // 
-            permanentBlockToolStripMenuItem.Name = "permanentBlockToolStripMenuItem";
-            permanentBlockToolStripMenuItem.Size = new Size(227, 24);
-            permanentBlockToolStripMenuItem.Text = "Block";
-            permanentBlockToolStripMenuItem.Click += PermanentBlockToolStripMenuItem_Click;
-            // 
-            // ignoreToolStripMenuItem
-            // 
-            ignoreToolStripMenuItem.Name = "ignoreToolStripMenuItem";
-            ignoreToolStripMenuItem.Size = new Size(227, 24);
-            ignoreToolStripMenuItem.Text = "Ignore";
-            ignoreToolStripMenuItem.Click += IgnoreToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator4
-            // 
-            toolStripSeparator4.Name = "toolStripSeparator4";
-            toolStripSeparator4.Size = new Size(224, 6);
-            // 
-            // createWildcardRuleToolStripMenuItem
-            // 
-            createWildcardRuleToolStripMenuItem.Name = "createWildcardRuleToolStripMenuItem";
-            createWildcardRuleToolStripMenuItem.Size = new Size(227, 24);
-            createWildcardRuleToolStripMenuItem.Text = "Create Wildcard Rule...";
-            createWildcardRuleToolStripMenuItem.Click += createWildcardRuleToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator5
-            // 
-            toolStripSeparator5.Name = "toolStripSeparator5";
-            toolStripSeparator5.Size = new Size(224, 6);
-            // 
-            // createAdvancedRuleToolStripMenuItem
-            // 
-            createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
-            createAdvancedRuleToolStripMenuItem.Size = new Size(227, 24);
-            createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
-            createAdvancedRuleToolStripMenuItem.Click += createAdvancedRuleToolStripMenuItem_Click;
-            // 
-            // toolStripSeparator7
-            // 
-            toolStripSeparator7.Name = "toolStripSeparator7";
-            toolStripSeparator7.Size = new Size(224, 6);
-            // 
-            // openFileLocationToolStripMenuItem1
-            // 
-            openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
-            openFileLocationToolStripMenuItem1.Size = new Size(227, 24);
-            openFileLocationToolStripMenuItem1.Text = "Open File Location";
-            openFileLocationToolStripMenuItem1.Click += OpenFileLocationMenuItem_Click;
-            // 
-            // toolStripSeparator6
-            // 
-            toolStripSeparator6.Name = "toolStripSeparator6";
-            toolStripSeparator6.Size = new Size(224, 6);
-            // 
-            // copyDetailsToolStripMenuItem
-            // 
-            copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
-            copyDetailsToolStripMenuItem.Size = new Size(227, 24);
-            copyDetailsToolStripMenuItem.Text = "Copy Details";
-            copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
             // 
             // rulesTabPage
             // 
@@ -1238,6 +1001,13 @@
             toolStripSeparator8.Name = "toolStripSeparator8";
             toolStripSeparator8.Size = new Size(224, 6);
             // 
+            // openFileLocationToolStripMenuItem1
+            // 
+            this.openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
+            this.openFileLocationToolStripMenuItem1.Size = new System.Drawing.Size(227, 24);
+            this.openFileLocationToolStripMenuItem1.Text = "Open File Location";
+            this.openFileLocationToolStripMenuItem1.Click += new System.EventHandler(this.OpenFileLocationMenuItem_Click);
+            // 
             // copyDetailsToolStripMenuItem1
             // 
             copyDetailsToolStripMenuItem1.Name = "copyDetailsToolStripMenuItem1";
@@ -1592,28 +1362,11 @@
             appIconList.ImageSize = new Size(16, 16);
             appIconList.TransparentColor = Color.Transparent;
             // 
-            // statusStrip1
-            // 
-            statusStrip1.ImageScalingSize = new Size(20, 20);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { backgroundTaskStatusLabel });
-            statusStrip1.Location = new Point(0, 907);
-            statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(1143, 26);
-            statusStrip1.TabIndex = 4;
-            statusStrip1.Text = "statusStrip1";
-            // 
-            // backgroundTaskStatusLabel
-            // 
-            backgroundTaskStatusLabel.Name = "backgroundTaskStatusLabel";
-            backgroundTaskStatusLabel.Size = new Size(50, 20);
-            backgroundTaskStatusLabel.Text = "Ready";
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1143, 933);
-            Controls.Add(statusStrip1);
             Controls.Add(rescanButton);
             Controls.Add(lockdownButton);
             Controls.Add(mainTabControl);
@@ -1626,7 +1379,6 @@
             logoPictureBox.ResumeLayout(false);
             logoPictureBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)arrowPictureBox).EndInit();
-            dashboardContextMenu.ResumeLayout(false);
             rulesTabPage.ResumeLayout(false);
             rulesTabPage.PerformLayout();
             rulesContextMenu.ResumeLayout(false);
@@ -1642,12 +1394,8 @@
             coffeePanel.ResumeLayout(false);
             coffeePanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
-            statusStrip1.ResumeLayout(false);
-            statusStrip1.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
         }
         #endregion
     }
 }
-

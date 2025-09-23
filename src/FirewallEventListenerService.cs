@@ -16,7 +16,7 @@ namespace MinimalFirewall
         private readonly PublisherWhitelistService _whitelistService;
         private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, DateTime> _recentlyNotifiedApps = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, System.Threading.Timer> _snoozeTimers = [];
+        private readonly ConcurrentDictionary<string, DateTime> _recentlyProcessedWildcards = new(StringComparer.OrdinalIgnoreCase);
         private EventLogWatcher? _eventWatcher;
         private readonly Action<string> _logAction;
 
@@ -112,18 +112,37 @@ namespace MinimalFirewall
 
                 string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
                 string serviceName = SystemDiscoveryService.GetServicesByPID(GetValueFromXml(xmlContent, "ProcessID"));
+                string cooldownKey = $"{appPath}|{serviceName}";
+
+                if (_recentlyProcessedWildcards.TryGetValue(cooldownKey, out DateTime expiry) && DateTime.UtcNow < expiry)
+                {
+                    _logAction($"[EventListener] Event DEBOUNCED for {cooldownKey}. Cooldown active.");
+                    return;
+                }
 
                 var matchingWildcard = _wildcardRuleService.Match(appPath);
+
                 if (matchingWildcard != null)
                 {
-                    _logAction($"[EventListener] Matched wildcard rule for {appPath}. Action: {matchingWildcard.Action}");
-                    if (matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+                    if (IsHostProcess(appPath) && !string.IsNullOrEmpty(serviceName) && matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logAction($"[EventListener] Service-aware wildcard match for {serviceName} in {appPath}. Action: {matchingWildcard.Action}");
+                        _recentlyProcessedWildcards[cooldownKey] = DateTime.UtcNow.AddSeconds(10);
+                        var services = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var service in services)
+                        {
+                            ActionsService.ApplyServiceRuleChange(service, matchingWildcard.Action);
+                        }
+                        return;
+                    }
+                    else if (!IsHostProcess(appPath) && matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
                     {
                         _logAction($"[EventListener] Proactively creating 'Allow' rule for {appPath} based on wildcard.");
+                        _recentlyProcessedWildcards[cooldownKey] = DateTime.UtcNow.AddSeconds(10);
                         ActionsService.ApplyApplicationRuleChange([appPath], matchingWildcard.Action, matchingWildcard.FolderPath);
                         return;
                     }
-                    else
+                    else if (matchingWildcard.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase))
                     {
                         _logAction($"[EventListener] App {appPath} is covered by a 'Block' wildcard. Suppressing notification.");
                         return;
@@ -193,6 +212,14 @@ namespace MinimalFirewall
             }
         }
 
+        private bool IsHostProcess(string appPath)
+        {
+            string fileName = Path.GetFileName(appPath);
+            return fileName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) ||
+                   fileName.Equals("dllhost.exe", StringComparison.OrdinalIgnoreCase) ||
+                   fileName.Equals("dasHost.exe", StringComparison.OrdinalIgnoreCase);
+        }
+
         public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
             _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
@@ -201,11 +228,6 @@ namespace MinimalFirewall
         public void ClearAllSnoozes()
         {
             _snoozedApps.Clear();
-            foreach (var timer in _snoozeTimers.Values)
-            {
-                timer.Dispose();
-            }
-            _snoozeTimers.Clear();
         }
 
         private bool ShouldProcessEvent(string appPath)
@@ -261,10 +283,6 @@ namespace MinimalFirewall
                 _eventWatcher.Enabled = false;
                 _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
                 _eventWatcher.Dispose();
-            }
-            foreach (var timer in _snoozeTimers.Values)
-            {
-                timer.Dispose();
             }
             GC.SuppressFinalize(this);
         }
