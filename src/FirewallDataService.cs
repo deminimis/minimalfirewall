@@ -6,7 +6,6 @@ using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
 using System.Runtime.InteropServices;
-
 namespace MinimalFirewall
 {
     public class FirewallDataService
@@ -15,7 +14,6 @@ namespace MinimalFirewall
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly MemoryCache _localCache;
         private const string ServicesCacheKey = "ServicesList";
-
         public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService)
         {
             _firewallService = firewallService;
@@ -41,7 +39,7 @@ namespace MinimalFirewall
         {
             return await Task.Run(() =>
             {
-                var allRules = _firewallService.GetAllRules();
+                var allRules = _firewallService.GetAllRules().Where(r => r.Enabled).ToList();
                 var allServices = GetCachedServicesWithExePaths();
                 var allWildcards = _wildcardRuleService.GetRules();
 
@@ -56,7 +54,6 @@ namespace MinimalFirewall
                     .ToDictionary(g => g.Key, g => g.ToList());
 
                 var aggregatedRules = new Dictionary<string, AggregatedRuleViewModel>();
-
                 foreach (var service in allServices)
                 {
                     var relevantRules = new List<INetFwRule2>();
@@ -92,9 +89,18 @@ namespace MinimalFirewall
                 foreach (var rule in nonAppRules)
                 {
                     if (rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true) continue;
-
                     var vm = CreateAdvancedRuleViewModel(rule);
                     vm.Type = RuleType.Advanced;
+
+                    string directionText = vm.Direction switch
+                    {
+                        Directions.Incoming => "Inbound",
+                        Directions.Outgoing => "Outbound",
+                        Directions.Incoming | Directions.Outgoing => "In/Out",
+                        _ => vm.Direction.ToString()
+                    };
+                    vm.Status = $"{vm.Status} {directionText}";
+
 
                     var aggVm = new AggregatedRuleViewModel
                     {
@@ -119,7 +125,6 @@ namespace MinimalFirewall
                 }
 
                 AddWildcardViewModels(aggregatedRules, allWildcards);
-
                 foreach (var rule in allRules)
                 {
                     Marshal.ReleaseComObject(rule);
@@ -144,7 +149,6 @@ namespace MinimalFirewall
                 Grouping = firstRule.Grouping ?? "",
                 Description = firstRule.Description ?? ""
             };
-
             bool hasInAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
             bool hasOutAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
             bool hasInBlock = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
@@ -153,10 +157,10 @@ namespace MinimalFirewall
             var statusParts = new List<string>();
             var directionParts = new List<Directions>();
 
-            if (hasOutAllow) { statusParts.Add("Allow Out"); directionParts.Add(Directions.Outgoing); }
-            if (hasOutBlock) { statusParts.Add("Block Out"); directionParts.Add(Directions.Outgoing); }
-            if (hasInAllow) { statusParts.Add("Allow In"); directionParts.Add(Directions.Incoming); }
-            if (hasInBlock) { statusParts.Add("Block In"); directionParts.Add(Directions.Incoming); }
+            if (hasOutAllow) { statusParts.Add("Allow Outbound"); directionParts.Add(Directions.Outgoing); }
+            if (hasOutBlock) { statusParts.Add("Block Outbound"); directionParts.Add(Directions.Outgoing); }
+            if (hasInAllow) { statusParts.Add("Allow Inbound"); directionParts.Add(Directions.Incoming); }
+            if (hasInBlock) { statusParts.Add("Block Inbound"); directionParts.Add(Directions.Incoming); }
 
             if (statusParts.Count == 0)
             {
@@ -168,7 +172,6 @@ namespace MinimalFirewall
             }
 
             aggRule.Direction = directionParts.Distinct().Aggregate((Directions)0, (current, d) => current | d);
-
             var protocols = group.Select(r => GetProtocolName(r.Protocol)).Distinct().OrderBy(p => p).ToList();
             var protocolString = string.Join(", ", protocols);
             if (protocols.Contains("TCP") && protocols.Contains("UDP"))
@@ -189,19 +192,16 @@ namespace MinimalFirewall
 
             var allCurrentRules = _firewallService.GetAllRules();
             bool ruleExists = false;
-
             foreach (var rule in allCurrentRules)
             {
-                if (rule == null || !rule.Enabled) continue;
-
-                if (((Directions)rule.Direction).HasFlag(dirEnum))
+                if (rule == null) continue;
+                if (!string.IsNullOrEmpty(rule.Grouping) && (rule.Grouping == MFWConstants.MainRuleGroup || rule.Grouping == MFWConstants.WildcardRuleGroup || rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix)) && ((Directions)rule.Direction).HasFlag(dirEnum))
                 {
-                    if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName.Equals(appPath, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(rule.ApplicationName) && PathResolver.NormalizePath(rule.ApplicationName).Equals(appPath, StringComparison.OrdinalIgnoreCase))
                     {
                         ruleExists = true;
                         break;
                     }
-
                     if (!string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(rule.serviceName))
                     {
                         var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
@@ -235,7 +235,7 @@ namespace MinimalFirewall
                     Name = $"*{wildcard.ExeName} in {Path.GetFileName(wildcard.FolderPath)}",
                     Description = $"[WILDCARD DEFINITION] Path: {wildcard.FolderPath}",
                     Grouping = MFWConstants.WildcardRuleGroup,
-                    Status = wildcard.Action.Contains("Allow") ? "Allow" : "Block",
+                    Status = wildcard.Action,
                     Direction = Directions.Outgoing,
                     Protocol = ProtocolTypes.Any.Value,
                     ProtocolName = ProtocolTypes.Any.Name,

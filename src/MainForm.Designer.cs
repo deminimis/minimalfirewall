@@ -1,5 +1,4 @@
-﻿// File: MainForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     public partial class MainForm
     {
@@ -17,9 +16,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ListView rulesListView;
         private System.Windows.Forms.ColumnHeader advIconColumn;
         private System.Windows.Forms.ColumnHeader advNameColumn;
-        private System.Windows.Forms.ColumnHeader advEnabledColumn;
         private System.Windows.Forms.ColumnHeader advStatusColumn;
-        private System.Windows.Forms.ColumnHeader advDirectionColumn;
         private System.Windows.Forms.ColumnHeader advProtocolColumn;
         private System.Windows.Forms.ColumnHeader advLocalPortsColumn;
         private System.Windows.Forms.ColumnHeader advRemotePortsColumn;
@@ -123,7 +120,8 @@ namespace MinimalFirewall
         private CheckBox auditAlertsSwitch;
         private System.Windows.Forms.Label liveConnectionsDisabledLabel;
         private DashboardControl dashboardControl1;
-
+        private System.Windows.Forms.Button deleteAllRulesButton;
+        private System.Windows.Forms.Button revertFirewallButton;
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -168,9 +166,7 @@ namespace MinimalFirewall
             rulesListView = new ListView();
             advIconColumn = new ColumnHeader();
             advNameColumn = new ColumnHeader();
-            advEnabledColumn = new ColumnHeader();
             advStatusColumn = new ColumnHeader();
-            advDirectionColumn = new ColumnHeader();
             advProtocolColumn = new ColumnHeader();
             advLocalPortsColumn = new ColumnHeader();
             advRemotePortsColumn = new ColumnHeader();
@@ -236,6 +232,8 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem1 = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem1 = new ToolStripMenuItem();
             settingsTabPage = new TabPage();
+            deleteAllRulesButton = new Button();
+            revertFirewallButton = new Button();
             auditAlertsSwitch = new CheckBox();
             managePublishersButton = new Button();
             autoAllowSystemTrustedCheck = new CheckBox();
@@ -422,7 +420,7 @@ namespace MinimalFirewall
             advFilterWildcardCheck.Location = new Point(544, 20);
             advFilterWildcardCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterWildcardCheck.Name = "advFilterWildcardCheck";
-            advFilterWildcardCheck.Size = new Size(91, 24);
+            advFilterWildcardCheck.Size = new System.Drawing.Size(91, 24);
             advFilterWildcardCheck.TabIndex = 5;
             advFilterWildcardCheck.Text = "Wildcard";
             advFilterWildcardCheck.UseVisualStyleBackColor = true;
@@ -496,7 +494,7 @@ namespace MinimalFirewall
             // 
             rulesListView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             rulesListView.BorderStyle = BorderStyle.None;
-            rulesListView.Columns.AddRange(new ColumnHeader[] { advIconColumn, advNameColumn, advEnabledColumn, advStatusColumn, advDirectionColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn });
+            rulesListView.Columns.AddRange(new ColumnHeader[] { advIconColumn, advNameColumn, advStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn });
             rulesListView.ContextMenuStrip = rulesContextMenu;
             rulesListView.FullRowSelect = true;
             rulesListView.Location = new Point(7, 60);
@@ -526,20 +524,10 @@ namespace MinimalFirewall
             advNameColumn.Text = "Name";
             advNameColumn.Width = 180;
             // 
-            // advEnabledColumn
-            // 
-            advEnabledColumn.Text = "Enabled";
-            advEnabledColumn.Width = 70;
-            // 
             // advStatusColumn
             // 
             advStatusColumn.Text = "Action";
-            advStatusColumn.Width = 70;
-            // 
-            // advDirectionColumn
-            // 
-            advDirectionColumn.Text = "Direction";
-            advDirectionColumn.Width = 80;
+            advStatusColumn.Width = 150;
             // 
             // advProtocolColumn
             // 
@@ -1017,6 +1005,8 @@ namespace MinimalFirewall
             // 
             // settingsTabPage
             // 
+            settingsTabPage.Controls.Add(deleteAllRulesButton);
+            settingsTabPage.Controls.Add(revertFirewallButton);
             settingsTabPage.Controls.Add(auditAlertsSwitch);
             settingsTabPage.Controls.Add(managePublishersButton);
             settingsTabPage.Controls.Add(autoAllowSystemTrustedCheck);
@@ -1047,13 +1037,35 @@ namespace MinimalFirewall
             settingsTabPage.UseVisualStyleBackColor = true;
             settingsTabPage.AutoScroll = true;
             // 
+            // deleteAllRulesButton
+            // 
+            deleteAllRulesButton.Location = new Point(29, 850);
+            deleteAllRulesButton.Margin = new Padding(3, 4, 3, 4);
+            deleteAllRulesButton.Name = "deleteAllRulesButton";
+            deleteAllRulesButton.Size = new Size(240, 37);
+            deleteAllRulesButton.TabIndex = 25;
+            deleteAllRulesButton.Text = "Delete all Minimal Firewall rules";
+            deleteAllRulesButton.UseVisualStyleBackColor = true;
+            deleteAllRulesButton.Click += deleteAllRulesButton_Click;
+            // 
+            // revertFirewallButton
+            // 
+            revertFirewallButton.Location = new Point(280, 850);
+            revertFirewallButton.Margin = new Padding(3, 4, 3, 4);
+            revertFirewallButton.Name = "revertFirewallButton";
+            revertFirewallButton.Size = new Size(240, 37);
+            revertFirewallButton.TabIndex = 26;
+            revertFirewallButton.Text = "Revert Windows Firewall";
+            revertFirewallButton.UseVisualStyleBackColor = true;
+            revertFirewallButton.Click += revertFirewallButton_Click;
+            // 
             // auditAlertsSwitch
             // 
             auditAlertsSwitch.AutoSize = true;
             auditAlertsSwitch.Location = new Point(29, 420);
             auditAlertsSwitch.Margin = new Padding(3, 4, 3, 4);
             auditAlertsSwitch.Name = "auditAlertsSwitch";
-            auditAlertsSwitch.Size = new Size(211, 24);
+            auditAlertsSwitch.Size = new System.Drawing.Size(211, 24);
             auditAlertsSwitch.TabIndex = 24;
             auditAlertsSwitch.Text = "Alert on new system rules";
             auditAlertsSwitch.UseVisualStyleBackColor = true;
@@ -1075,7 +1087,7 @@ namespace MinimalFirewall
             autoAllowSystemTrustedCheck.Location = new Point(29, 460);
             autoAllowSystemTrustedCheck.Margin = new Padding(3, 4, 3, 4);
             autoAllowSystemTrustedCheck.Name = "autoAllowSystemTrustedCheck";
-            autoAllowSystemTrustedCheck.Size = new Size(276, 24);
+            autoAllowSystemTrustedCheck.Size = new System.Drawing.Size(276, 24);
             autoAllowSystemTrustedCheck.TabIndex = 22;
             autoAllowSystemTrustedCheck.Text = "Auto-allow apps trusted by Windows";
             autoAllowSystemTrustedCheck.UseVisualStyleBackColor = true;
@@ -1086,7 +1098,7 @@ namespace MinimalFirewall
             showAppIconsSwitch.Location = new Point(29, 380);
             showAppIconsSwitch.Margin = new Padding(3, 4, 3, 4);
             showAppIconsSwitch.Name = "showAppIconsSwitch";
-            showAppIconsSwitch.Size = new Size(177, 24);
+            showAppIconsSwitch.Size = new System.Drawing.Size(177, 24);
             showAppIconsSwitch.TabIndex = 21;
             showAppIconsSwitch.Text = "Show application icons";
             showAppIconsSwitch.UseVisualStyleBackColor = true;
@@ -1098,7 +1110,7 @@ namespace MinimalFirewall
             trafficMonitorSwitch.Location = new Point(29, 347);
             trafficMonitorSwitch.Margin = new Padding(3, 4, 3, 4);
             trafficMonitorSwitch.Name = "trafficMonitorSwitch";
-            trafficMonitorSwitch.Size = new Size(191, 24);
+            trafficMonitorSwitch.Size = new System.Drawing.Size(191, 24);
             trafficMonitorSwitch.TabIndex = 20;
             trafficMonitorSwitch.Text = "Enable Live Connections";
             trafficMonitorSwitch.UseVisualStyleBackColor = true;
@@ -1109,7 +1121,7 @@ namespace MinimalFirewall
             autoRefreshLabel1.AutoSize = true;
             autoRefreshLabel1.Location = new Point(29, 299);
             autoRefreshLabel1.Name = "autoRefreshLabel1";
-            autoRefreshLabel1.Size = new Size(117, 20);
+            autoRefreshLabel1.Size = new System.Drawing.Size(117, 20);
             autoRefreshLabel1.TabIndex = 18;
             autoRefreshLabel1.Text = "List refresh time:";
             // 
@@ -1118,7 +1130,7 @@ namespace MinimalFirewall
             autoRefreshLabel2.AutoSize = true;
             autoRefreshLabel2.Location = new Point(251, 299);
             autoRefreshLabel2.Name = "autoRefreshLabel2";
-            autoRefreshLabel2.Size = new Size(61, 20);
+            autoRefreshLabel2.Size = new System.Drawing.Size(61, 20);
             autoRefreshLabel2.TabIndex = 19;
             autoRefreshLabel2.Text = "minutes";
             // 
@@ -1142,7 +1154,7 @@ namespace MinimalFirewall
             coffeeLinkLabel.Location = new Point(69, 24);
             coffeeLinkLabel.MaximumSize = new Size(366, 0);
             coffeeLinkLabel.Name = "coffeeLinkLabel";
-            coffeeLinkLabel.Size = new Size(335, 20);
+            coffeeLinkLabel.Size = new System.Drawing.Size(335, 20);
             coffeeLinkLabel.TabIndex = 15;
             coffeeLinkLabel.TabStop = true;
             coffeeLinkLabel.Tag = "https://www.buymeacoffee.com/deminimis";
@@ -1169,7 +1181,7 @@ namespace MinimalFirewall
             versionLabel.Font = new Font("Segoe UI", 9F);
             versionLabel.Location = new Point(223, 620);
             versionLabel.Name = "versionLabel";
-            versionLabel.Size = new Size(57, 20);
+            versionLabel.Size = new System.Drawing.Size(57, 20);
             versionLabel.TabIndex = 12;
             versionLabel.Text = "Version";
             // 
@@ -1210,7 +1222,7 @@ namespace MinimalFirewall
             reportProblemLink.AutoSize = true;
             reportProblemLink.Location = new Point(29, 680);
             reportProblemLink.Name = "reportProblemLink";
-            reportProblemLink.Size = new Size(126, 20);
+            reportProblemLink.Size = new System.Drawing.Size(126, 20);
             reportProblemLink.TabIndex = 8;
             reportProblemLink.TabStop = true;
             reportProblemLink.Tag = "https://github.com/deminimis/minimalfirewall/issues";
@@ -1222,7 +1234,7 @@ namespace MinimalFirewall
             helpLink.AutoSize = true;
             helpLink.Location = new Point(29, 700);
             helpLink.Name = "helpLink";
-            helpLink.Size = new Size(158, 20);
+            helpLink.Size = new System.Drawing.Size(158, 20);
             helpLink.TabIndex = 7;
             helpLink.TabStop = true;
             helpLink.Tag = "https://github.com/deminimis/minimalfirewall";
@@ -1245,7 +1257,7 @@ namespace MinimalFirewall
             loggingSwitch.Location = new Point(29, 247);
             loggingSwitch.Margin = new Padding(3, 4, 3, 4);
             loggingSwitch.Name = "loggingSwitch";
-            loggingSwitch.Size = new Size(132, 24);
+            loggingSwitch.Size = new System.Drawing.Size(132, 24);
             loggingSwitch.TabIndex = 4;
             loggingSwitch.Text = "Enable logging";
             loggingSwitch.UseVisualStyleBackColor = true;
@@ -1256,7 +1268,7 @@ namespace MinimalFirewall
             popupsSwitch.Location = new Point(29, 200);
             popupsSwitch.Margin = new Padding(3, 4, 3, 4);
             popupsSwitch.Name = "popupsSwitch";
-            popupsSwitch.Size = new Size(216, 24);
+            popupsSwitch.Size = new System.Drawing.Size(216, 24);
             popupsSwitch.TabIndex = 3;
             popupsSwitch.Text = "Enable pop-up notifications";
             popupsSwitch.UseVisualStyleBackColor = true;
@@ -1268,7 +1280,7 @@ namespace MinimalFirewall
             darkModeSwitch.Location = new Point(29, 153);
             darkModeSwitch.Margin = new Padding(3, 4, 3, 4);
             darkModeSwitch.Name = "darkModeSwitch";
-            darkModeSwitch.Size = new Size(105, 24);
+            darkModeSwitch.Size = new System.Drawing.Size(105, 24);
             darkModeSwitch.TabIndex = 2;
             darkModeSwitch.Text = "Dark Mode";
             darkModeSwitch.UseVisualStyleBackColor = true;
@@ -1280,10 +1292,11 @@ namespace MinimalFirewall
             startOnStartupSwitch.Location = new Point(29, 107);
             startOnStartupSwitch.Margin = new Padding(3, 4, 3, 4);
             startOnStartupSwitch.Name = "startOnStartupSwitch";
-            startOnStartupSwitch.Size = new Size(159, 24);
+            startOnStartupSwitch.Size = new System.Drawing.Size(159, 24);
             startOnStartupSwitch.TabIndex = 1;
             startOnStartupSwitch.Text = "Start with Windows";
             startOnStartupSwitch.UseVisualStyleBackColor = true;
+            startOnStartupSwitch.CheckedChanged += startOnStartupSwitch_CheckedChanged;
             // 
             // closeToTraySwitch
             // 
@@ -1293,7 +1306,7 @@ namespace MinimalFirewall
             closeToTraySwitch.Location = new Point(29, 60);
             closeToTraySwitch.Margin = new Padding(3, 4, 3, 4);
             closeToTraySwitch.Name = "closeToTraySwitch";
-            closeToTraySwitch.Size = new Size(114, 24);
+            closeToTraySwitch.Size = new System.Drawing.Size(114, 24);
             closeToTraySwitch.TabIndex = 0;
             closeToTraySwitch.Text = "Close to tray";
             closeToTraySwitch.UseVisualStyleBackColor = true;
