@@ -4,7 +4,6 @@ using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
 using System.Collections.Concurrent;
-
 namespace MinimalFirewall
 {
     public partial class FirewallEventListenerService : IDisposable
@@ -23,7 +22,6 @@ namespace MinimalFirewall
         public FirewallActionsService? ActionsService { get; set; }
 
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
-
         public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService)
         {
             _dataService = dataService;
@@ -121,7 +119,6 @@ namespace MinimalFirewall
                 }
 
                 var matchingWildcard = _wildcardRuleService.Match(appPath);
-
                 if (matchingWildcard != null)
                 {
                     if (IsHostProcess(appPath) && !string.IsNullOrEmpty(serviceName) && matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
@@ -249,8 +246,8 @@ namespace MinimalFirewall
         {
             return rawDirection switch
             {
-                "%%14592" => "Inbound",
-                "%%14593" => "Outbound",
+                "%%14592" => "Incoming",
+                "%%14593" => "Outgoing",
                 _ => rawDirection,
             };
         }

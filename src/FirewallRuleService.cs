@@ -232,5 +232,31 @@ namespace MinimalFirewall
             }
             return rulesToRemove;
         }
+
+        public void DeleteAllMfwRules()
+        {
+            if (_firewallPolicy == null) return;
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            foreach (var rule in allRules)
+            {
+                if (rule != null && !string.IsNullOrEmpty(rule.Grouping) && rule.Grouping.Contains("MFW"))
+                {
+                    rulesToRemove.Add(rule.Name);
+                }
+            }
+
+            foreach (var ruleName in rulesToRemove)
+            {
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
+            }
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿// File: MainForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -148,7 +147,7 @@ namespace MinimalFirewall
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
             _trafficMonitorViewModel = new TrafficMonitorViewModel();
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
-            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _firewallPolicy);
+            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _firewallPolicy, _wildcardRuleService);
             _eventListenerService.ActionsService = _actionsService;
             _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService);
             _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService);
@@ -238,7 +237,6 @@ namespace MinimalFirewall
 
             await DisplayCurrentTabData();
             UpdateThemeAndColors();
-
             statusForm.Close();
 
             this.Opacity = 1;
@@ -414,7 +412,6 @@ namespace MinimalFirewall
             _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
 
-            _startupService.SetStartup(_appSettings.StartOnSystemStartup);
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
             if (_appSettings.IsTrafficMonitorEnabled)
             {
@@ -427,6 +424,15 @@ namespace MinimalFirewall
 
             UpdateIconColumnVisibility();
             _appSettings.Save();
+        }
+
+        private void startOnStartupSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null && _startupService != null)
+            {
+                _appSettings.StartOnSystemStartup = startOnStartupSwitch.Checked;
+                _startupService.SetStartup(_appSettings.StartOnSystemStartup);
+            }
         }
 
         private void managePublishersButton_Click(object sender, EventArgs e)
@@ -1327,6 +1333,34 @@ namespace MinimalFirewall
                 e.Graphics.DrawBezier(arrowPen, startPoint, controlPoint1, controlPoint2, endPoint);
             }
         }
+
+        private async void deleteAllRulesButton_Click(object sender, EventArgs e)
+        {
+            var result = Messenger.MessageBox("This will permanently delete all firewall rules created by this application. This action cannot be undone. Are you sure you want to continue?",
+                "Delete All Rules", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                _actionsService.DeleteAllMfwRules();
+                await ForceDataRefreshAsync();
+                Messenger.MessageBox("All Minimal Firewall rules have been deleted.", "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+            }
+        }
+        private async void revertFirewallButton_Click(object sender, EventArgs e)
+        {
+            var result = Messenger.MessageBox("WARNING: This will reset your ENTIRE Windows Firewall configuration to its default state. " +
+                "All custom rules, including those not created by this application, will be deleted. This action is irreversible.\n\n" +
+                "Are you absolutely sure you want to continue?",
+                "Revert Windows Firewall Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                AdminTaskService.ResetFirewall();
+                await ForceDataRefreshAsync();
+                Messenger.MessageBox("Windows Firewall has been reset to its default settings. It is recommended to restart the application.",
+                    "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+            }
+        }
         #endregion
 
         #region DPI Scaling Helper
@@ -1349,9 +1383,7 @@ namespace MinimalFirewall
                     item.SubItems.AddRange(new[]
                     {
                         rule.Name,
-                        rule.IsEnabled.ToString(),
                         rule.Status,
-                        rule.Direction.ToString(),
                         rule.ProtocolName,
                         rule.LocalPorts.Count > 0 ? string.Join(",", rule.LocalPorts) : "Any",
                         rule.RemotePorts.Count > 0 ? string.Join(",", rule.RemotePorts) : "Any",
@@ -1960,30 +1992,37 @@ namespace MinimalFirewall
             direction = "Outbound";
 
             ListView? activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
-            if (activeListView?.SelectedIndices.Count == 0 && activeListView?.SelectedItems.Count == 0)
+
+            if (activeListView == null)
             {
-                if (activeListView?.Name == "dashboardListView")
+                if (mainTabControl.SelectedTab?.Name == "dashboardTabPage")
                 {
                     var dashboard = mainTabControl.SelectedTab?.Controls.OfType<DashboardControl>().FirstOrDefault();
                     if (dashboard != null)
                     {
                         activeListView = dashboard.Controls.OfType<ButtonListView>().FirstOrDefault();
-                        if (activeListView?.SelectedItems.Count == 0) return false;
                     }
-                    else return false;
                 }
-                else return false;
+            }
+
+            if (activeListView == null) return false;
+
+            if ((activeListView.VirtualMode && activeListView.SelectedIndices.Count == 0) ||
+                (!activeListView.VirtualMode && activeListView.SelectedItems.Count == 0))
+            {
+                return false;
             }
 
             if (activeListView.VirtualMode)
             {
                 int index = activeListView.SelectedIndices[0];
-                if (activeListView.Name == "rulesListView" && index < _virtualRulesData.Count)
+                if (activeListView.Name == "rulesListView" && index >= 0 && index < _virtualRulesData.Count)
                 {
                     var rule = _virtualRulesData[index];
                     appPath = rule.ApplicationName;
+                    direction = rule.Direction.ToString();
                 }
-                else if (activeListView.Name == "liveConnectionsListView" && index < _virtualLiveConnectionsData.Count)
+                else if (activeListView.Name == "liveConnectionsListView" && index >= 0 && index < _virtualLiveConnectionsData.Count)
                 {
                     var conn = _virtualLiveConnectionsData[index];
                     appPath = conn.ProcessPath;
@@ -2001,6 +2040,7 @@ namespace MinimalFirewall
                         break;
                     case FirewallRuleChange change:
                         appPath = change.Rule?.ApplicationName;
+                        direction = change.Rule?.Direction.ToString();
                         break;
                     default:
                         return false;
@@ -2065,15 +2105,32 @@ namespace MinimalFirewall
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ListView? activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
-            if (activeListView == null || (activeListView.SelectedItems.Count == 0 && activeListView.SelectedIndices.Count == 0)) return;
+
+            if (mainTabControl.SelectedTab?.Name == "dashboardTabPage")
+            {
+                var dashboard = mainTabControl.SelectedTab?.Controls.OfType<DashboardControl>().FirstOrDefault();
+                if (dashboard != null)
+                {
+                    activeListView = dashboard.Controls.OfType<ButtonListView>().FirstOrDefault();
+                }
+            }
+
+            if (activeListView == null) return;
+
+            if ((activeListView.VirtualMode && activeListView.SelectedIndices.Count == 0) ||
+                (!activeListView.VirtualMode && activeListView.SelectedItems.Count == 0))
+            {
+                return;
+            }
+
             var details = new StringBuilder();
             object? tag = null;
 
             if (activeListView.VirtualMode)
             {
                 int index = activeListView.SelectedIndices[0];
-                if (activeListView.Name == "rulesListView" && index < _virtualRulesData.Count) tag = _virtualRulesData[index];
-                else if (activeListView.Name == "liveConnectionsListView" && index < _virtualLiveConnectionsData.Count) tag = _virtualLiveConnectionsData[index];
+                if (activeListView.Name == "rulesListView" && index >= 0 && index < _virtualRulesData.Count) tag = _virtualRulesData[index];
+                else if (activeListView.Name == "liveConnectionsListView" && index >= 0 && index < _virtualLiveConnectionsData.Count) tag = _virtualLiveConnectionsData[index];
             }
             else
             {
@@ -2103,7 +2160,7 @@ namespace MinimalFirewall
                         details.AppendLine($"Application: {agg.ApplicationName}");
                         details.AppendLine($"Service: {agg.ServiceName}");
                     }
-                    details.AppendLine($"Action: {agg.Status} ({agg.Direction})");
+                    details.AppendLine($"Action: {agg.Status}");
                     details.AppendLine($"Protocol: {agg.ProtocolName}");
                     details.AppendLine($"Remote Addresses: {(agg.RemoteAddresses.Any() ? string.Join(", ", agg.RemoteAddresses) : "Any")}");
                     details.AppendLine($"Description: {agg.Description}");
@@ -2230,15 +2287,17 @@ namespace MinimalFirewall
         {
             return columnIndex switch
             {
-                2 => rule => rule.IsEnabled,
-                3 => rule => rule.Status,
-                4 => rule => rule.Direction,
-                5 => rule => rule.ProtocolName,
-                10 => rule => rule.ApplicationName,
-                11 => rule => rule.ServiceName,
-                12 => rule => rule.Profiles,
-                13 => rule => rule.Grouping,
-                14 => rule => rule.Description,
+                2 => rule => rule.Status,
+                3 => rule => rule.ProtocolName,
+                4 => rule => string.Join(",", rule.LocalPorts),
+                5 => rule => string.Join(",", rule.RemotePorts),
+                6 => rule => string.Join(",", rule.LocalAddresses),
+                7 => rule => string.Join(",", rule.RemoteAddresses),
+                8 => rule => rule.ApplicationName,
+                9 => rule => rule.ServiceName,
+                10 => rule => rule.Profiles,
+                11 => rule => rule.Grouping,
+                12 => rule => rule.Description,
                 _ => rule => rule.Name,
             };
         }
@@ -2276,3 +2335,4 @@ namespace MinimalFirewall
         #endregion
     }
 }
+
