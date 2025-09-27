@@ -1,6 +1,7 @@
 ﻿// File: NotifierForm.cs
 using DarkModeForms;
 using System.Drawing;
+
 namespace MinimalFirewall
 {
     public partial class NotifierForm : Form
@@ -90,7 +91,7 @@ namespace MinimalFirewall
 
         private void allowButton_Click(object sender, EventArgs e)
         {
-            Result = NotifierResult.Allow;
+            Result = wildcardCheckBox.Checked ? NotifierResult.CreateWildcard : NotifierResult.Allow;
             TrustPublisher = trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
             this.DialogResult = DialogResult.OK;
             this.Close();
@@ -98,7 +99,7 @@ namespace MinimalFirewall
 
         private void blockButton_Click(object sender, EventArgs e)
         {
-            Result = NotifierResult.Block;
+            Result = wildcardCheckBox.Checked ? NotifierResult.CreateWildcard : NotifierResult.Block;
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
@@ -115,11 +116,12 @@ namespace MinimalFirewall
             tempAllowContextMenu.Show(tempAllowButton, new Point(0, tempAllowButton.Height));
         }
 
-        private void createWildcardButton_Click(object sender, EventArgs e)
+        private void wildcardCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            Result = NotifierResult.CreateWildcard;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            bool isWildcard = wildcardCheckBox.Checked;
+            tempAllowButton.Visible = !isWildcard;
+            ignoreButton.Visible = !isWildcard;
+            trustPublisherCheckBox.Visible = !isWildcard && trustPublisherCheckBox.Text.Length > 0;
         }
     }
 }

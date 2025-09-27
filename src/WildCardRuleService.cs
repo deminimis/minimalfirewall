@@ -41,12 +41,6 @@ namespace MinimalFirewall
             }
         }
 
-        public void ClearRules()
-        {
-            _rules.Clear();
-            SaveRules();
-        }
-
         private void LoadRules()
         {
             try
