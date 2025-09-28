@@ -14,11 +14,11 @@ using Timer = System.Windows.Forms.Timer;
 
 namespace DarkModeForms
 {
-    /* Author: BlueMystic (bluemystic.play@gmail.com)  2024 */
     public static class Messenger
     {
         #region Events
-        private static Action<object, ValidateEventArgs>? ValidateControlsHandler;
+        private static Action<object, ValidateEventArgs>?
+        ValidateControlsHandler;
 
         public static event Action<object, ValidateEventArgs>? ValidateControls
         {
@@ -44,19 +44,24 @@ namespace DarkModeForms
             string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK,
             MessageBoxIcon icon = MessageBoxIcon.Information, bool pIsDarkMode = true)
         {
-            MsgIcon Icon = MsgIcon.None;
+            MsgIcon msgIcon = MsgIcon.None;
             switch (icon)
             {
-                case MessageBoxIcon.Information: Icon = MsgIcon.Info; break;
-                case MessageBoxIcon.Exclamation: Icon = MsgIcon.Warning; break;
-                case MessageBoxIcon.Question: Icon = MsgIcon.Question; break;
-                case MessageBoxIcon.Error: Icon = MsgIcon.Error; break;
+                case MessageBoxIcon.Information:
+                    msgIcon = MsgIcon.Info;
+                    break;
+                case MessageBoxIcon.Exclamation:
+                    msgIcon = MsgIcon.Warning; break;
+                case MessageBoxIcon.Question:
+                    msgIcon = MsgIcon.Question; break;
+                case MessageBoxIcon.Error:
+                    msgIcon = MsgIcon.Error; break;
                 case MessageBoxIcon.None:
                 default:
                     break;
             }
 
-            return MessageBox(Message, title, Icon, buttons, pIsDarkMode);
+            return MessageBox(Message, title, msgIcon, buttons, pIsDarkMode);
         }
 
 
@@ -70,7 +75,8 @@ namespace DarkModeForms
         public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK,
                                               MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
         {
-            return MessageBox(Message, title, icon, buttons, pIsDarkMode, owner: null);
+            return MessageBox(Message, title,
+            icon, buttons, pIsDarkMode, owner: null);
         }
 
         public static DialogResult MessageBox(Form pOwner, string Message, string title,
@@ -80,7 +86,7 @@ namespace DarkModeForms
         }
 
         public static DialogResult MessageBox(
-            string Message, string title, MsgIcon Icon,
+            string Message, string title, MsgIcon icon,
             MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true,
             MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
         {
@@ -101,7 +107,10 @@ namespace DarkModeForms
             }
 
             DarkModeCS DMode = new DarkModeCS(form)
-            { ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode };
+            {
+                ColorMode = pIsDarkMode ?
+            DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+            };
             DMode.ApplyTheme(pIsDarkMode);
 
             Base64Icons _Icons = new Base64Icons();
@@ -139,7 +148,9 @@ namespace DarkModeForms
                     form.KeyDown += (s, e) =>
                     { if (e.KeyCode == Keys.Escape) { form.Close(); } };
                     form.FormClosed += (s, e) =>
-                    { form.DialogResult = DialogResult.OK; };
+                    {
+                        form.DialogResult = DialogResult.OK;
+                    };
                     break;
 
                 case MessageBoxButtons.OKCancel:
@@ -155,7 +166,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"],
+                        Text
+                        = ButtonTranslations["Cancel"],
                         FlatStyle = FlatStyle.System
                     });
                     form.AcceptButton = CmdButtons[0];
@@ -173,13 +185,15 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Retry,
-                        Text = ButtonTranslations["Retry"]
+                        Text
+                        = ButtonTranslations["Retry"]
                     });
                     CmdButtons.Add(new Button
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Ignore,
-                        Text = ButtonTranslations["Ignore"]
+                        Text
+                        = ButtonTranslations["Ignore"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.ControlBox = false;
@@ -196,13 +210,15 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.No,
-                        Text = ButtonTranslations["No"]
+                        Text
+                        = ButtonTranslations["No"]
                     });
                     CmdButtons.Add(new Button
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"]
+                        Text
+                        = ButtonTranslations["Cancel"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[2];
@@ -219,7 +235,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.No,
-                        Text = ButtonTranslations["No"]
+                        Text
+                        = ButtonTranslations["No"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.ControlBox = false;
@@ -237,7 +254,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"]
+                        Text
+                        = ButtonTranslations["Cancel"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[1];
@@ -283,10 +301,10 @@ namespace DarkModeForms
             #region Icon
 
             Rectangle picBox = new Rectangle(2, 10, 0, 0);
-            if (Icon != MsgIcon.None)
+            if (icon != MsgIcon.None)
             {
                 PictureBox picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(64, 64) };
-                picIcon.Image = _Icons.GetIcon(Icon);
+                picIcon.Image = _Icons.GetIcon(icon);
                 form.Controls.Add(picIcon);
 
                 picBox.Size = new Size(64, 64);
@@ -306,7 +324,8 @@ namespace DarkModeForms
                 TextAlign = ContentAlignment.MiddleLeft,
                 Location = new Point(picBox.X + picBox.Width + 4, picBox.Y),
                 MaximumSize = new Size(form.ClientSize.Width - (picBox.X + picBox.Width) + 8, 0),
-                MinimumSize = new Size(form.ClientSize.Width - (picBox.X + picBox.Width) + 8, 64)
+                MinimumSize = new Size(form.ClientSize.Width - (picBox.X +
+                picBox.Width) + 8, 64)
             };
             lblPrompt.BringToFront();
             form.Controls.Add(lblPrompt);
@@ -343,7 +362,7 @@ namespace DarkModeForms
 
         public static DialogResult InputBox(
             string title, string promptText, ref List<KeyValue> Fields,
-            MsgIcon Icon = 0, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true)
+            MsgIcon icon = MsgIcon.None, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true)
         {
             Form form = new Form
             {
@@ -375,10 +394,10 @@ namespace DarkModeForms
 
             #region Icon
 
-            if (Icon != MsgIcon.None)
+            if (icon != MsgIcon.None)
             {
                 PictureBox picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(48, 48) };
-                picIcon.Image = _Icons.GetIcon(Icon);
+                picIcon.Image = _Icons.GetIcon(icon);
                 bottomPanel.Controls.Add(picIcon);
 
                 picIcon.SetBounds(0, 2, 48, 48);
@@ -409,14 +428,16 @@ namespace DarkModeForms
                     CmdButtons.Add(new Button
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                        DialogResult = DialogResult.OK,
+                        DialogResult =
+                        DialogResult.OK,
                         Text = ButtonTranslations["OK"]
                     });
                     CmdButtons.Add(new Button
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"]
+                        Text
+                        = ButtonTranslations["Cancel"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[1];
@@ -433,7 +454,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Abort,
-                        Text = ButtonTranslations["Abort"]
+                        Text
+                        = ButtonTranslations["Abort"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[1];
@@ -450,13 +472,15 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.No,
-                        Text = ButtonTranslations["No"]
+                        Text
+                        = ButtonTranslations["No"]
                     });
                     CmdButtons.Add(new Button
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"]
+                        Text
+                        = ButtonTranslations["Cancel"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[2];
@@ -473,7 +497,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.No,
-                        Text = ButtonTranslations["No"]
+                        Text
+                        = ButtonTranslations["No"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[1];
@@ -490,7 +515,8 @@ namespace DarkModeForms
                     {
                         Anchor = AnchorStyles.Top | AnchorStyles.Right,
                         DialogResult = DialogResult.Cancel,
-                        Text = ButtonTranslations["Cancel"]
+                        Text
+                        = ButtonTranslations["Cancel"]
                     });
                     form.AcceptButton = CmdButtons[0];
                     form.CancelButton = CmdButtons[1];
@@ -502,7 +528,8 @@ namespace DarkModeForms
 
             foreach (var _button in CmdButtons)
             {
-                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? DMode.OScolors.Accent : DMode.OScolors.Control;
+                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ?
+                DMode.OScolors.Accent : DMode.OScolors.Control;
                 bottomPanel.Controls.Add(_button);
 
                 _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
@@ -740,7 +767,6 @@ namespace DarkModeForms
                 }
 
                 Contenedor.Controls.Add(field_label, 0, currentRow);
-
                 if (field_Control != null)
                 {
                     if (field.ValueType == ValueTypes.Multiline)
@@ -802,31 +828,49 @@ namespace DarkModeForms
 
         #region Private Stuff
 
-        private static Dictionary<Control, Timer>? timers;
+        private static readonly Dictionary<Control, (Timer timer, EventHandler disposedHandler)> timers = new();
 
         private static void AddTextChangedDelay<TControl>(TControl control, int milliseconds, Action<TControl> action) where TControl : Control
         {
-            if (timers == null)
+            if (timers.TryGetValue(control, out var existingEntry))
             {
-                timers = new Dictionary<Control, Timer>();
-            }
-
-            if (timers.ContainsKey(control))
-            {
-                timers[control].Stop();
+                existingEntry.timer.Stop();
+                existingEntry.timer.Dispose();
+                control.Disposed -= existingEntry.disposedHandler;
                 timers.Remove(control);
             }
 
-            var timer = new Timer();
-            timer.Interval = milliseconds;
+            var timer = new Timer { Interval = milliseconds };
+            EventHandler? disposedHandler = null;
+
             timer.Tick += (sender, e) =>
             {
                 timer.Stop();
-                timers.Remove(control);
+                if (timers.ContainsKey(control))
+                {
+                    timers.Remove(control);
+                }
+                if (disposedHandler != null)
+                {
+                    control.Disposed -= disposedHandler;
+                }
                 action(control);
+                timer.Dispose();
             };
+
+            disposedHandler = (sender, e) =>
+            {
+                if (timers.TryGetValue(control, out var entryToDispose))
+                {
+                    entryToDispose.timer.Stop();
+                    entryToDispose.timer.Dispose();
+                    timers.Remove(control);
+                }
+            };
+
+            control.Disposed += disposedHandler;
             timer.Start();
-            timers.Add(control, timer);
+            timers.Add(control, (timer, disposedHandler));
         }
 
         public static string GetCurrentLanguage(string pDefault = "en")
@@ -945,7 +989,7 @@ namespace DarkModeForms
         {
         }
 
-        public KeyValue(string pKey, string pValue, ValueTypes pType = 0, List<KeyValue>? pDataSet = null)
+        public KeyValue(string pKey, string pValue, ValueTypes pType = ValueTypes.String, List<KeyValue>? pDataSet = null)
         {
             Key = pKey;
             Value = pValue;
@@ -1053,7 +1097,8 @@ namespace DarkModeForms
         public string Name { get; set; } = string.Empty;
         public string Base64Data { get; set; } = string.Empty;
 
-        public Image? Image
+        public Image?
+        Image
         {
             get
             {
@@ -1080,9 +1125,11 @@ namespace DarkModeForms
             }
         }
 
-        public Image? GetIcon(string pName)
+        public Image?
+        GetIcon(string pName)
         {
-            Image? _ret = null;
+            Image?
+            _ret = null;
             if (_Icons != null && _Icons.Count > 0)
             {
                 var Found = _Icons.Find(x => x.Name == pName);

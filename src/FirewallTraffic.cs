@@ -42,7 +42,6 @@ namespace Firewall.Traffic
                     int rowCount = Marshal.ReadInt32(pTcpTable);
                     var connections = new List<TcpTrafficRow>(rowCount);
                     IntPtr rowPtr = pTcpTable + 4;
-
                     for (int i = 0; i < rowCount; i++)
                     {
                         if (family == AF_INET)
@@ -131,41 +130,20 @@ namespace Firewall.Traffic.ViewModels
     public class TcpConnectionViewModel : INotifyPropertyChanged
     {
         public TcpTrafficTracker.TcpTrafficRow Connection { get; }
-        public string ProcessName { get; private set; } = "Loading...";
-        public string ProcessPath { get; private set; } = string.Empty;
+        public string ProcessName { get; private set; }
+        public string ProcessPath { get; private set; }
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
-        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection)
+        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path) processInfo)
         {
             Connection = connection;
+            ProcessName = processInfo.Name;
+            ProcessPath = processInfo.Path;
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
             BlockRemoteIpCommand = new RelayCommand(BlockIp, () => true);
-            LoadProcessInfo();
-        }
-
-        private void LoadProcessInfo()
-        {
-            try
-            {
-                var p = Process.GetProcessById(Connection.ProcessId);
-                ProcessName = p.ProcessName;
-                try
-                {
-                    if (p.MainModule != null)
-                    {
-                        ProcessPath = p.MainModule.FileName;
-                    }
-                }
-                catch (Win32Exception)
-                {
-                    ProcessPath = string.Empty;
-                }
-            }
-            catch { ProcessName = "System"; }
-            OnPropertyChanged(nameof(ProcessName));
         }
 
         private void KillProcess()
@@ -193,7 +171,8 @@ namespace Firewall.Traffic.ViewModels
 
     public class TrafficMonitorViewModel
     {
-        private System.Threading.Timer? _timer;
+        private System.Threading.Timer?
+        _timer;
         private bool _isRefreshing = false;
         private readonly SynchronizationContext? _syncContext;
         public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = [];
@@ -205,7 +184,7 @@ namespace Firewall.Traffic.ViewModels
         public void StartMonitoring()
         {
             if (_timer != null) return;
-            _timer = new System.Threading.Timer(RefreshConnections, null, 0, 2000);
+            _timer = new System.Threading.Timer(RefreshConnections, null, 0, 5000);
         }
 
         public void StopMonitoring()
@@ -222,31 +201,53 @@ namespace Firewall.Traffic.ViewModels
 
             try
             {
-                var latestConnections = await Task.Run(() => TcpTrafficTracker.GetConnections());
+                var newVms = await Task.Run(() =>
+                {
+                    var connections = TcpTrafficTracker.GetConnections().Distinct().ToList();
+                    var processInfoCache = new Dictionary<int, (string Name, string Path)>();
+                    var viewModels = new List<TcpConnectionViewModel>();
+
+                    foreach (var conn in connections)
+                    {
+                        if (!processInfoCache.TryGetValue(conn.ProcessId, out var info))
+                        {
+                            try
+                            {
+                                using (var p = Process.GetProcessById(conn.ProcessId))
+                                {
+                                    string name = p.ProcessName;
+                                    string path = string.Empty;
+                                    try { if (p.MainModule != null) path = p.MainModule.FileName; }
+                                    catch (Win32Exception) { path = "N/A (Access Denied)"; }
+                                    info = (name, path);
+                                }
+                            }
+                            catch (ArgumentException) { info = ("(Exited)", string.Empty); }
+                            catch { info = ("System", string.Empty); }
+                            processInfoCache[conn.ProcessId] = info;
+                        }
+                        viewModels.Add(new TcpConnectionViewModel(conn, info));
+                    }
+                    return viewModels;
+                });
+
                 _syncContext?.Post(_ =>
                 {
-                    var latestViewModelMap = latestConnections
-                        .Distinct()
-                        .Select(c => new TcpConnectionViewModel(c))
-                        .ToDictionary(vm => vm.Connection);
+                    if (ActiveConnections == null) return;
 
-                    var existingConnections = ActiveConnections.Select(vm => vm.Connection).ToHashSet();
+                    var newViewModelMap = newVms.ToDictionary(vm => vm.Connection);
+                    var existingViewModelMap = ActiveConnections.ToDictionary(vm => vm.Connection);
 
-                    var itemsToRemove = ActiveConnections
-                        .Where(vm => !latestViewModelMap.ContainsKey(vm.Connection))
-                        .ToList();
-
-                    foreach (var item in itemsToRemove)
+                    var keysToRemove = existingViewModelMap.Keys.Except(newViewModelMap.Keys).ToList();
+                    foreach (var key in keysToRemove)
                     {
-                        ActiveConnections.Remove(item);
+                        ActiveConnections.Remove(existingViewModelMap[key]);
                     }
 
-                    foreach (var kvp in latestViewModelMap)
+                    var keysToAdd = newViewModelMap.Keys.Except(existingViewModelMap.Keys).ToList();
+                    foreach (var key in keysToAdd)
                     {
-                        if (!existingConnections.Contains(kvp.Key))
-                        {
-                            ActiveConnections.Add(kvp.Value);
-                        }
+                        ActiveConnections.Add(newViewModelMap[key]);
                     }
                 }, null);
             }
@@ -259,7 +260,8 @@ namespace Firewall.Traffic.ViewModels
 
     public class RelayCommand(Action execute, Func<bool> canExecute) : ICommand
     {
-        public event EventHandler? CanExecuteChanged;
+        public event EventHandler?
+        CanExecuteChanged;
         public bool CanExecute(object? p) => canExecute();
         public void Execute(object? p) => execute();
         public void RaiseCanExecuteChanged()
