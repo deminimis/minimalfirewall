@@ -1,4 +1,4 @@
-﻿// IconService.cs
+﻿// File: IconService.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -42,7 +42,6 @@ namespace MinimalFirewall
         private void AddDefaultIcon()
         {
             if (_imageList == null || _imageList.Images.ContainsKey("default")) return;
-
             try
             {
                 var bmp = new Bitmap(16, 16);
@@ -63,10 +62,8 @@ namespace MinimalFirewall
         private void AddSystemIcon()
         {
             if (_imageList == null || _imageList.Images.ContainsKey("system_icon")) return;
-
             try
             {
-                // Use the existing 'advanced.png' as the generic system icon
                 if (_imageList.Images.ContainsKey("advanced.png"))
                 {
                     Image systemImage = _imageList.Images["advanced.png"];
@@ -126,20 +123,20 @@ namespace MinimalFirewall
 
         public void ClearCache()
         {
-            if (_imageList != null)
+            if (_imageList == null)
             {
-                var keysToRemove = new List<string>();
-                foreach (string key in _imageList.Images.Keys)
-                {
-                    if (key != "default" && key != "system_icon" && !_imageList.Images.ContainsKey(key))
-                    {
-                        keysToRemove.Add(key);
-                    }
-                }
+                _iconCache.Clear();
+                return;
+            }
 
-                foreach (var key in keysToRemove)
+            foreach (var key in _iconCache.Keys)
+            {
+                if (key != "default" && key != "system_icon")
                 {
-                    _imageList.Images.RemoveByKey(key);
+                    if (_imageList.Images.ContainsKey(key))
+                    {
+                        _imageList.Images.RemoveByKey(key);
+                    }
                 }
             }
             _iconCache.Clear();

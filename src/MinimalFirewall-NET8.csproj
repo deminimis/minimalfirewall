@@ -14,8 +14,8 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.2.1.0</AssemblyVersion>
-		<FileVersion>2.2.1.0</FileVersion>
+		<AssemblyVersion>2.2.3.0</AssemblyVersion>
+		<FileVersion>2.2.3.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
@@ -65,6 +65,11 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -72,6 +77,13 @@
 			<Generator>ResXFileCodeGenerator</Generator>
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Properties\Settings.settings">
+	    <Generator>SettingsSingleFileGenerator</Generator>
+	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+	  </None>
 	</ItemGroup>
 
 </Project>

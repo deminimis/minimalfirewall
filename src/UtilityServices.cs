@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-
 namespace MinimalFirewall
 {
     public class AdminTaskService
@@ -14,6 +13,11 @@ namespace MinimalFirewall
         {
             string fullCommand = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"";
             Execute(fullCommand, "powershell.exe", out _);
+        }
+
+        public static void ResetFirewall()
+        {
+            Execute("advfirewall reset", "netsh.exe", out _);
         }
 
         public static void SetAuditPolicy(bool enable)
@@ -151,7 +155,7 @@ namespace MinimalFirewall
         public StartupService()
         {
             _appName = Assembly.GetExecutingAssembly().GetName().Name;
-            _appPath = Process.GetCurrentProcess().MainModule?.FileName;
+            _appPath = Environment.ProcessPath;
         }
 
         public void SetStartup(bool isEnabled)

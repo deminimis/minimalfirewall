@@ -24,6 +24,7 @@ namespace MinimalFirewall
         private ListViewItem? _hoveredItem;
         [Category("Behavior")]
         public Mode ViewMode { get; set; } = Mode.Dashboard;
+
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DarkModeCS? DarkMode { get; set; }
@@ -33,6 +34,7 @@ namespace MinimalFirewall
         public event EventHandler<ListViewItemEventArgs>? IgnoreClicked;
         public event EventHandler<ListViewItemEventArgs>? AcceptClicked;
         public event EventHandler<ListViewItemEventArgs>? DeleteClicked;
+
         public ButtonListView()
         {
             this.OwnerDraw = true;
@@ -84,7 +86,11 @@ namespace MinimalFirewall
                 }
             }
 
-            e.Graphics.FillRectangle(new SolidBrush(backColor), e.Bounds);
+            using (var backBrush = new SolidBrush(backColor))
+            {
+                e.Graphics.FillRectangle(backBrush, e.Bounds);
+            }
+
             if (_hoveredItem == e.Item && !e.Item.Selected)
             {
                 using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
@@ -115,6 +121,7 @@ namespace MinimalFirewall
                     var allowButtonRect = new Rectangle(center, new Size(buttonWidth, buttonHeight));
                     var blockButtonRect = new Rectangle(allowButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                     var ignoreButtonRect = new Rectangle(blockButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
+
                     PushButtonState GetState(Rectangle rect) => _pressedButtonBounds == rect && _pressedItem == e.Item ? PushButtonState.Pressed : _hotButtonBounds == rect ? PushButtonState.Hot : PushButtonState.Normal;
 
                     DrawManualButton(e.Graphics, allowButtonRect, "Allow", GetState(allowButtonRect));
@@ -126,6 +133,7 @@ namespace MinimalFirewall
                     var acceptButtonRect = new Rectangle(center, new Size(buttonWidth, buttonHeight));
                     var deleteButtonRect = new Rectangle(acceptButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                     var ignoreButtonRect = new Rectangle(deleteButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
+
                     PushButtonState GetState(Rectangle rect) => _pressedButtonBounds == rect && _pressedItem == e.Item ? PushButtonState.Pressed : _hotButtonBounds == rect ? PushButtonState.Hot : PushButtonState.Normal;
 
                     DrawManualButton(e.Graphics, acceptButtonRect, "Accept", GetState(acceptButtonRect));
@@ -172,6 +180,7 @@ namespace MinimalFirewall
                     int buttonSpacing = Scale(5, CreateGraphics());
                     Rectangle bounds = hitTest.SubItem.Bounds;
                     Point center = new Point(bounds.Left + buttonSpacing, bounds.Y + (bounds.Height - buttonHeight) / 2);
+
                     if (this.ViewMode == Mode.Dashboard)
                     {
                         Rectangle allowButtonRect = new Rectangle(center, new Size(buttonWidth, buttonHeight));
@@ -179,6 +188,7 @@ namespace MinimalFirewall
 
                         Rectangle blockButtonRect = new Rectangle(allowButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                         if (blockButtonRect.Contains(e.Location)) newHotBounds = blockButtonRect;
+
                         Rectangle ignoreButtonRect = new Rectangle(blockButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                         if (ignoreButtonRect.Contains(e.Location)) newHotBounds = ignoreButtonRect;
                     }
@@ -189,6 +199,7 @@ namespace MinimalFirewall
 
                         var deleteButtonRect = new Rectangle(acceptButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                         if (deleteButtonRect.Contains(e.Location)) newHotBounds = deleteButtonRect;
+
                         var ignoreButtonRect = new Rectangle(deleteButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                         if (ignoreButtonRect.Contains(e.Location)) newHotBounds = ignoreButtonRect;
                     }
@@ -267,6 +278,7 @@ namespace MinimalFirewall
 
             var hitTest = this.HitTest(e.Location);
             if (hitTest.Item == null || hitTest.SubItem == null) return;
+
             int buttonColumnIndex = (this.ViewMode == Mode.Dashboard) ? 1 : 0;
             if (hitTest.Item.SubItems.IndexOf(hitTest.SubItem) == buttonColumnIndex)
             {
@@ -275,11 +287,13 @@ namespace MinimalFirewall
                 int buttonSpacing = Scale(5, CreateGraphics());
                 Rectangle bounds = hitTest.SubItem.Bounds;
                 Point center = new Point(bounds.Left + buttonSpacing, bounds.Y + (bounds.Height - buttonHeight) / 2);
+
                 if (ViewMode == Mode.Dashboard)
                 {
                     Rectangle allowButtonRect = new Rectangle(center, new Size(buttonWidth, buttonHeight));
                     Rectangle blockButtonRect = new Rectangle(allowButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                     Rectangle ignoreButtonRect = new Rectangle(blockButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
+
                     if (allowButtonRect.Contains(e.Location)) AllowClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
                     else if (blockButtonRect.Contains(e.Location)) BlockClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
                     else if (ignoreButtonRect.Contains(e.Location)) IgnoreClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
@@ -289,6 +303,7 @@ namespace MinimalFirewall
                     var acceptButtonRect = new Rectangle(center, new Size(buttonWidth, buttonHeight));
                     var deleteButtonRect = new Rectangle(acceptButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
                     var ignoreButtonRect = new Rectangle(deleteButtonRect.Right + buttonSpacing, center.Y, buttonWidth, buttonHeight);
+
                     if (acceptButtonRect.Contains(e.Location)) AcceptClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
                     else if (deleteButtonRect.Contains(e.Location)) DeleteClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
                     else if (ignoreButtonRect.Contains(e.Location)) IgnoreClicked?.Invoke(this, new ListViewItemEventArgs(hitTest.Item));
@@ -305,6 +320,7 @@ namespace MinimalFirewall
             Color defaultBackColor = isDark ? DarkMode.OScolors.SurfaceDark : ControlPaint.Dark(SystemColors.Window, 0.05f);
             Color textColor = isDark ? DarkMode.OScolors.TextActive : SystemColors.ControlText;
             Color currentBackColor = defaultBackColor;
+
             if (state == PushButtonState.Pressed)
             {
                 currentBackColor = isDark ? ControlPaint.Light(defaultBackColor, 1.2f) : ControlPaint.Dark(defaultBackColor, 0.2f);
