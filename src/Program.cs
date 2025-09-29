@@ -12,7 +12,11 @@ namespace MinimalFirewall
             CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+
+            var args = Environment.GetCommandLineArgs();
+            bool startMinimized = args.Contains("-tray", StringComparer.OrdinalIgnoreCase);
+
+            Application.Run(new MainForm(startMinimized));
         }
     }
 }

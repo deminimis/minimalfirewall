@@ -1,4 +1,5 @@
-﻿// File: BackgroundFirewallTaskService.cs
+﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/BackgroundFirewallTaskService.cs
+// File: BackgroundFirewallTaskService.cs
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -74,17 +75,11 @@ namespace MinimalFirewall
                             case FirewallTaskType.AcceptForeignRule:
                                 if (task.Payload is ForeignRuleChangePayload p10) _actionsService.AcceptForeignRule(p10.Change);
                                 break;
-                            case FirewallTaskType.AcknowledgeForeignRule:
-                                if (task.Payload is ForeignRuleChangePayload p11) _actionsService.AcknowledgeForeignRule(p11.Change);
-                                break;
                             case FirewallTaskType.DeleteForeignRule:
                                 if (task.Payload is ForeignRuleChangePayload p12) _actionsService.DeleteForeignRule(p12.Change);
                                 break;
                             case FirewallTaskType.AcceptAllForeignRules:
                                 if (task.Payload is AllForeignRuleChangesPayload p13) _actionsService.AcceptAllForeignRules(p13.Changes);
-                                break;
-                            case FirewallTaskType.AcknowledgeAllForeignRules:
-                                if (task.Payload is AllForeignRuleChangesPayload p14) _actionsService.AcknowledgeAllForeignRules(p14.Changes);
                                 break;
                             case FirewallTaskType.CreateAdvancedRule:
                                 if (task.Payload is CreateAdvancedRulePayload p15) _actionsService.CreateAdvancedRule(p15.ViewModel, p15.InterfaceTypes, p15.IcmpTypesAndCodes);

@@ -1,5 +1,4 @@
-﻿// File: MainForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -67,6 +66,7 @@ namespace MinimalFirewall
         private bool _isRefreshingData = false;
         private bool _isSentryServiceStarted = false;
         private bool _uwpAppsScanned = false;
+        private readonly bool _startMinimized;
 
         private List<AggregatedRuleViewModel> _virtualRulesData = [];
         private List<AggregatedRuleViewModel> _allAggregatedRules = [];
@@ -83,8 +83,9 @@ namespace MinimalFirewall
         #endregion
 
         #region Constructor and Initialization
-        public MainForm()
+        public MainForm(bool startMinimized = false)
         {
+            _startMinimized = startMinimized;
             InitializeComponent();
             using (Graphics g = this.CreateGraphics())
             {
@@ -117,8 +118,7 @@ namespace MinimalFirewall
 
             try
             {
-                Type?
- firewallPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                Type? firewallPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
                 if (firewallPolicyType != null)
                 {
                     _firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(firewallPolicyType)!;
@@ -163,10 +163,8 @@ namespace MinimalFirewall
 
             systemChangesListView.ViewMode = ButtonListView.Mode.Audit;
             systemChangesListView.DarkMode = dm;
-
             systemChangesListView.AcceptClicked += SystemChanges_AcceptClicked;
             systemChangesListView.DeleteClicked += SystemChanges_DeleteClicked;
-            systemChangesListView.IgnoreClicked += SystemChanges_IgnoreClicked;
 
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _firewallPolicy);
 
@@ -223,8 +221,11 @@ namespace MinimalFirewall
         {
             base.OnShown(e);
             using var statusForm = new StatusForm("Scanning firewall rules...");
-            statusForm.Show(this);
-            Application.DoEvents();
+            if (!_startMinimized)
+            {
+                statusForm.Show(this);
+                Application.DoEvents();
+            }
 
             DarkModeCS.ExcludeFromProcessing(rescanButton);
             rescanButton.BackColor = Color.Transparent;
@@ -237,14 +238,21 @@ namespace MinimalFirewall
             _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
 
             await ForceDataRefreshAsync(showStatus: false);
+            if (!_startMinimized)
+            {
+                await DisplayCurrentTabData();
+                UpdateThemeAndColors();
+                statusForm.Close();
 
-            await DisplayCurrentTabData();
-            UpdateThemeAndColors();
-            statusForm.Close();
-
-            this.Opacity = 1;
-            this.ShowInTaskbar = true;
-            this.Activate();
+                this.Opacity = 1;
+                this.ShowInTaskbar = true;
+                this.Activate();
+            }
+            else
+            {
+                Hide();
+                await PrepareForTrayAsync();
+            }
 
             _actionsService.CleanupTemporaryRulesOnStartup();
             if (IsLockedDown())
@@ -292,7 +300,7 @@ namespace MinimalFirewall
                     if (notifyIcon != null)
                     {
                         notifyIcon.Icon = IsLockedDown() ?
- _defaultTrayIcon : _unlockedTrayIcon;
+                            _defaultTrayIcon : _unlockedTrayIcon;
                     }
                 }
             }
@@ -342,7 +350,7 @@ namespace MinimalFirewall
         private void DarkModeSwitch_CheckedChanged(object sender, EventArgs e)
         {
             _appSettings.Theme = darkModeSwitch.Checked ?
- "Dark" : "Light";
+                "Dark" : "Light";
             UpdateThemeAndColors();
         }
 
@@ -359,7 +367,7 @@ namespace MinimalFirewall
             }
 
             var linkColor = isDark ?
- Color.SkyBlue : SystemColors.HotTrack;
+                Color.SkyBlue : SystemColors.HotTrack;
             helpLink.LinkColor = linkColor;
             reportProblemLink.LinkColor = linkColor;
             forumLink.LinkColor = linkColor;
@@ -374,7 +382,7 @@ namespace MinimalFirewall
             if (coffeeImage != null)
             {
                 Color coffeeColor = isDark ?
- Color.LightGray : Color.Black;
+                    Color.LightGray : Color.Black;
                 Image? oldImage = coffeePictureBox.Image;
                 coffeePictureBox.Image = DarkModeCS.RecolorImage(coffeeImage, coffeeColor);
                 oldImage?.Dispose();
@@ -485,7 +493,7 @@ namespace MinimalFirewall
         private void UpdateIconColumnVisibility()
         {
             advIconColumn.Width = _appSettings.ShowAppIcons ?
- 32 : 0;
+                32 : 0;
             dashboardControl1.SetIconColumnVisibility(_appSettings.ShowAppIcons);
             liveIconColumn.Width = _appSettings.ShowAppIcons ? 32 : 0;
         }
@@ -708,7 +716,7 @@ namespace MinimalFirewall
                         PendingConnection = pending,
                         Decision = result.ToString(),
                         Duration = (result == NotifierForm.NotifierResult.TemporaryAllow) ?
- notifier.TemporaryDuration : default,
+                        notifier.TemporaryDuration : default,
                         TrustPublisher = notifier.TrustPublisher
                     };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
@@ -756,7 +764,7 @@ namespace MinimalFirewall
             if (lockdownTrayMenuItem != null)
             {
                 lockdownTrayMenuItem.Text = IsLockedDown() ?
- "Disable Lockdown" : "Enable Lockdown";
+                    "Disable Lockdown" : "Enable Lockdown";
             }
         }
 
@@ -1092,8 +1100,7 @@ namespace MinimalFirewall
 
         private async Task ScanForSystemChangesAsync(bool showStatusWindow = false)
         {
-            StatusForm?
- statusWindow = null;
+            StatusForm? statusWindow = null;
             if (showStatusWindow && this.Visible)
             {
                 statusWindow = new StatusForm("Scanning for system changes...");
@@ -1115,7 +1122,7 @@ namespace MinimalFirewall
             string searchText = auditSearchTextBox.Text;
 
             var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
- _masterSystemChanges : _masterSystemChanges.Where(c => c.Rule?.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
+                _masterSystemChanges : _masterSystemChanges.Where(c => c.Rule?.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
                                                    c.Rule?.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
 
                c.Rule?.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true);
@@ -1166,10 +1173,7 @@ namespace MinimalFirewall
                         _firewallSentryService.Start();
                         _isSentryServiceStarted = true;
                     }
-                    if (!_systemChangesLoaded)
-                    {
-                        await ScanForSystemChangesAsync(true);
-                    }
+                    await ScanForSystemChangesAsync(true);
                     break;
                 case "groupsTabPage":
                     await DisplayGroupsAsync();
@@ -1235,7 +1239,7 @@ namespace MinimalFirewall
 
         private void CreateRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new AddRuleSelectionForm(_actionsService, _wildcardRuleService);
+            using var dialog = new AddRuleSelectionForm(_actionsService, _wildcardRuleService, _backgroundTaskService);
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
             }
@@ -1338,13 +1342,12 @@ namespace MinimalFirewall
 
         private async void RebuildBaselineButton_Click(object sender, EventArgs e)
         {
-            var result = Messenger.MessageBox("This will clear all acknowledged rules and rebuild the firewall baseline from its current state. Are you sure?", "Rebuild Baseline", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var result = Messenger.MessageBox("This will clear all accepted (hidden) rules from the Audit list, causing them to be displayed again. Are you sure?", "Clear Accepted Rules", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result != DialogResult.Yes) return;
 
             _foreignRuleTracker.Clear();
-            _firewallSentryService.CreateBaseline();
             await ScanForSystemChangesAsync();
-            _activityLogger.LogChange("Sentry", "Firewall baseline rebuilt.");
+            _activityLogger.LogChange("Audit", "Acknowledged rules cleared.");
         }
 
         private async void AdvFilter_CheckedChanged(object sender, EventArgs e)
@@ -1423,7 +1426,7 @@ namespace MinimalFirewall
                         rule.LocalPorts.Count > 0 ? string.Join(",", rule.LocalPorts) : "Any",
                         rule.RemotePorts.Count > 0 ? string.Join(",", rule.RemotePorts) : "Any",
                         rule.LocalAddresses.Count > 0 ? string.Join(",", rule.LocalAddresses) : "Any",
-                         rule.RemoteAddresses.Count > 0 ? string.Join(",", rule.RemoteAddresses) : "Any",
+                        rule.RemoteAddresses.Count > 0 ? string.Join(",", rule.RemoteAddresses) : "Any",
                         rule.ApplicationName,
                         rule.ServiceName,
                         rule.Profiles,
@@ -1441,7 +1444,14 @@ namespace MinimalFirewall
                     int iconIndex = _appSettings.ShowAppIcons && !string.IsNullOrEmpty(connection.ProcessPath) ?
                         _iconService.GetIconIndex(connection.ProcessPath) : -1;
                     var item = new ListViewItem("", iconIndex) { Tag = connection };
-                    item.SubItems.AddRange(new[] { connection.ProcessName, connection.RemoteAddress, connection.RemotePort.ToString() });
+                    item.SubItems.AddRange(new[] {
+                        connection.ProcessName,
+                        connection.LocalAddress,
+                        connection.LocalPort.ToString(),
+                        connection.RemoteAddress,
+                        connection.RemotePort.ToString(),
+                        connection.State
+                    });
                     e.Item = item;
                 }
             }
@@ -1460,7 +1470,7 @@ namespace MinimalFirewall
             if (e.Item.Selected)
             {
                 backColor = e.Item.ListView.Focused ?
- SystemColors.Highlight : SystemColors.ControlDark;
+                    SystemColors.Highlight : SystemColors.ControlDark;
                 foreColor = e.Item.ListView.Focused ? SystemColors.HighlightText : SystemColors.ControlText;
             }
             else
@@ -1593,42 +1603,14 @@ namespace MinimalFirewall
             }
         }
 
-        private void SystemChanges_IgnoreClicked(object? sender, ListViewItemEventArgs e)
-        {
-            if (e.Item.Tag is FirewallRuleChange change)
-            {
-                var payload = new ForeignRuleChangePayload { Change = change };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcknowledgeForeignRule, payload));
-                systemChangesListView.Items.Remove(e.Item);
-                _masterSystemChanges.Remove(change);
-                _unseenSystemChangesCount = _masterSystemChanges.Count;
-                UpdateUiWithChangesCount();
-            }
-        }
-
         private void AcceptAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (_masterSystemChanges.Count == 0) return;
-            var result = Messenger.MessageBox($"Are you sure you want to accept all {_masterSystemChanges.Count} detected changes?", "Confirm Accept All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            var result = Messenger.MessageBox($"Are you sure you want to accept all {_masterSystemChanges.Count} detected changes? They will be hidden from this list.", "Confirm Accept All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
             {
                 var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(_masterSystemChanges) };
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload));
-                _masterSystemChanges.Clear();
-                _unseenSystemChangesCount = 0;
-                UpdateUiWithChangesCount();
-                ApplySystemChangesSearchFilter();
-            }
-        }
-
-        private void IgnoreAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (_masterSystemChanges.Count == 0) return;
-            var result = Messenger.MessageBox($"Are you sure you want to ignore all {_masterSystemChanges.Count} detected changes? They will not be shown again.", "Confirm Ignore All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (result == DialogResult.Yes)
-            {
-                var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(_masterSystemChanges) };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcknowledgeAllForeignRules, payload));
                 _masterSystemChanges.Clear();
                 _unseenSystemChangesCount = 0;
                 UpdateUiWithChangesCount();
@@ -1744,7 +1726,7 @@ namespace MinimalFirewall
             }
 
             int thumbX = isChecked ?
- switchRect.Right - thumbSize - Scale(2, g) : switchRect.X + Scale(2, g);
+                switchRect.Right - thumbSize - Scale(2, g) : switchRect.X + Scale(2, g);
             Rectangle thumbRect = new Rectangle(
                 thumbX,
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
@@ -1884,7 +1866,7 @@ namespace MinimalFirewall
             if (e.Item.Selected)
             {
                 backColor = e.Item.ListView.Focused ?
- SystemColors.Highlight : SystemColors.ControlDark;
+                    SystemColors.Highlight : SystemColors.ControlDark;
                 foreColor = e.Item.ListView.Focused ? SystemColors.HighlightText : SystemColors.ControlText;
             }
             else
@@ -1997,7 +1979,7 @@ namespace MinimalFirewall
             if (e.Column == currentSortColumn)
             {
                 sortOrder = (currentSortOrder == SortOrder.Ascending) ?
- SortOrder.Descending : SortOrder.Ascending;
+                    SortOrder.Descending : SortOrder.Ascending;
             }
             else
             {
@@ -2156,8 +2138,7 @@ namespace MinimalFirewall
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ListView?
- activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
+            ListView? activeListView = mainTabControl.SelectedTab?.Controls.OfType<ListView>().FirstOrDefault();
 
             if (mainTabControl.SelectedTab?.Name == "dashboardTabPage")
             {
@@ -2176,8 +2157,7 @@ namespace MinimalFirewall
             }
 
             var details = new StringBuilder();
-            object?
- tag = null;
+            object? tag = null;
 
             if (activeListView.VirtualMode)
             {
@@ -2222,8 +2202,9 @@ namespace MinimalFirewall
                     details.AppendLine($"Type: Live Connection");
                     details.AppendLine($"Process: {live.ProcessName}");
                     details.AppendLine($"Path: {live.ProcessPath}");
-                    details.AppendLine($"Remote Address: {live.RemoteAddress}");
-                    details.AppendLine($"Remote Port: {live.RemotePort}");
+                    details.AppendLine($"Local Address: {live.LocalAddress}:{live.LocalPort}");
+                    details.AppendLine($"Remote Address: {live.RemoteAddress}:{live.RemotePort}");
+                    details.AppendLine($"State: {live.State}");
                     break;
                 case FirewallRuleChange change:
                     details.AppendLine($"Type: Audited Change ({change.Type})");
@@ -2310,7 +2291,7 @@ namespace MinimalFirewall
             if (button.Name == "lockdownButton")
             {
                 imageToDraw = IsLockedDown() ?
- _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
+                    _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
             }
             else if (button.Name == "rescanButton")
             {
@@ -2320,7 +2301,7 @@ namespace MinimalFirewall
                     return;
                 }
                 imageToDraw = (_appSettings.Theme == "Dark") ?
- _refreshWhiteIcon : appImageList.Images["refresh.png"];
+                    _refreshWhiteIcon : appImageList.Images["refresh.png"];
             }
 
             if (imageToDraw != null)
@@ -2361,8 +2342,11 @@ namespace MinimalFirewall
         {
             return columnIndex switch
             {
-                2 => conn => conn.RemoteAddress,
-                3 => conn => conn.RemotePort,
+                2 => conn => conn.LocalAddress,
+                3 => conn => conn.LocalPort,
+                4 => conn => conn.RemoteAddress,
+                5 => conn => conn.RemotePort,
+                6 => conn => conn.State,
                 _ => conn => conn.ProcessName,
             };
         }

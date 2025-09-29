@@ -14,8 +14,8 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.2.3.0</AssemblyVersion>
-		<FileVersion>2.2.3.0</FileVersion>
+		<AssemblyVersion>2.2.6.0</AssemblyVersion>
+		<FileVersion>2.2.6.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
@@ -33,6 +33,7 @@
 
 	<ItemGroup>
 		<None Remove="1-adminnhelper-allfiles.txt" />
+		<None Remove="1-oldfiles4.8.txt" />
 		<None Remove="1allfiles.txt" />
 		<None Remove="1file_combiner.py" />
 	</ItemGroup>

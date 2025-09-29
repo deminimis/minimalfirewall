@@ -1,13 +1,13 @@
-﻿// File: UtilityServices.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+
 namespace MinimalFirewall
 {
-    public class AdminTaskService
+    public static class AdminTaskService
     {
         public static void ExecutePowerShellRuleCommand(string command)
         {
@@ -151,37 +151,83 @@ namespace MinimalFirewall
         private const string RegistryKeyPath = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
         private readonly string? _appName;
         private readonly string? _appPath;
+        private readonly string _taskName;
 
         public StartupService()
         {
             _appName = Assembly.GetExecutingAssembly().GetName().Name;
             _appPath = Environment.ProcessPath;
+            if (_appName != null)
+            {
+                _taskName = _appName + " Startup";
+            }
+            else
+            {
+                _taskName = "MinimalFirewall Startup";
+            }
         }
 
         public void SetStartup(bool isEnabled)
         {
             if (string.IsNullOrEmpty(_appName) || string.IsNullOrEmpty(_appPath)) return;
+
             try
             {
                 using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegistryKeyPath, true);
-                if (key == null)
-                {
-                    Debug.WriteLine("[ERROR] Could not open registry key for startup settings.");
-                    return;
-                }
-
-                if (isEnabled)
-                {
-                    key.SetValue(_appName, $"\"{_appPath}\"");
-                }
-                else if (key.GetValue(_appName) != null)
+                if (key?.GetValue(_appName) != null)
                 {
                     key.DeleteValue(_appName, false);
                 }
             }
-            catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+            catch (Exception ex)
             {
-                Debug.WriteLine($"[ERROR] Failed to update startup settings: {ex.Message}");
+                Debug.WriteLine($"[Startup] Failed to remove old registry key: {ex.Message}");
+            }
+
+            if (isEnabled)
+            {
+                string arguments = $"/create /tn \"{_taskName}\" /tr \"\\\"{_appPath}\\\" -tray\" /sc onlogon /rl highest /f";
+                Execute("schtasks.exe", arguments);
+            }
+            else
+            {
+                string arguments = $"/delete /tn \"{_taskName}\" /f";
+                Execute("schtasks.exe", arguments);
+            }
+        }
+
+        private void Execute(string fileName, string arguments)
+        {
+            Debug.WriteLine($"[Startup] Executing: {fileName} {arguments}");
+            var startInfo = new ProcessStartInfo()
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+            };
+            try
+            {
+                using var process = Process.Start(startInfo);
+                if (process != null)
+                {
+                    string? stdOut = process.StandardOutput.ReadToEnd();
+                    string? stdErr = process.StandardError.ReadToEnd();
+                    process.WaitForExit(5000);
+
+                    if (process.ExitCode != 0)
+                    {
+                        Debug.WriteLine($"[Startup ERROR] Process exited with code {process.ExitCode}.");
+                        if (!string.IsNullOrEmpty(stdOut)) Debug.WriteLine($"[Startup ERROR] STDOUT: {stdOut}");
+                        if (!string.IsNullOrEmpty(stdErr)) Debug.WriteLine($"[Startup ERROR] STDERR: {stdErr}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Startup FATAL ERROR] {ex.Message}");
             }
         }
     }
