@@ -1,10 +1,6 @@
-﻿// File: FirewallSentryService.cs
-using System.IO;
+﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallSentryService.cs
+// File: FirewallSentryService.cs
 using System.Management;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Runtime.InteropServices;
 
 namespace MinimalFirewall
@@ -13,16 +9,12 @@ namespace MinimalFirewall
     {
         private readonly FirewallRuleService firewallService;
         private ManagementEventWatcher? _watcher;
-        private Dictionary<string, string> _ruleBaseline = [];
         private bool _isStarted = false;
-        private readonly string _baselinePath;
         public event Action? RuleSetChanged;
 
         public FirewallSentryService(FirewallRuleService firewallService)
         {
             this.firewallService = firewallService;
-            _baselinePath = Path.Combine(AppContext.BaseDirectory, "sentry_baseline.json");
-            LoadBaseline();
         }
 
         public void Start()
@@ -34,11 +26,6 @@ namespace MinimalFirewall
 
             try
             {
-                if (!_ruleBaseline.Any())
-                {
-                    CreateBaseline();
-                }
-
                 var scope = new ManagementScope(@"root\StandardCimv2");
                 var query = new WqlEventQuery(
                     "SELECT * FROM __InstanceOperationEvent WITHIN 1 " +
@@ -79,115 +66,29 @@ namespace MinimalFirewall
             RuleSetChanged?.Invoke();
         }
 
-        public void CreateBaseline()
+        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker)
         {
-            _ruleBaseline.Clear();
+            var changes = new List<FirewallRuleChange>();
             var allRules = firewallService.GetAllRules();
             try
             {
                 foreach (var rule in allRules)
                 {
-                    if (rule != null && !string.IsNullOrEmpty(rule.Name) && !IsMfwRule(rule))
+                    if (rule == null || string.IsNullOrEmpty(rule.Name)) continue;
+
+                    if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(rule.Name))
                     {
-                        _ruleBaseline[rule.Name] = GenerateRuleHash(rule);
+                        continue;
                     }
+
+                    changes.Add(new FirewallRuleChange { Type = ChangeType.New, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
                 }
             }
             finally
             {
                 foreach (var rule in allRules)
                 {
-                    Marshal.ReleaseComObject(rule);
-                }
-            }
-            SaveBaseline();
-        }
-
-        public void ClearBaseline()
-        {
-            _ruleBaseline.Clear();
-            SaveBaseline();
-        }
-
-        private void LoadBaseline()
-        {
-            try
-            {
-                if (File.Exists(_baselinePath))
-                {
-                    string json = File.ReadAllText(_baselinePath);
-                    _ruleBaseline = JsonSerializer.Deserialize(json, SentryJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                }
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to load Sentry baseline: {ex.Message}");
-                _ruleBaseline = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-
-        private void SaveBaseline()
-        {
-            try
-            {
-                string json = JsonSerializer.Serialize(_ruleBaseline, SentryJsonContext.Default.DictionaryStringString);
-                File.WriteAllText(_baselinePath, json);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to save Sentry baseline: {ex.Message}");
-            }
-        }
-
-        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker)
-        {
-            var changes = new List<FirewallRuleChange>();
-            var currentRules = firewallService.GetAllRules();
-            try
-            {
-                var currentRuleNamesAndHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var rule in currentRules)
-                {
-                    if (rule != null && !string.IsNullOrEmpty(rule.Name))
-                    {
-                        currentRuleNamesAndHashes[rule.Name] = GenerateRuleHash(rule);
-                    }
-                }
-
-                foreach (var rule in currentRules)
-                {
-                    var ruleName = rule.Name;
-                    if (string.IsNullOrEmpty(ruleName)) continue;
-
-                    var currentHash = currentRuleNamesAndHashes[ruleName];
-                    if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(ruleName))
-                    {
-                        continue;
-                    }
-
-                    if (!_ruleBaseline.TryGetValue(ruleName, out var oldHash))
-                    {
-                        changes.Add(new FirewallRuleChange { Type = ChangeType.New, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
-                    }
-                    else if (oldHash != currentHash)
-                    {
-                        changes.Add(new FirewallRuleChange { Type = ChangeType.Modified, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
-                    }
-                }
-
-                foreach (var baselineRuleName in _ruleBaseline.Keys)
-                {
-                    if (!acknowledgedTracker.IsAcknowledged(baselineRuleName) && !currentRuleNamesAndHashes.ContainsKey(baselineRuleName))
-                    {
-                        changes.Add(new FirewallRuleChange { Type = ChangeType.Deleted, Rule = new AdvancedRuleViewModel { Name = baselineRuleName, Description = "This rule was deleted by an external process." } });
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in currentRules)
-                {
-                    Marshal.ReleaseComObject(rule);
+                    if (rule != null) Marshal.ReleaseComObject(rule);
                 }
             }
             return changes;
@@ -201,39 +102,10 @@ namespace MinimalFirewall
                    rule.Grouping == "Minimal Firewall (Wildcard)";
         }
 
-        private static string GenerateRuleHash(NetFwTypeLib.INetFwRule2 rule)
-        {
-            var ruleProperties = new FirewallRuleHashModel
-            {
-                Name = rule.Name,
-                Description = rule.Description,
-                ApplicationName = rule.ApplicationName,
-                ServiceName = rule.serviceName,
-                Protocol = rule.Protocol,
-                LocalPorts = rule.LocalPorts,
-                RemotePorts = rule.RemotePorts,
-                LocalAddresses = rule.LocalAddresses,
-                RemoteAddresses = rule.RemoteAddresses,
-                Direction = rule.Direction,
-                Action = rule.Action,
-                Enabled = rule.Enabled
-            };
-            byte[] jsonBytes = JsonSerializer.SerializeToUtf8Bytes(ruleProperties, SentryJsonContext.Default.FirewallRuleHashModel);
-            byte[] hashBytes = SHA256.HashData(jsonBytes);
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-        }
-
         public void Dispose()
         {
             Stop();
             GC.SuppressFinalize(this);
         }
-    }
-
-    [JsonSourceGenerationOptions(WriteIndented = false, PropertyNameCaseInsensitive = true)]
-    [JsonSerializable(typeof(FirewallRuleHashModel))]
-    [JsonSerializable(typeof(Dictionary<string, string>))]
-    internal partial class SentryJsonContext : JsonSerializerContext
-    {
     }
 }

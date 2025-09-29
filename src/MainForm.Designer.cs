@@ -74,7 +74,6 @@
         private System.Windows.Forms.TextBox auditSearchTextBox;
         private System.Windows.Forms.ContextMenuStrip auditContextMenu;
         private System.Windows.Forms.ToolStripMenuItem acceptAllToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem ignoreAllToolStripMenuItem;
         private System.Windows.Forms.Label autoRefreshLabel1;
         private System.Windows.Forms.Label autoRefreshLabel2;
         private System.Windows.Forms.Button advancedRuleButton;
@@ -85,8 +84,11 @@
         private System.Windows.Forms.ListView liveConnectionsListView;
         private System.Windows.Forms.ColumnHeader liveIconColumn;
         private System.Windows.Forms.ColumnHeader processNameColumn;
+        private System.Windows.Forms.ColumnHeader localAddressColumn;
+        private System.Windows.Forms.ColumnHeader localPortColumn;
         private System.Windows.Forms.ColumnHeader remoteAddressColumn;
         private System.Windows.Forms.ColumnHeader remotePortColumn;
+        private System.Windows.Forms.ColumnHeader stateColumn;
         private System.Windows.Forms.ContextMenuStrip liveConnectionsContextMenu;
         private System.Windows.Forms.ToolStripMenuItem killProcessToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem blockRemoteIPToolStripMenuItem;
@@ -205,7 +207,6 @@
             changeDescColumn = new ColumnHeader();
             auditContextMenu = new ContextMenuStrip(components);
             acceptAllToolStripMenuItem = new ToolStripMenuItem();
-            ignoreAllToolStripMenuItem = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem3 = new ToolStripMenuItem();
             toolStripSeparator10 = new ToolStripSeparator();
             openFileLocationToolStripMenuItem2 = new ToolStripMenuItem();
@@ -220,8 +221,11 @@
             liveConnectionsListView = new ListView();
             liveIconColumn = new ColumnHeader();
             processNameColumn = new ColumnHeader();
+            localAddressColumn = new ColumnHeader();
+            localPortColumn = new ColumnHeader();
             remoteAddressColumn = new ColumnHeader();
             remotePortColumn = new ColumnHeader();
+            stateColumn = new ColumnHeader();
             liveConnectionsContextMenu = new ContextMenuStrip(components);
             createAdvancedRuleToolStripMenuItem1 = new ToolStripMenuItem();
             toolStripSeparator9 = new ToolStripSeparator();
@@ -395,7 +399,7 @@
             advFilterAdvancedCheck.Location = new Point(639, 20);
             advFilterAdvancedCheck.Margin = new Padding(3, 4, 3, 4);
             advFilterAdvancedCheck.Name = "advFilterAdvancedCheck";
-            advFilterAdvancedCheck.Size = new Size(97, 24);
+            advFilterAdvancedCheck.Size = new System.Drawing.Size(97, 24);
             advFilterAdvancedCheck.TabIndex = 6;
             advFilterAdvancedCheck.Text = "Advanced";
             advFilterAdvancedCheck.UseVisualStyleBackColor = true;
@@ -775,9 +779,9 @@
             // auditContextMenu
             // 
             auditContextMenu.ImageScalingSize = new Size(20, 20);
-            auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, ignoreAllToolStripMenuItem, copyDetailsToolStripMenuItem3, toolStripSeparator10, openFileLocationToolStripMenuItem2 });
+            auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, copyDetailsToolStripMenuItem3, toolStripSeparator10, openFileLocationToolStripMenuItem2 });
             auditContextMenu.Name = "auditContextMenu";
-            auditContextMenu.Size = new Size(207, 110);
+            auditContextMenu.Size = new Size(207, 88);
             auditContextMenu.Opening += ContextMenu_Opening;
             // 
             // acceptAllToolStripMenuItem
@@ -786,13 +790,6 @@
             acceptAllToolStripMenuItem.Size = new Size(206, 24);
             acceptAllToolStripMenuItem.Text = "Accept All Changes";
             acceptAllToolStripMenuItem.Click += AcceptAllToolStripMenuItem_Click;
-            // 
-            // ignoreAllToolStripMenuItem
-            // 
-            ignoreAllToolStripMenuItem.Name = "ignoreAllToolStripMenuItem";
-            ignoreAllToolStripMenuItem.Size = new Size(206, 24);
-            ignoreAllToolStripMenuItem.Text = "Ignore All Changes";
-            ignoreAllToolStripMenuItem.Click += IgnoreAllToolStripMenuItem_Click;
             // 
             // copyDetailsToolStripMenuItem3
             // 
@@ -902,7 +899,7 @@
             // liveConnectionsListView
             // 
             liveConnectionsListView.BorderStyle = BorderStyle.None;
-            liveConnectionsListView.Columns.AddRange(new ColumnHeader[] { liveIconColumn, processNameColumn, remoteAddressColumn, remotePortColumn });
+            liveConnectionsListView.Columns.AddRange(new ColumnHeader[] { liveIconColumn, processNameColumn, localAddressColumn, localPortColumn, remoteAddressColumn, remotePortColumn, stateColumn });
             liveConnectionsListView.ContextMenuStrip = liveConnectionsContextMenu;
             liveConnectionsListView.Dock = DockStyle.Fill;
             liveConnectionsListView.FullRowSelect = true;
@@ -933,15 +930,30 @@
             processNameColumn.Text = "Process Name";
             processNameColumn.Width = 200;
             // 
+            // localAddressColumn
+            // 
+            localAddressColumn.Text = "Local Address";
+            localAddressColumn.Width = 150;
+            // 
+            // localPortColumn
+            // 
+            localPortColumn.Text = "Local Port";
+            localPortColumn.Width = 80;
+            // 
             // remoteAddressColumn
             // 
             remoteAddressColumn.Text = "Remote Address";
-            remoteAddressColumn.Width = 200;
+            remoteAddressColumn.Width = 150;
             // 
             // remotePortColumn
             // 
             remotePortColumn.Text = "Remote Port";
-            remotePortColumn.Width = 100;
+            remotePortColumn.Width = 80;
+            // 
+            // stateColumn
+            // 
+            stateColumn.Text = "State";
+            stateColumn.Width = 100;
             // 
             // liveConnectionsContextMenu
             // 
@@ -1210,7 +1222,7 @@
             forumLink.AutoSize = true;
             forumLink.Location = new Point(29, 660);
             forumLink.Name = "forumLink";
-            forumLink.Size = new Size(140, 20);
+            forumLink.Size = new System.Drawing.Size(140, 20);
             forumLink.TabIndex = 9;
             forumLink.TabStop = true;
             forumLink.Tag = "https://github.com/deminimis/minimalfirewall/discussions";
@@ -1365,7 +1377,7 @@
             // auditContextMenu
             // 
             auditContextMenu.ImageScalingSize = new Size(20, 20);
-            auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem, ignoreAllToolStripMenuItem });
+            auditContextMenu.Items.AddRange(new ToolStripItem[] { acceptAllToolStripMenuItem });
             auditContextMenu.Name = "auditContextMenu";
             auditContextMenu.Size = new Size(207, 52);
             // 

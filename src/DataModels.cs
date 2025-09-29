@@ -1,4 +1,5 @@
-﻿// File: DataModels.cs
+﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/DataModels.cs
+// File: DataModels.cs
 using System.IO;
 using System.ComponentModel;
 using NetFwTypeLib;
@@ -170,10 +171,8 @@ namespace MinimalFirewall
         DeleteWildcardRules,
         ProcessPendingConnection,
         AcceptForeignRule,
-        AcknowledgeForeignRule,
         DeleteForeignRule,
         AcceptAllForeignRules,
-        AcknowledgeAllForeignRules,
         CreateAdvancedRule,
         AddWildcardRule
     }
@@ -200,4 +199,3 @@ namespace MinimalFirewall
     public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
     public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
 }
-

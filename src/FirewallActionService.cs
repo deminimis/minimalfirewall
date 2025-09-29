@@ -1,4 +1,5 @@
-﻿// File: FirewallActionService.cs
+﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallActionService.cs
+// File: FirewallActionService.cs
 using NetFwTypeLib;
 using System.Data;
 using System.IO;
@@ -89,7 +90,8 @@ namespace MinimalFirewall
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string baseName, Directions dir, Actions act)
                 {
-                    string description = string.IsNullOrEmpty(wildcardSourcePath) ? "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    string description = string.IsNullOrEmpty(wildcardSourcePath) ?
+                        "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
                     CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
                 }
 
@@ -112,7 +114,6 @@ namespace MinimalFirewall
 
             void createRule(string name, Directions dir, Actions act) =>
                 CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value);
-
             ApplyRuleAction(serviceName, action, createRule);
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
         }
@@ -196,7 +197,8 @@ namespace MinimalFirewall
 
         private void ManageCryptoServiceRule(bool enable)
         {
-            INetFwRule2? rule = null;
+            INetFwRule2?
+            rule = null;
             try
             {
                 rule = firewallService.GetRuleByName(CryptoRuleName);
@@ -312,14 +314,14 @@ namespace MinimalFirewall
             }
 
             eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
-
             switch (decision)
             {
                 case "Allow":
                 case "Block":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
                     string action = (decision == "Allow" ? "Allow" : "Block") + " (" + pending.Direction + ")";
-                    string? pathToRule = pending.AppPath;
+                    string?
+                    pathToRule = pending.AppPath;
 
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
@@ -336,7 +338,6 @@ namespace MinimalFirewall
                         ApplyApplicationRuleChange([pathToRule], action);
                     }
                     break;
-
                 case "TemporaryAllow":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
                     CreateTemporaryAllowRule(pending.AppPath, pending.Direction, duration);
@@ -387,18 +388,15 @@ namespace MinimalFirewall
         private void CreateTemporaryAllowRule(string appPath, string direction, TimeSpan duration)
         {
             if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection)) return;
-
             string appName = Path.GetFileNameWithoutExtension(appPath);
             string guid = Guid.NewGuid().ToString();
             string description = "Temporarily allowed by Minimal Firewall.";
             string ruleName = $"Temp Allow - {appName} - {direction} - {guid}";
 
             CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
-
             DateTime expiry = DateTime.UtcNow.Add(duration);
             _temporaryRuleManager.Add(ruleName, expiry);
             activityLogger.LogChange("Temporary Rule Created", $"Allowed {appPath} for {duration.TotalMinutes} minutes.");
-
             var timer = new System.Threading.Timer(_ =>
             {
                 try
@@ -421,36 +419,10 @@ namespace MinimalFirewall
 
         public void AcceptForeignRule(FirewallRuleChange change)
         {
-            if (change.Rule?.Name is null) return;
-            INetFwRule2? rule = null;
-            try
-            {
-                rule = firewallService.GetRuleByName(change.Rule.Name);
-                if (rule != null)
-                {
-                    rule.Grouping = MFWConstants.MainRuleGroup;
-                    activityLogger.LogChange("Foreign Rule Accepted", rule.Name);
-                    sentryService.CreateBaseline();
-                }
-            }
-            catch (COMException ex)
-            {
-                var ruleName = change.Rule?.Name ?? "Unknown";
-                System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to accept foreign rule '{ruleName}': {ex.Message}");
-                activityLogger.LogException($"AcceptForeignRule for '{ruleName}'", ex);
-            }
-            finally
-            {
-                if (rule != null) Marshal.ReleaseComObject(rule);
-            }
-        }
-
-        public void AcknowledgeForeignRule(FirewallRuleChange change)
-        {
             if (change.Rule?.Name is not null)
             {
                 foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
-                sentryService.CreateBaseline();
+                activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
             }
         }
 
@@ -459,50 +431,17 @@ namespace MinimalFirewall
             if (change.Rule?.Name is not null)
             {
                 DeleteAdvancedRules([change.Rule.Name]);
-                sentryService.CreateBaseline();
             }
         }
 
         public void AcceptAllForeignRules(List<FirewallRuleChange> changes)
         {
             if (changes == null || changes.Count == 0) return;
-            foreach (var change in changes)
-            {
-                if (change.Rule?.Name != null)
-                {
-                    INetFwRule2? rule = null;
-                    try
-                    {
-                        rule = firewallService.GetRuleByName(change.Rule.Name);
-                        if (rule != null)
-                        {
-                            rule.Grouping = MFWConstants.MainRuleGroup;
-                            activityLogger.LogChange("Foreign Rule Accepted", rule.Name);
-                        }
-                    }
-                    catch (COMException ex)
-                    {
-                        var ruleName = change.Rule?.Name ?? "Unknown";
-                        System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to accept foreign rule '{ruleName}': {ex.Message}");
-                        activityLogger.LogException($"AcceptAllForeignRules for '{ruleName}'", ex);
-                    }
-                    finally
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
-                }
-            }
-            sentryService.CreateBaseline();
-        }
-
-        public void AcknowledgeAllForeignRules(List<FirewallRuleChange> changes)
-        {
-            if (changes == null || changes.Count == 0) return;
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
             if (ruleNames.Any())
             {
                 foreignRuleTracker.AcknowledgeRules(ruleNames);
-                sentryService.CreateBaseline();
+                activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
             }
         }
 
@@ -569,7 +508,8 @@ namespace MinimalFirewall
                     }
                     if (protocolsToCreate.Count > 1)
                     {
-                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ? " - TCP" : " - UDP";
+                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
+                            " - TCP" : " - UDP";
                     }
                     ruleVm.Name = vm.Name + nameSuffix;
                     CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
@@ -584,7 +524,8 @@ namespace MinimalFirewall
             firewallRule.Description = vm.Description;
             firewallRule.Enabled = vm.IsEnabled;
             firewallRule.Grouping = vm.Grouping;
-            firewallRule.Action = vm.Status == "Allow" ? NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            firewallRule.Action = vm.Status == "Allow" ?
+                NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
             firewallRule.Protocol = vm.Protocol;
 
@@ -605,11 +546,13 @@ namespace MinimalFirewall
             }
             else
             {
-                firewallRule.LocalPorts = vm.LocalPorts.Any() ? string.Join(",", vm.LocalPorts.Select(p => p.ToString())) : "*";
+                firewallRule.LocalPorts = vm.LocalPorts.Any() ?
+                    string.Join(",", vm.LocalPorts.Select(p => p.ToString())) : "*";
                 firewallRule.RemotePorts = vm.RemotePorts.Any() ? string.Join(",", vm.RemotePorts.Select(p => p.ToString())) : "*";
             }
 
-            firewallRule.LocalAddresses = vm.LocalAddresses.Any() ? string.Join(",", vm.LocalAddresses.Select(a => a.ToString())) : "*";
+            firewallRule.LocalAddresses = vm.LocalAddresses.Any() ?
+                string.Join(",", vm.LocalAddresses.Select(a => a.ToString())) : "*";
             firewallRule.RemoteAddresses = vm.RemoteAddresses.Any() ? string.Join(",", vm.RemoteAddresses.Select(a => a.ToString())) : "*";
 
             NET_FW_PROFILE_TYPE2_ profiles = 0;
@@ -641,7 +584,8 @@ namespace MinimalFirewall
             parsedAction = action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) ? Actions.Allow : Actions.Block;
             if (action.Contains("(All)"))
             {
-                parsedDirection = Directions.Incoming | Directions.Outgoing;
+                parsedDirection = Directions.Incoming |
+                Directions.Outgoing;
             }
             else if (action.Contains("Inbound") || action.Contains("Incoming"))
             {
@@ -661,7 +605,8 @@ namespace MinimalFirewall
                 return;
             }
 
-            string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+            string actionStr = parsedAction == Actions.Allow ?
+                "" : "Block ";
             string inName = $"{appName} - {actionStr}In";
             string outName = $"{appName} - {actionStr}Out";
             if (parsedDirection.HasFlag(Directions.Incoming))
@@ -683,7 +628,6 @@ namespace MinimalFirewall
             firewallRule.Action = (NET_FW_ACTION_)action;
             firewallRule.Enabled = true;
             firewallRule.Protocol = protocol;
-
             if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
             {
                 firewallRule.Grouping = MFWConstants.WildcardRuleGroup;

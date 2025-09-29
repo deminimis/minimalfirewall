@@ -1,5 +1,4 @@
-﻿// File: AddRuleSelectionForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 
 namespace MinimalFirewall
 {
@@ -7,14 +6,16 @@ namespace MinimalFirewall
     {
         private readonly FirewallActionsService _actionsService;
         private readonly WildcardRuleService _wildcardRuleService;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
         private readonly DarkModeCS dm;
 
-        public AddRuleSelectionForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService)
+        public AddRuleSelectionForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;
+            _backgroundTaskService = backgroundTaskService;
         }
 
         private void ProgramRuleButton_Click(object sender, EventArgs e)
@@ -40,6 +41,15 @@ namespace MinimalFirewall
             using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService);
             if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
             {
+                var newRule = new WildcardRule
+                {
+                    FolderPath = wildcardDialog.FolderPath,
+                    ExeName = wildcardDialog.ExeName,
+                    Action = wildcardDialog.FinalAction
+                };
+
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
+
                 this.DialogResult = DialogResult.OK;
             }
         }

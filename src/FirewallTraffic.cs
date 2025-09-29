@@ -1,5 +1,4 @@
-﻿// File: FirewallTraffic.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -11,7 +10,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Linq;
-
 namespace Firewall.Traffic
 {
     public static partial class TcpTrafficTracker
@@ -27,6 +25,26 @@ namespace Firewall.Traffic
             connections.AddRange(GetConnectionsForFamily(AF_INET));
             connections.AddRange(GetConnectionsForFamily(AF_INET6));
             return connections;
+        }
+
+        public static string GetStateString(uint state)
+        {
+            return state switch
+            {
+                1 => "Closed",
+                2 => "Listen",
+                3 => "Syn-Sent",
+                4 => "Syn-Rcvd",
+                5 => "Established",
+                6 => "Fin-Wait-1",
+                7 => "Fin-Wait-2",
+                8 => "Close-Wait",
+                9 => "Closing",
+                10 => "Last-Ack",
+                11 => "Time-Wait",
+                12 => "Delete-Tcb",
+                _ => "Unknown",
+            };
         }
 
         private static List<TcpTrafficRow> GetConnectionsForFamily(int family)
@@ -46,6 +64,7 @@ namespace Firewall.Traffic
                     {
                         if (family == AF_INET)
                         {
+
                             var rowStructure = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
                             connections.Add(new TcpTrafficRow(rowStructure));
                             rowPtr += Marshal.SizeOf(typeof(MIB_TCPROW_OWNER_PID));
@@ -73,24 +92,28 @@ namespace Firewall.Traffic
             public readonly IPEndPoint LocalEndPoint;
             public readonly IPEndPoint RemoteEndPoint;
             public readonly int ProcessId;
+            public readonly uint State;
             public TcpTrafficRow(MIB_TCPROW_OWNER_PID row)
             {
                 LocalEndPoint = new IPEndPoint(row.localAddr, (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
                 RemoteEndPoint = new IPEndPoint(row.remoteAddr, (ushort)IPAddress.NetworkToHostOrder((short)row.remotePort));
                 ProcessId = row.owningPid;
+                State = row.state;
             }
             public TcpTrafficRow(MIB_TCP6ROW_OWNER_PID row)
             {
                 LocalEndPoint = new IPEndPoint(new IPAddress(row.localAddr, row.localScopeId), (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
                 RemoteEndPoint = new IPEndPoint(new IPAddress(row.remoteAddr, row.remoteScopeId), (ushort)IPAddress.NetworkToHostOrder((short)row.remotePort));
                 ProcessId = row.owningPid;
+                State = row.state;
             }
 
             public bool Equals(TcpTrafficRow other)
             {
                 return LocalEndPoint.Equals(other.LocalEndPoint) &&
                        RemoteEndPoint.Equals(other.RemoteEndPoint) &&
-                       ProcessId == other.ProcessId;
+                       ProcessId == other.ProcessId &&
+                       State == other.State;
             }
 
             public override bool Equals(object? obj)
@@ -100,7 +123,7 @@ namespace Firewall.Traffic
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId);
+                return HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State);
             }
         }
 
@@ -132,8 +155,11 @@ namespace Firewall.Traffic.ViewModels
         public TcpTrafficTracker.TcpTrafficRow Connection { get; }
         public string ProcessName { get; private set; }
         public string ProcessPath { get; private set; }
+        public string LocalAddress => Connection.LocalEndPoint.Address.ToString();
+        public int LocalPort => Connection.LocalEndPoint.Port;
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
+        public string State => TcpTrafficTracker.GetStateString(Connection.State);
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
@@ -171,8 +197,7 @@ namespace Firewall.Traffic.ViewModels
 
     public class TrafficMonitorViewModel
     {
-        private System.Threading.Timer?
-        _timer;
+        private System.Threading.Timer? _timer;
         private bool _isRefreshing = false;
         private readonly SynchronizationContext? _syncContext;
         public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = [];
@@ -260,8 +285,7 @@ namespace Firewall.Traffic.ViewModels
 
     public class RelayCommand(Action execute, Func<bool> canExecute) : ICommand
     {
-        public event EventHandler?
-        CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged;
         public bool CanExecute(object? p) => canExecute();
         public void Execute(object? p) => execute();
         public void RaiseCanExecuteChanged()
