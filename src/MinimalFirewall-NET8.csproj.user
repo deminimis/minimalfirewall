@@ -7,6 +7,9 @@
     <Compile Update="AddRuleSelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="AuditControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="CreateAdvancedRuleForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -28,8 +31,14 @@
     <Compile Update="FlatTabControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="GroupsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="IconService.cs">
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Update="LiveConnectionsControl.cs">
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
@@ -39,6 +48,12 @@
     </Compile>
     <Compile Update="NotifierForm.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="RulesControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="SettingsControl.cs">
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="SignatureValidationService.cs">
       <SubType>Form</SubType>

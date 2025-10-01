@@ -6,7 +6,7 @@ namespace MinimalFirewall
     public partial class NotifierForm : Form
     {
         public enum NotifierResult { Ignore, Allow, Block, TemporaryAllow, CreateWildcard }
-        public NotifierResult Result { get; private set; } = NotifierResult.Ignore;
+        public NotifierResult Result { get; set; } = NotifierResult.Ignore;
         public PendingConnectionViewModel PendingConnection { get; private set; }
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;

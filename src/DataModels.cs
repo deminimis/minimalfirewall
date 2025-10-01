@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/DataModels.cs
-// File: DataModels.cs
+﻿// File: DataModels.cs
 using System.IO;
 using System.ComponentModel;
 using NetFwTypeLib;
@@ -58,14 +57,14 @@ namespace MinimalFirewall
         public string Status { get; set; } = string.Empty;
         public bool IsEnabled { get; set; }
         public Directions Direction { get; set; }
-        public ICollection<PortRange> LocalPorts { get; set; } = [];
-        public ICollection<PortRange> RemotePorts { get; set; } = [];
+        public string LocalPorts { get; set; } = string.Empty; // Changed from ICollection<PortRange>
+        public string RemotePorts { get; set; } = string.Empty; // Changed from ICollection<PortRange>
         public short Protocol { get; set; }
         public string ProtocolName { get; set; } = string.Empty;
         public string ApplicationName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
-        public ICollection<IPAddressRange> LocalAddresses { get; set; } = [];
-        public ICollection<IPAddressRange> RemoteAddresses { get; set; } = [];
+        public string LocalAddresses { get; set; } = string.Empty; // Changed from ICollection<IPAddressRange>
+        public string RemoteAddresses { get; set; } = string.Empty; // Changed from ICollection<IPAddressRange>
         public string Profiles { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Grouping { get; set; } = string.Empty;
@@ -174,7 +173,8 @@ namespace MinimalFirewall
         DeleteForeignRule,
         AcceptAllForeignRules,
         CreateAdvancedRule,
-        AddWildcardRule
+        AddWildcardRule,
+        SetGroupEnabledState
     }
 
     public class FirewallTask
@@ -198,4 +198,5 @@ namespace MinimalFirewall
     public class ForeignRuleChangePayload { public FirewallRuleChange Change { get; set; } = new(); }
     public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
     public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
+    public class SetGroupEnabledStatePayload { public string GroupName { get; set; } = string.Empty; public bool IsEnabled { get; set; } }
 }

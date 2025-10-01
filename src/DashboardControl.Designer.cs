@@ -32,7 +32,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -107,27 +106,22 @@ namespace MinimalFirewall
             // dashActionColumn
             // 
             this.dashActionColumn.Text = "Action";
-            this.dashActionColumn.Width = 300;
             // 
             // dashAppColumn
             // 
             this.dashAppColumn.Text = "Application";
-            this.dashAppColumn.Width = 150;
             // 
             // dashServiceColumn
             // 
             this.dashServiceColumn.Text = "Service";
-            this.dashServiceColumn.Width = 150;
             // 
             // dashDirectionColumn
             // 
             this.dashDirectionColumn.Text = "Direction";
-            this.dashDirectionColumn.Width = 100;
             // 
             // dashPathColumn
             // 
             this.dashPathColumn.Text = "Path";
-            this.dashPathColumn.Width = 300;
             // 
             // dashboardContextMenu
             // 
@@ -141,6 +135,7 @@ namespace MinimalFirewall
             this.ignoreToolStripMenuItem,
             this.toolStripSeparator4,
             this.createWildcardRuleToolStripMenuItem,
+
             this.toolStripSeparator5,
             this.createAdvancedRuleToolStripMenuItem,
             this.toolStripSeparator7,
@@ -158,7 +153,8 @@ namespace MinimalFirewall
             this.allow5MinutesToolStripMenuItem,
             this.allow15MinutesToolStripMenuItem,
             this.allow1HourToolStripMenuItem,
-            this.allow3HoursToolStripMenuItem,
+
+             this.allow3HoursToolStripMenuItem,
             this.allow8HoursToolStripMenuItem});
             this.tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
             this.tempAllowToolStripMenuItem.Size = new System.Drawing.Size(227, 24);

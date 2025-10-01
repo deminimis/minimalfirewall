@@ -124,6 +124,12 @@ namespace MinimalFirewall
                 return;
             }
 
+            // Convert lists to comma-separated strings to match the updated ViewModel
+            var localPorts = ParsingUtility.ParseStringToList<PortRange>(localPortsTextBox.Text, PortRange.TryParse);
+            var remotePorts = ParsingUtility.ParseStringToList<PortRange>(remotePortsTextBox.Text, PortRange.TryParse);
+            var localAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(localAddressTextBox.Text, IPAddressRange.TryParse);
+            var remoteAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(remoteAddressTextBox.Text, IPAddressRange.TryParse);
+
             var rule = new AdvancedRuleViewModel
             {
                 Name = ruleNameTextBox.Text,
@@ -135,10 +141,11 @@ namespace MinimalFirewall
                 Protocol = selectedProtocol.Value,
                 ApplicationName = programPathTextBox.Text,
                 ServiceName = serviceNameTextBox.Text,
-                LocalPorts = ParsingUtility.ParseStringToList<PortRange>(localPortsTextBox.Text, PortRange.TryParse),
-                RemotePorts = ParsingUtility.ParseStringToList<PortRange>(remotePortsTextBox.Text, PortRange.TryParse),
-                LocalAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(localAddressTextBox.Text, IPAddressRange.TryParse),
-                RemoteAddresses = ParsingUtility.ParseStringToList<IPAddressRange>(remoteAddressTextBox.Text, IPAddressRange.TryParse),
+                // CS0029 Fixes: Convert List<T> to string
+                LocalPorts = localPorts.Any() ? string.Join(",", localPorts.Select(p => p.ToString())) : "*",
+                RemotePorts = remotePorts.Any() ? string.Join(",", remotePorts.Select(p => p.ToString())) : "*",
+                LocalAddresses = localAddresses.Any() ? string.Join(",", localAddresses.Select(a => a.ToString())) : "*",
+                RemoteAddresses = remoteAddresses.Any() ? string.Join(",", remoteAddresses.Select(a => a.ToString())) : "*",
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced
             };

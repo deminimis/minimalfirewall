@@ -87,6 +87,9 @@ namespace MinimalFirewall
                             case FirewallTaskType.AddWildcardRule:
                                 if (task.Payload is WildcardRule p16) _wildcardRuleService.AddRule(p16);
                                 break;
+                            case FirewallTaskType.SetGroupEnabledState:
+                                if (task.Payload is SetGroupEnabledStatePayload p17) _actionsService.SetGroupEnabledState(p17.GroupName, p17.IsEnabled);
+                                break;
                         }
                     }, _cancellationTokenSource.Token);
                 }
