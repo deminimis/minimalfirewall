@@ -14,8 +14,8 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.2.6.0</AssemblyVersion>
-		<FileVersion>2.2.6.0</FileVersion>
+		<AssemblyVersion>2.3.0.0</AssemblyVersion>
+		<FileVersion>2.3.0.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>

@@ -3,6 +3,7 @@ using DarkModeForms;
 using System;
 using System.Collections.Specialized;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace MinimalFirewall
 {
@@ -14,7 +15,6 @@ namespace MinimalFirewall
         private WildcardRuleService _wildcardRuleService;
         private FirewallActionsService _actionsService;
         private NetFwTypeLib.INetFwPolicy2 _firewallPolicy;
-
         public DashboardControl()
         {
             InitializeComponent();
@@ -38,6 +38,17 @@ namespace MinimalFirewall
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
 
             LoadDashboardItems();
+            SetDefaultColumnWidths();
+            this.dashboardListView.Resize += new System.EventHandler(this.DashboardListView_Resize);
+        }
+
+        private void SetDefaultColumnWidths()
+        {
+            dashActionColumn.Width = 300;
+            dashAppColumn.Width = 150;
+            dashServiceColumn.Width = 150;
+            dashDirectionColumn.Width = 100;
+            dashPathColumn.Width = 300;
         }
 
         public void SetIconColumnVisibility(bool visible)
@@ -63,17 +74,26 @@ namespace MinimalFirewall
         private void LoadDashboardItems()
         {
             if (dashboardListView == null) return;
-
             dashboardListView.BeginUpdate();
             dashboardListView.Items.Clear();
 
             foreach (var pending in _viewModel.PendingConnections)
             {
                 int iconIndex = -1;
-                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(pending.AppPath))
+                // Optimization: Do not call _iconService.GetIconIndex here. 
+                // We only need to know if the icon column is visible. The icon will be loaded
+                // just-in-time when the rule is created.
+                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(pending.AppPath) && _iconService.ImageList != null)
                 {
-                    iconIndex = _iconService.GetIconIndex(pending.AppPath);
+                    // Use a placeholder index if available to reserve space, but avoid extraction/caching.
+                    // Since the list view is designed for virtualization, setting index to -1 is fine if we skip extraction.
+                    // We can still try to get the icon from the cache if it happens to be there, but won't force loading.
+                    if (_iconService.ImageList.Images.ContainsKey(pending.AppPath))
+                    {
+                        iconIndex = _iconService.ImageList.Images.IndexOfKey(pending.AppPath);
+                    }
                 }
+
                 var item = new ListViewItem("", iconIndex) { Tag = pending };
                 item.SubItems.AddRange(new[] { "", pending.FileName, pending.ServiceName, pending.Direction, pending.AppPath });
                 dashboardListView.Items.Add(item);
@@ -112,15 +132,7 @@ namespace MinimalFirewall
                 sender is ToolStripMenuItem menuItem &&
                 int.TryParse(menuItem.Tag?.ToString(), out int minutes))
             {
-                var payload = new ProcessPendingConnectionPayload
-                {
-                    PendingConnection = pending,
-                    Decision = "TemporaryAllow",
-                    Duration = TimeSpan.FromMinutes(minutes)
-                };
-
-                _viewModel.PendingConnections.Remove(pending);
-                _actionsService.ProcessPendingConnection(payload.PendingConnection, payload.Decision, payload.Duration, payload.TrustPublisher);
+                _viewModel.ProcessTemporaryDashboardAction(pending, "TemporaryAllow", TimeSpan.FromMinutes(minutes));
             }
         }
 
@@ -138,9 +150,7 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Allow", TrustPublisher = true };
-                _viewModel.PendingConnections.Remove(pending);
-                _actionsService.ProcessPendingConnection(payload.PendingConnection, payload.Decision, payload.Duration, payload.TrustPublisher);
+                _viewModel.ProcessDashboardAction(pending, "Allow", trustPublisher: true);
             }
         }
 
@@ -202,7 +212,8 @@ namespace MinimalFirewall
             if (dashboardListView.SelectedItems.Count > 0 &&
                 dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
             {
-                using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!);
+                using var dialog = new
+                    CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!);
                 dialog.ShowDialog(this.FindForm());
             }
         }
@@ -230,6 +241,29 @@ namespace MinimalFirewall
                 details.AppendLine($"Service: {pending.ServiceName}");
                 details.AppendLine($"Direction: {pending.Direction}");
                 Clipboard.SetText(details.ToString());
+            }
+        }
+
+        private void DashboardListView_Resize(object? sender, EventArgs e)
+        {
+            if (dashboardListView.Columns.Count < 2) return;
+            int totalColumnWidths = 0;
+            for (int i = 0; i < dashboardListView.Columns.Count - 1; i++)
+            {
+                totalColumnWidths += dashboardListView.Columns[i].Width;
+            }
+
+            int lastColumnIndex = dashboardListView.Columns.Count - 1;
+            int lastColumnWidth = dashboardListView.ClientSize.Width - totalColumnWidths;
+
+            int minWidth = TextRenderer.MeasureText(dashboardListView.Columns[lastColumnIndex].Text, dashboardListView.Font).Width + 10;
+            if (lastColumnWidth > minWidth)
+            {
+                dashboardListView.Columns[lastColumnIndex].Width = lastColumnWidth;
+            }
+            else
+            {
+                dashboardListView.Columns[lastColumnIndex].Width = minWidth;
             }
         }
     }

@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallSentryService.cs
-// File: FirewallSentryService.cs
+﻿// File: FirewallSentryService.cs
 using System.Management;
 using System.Runtime.InteropServices;
 
@@ -11,7 +10,6 @@ namespace MinimalFirewall
         private ManagementEventWatcher? _watcher;
         private bool _isStarted = false;
         public event Action? RuleSetChanged;
-
         public FirewallSentryService(FirewallRuleService firewallService)
         {
             this.firewallService = firewallService;
@@ -66,16 +64,27 @@ namespace MinimalFirewall
             RuleSetChanged?.Invoke();
         }
 
-        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker)
+        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker, IProgress<int>? progress = null, CancellationToken token = default)
         {
             var changes = new List<FirewallRuleChange>();
             var allRules = firewallService.GetAllRules();
             try
             {
+                int totalRules = allRules.Count;
+                if (totalRules == 0)
+                {
+                    progress?.Report(100);
+                    return changes;
+                }
+                int processedRules = 0;
+
                 foreach (var rule in allRules)
                 {
-                    if (rule == null || string.IsNullOrEmpty(rule.Name)) continue;
+                    if (token.IsCancellationRequested) return new List<FirewallRuleChange>();
+                    processedRules++;
+                    progress?.Report((processedRules * 100) / totalRules);
 
+                    if (rule == null || string.IsNullOrEmpty(rule.Name)) continue;
                     if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(rule.Name))
                     {
                         continue;

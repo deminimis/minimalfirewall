@@ -1,4 +1,4 @@
-﻿// DarkModeCS.cs
+﻿// File: DarkModeCS.cs
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,8 @@ namespace DarkModeForms
     {
         private class NotificationInfo
         {
-            public int Count { get; set; }
+            public int Count
+            { get; set; }
         }
         private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
         public void SetNotificationCount(Control control, int count)
@@ -107,10 +108,12 @@ namespace DarkModeForms
                 {
                     using (StringFormat sf = new StringFormat
                     {
+
                         Alignment = StringAlignment.Center,
                         LineAlignment = StringAlignment.Center
                     })
                     {
+
                         g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
                     }
                 }
@@ -123,6 +126,7 @@ namespace DarkModeForms
             public uint ColorizationColor,
               ColorizationAfterglow,
               ColorizationColorBalance,
+
               ColorizationAfterglowBalance,
               ColorizationBlurBalance,
               ColorizationGlassReflectionIntensity,
@@ -171,13 +175,17 @@ namespace DarkModeForms
             DarkMode
         }
 
-        public DisplayMode ColorMode { get; set; } = DisplayMode.SystemDefault;
+        public DisplayMode ColorMode
+        { get; set; } = DisplayMode.SystemDefault;
         public bool IsDarkMode => _IsDarkMode;
         public bool ColorizeIcons { get; set; } = true;
         public bool RoundedPanels { get; set; } = false;
-        public Form OwnerForm { get; set; }
-        public ComponentCollection? Components { get; set; }
-        public OSThemeColors OScolors { get; set; }
+        public Form OwnerForm
+        { get; set; }
+        public ComponentCollection? Components
+        { get; set; }
+        public OSThemeColors OScolors
+        { get; set; }
 
         public DarkModeCS(Form _Form, bool _ColorizeIcons = true, bool _RoundedPanels = false)
         {
@@ -218,7 +226,7 @@ namespace DarkModeForms
             if (OwnerForm.Handle != IntPtr.Zero)
             {
                 bool useDark = (ColorMode == DisplayMode.DarkMode) ||
-                (ColorMode == DisplayMode.SystemDefault && isDarkMode());
+                    (ColorMode == DisplayMode.SystemDefault && isDarkMode());
                 int[] DarkModeOn = useDark ? [0x01] : [0x00];
                 DwmSetWindowAttribute(OwnerForm.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
             }
@@ -254,6 +262,7 @@ namespace DarkModeForms
                     {
                         if (e.Control != null)
                         {
+
                             ThemeControl(e.Control!);
                         }
                     };
@@ -354,13 +363,13 @@ namespace DarkModeForms
             else if (control is NumericUpDown)
             {
                 Mode = IsDarkMode ?
-                "DarkMode_ItemsView" : "ClearMode_ItemsView";
+                    "DarkMode_ItemsView" : "ClearMode_ItemsView";
                 SetWindowTheme(control.Handle, Mode, null);
             }
             else if (control is Button button)
             {
                 button.FlatStyle = IsDarkMode ?
-                FlatStyle.Flat : FlatStyle.Standard;
+                    FlatStyle.Flat : FlatStyle.Standard;
                 button.FlatAppearance.CheckedBackColor = OScolors.Accent;
                 button.BackColor = OScolors.Control;
                 button.FlatAppearance.BorderColor = (button.FindForm()?.AcceptButton == button) ? OScolors.Accent : OScolors.Control;
@@ -376,6 +385,7 @@ namespace DarkModeForms
                 {
                     if (control is ComboBox invokedComboBox && !invokedComboBox.DropDownStyle.Equals(ComboBoxStyle.DropDownList))
                         invokedComboBox.SelectionLength = 0;
+
                 }));
 
                 if (!control.Enabled && IsDarkMode)
@@ -384,7 +394,7 @@ namespace DarkModeForms
                 }
 
                 Mode = IsDarkMode ?
-                "DarkMode_CFD" : "ClearMode_CFD";
+                    "DarkMode_CFD" : "ClearMode_CFD";
                 SetWindowTheme(control.Handle, Mode, null);
             }
             else if (control is TabPage tabPage)
@@ -490,14 +500,7 @@ namespace DarkModeForms
             }
             else if (control is ListView lView)
             {
-                if (lView.Name == "liveConnectionsListView")
-                {
-                    lView.OwnerDraw = false;
-                }
-                else
-                {
-                    lView.OwnerDraw = true;
-                }
+                lView.OwnerDraw = true;
 
                 lView.DrawColumnHeader -= ListView_DrawColumnHeader;
                 lView.DrawColumnHeader += ListView_DrawColumnHeader;
@@ -505,7 +508,7 @@ namespace DarkModeForms
                 if (!lView.OwnerDraw)
                 {
                     Mode = IsDarkMode ?
-                    "DarkMode_Explorer" : "ClearMode_Explorer";
+                        "DarkMode_Explorer" : "ClearMode_Explorer";
                     SetWindowTheme(control.Handle, Mode, null);
                 }
             }
@@ -695,9 +698,10 @@ namespace DarkModeForms
             {
                 return (int?)Registry.GetValue(
                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+
                    GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
                   -1) ??
-                1;
+                    1;
             }
             catch
             {
@@ -831,6 +835,7 @@ namespace DarkModeForms
                 {
                     new float[] {0, 0, 0, 0, 0},
                     new float[] {0, 0, 0, 0, 0},
+
                     new float[] {0, 0, 0, 0, 0},
                     new float[] {0, 0, 0, 1, 0},
                     new float[] {r, g_, b, 0, 1}
@@ -851,6 +856,7 @@ namespace DarkModeForms
             {
                 foreach (ToolStripMenuItem toolStripMenuItem in tsdd.Items.OfType<ToolStripMenuItem>())
                 {
+
                     toolStripMenuItem.DropDownOpening -= Tsmi_DropDownOpening;
                     toolStripMenuItem.DropDownOpening += Tsmi_DropDownOpening;
                 }
@@ -862,6 +868,7 @@ namespace DarkModeForms
             if (sender is ToolStripMenuItem tsmi)
             {
                 if (tsmi.DropDown != null && tsmi.DropDown.Items.Count > 0)
+
                 {
                     ThemeControl(tsmi.DropDown);
                 }
@@ -901,7 +908,7 @@ namespace DarkModeForms
             double normalizedB = backgroundColor.B / 255.0;
             double luminance = 0.299 * normalizedR + 0.587 * normalizedG + 0.114 * normalizedB;
             return luminance < 0.5 ?
-            Color.FromArgb(182, 180, 215) : Color.FromArgb(34, 34, 34);
+                Color.FromArgb(182, 180, 215) : Color.FromArgb(34, 34, 34);
         }
 
         private static GraphicsPath GetFigurePath(Rectangle rect, int radius)
@@ -926,6 +933,7 @@ namespace DarkModeForms
                 if (disposing)
                 {
                     if (OwnerForm != null && ownerFormControlAdded != null)
+
                     {
                         OwnerForm.ControlAdded -= ownerFormControlAdded;
                     }
@@ -943,19 +951,26 @@ namespace DarkModeForms
 
     public class OSThemeColors
     {
-        public Color Background { get; set; } = SystemColors.Control;
+        public Color Background
+        { get; set; } = SystemColors.Control;
         public Color BackgroundDark { get; set; } = SystemColors.ControlDark;
-        public Color BackgroundLight { get; set; } = SystemColors.ControlLight;
+        public Color BackgroundLight
+        { get; set; } = SystemColors.ControlLight;
         public Color Surface { get; set; } = SystemColors.ControlLightLight;
-        public Color SurfaceDark { get; set; } = SystemColors.ControlLight;
+        public Color SurfaceDark
+        { get; set; } = SystemColors.ControlLight;
         public Color SurfaceLight { get; set; } = Color.White;
-        public Color TextActive { get; set; } = SystemColors.ControlText;
+        public Color TextActive
+        { get; set; } = SystemColors.ControlText;
         public Color TextInactive { get; set; } = SystemColors.GrayText;
-        public Color TextInAccent { get; set; } = SystemColors.HighlightText;
+        public Color TextInAccent
+        { get; set; } = SystemColors.HighlightText;
         public Color Control { get; set; } = SystemColors.ButtonFace;
-        public Color ControlDark { get; set; } = SystemColors.ButtonShadow;
+        public Color ControlDark
+        { get; set; } = SystemColors.ButtonShadow;
         public Color ControlLight { get; set; } = SystemColors.ButtonHighlight;
-        public Color Accent { get; set; } = DarkModeCS.GetWindowsAccentColor();
+        public Color Accent
+        { get; set; } = DarkModeCS.GetWindowsAccentColor();
         public Color AccentOpaque { get; set; } = DarkModeCS.GetWindowsAccentOpaqueColor();
         public Color AccentDark => ControlPaint.Dark(Accent);
         public Color AccentLight => ControlPaint.Light(Accent);
@@ -969,8 +984,10 @@ namespace DarkModeForms
 
     public class MyRenderer : ToolStripProfessionalRenderer
     {
-        public bool ColorizeIcons { get; set; } = true;
-        public OSThemeColors MyColors { get; set; }
+        public bool ColorizeIcons
+        { get; set; } = true;
+        public OSThemeColors MyColors
+        { get; set; }
 
         public MyRenderer(ProfessionalColorTable table, bool pColorizeIcons = true) : base(table)
         {
@@ -1095,7 +1112,7 @@ namespace DarkModeForms
             if (e.Item != null)
             {
                 e.TextColor = e.Item.Enabled ?
-                MyColors.TextActive : MyColors.TextInactive;
+                    MyColors.TextActive : MyColors.TextInactive;
             }
             base.OnRenderItemText(e);
         }
@@ -1154,7 +1171,7 @@ namespace DarkModeForms
             if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
             {
                 Color _ClearColor = e.Item.Enabled ?
-                MyColors.TextActive : MyColors.SurfaceDark;
+                    MyColors.TextActive : MyColors.SurfaceDark;
                 using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
                 {
                     e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
@@ -1168,7 +1185,7 @@ namespace DarkModeForms
             if (ColorizeIcons)
             {
                 Color _ClearColor = e.Item.Enabled ?
-                MyColors.TextInactive : MyColors.SurfaceDark;
+                    MyColors.TextInactive : MyColors.SurfaceDark;
                 using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
                 {
                     e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
@@ -1186,7 +1203,8 @@ namespace DarkModeForms
 
     public class CustomColorTable : ProfessionalColorTable
     {
-        public OSThemeColors Colors { get; set; }
+        public OSThemeColors Colors
+        { get; set; }
 
         public CustomColorTable(OSThemeColors _Colors)
         {
@@ -1224,7 +1242,9 @@ namespace DarkModeForms
 
     public class ControlStatusInfo
     {
-        public bool IsExcluded { get; set; }
-        public bool LastThemeAppliedIsDark { get; set; }
+        public bool IsExcluded
+        { get; set; }
+        public bool LastThemeAppliedIsDark
+        { get; set; }
     }
 }

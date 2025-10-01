@@ -434,6 +434,55 @@ namespace MinimalFirewall
             }
         }
 
+        public void SetGroupEnabledState(string groupName, bool isEnabled)
+        {
+            INetFwRules? comRules = null;
+            var rulesInGroup = new List<INetFwRule2>();
+            try
+            {
+                comRules = _firewallPolicy.Rules;
+                foreach (INetFwRule2 r in comRules)
+                {
+                    if (r != null && string.Equals(r.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rulesInGroup.Add(r);
+                    }
+                    else
+                    {
+                        if (r != null) Marshal.ReleaseComObject(r);
+                    }
+                }
+
+                foreach (var rule in rulesInGroup)
+                {
+                    try
+                    {
+                        if (rule.Enabled != isEnabled)
+                        {
+                            rule.Enabled = isEnabled;
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        activityLogger.LogException($"SetGroupEnabledState for rule '{rule.Name}'", ex);
+                    }
+                }
+                activityLogger.LogChange("Group State Changed", $"Group '{groupName}' {(isEnabled ? "Enabled" : "Disabled")}");
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"SetGroupEnabledState for group '{groupName}'", ex);
+            }
+            finally
+            {
+                foreach (var rule in rulesInGroup)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+            }
+        }
+
         public void AcceptAllForeignRules(List<FirewallRuleChange> changes)
         {
             if (changes == null || changes.Count == 0) return;
