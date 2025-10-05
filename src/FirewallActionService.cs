@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallActionService.cs
-// File: FirewallActionService.cs
+﻿// File: FirewallActionService.cs
 using NetFwTypeLib;
 using System.Data;
 using System.IO;
@@ -10,7 +9,7 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-
+using System.Diagnostics;
 namespace MinimalFirewall
 {
     public partial class FirewallActionsService
@@ -63,13 +62,72 @@ namespace MinimalFirewall
             }
         }
 
+        private static bool IsMfwRule(INetFwRule2 rule)
+        {
+            if (string.IsNullOrEmpty(rule.Grouping)) return false;
+            return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                   rule.Grouping == MFWConstants.MainRuleGroup ||
+                   rule.Grouping == MFWConstants.WildcardRuleGroup;
+        }
+
+        private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
+        {
+            string normalizedAppPath = PathResolver.NormalizePath(appPath);
+            var rulesToDelete = new List<string>();
+            var allRules = firewallService.GetAllRules();
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null &&
+                        IsMfwRule(rule) &&
+                        rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
+                        string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+                        rule.Protocol == 256 &&
+                        rule.LocalPorts == "*" &&
+                        rule.RemotePorts == "*")
+                    {
+                        rulesToDelete.Add(rule.Name);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            if (rulesToDelete.Any())
+            {
+                activityLogger.LogDebug($"Auto-deleting general block rule(s) for {appPath} to apply new Allow rule: {string.Join(", ", rulesToDelete)}");
+                try
+                {
+                    firewallService.DeleteRulesByName(rulesToDelete);
+                    foreach (var name in rulesToDelete) activityLogger.LogChange("Rule Auto-Deleted", name);
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"Auto-deleting rules for {appPath}", ex);
+                }
+            }
+        }
+
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
         {
             var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            var rulesToRemove = new List<string>();
+            if (action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var appPath in normalizedAppPaths)
+                {
+                    FindAndQueueDeleteForGeneralBlockRule(appPath);
+                }
+            }
 
             foreach (var appPath in normalizedAppPaths)
             {
+                var rulesToRemove = new List<string>();
                 if (string.IsNullOrEmpty(wildcardSourcePath))
                 {
                     if (action.Contains("Inbound") || action.Contains("(All)"))
@@ -82,11 +140,6 @@ namespace MinimalFirewall
                     }
                 }
 
-                if (rulesToRemove.Any())
-                {
-                    firewallService.DeleteRulesByName(rulesToRemove);
-                }
-
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string baseName, Directions dir, Actions act)
                 {
@@ -96,6 +149,11 @@ namespace MinimalFirewall
                 }
 
                 ApplyRuleAction(appName, action, createRule);
+                if (rulesToRemove.Any())
+                {
+                    firewallService.DeleteRulesByName(rulesToRemove);
+                }
+
                 activityLogger.LogChange("Rule Changed", action + " for " + appPath);
             }
         }
@@ -103,38 +161,33 @@ namespace MinimalFirewall
         public void ApplyServiceRuleChange(string serviceName, string action)
         {
             if (string.IsNullOrEmpty(serviceName)) return;
-            try
+            var rulesToRemove = firewallService.DeleteRulesByServiceName(serviceName);
+
+            void createRule(string name, Directions dir, Actions act) => CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value);
+            ApplyRuleAction(serviceName, action, createRule);
+            if (rulesToRemove.Any())
             {
-                firewallService.DeleteRulesByServiceName(serviceName);
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"ApplyServiceRuleChange (Deleting old rules for {serviceName})", ex);
+                firewallService.DeleteRulesByName(rulesToRemove);
             }
 
-            void createRule(string name, Directions dir, Actions act) =>
-                CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value);
-            ApplyRuleAction(serviceName, action, createRule);
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
         }
 
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)
         {
             var packageFamilyNames = uwpApps.Select(app => app.PackageFamilyName).ToList();
-            try
-            {
-                firewallService.DeleteUwpRules(packageFamilyNames);
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"ApplyUwpRuleChange (Deleting old rules)", ex);
-            }
+            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
 
             foreach (var app in uwpApps)
             {
                 void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
                 ApplyRuleAction(app.Name, action, createRule);
                 activityLogger.LogChange("UWP Rule Changed", action + " for " + app.Name);
+            }
+
+            if (rulesToRemove.Any())
+            {
+                firewallService.DeleteRulesByName(rulesToRemove);
             }
         }
 
@@ -197,8 +250,7 @@ namespace MinimalFirewall
 
         private void ManageCryptoServiceRule(bool enable)
         {
-            INetFwRule2?
-            rule = null;
+            INetFwRule2? rule = null;
             try
             {
                 rule = firewallService.GetRuleByName(CryptoRuleName);
@@ -264,7 +316,7 @@ namespace MinimalFirewall
                 MessageBox.Show(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
                     "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
- "Potential Causes:\n" +
+                    "Potential Causes:\n" +
                     "1. A local or domain Group Policy is preventing this change.\n" +
                     "2. Other security software is blocking this action.\n\n" +
                     "The firewall's default policy will be set back to 'Allow' for safety.",
@@ -294,6 +346,15 @@ namespace MinimalFirewall
                 return;
             }
 
+            if (newLockdownState)
+            {
+                eventListenerService.Start();
+            }
+            else
+            {
+                eventListenerService.Stop();
+            }
+
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
             if (!newLockdownState)
             {
@@ -320,8 +381,7 @@ namespace MinimalFirewall
                 case "Block":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
                     string action = (decision == "Allow" ? "Allow" : "Block") + " (" + pending.Direction + ")";
-                    string?
-                    pathToRule = pending.AppPath;
+                    string? pathToRule = pending.AppPath;
 
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
@@ -501,6 +561,11 @@ namespace MinimalFirewall
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
             }
 
+            if (vm.Status == "Allow" && !string.IsNullOrWhiteSpace(vm.ApplicationName))
+            {
+                FindAndQueueDeleteForGeneralBlockRule(vm.ApplicationName);
+            }
+
             bool hasProgramOrService = !string.IsNullOrWhiteSpace(vm.ApplicationName) || !string.IsNullOrWhiteSpace(vm.ServiceName);
             bool isProtocolTcpUdpOrAny = vm.Protocol == ProtocolTypes.TCP.Value ||
                                      vm.Protocol == ProtocolTypes.UDP.Value ||
@@ -557,8 +622,7 @@ namespace MinimalFirewall
                     }
                     if (protocolsToCreate.Count > 1)
                     {
-                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
-                            " - TCP" : " - UDP";
+                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ? " - TCP" : " - UDP";
                     }
                     ruleVm.Name = vm.Name + nameSuffix;
                     CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
@@ -573,19 +637,22 @@ namespace MinimalFirewall
             firewallRule.Description = vm.Description;
             firewallRule.Enabled = vm.IsEnabled;
             firewallRule.Grouping = vm.Grouping;
-            firewallRule.Action = vm.Status == "Allow" ?
-                NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            firewallRule.Action = vm.Status == "Allow" ? NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
             firewallRule.Protocol = vm.Protocol;
+
+            if (!string.IsNullOrWhiteSpace(vm.ServiceName))
+            {
+                firewallRule.serviceName = vm.ServiceName;
+            }
 
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 firewallRule.ApplicationName = vm.ApplicationName;
             }
-
-            if (!string.IsNullOrWhiteSpace(vm.ServiceName))
+            else
             {
-                firewallRule.serviceName = vm.ServiceName;
+                firewallRule.ApplicationName = null;
             }
 
             if (vm.Protocol != ProtocolTypes.TCP.Value && vm.Protocol != ProtocolTypes.UDP.Value)
@@ -595,14 +662,12 @@ namespace MinimalFirewall
             }
             else
             {
-                firewallRule.LocalPorts = vm.LocalPorts.Any() ?
-                    string.Join(",", vm.LocalPorts.Select(p => p.ToString())) : "*";
-                firewallRule.RemotePorts = vm.RemotePorts.Any() ? string.Join(",", vm.RemotePorts.Select(p => p.ToString())) : "*";
+                firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ? vm.LocalPorts : "*";
+                firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
             }
 
-            firewallRule.LocalAddresses = vm.LocalAddresses.Any() ?
-                string.Join(",", vm.LocalAddresses.Select(a => a.ToString())) : "*";
-            firewallRule.RemoteAddresses = vm.RemoteAddresses.Any() ? string.Join(",", vm.RemoteAddresses.Select(a => a.ToString())) : "*";
+            firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
+            firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
 
             NET_FW_PROFILE_TYPE2_ profiles = 0;
             if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
@@ -610,7 +675,6 @@ namespace MinimalFirewall
             if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
             if (profiles == 0) profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
             firewallRule.Profiles = (int)profiles;
-
             firewallRule.InterfaceTypes = interfaceTypes;
             if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
             {
@@ -624,26 +688,34 @@ namespace MinimalFirewall
             activityLogger.LogChange("Advanced Rule Created", vm.Name);
         }
 
-        private static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
+        public static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
         {
             parsedAction = Actions.Allow;
-            parsedDirection = Directions.Outgoing;
+            parsedDirection = 0;
             if (string.IsNullOrEmpty(action)) return false;
 
             parsedAction = action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) ? Actions.Allow : Actions.Block;
             if (action.Contains("(All)"))
             {
-                parsedDirection = Directions.Incoming |
-                Directions.Outgoing;
-            }
-            else if (action.Contains("Inbound") || action.Contains("Incoming"))
-            {
-                parsedDirection = Directions.Incoming;
+                parsedDirection = Directions.Incoming | Directions.Outgoing;
             }
             else
             {
+                if (action.Contains("Inbound") || action.Contains("Incoming"))
+                {
+                    parsedDirection |= Directions.Incoming;
+                }
+                if (action.Contains("Outbound") || action.Contains("Outgoing"))
+                {
+                    parsedDirection |= Directions.Outgoing;
+                }
+            }
+
+            if (parsedDirection == 0)
+            {
                 parsedDirection = Directions.Outgoing;
             }
+
             return true;
         }
 
@@ -654,8 +726,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            string actionStr = parsedAction == Actions.Allow ?
-                "" : "Block ";
+            string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
             string inName = $"{appName} - {actionStr}In";
             string outName = $"{appName} - {actionStr}Out";
             if (parsedDirection.HasFlag(Directions.Incoming))

@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/BackgroundFirewallTaskService.cs
-// File: BackgroundFirewallTaskService.cs
+﻿// File: BackgroundFirewallTaskService.cs
 using System;
 using System.Collections.Concurrent;
 using System.Threading;

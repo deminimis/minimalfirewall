@@ -4,13 +4,6 @@ namespace MinimalFirewall
     partial class DashboardControl
     {
         private System.ComponentModel.IContainer components = null;
-        private MinimalFirewall.ButtonListView dashboardListView;
-        private System.Windows.Forms.ColumnHeader dashIconColumn;
-        private System.Windows.Forms.ColumnHeader dashActionColumn;
-        private System.Windows.Forms.ColumnHeader dashAppColumn;
-        private System.Windows.Forms.ColumnHeader dashServiceColumn;
-        private System.Windows.Forms.ColumnHeader dashDirectionColumn;
-        private System.Windows.Forms.ColumnHeader dashPathColumn;
         private System.Windows.Forms.ContextMenuStrip dashboardContextMenu;
         private System.Windows.Forms.ToolStripMenuItem tempAllowToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem allow2MinutesToolStripMenuItem;
@@ -32,6 +25,16 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
+        private System.Windows.Forms.DataGridView dashboardDataGridView;
+        private System.Windows.Forms.DataGridViewImageColumn dashIconColumn;
+        private System.Windows.Forms.DataGridViewButtonColumn allowButtonColumn;
+        private System.Windows.Forms.DataGridViewButtonColumn blockButtonColumn;
+        private System.Windows.Forms.DataGridViewButtonColumn ignoreButtonColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dashAppColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dashServiceColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dashDirectionColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dashPathColumn;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -45,13 +48,11 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.dashboardListView = new MinimalFirewall.ButtonListView();
-            this.dashIconColumn = new System.Windows.Forms.ColumnHeader();
-            this.dashActionColumn = new System.Windows.Forms.ColumnHeader();
-            this.dashAppColumn = new System.Windows.Forms.ColumnHeader();
-            this.dashServiceColumn = new System.Windows.Forms.ColumnHeader();
-            this.dashDirectionColumn = new System.Windows.Forms.ColumnHeader();
-            this.dashPathColumn = new System.Windows.Forms.ColumnHeader();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dashboardContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tempAllowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.allow2MinutesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,55 +74,18 @@ namespace MinimalFirewall
             this.openFileLocationToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.dashboardDataGridView = new System.Windows.Forms.DataGridView();
+            this.dashIconColumn = new System.Windows.Forms.DataGridViewImageColumn();
+            this.allowButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.blockButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.ignoreButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.dashAppColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dashServiceColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dashDirectionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dashPathColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashboardContextMenu.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dashboardDataGridView)).BeginInit();
             this.SuspendLayout();
-            // 
-            // dashboardListView
-            // 
-            this.dashboardListView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.dashboardListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.dashIconColumn,
-            this.dashActionColumn,
-            this.dashAppColumn,
-            this.dashServiceColumn,
-            this.dashDirectionColumn,
-            this.dashPathColumn});
-            this.dashboardListView.ContextMenuStrip = this.dashboardContextMenu;
-            this.dashboardListView.DarkMode = null;
-            this.dashboardListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dashboardListView.FullRowSelect = true;
-            this.dashboardListView.Location = new System.Drawing.Point(0, 0);
-            this.dashboardListView.Name = "dashboardListView";
-            this.dashboardListView.Size = new System.Drawing.Size(800, 600);
-            this.dashboardListView.TabIndex = 1;
-            this.dashboardListView.UseCompatibleStateImageBehavior = false;
-            this.dashboardListView.View = System.Windows.Forms.View.Details;
-            this.dashboardListView.ViewMode = MinimalFirewall.ButtonListView.Mode.Dashboard;
-            // 
-            // dashIconColumn
-            // 
-            this.dashIconColumn.Text = "";
-            this.dashIconColumn.Width = 32;
-            // 
-            // dashActionColumn
-            // 
-            this.dashActionColumn.Text = "Action";
-            // 
-            // dashAppColumn
-            // 
-            this.dashAppColumn.Text = "Application";
-            // 
-            // dashServiceColumn
-            // 
-            this.dashServiceColumn.Text = "Service";
-            // 
-            // dashDirectionColumn
-            // 
-            this.dashDirectionColumn.Text = "Direction";
-            // 
-            // dashPathColumn
-            // 
-            this.dashPathColumn.Text = "Path";
             // 
             // dashboardContextMenu
             // 
@@ -135,7 +99,6 @@ namespace MinimalFirewall
             this.ignoreToolStripMenuItem,
             this.toolStripSeparator4,
             this.createWildcardRuleToolStripMenuItem,
-
             this.toolStripSeparator5,
             this.createAdvancedRuleToolStripMenuItem,
             this.toolStripSeparator7,
@@ -153,8 +116,7 @@ namespace MinimalFirewall
             this.allow5MinutesToolStripMenuItem,
             this.allow15MinutesToolStripMenuItem,
             this.allow1HourToolStripMenuItem,
-
-             this.allow3HoursToolStripMenuItem,
+            this.allow3HoursToolStripMenuItem,
             this.allow8HoursToolStripMenuItem});
             this.tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
             this.tempAllowToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
@@ -289,15 +251,159 @@ namespace MinimalFirewall
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
             this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
             // 
+            // dashboardDataGridView
+            // 
+            this.dashboardDataGridView.AllowUserToAddRows = false;
+            this.dashboardDataGridView.AllowUserToDeleteRows = false;
+            this.dashboardDataGridView.AllowUserToResizeRows = false;
+            this.dashboardDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dashboardDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
+            this.dashboardDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dashboardDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
+            this.dashboardDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dashboardDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            this.dashboardDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dashboardDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.dashIconColumn,
+            this.allowButtonColumn,
+            this.blockButtonColumn,
+            this.ignoreButtonColumn,
+            this.dashAppColumn,
+            this.dashServiceColumn,
+            this.dashDirectionColumn,
+            this.dashPathColumn});
+            this.dashboardDataGridView.ContextMenuStrip = this.dashboardContextMenu;
+            this.dashboardDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dashboardDataGridView.EnableHeadersVisualStyles = false;
+            this.dashboardDataGridView.GridColor = System.Drawing.SystemColors.Control;
+            this.dashboardDataGridView.Location = new System.Drawing.Point(0, 0);
+            this.dashboardDataGridView.MultiSelect = false;
+            this.dashboardDataGridView.Name = "dashboardDataGridView";
+            this.dashboardDataGridView.ReadOnly = true;
+            this.dashboardDataGridView.RowHeadersVisible = false;
+            this.dashboardDataGridView.RowTemplate.Height = 32;
+            this.dashboardDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dashboardDataGridView.Size = new System.Drawing.Size(800, 600);
+            this.dashboardDataGridView.TabIndex = 2;
+            this.dashboardDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellContentClick);
+            this.dashboardDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dashboardDataGridView_CellFormatting);
+            this.dashboardDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseEnter);
+            this.dashboardDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseLeave);
+            this.dashboardDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.dashboardDataGridView_RowPostPaint);
+            // 
+            // dashIconColumn
+            // 
+            this.dashIconColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.dashIconColumn.DataPropertyName = "AppPath";
+            this.dashIconColumn.FillWeight = 10F;
+            this.dashIconColumn.HeaderText = "";
+            this.dashIconColumn.ImageLayout = System.Windows.Forms.DataGridViewImageCellLayout.Zoom;
+            this.dashIconColumn.MinimumWidth = 32;
+            this.dashIconColumn.Name = "dashIconColumn";
+            this.dashIconColumn.ReadOnly = true;
+            this.dashIconColumn.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.dashIconColumn.Width = 32;
+            // 
+            // allowButtonColumn
+            // 
+            this.allowButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.allowButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
+            this.allowButtonColumn.FillWeight = 15F;
+            this.allowButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.allowButtonColumn.HeaderText = "Action";
+            this.allowButtonColumn.MinimumWidth = 70;
+            this.allowButtonColumn.Name = "allowButtonColumn";
+            this.allowButtonColumn.ReadOnly = true;
+            this.allowButtonColumn.Text = "Allow";
+            this.allowButtonColumn.UseColumnTextForButtonValue = true;
+            this.allowButtonColumn.Width = 70;
+            // 
+            // blockButtonColumn
+            // 
+            this.blockButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.blockButtonColumn.DefaultCellStyle = dataGridViewCellStyle3;
+            this.blockButtonColumn.FillWeight = 15F;
+            this.blockButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.blockButtonColumn.HeaderText = "";
+            this.blockButtonColumn.MinimumWidth = 70;
+            this.blockButtonColumn.Name = "blockButtonColumn";
+            this.blockButtonColumn.ReadOnly = true;
+            this.blockButtonColumn.Text = "Block";
+            this.blockButtonColumn.UseColumnTextForButtonValue = true;
+            this.blockButtonColumn.Width = 70;
+            // 
+            // ignoreButtonColumn
+            // 
+            this.ignoreButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.ignoreButtonColumn.DefaultCellStyle = dataGridViewCellStyle4;
+            this.ignoreButtonColumn.FillWeight = 15F;
+            this.ignoreButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.ignoreButtonColumn.HeaderText = "";
+            this.ignoreButtonColumn.MinimumWidth = 70;
+            this.ignoreButtonColumn.Name = "ignoreButtonColumn";
+            this.ignoreButtonColumn.ReadOnly = true;
+            this.ignoreButtonColumn.Text = "Ignore";
+            this.ignoreButtonColumn.UseColumnTextForButtonValue = true;
+            this.ignoreButtonColumn.Width = 70;
+            // 
+            // dashAppColumn
+            // 
+            this.dashAppColumn.DataPropertyName = "FileName";
+            this.dashAppColumn.FillWeight = 30F;
+            this.dashAppColumn.HeaderText = "Application";
+            this.dashAppColumn.Name = "dashAppColumn";
+            this.dashAppColumn.ReadOnly = true;
+            // 
+            // dashServiceColumn
+            // 
+            this.dashServiceColumn.DataPropertyName = "ServiceName";
+            this.dashServiceColumn.FillWeight = 30F;
+            this.dashServiceColumn.HeaderText = "Service";
+            this.dashServiceColumn.Name = "dashServiceColumn";
+            this.dashServiceColumn.ReadOnly = true;
+            // 
+            // dashDirectionColumn
+            // 
+            this.dashDirectionColumn.DataPropertyName = "Direction";
+            this.dashDirectionColumn.FillWeight = 20F;
+            this.dashDirectionColumn.HeaderText = "Direction";
+            this.dashDirectionColumn.Name = "dashDirectionColumn";
+            this.dashDirectionColumn.ReadOnly = true;
+            // 
+            // dashPathColumn
+            // 
+            this.dashPathColumn.DataPropertyName = "AppPath";
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            this.dashPathColumn.DefaultCellStyle = dataGridViewCellStyle5;
+            this.dashPathColumn.FillWeight = 50F;
+            this.dashPathColumn.HeaderText = "Path";
+            this.dashPathColumn.Name = "dashPathColumn";
+            this.dashPathColumn.ReadOnly = true;
+            // 
             // DashboardControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.dashboardListView);
+            this.Controls.Add(this.dashboardDataGridView);
             this.Name = "DashboardControl";
             this.Size = new System.Drawing.Size(800, 600);
             this.dashboardContextMenu.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dashboardDataGridView)).EndInit();
             this.ResumeLayout(false);
+
         }
         #endregion
     }

@@ -48,6 +48,8 @@ namespace MinimalFirewall
 
     public class AggregatedRuleViewModel : AdvancedRuleViewModel
     {
+        public string InboundStatus { get; set; } = string.Empty;
+        public string OutboundStatus { get; set; } = string.Empty;
         public List<AdvancedRuleViewModel> UnderlyingRules { get; set; } = [];
     }
 
@@ -57,19 +59,44 @@ namespace MinimalFirewall
         public string Status { get; set; } = string.Empty;
         public bool IsEnabled { get; set; }
         public Directions Direction { get; set; }
-        public string LocalPorts { get; set; } = string.Empty; // Changed from ICollection<PortRange>
-        public string RemotePorts { get; set; } = string.Empty; // Changed from ICollection<PortRange>
-        public short Protocol { get; set; }
+        public string LocalPorts { get; set; } = string.Empty;
+        public string RemotePorts { get; set; } = string.Empty;
+        public int Protocol { get; set; }
         public string ProtocolName { get; set; } = string.Empty;
         public string ApplicationName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
-        public string LocalAddresses { get; set; } = string.Empty; // Changed from ICollection<IPAddressRange>
-        public string RemoteAddresses { get; set; } = string.Empty; // Changed from ICollection<IPAddressRange>
+        public string LocalAddresses { get; set; } = string.Empty;
+        public string RemoteAddresses { get; set; } = string.Empty;
         public string Profiles { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Grouping { get; set; } = string.Empty;
         public RuleType Type { get; set; }
         public WildcardRule? WildcardDefinition { get; set; }
+        public string InterfaceTypes { get; set; } = string.Empty;
+        public string IcmpTypesAndCodes { get; set; } = string.Empty;
+
+        public bool HasSameSettings(AdvancedRuleViewModel? other)
+        {
+            if (other == null) return false;
+
+            return
+                this.Name == other.Name &&
+                this.Description == other.Description &&
+                this.IsEnabled == other.IsEnabled &&
+                this.Status == other.Status &&
+                this.Direction == other.Direction &&
+                this.Protocol == other.Protocol &&
+                this.ApplicationName == other.ApplicationName &&
+                this.ServiceName == other.ServiceName &&
+                this.LocalPorts == other.LocalPorts &&
+                this.RemotePorts == other.RemotePorts &&
+                this.LocalAddresses == other.LocalAddresses &&
+                this.RemoteAddresses == other.RemoteAddresses &&
+                this.Profiles == other.Profiles &&
+                this.Grouping == other.Grouping &&
+                this.InterfaceTypes == other.InterfaceTypes &&
+                this.IcmpTypesAndCodes == other.IcmpTypesAndCodes;
+        }
     }
 
     public class FirewallRuleHashModel
@@ -117,6 +144,9 @@ namespace MinimalFirewall
         public string FileName => Path.GetFileName(AppPath);
         public string Direction { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
+        public string Protocol { get; set; } = string.Empty;
+        public string RemotePort { get; set; } = string.Empty;
+        public string RemoteAddress { get; set; } = string.Empty;
     }
 
     public class WildcardRule
@@ -133,6 +163,7 @@ namespace MinimalFirewall
     {
         public string Name { get; set; } = string.Empty;
         public string PackageFamilyName { get; set; } = string.Empty;
+        public string Publisher { get; set; } = string.Empty;
         public string Status { get; set; } = "Undefined";
     }
 

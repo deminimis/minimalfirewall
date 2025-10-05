@@ -330,7 +330,7 @@ namespace MinimalFirewall
             // appIconList
             // 
             this.appIconList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
-            this.appIconList.ImageSize = new System.Drawing.Size(16, 16);
+            this.appIconList.ImageSize = new System.Drawing.Size(32, 32);
             this.appIconList.TransparentColor = System.Drawing.Color.Transparent;
             // 
             // MainForm

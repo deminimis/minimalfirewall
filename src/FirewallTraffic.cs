@@ -1,4 +1,5 @@
-﻿using System;
+﻿// File: FirewallTraffic.cs
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Linq;
+using MinimalFirewall;
 namespace Firewall.Traffic
 {
     public static partial class TcpTrafficTracker
@@ -155,6 +157,8 @@ namespace Firewall.Traffic.ViewModels
         public TcpTrafficTracker.TcpTrafficRow Connection { get; }
         public string ProcessName { get; private set; }
         public string ProcessPath { get; private set; }
+        public string ServiceName { get; private set; }
+        public string DisplayName => string.IsNullOrEmpty(ServiceName) ? ProcessName : $"{ProcessName} ({ServiceName})";
         public string LocalAddress => Connection.LocalEndPoint.Address.ToString();
         public int LocalPort => Connection.LocalEndPoint.Port;
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
@@ -163,11 +167,12 @@ namespace Firewall.Traffic.ViewModels
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
-        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path) processInfo)
+        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path, string ServiceName) processInfo)
         {
             Connection = connection;
             ProcessName = processInfo.Name;
             ProcessPath = processInfo.Path;
+            ServiceName = processInfo.ServiceName;
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
             BlockRemoteIpCommand = new RelayCommand(BlockIp, () => true);
         }
@@ -229,7 +234,7 @@ namespace Firewall.Traffic.ViewModels
                 var newVms = await Task.Run(() =>
                 {
                     var connections = TcpTrafficTracker.GetConnections().Distinct().ToList();
-                    var processInfoCache = new Dictionary<int, (string Name, string Path)>();
+                    var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
                     var viewModels = new List<TcpConnectionViewModel>();
 
                     foreach (var conn in connections)
@@ -242,13 +247,20 @@ namespace Firewall.Traffic.ViewModels
                                 {
                                     string name = p.ProcessName;
                                     string path = string.Empty;
+                                    string serviceName = string.Empty;
                                     try { if (p.MainModule != null) path = p.MainModule.FileName; }
                                     catch (Win32Exception) { path = "N/A (Access Denied)"; }
-                                    info = (name, path);
+
+                                    if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        serviceName = SystemDiscoveryService.GetServicesByPID(conn.ProcessId.ToString());
+                                    }
+
+                                    info = (name, path, serviceName);
                                 }
                             }
-                            catch (ArgumentException) { info = ("(Exited)", string.Empty); }
-                            catch { info = ("System", string.Empty); }
+                            catch (ArgumentException) { info = ("(Exited)", string.Empty, string.Empty); }
+                            catch { info = ("System", string.Empty, string.Empty); }
                             processInfoCache[conn.ProcessId] = info;
                         }
                         viewModels.Add(new TcpConnectionViewModel(conn, info));
