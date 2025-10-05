@@ -8,22 +8,23 @@ using Microsoft.Extensions.Caching.Memory;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Diagnostics;
 namespace MinimalFirewall
 {
     public class FirewallDataService
     {
         private readonly FirewallRuleService _firewallService;
         private readonly WildcardRuleService _wildcardRuleService;
+        private readonly UwpService _uwpService;
         private readonly MemoryCache _localCache;
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
         private const string AggregatedRulesCacheKey = "AggregatedRulesList";
-
-        public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService)
+        public FirewallDataService(FirewallRuleService firewallService, WildcardRuleService wildcardRuleService, UwpService uwpService)
         {
             _firewallService = firewallService;
             _wildcardRuleService = wildcardRuleService;
+            _uwpService = uwpService;
             _localCache = new MemoryCache(new MemoryCacheOptions());
         }
 
@@ -64,107 +65,32 @@ namespace MinimalFirewall
                 var allRules = _firewallService.GetAllRules();
                 try
                 {
-                    int totalRules = allRules.Count;
+                    var enabledRules = allRules.Where(r => r.Enabled && !string.IsNullOrEmpty(r.Grouping)).ToList();
+                    int totalRules = enabledRules.Count;
                     if (totalRules == 0)
                     {
                         progress?.Report(100);
                         return new List<AggregatedRuleViewModel>();
                     }
-                    int processedRules = 0;
 
-                    var enabledRules = allRules.Where(r => r.Enabled).ToList();
-                    var allServices = GetCachedServicesWithExePaths();
-                    var allWildcards = _wildcardRuleService.GetRules();
+                    var groupedByGroupingAndProtocol = enabledRules
+                        .GroupBy(r => $"{r.Grouping}|{r.ApplicationName}|{r.serviceName}|{r.Protocol}")
+                        .ToList();
 
-                    var rulesByAppPath = enabledRules
-                        .Where(r => !string.IsNullOrEmpty(r.ApplicationName))
-                        .GroupBy(r => PathResolver.NormalizePath(r.ApplicationName!), StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(g => g.Key, g => g.ToList());
-                    var rulesByServiceName = enabledRules
-                        .Where(r => !string.IsNullOrEmpty(r.serviceName) && r.serviceName != "*")
-                        .GroupBy(r => r.serviceName, StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(g => g.Key, g => g.ToList());
-                    var aggRulesDict = new Dictionary<string, AggregatedRuleViewModel>();
+                    var aggRules = new List<AggregatedRuleViewModel>();
+                    int processedCount = 0;
 
-                    foreach (var service in allServices)
+                    foreach (var group in groupedByGroupingAndProtocol)
                     {
                         if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
-                        var relevantRules = new List<INetFwRule2>();
-                        if (rulesByServiceName.TryGetValue(service.ServiceName, out var serviceRules))
-                        {
-                            relevantRules.AddRange(serviceRules);
-                        }
-
-                        var normalizedServiceExePath = PathResolver.NormalizePath(service.ExePath);
-                        if (rulesByAppPath.TryGetValue(normalizedServiceExePath, out var appRules))
-                        {
-                            relevantRules.AddRange(appRules);
-                            rulesByAppPath.Remove(normalizedServiceExePath);
-                        }
-
-                        if (relevantRules.Count > 0)
-                        {
-                            var distinctRules = relevantRules.Distinct().ToList();
-                            var aggRule = CreateAggregatedViewModelForRuleGroup(distinctRules, service.DisplayName, normalizedServiceExePath, service.ServiceName, RuleType.Service);
-                            string key = $"{aggRule.Name}|{aggRule.ApplicationName}|{aggRule.ServiceName}";
-                            aggRulesDict[key] = aggRule;
-                        }
+                        var groupList = group.ToList();
+                        aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
+                        processedCount += groupList.Count;
+                        progress?.Report((processedCount * 100) / totalRules);
                     }
 
-                    foreach (var appGroup in rulesByAppPath)
-                    {
-                        if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
-                        var aggRule = CreateAggregatedViewModelForRuleGroup(appGroup.Value, Path.GetFileNameWithoutExtension(appGroup.Key), appGroup.Key, "", RuleType.Program);
-                        string key = $"{aggRule.Name}|{aggRule.ApplicationName}|{aggRule.ServiceName}";
-                        aggRulesDict[key] = aggRule;
-                    }
-
-                    var nonAppRules = enabledRules.Where(r => string.IsNullOrEmpty(r.ApplicationName) && (string.IsNullOrEmpty(r.serviceName) || r.serviceName == "*")).ToList();
-                    foreach (var rule in allRules)
-                    {
-                        if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
-                        processedRules++;
-                        progress?.Report((processedRules * 100) / totalRules);
-
-                        if (!nonAppRules.Any(nr => nr.Name == rule.Name)) continue;
-                        if (rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true) continue;
-                        var vm = CreateAdvancedRuleViewModel(rule);
-                        vm.Type = RuleType.Advanced;
-
-                        string directionText = vm.Direction switch
-                        {
-                            Directions.Incoming => "Inbound",
-                            Directions.Outgoing => "Outbound",
-                            Directions.Incoming | Directions.Outgoing => "In/Out",
-                            _ => vm.Direction.ToString()
-                        };
-                        vm.Status = $"{vm.Status} {directionText}";
-
-                        var aggVm = new AggregatedRuleViewModel
-                        {
-                            Name = vm.Name,
-                            IsEnabled = vm.IsEnabled,
-                            Status = vm.Status,
-                            Direction = vm.Direction,
-                            LocalPorts = vm.LocalPorts,
-                            RemotePorts = vm.RemotePorts,
-                            LocalAddresses = vm.LocalAddresses,
-                            RemoteAddresses = vm.RemoteAddresses,
-                            ApplicationName = vm.ApplicationName,
-                            ServiceName = vm.ServiceName,
-                            Profiles = vm.Profiles,
-                            Grouping = vm.Grouping,
-                            Description = vm.Description,
-                            Type = vm.Type,
-                            ProtocolName = vm.ProtocolName,
-                            UnderlyingRules = { vm }
-                        };
-                        aggRulesDict[vm.Name] = aggVm;
-                    }
-
-                    AddWildcardViewModels(aggRulesDict, allWildcards);
                     progress?.Report(100);
-                    return aggRulesDict.Values.OrderBy(r => r.Name).ToList();
+                    return aggRules.OrderBy(r => r.Name).ToList();
                 }
                 finally
                 {
@@ -174,6 +100,7 @@ namespace MinimalFirewall
                     }
                 }
             }, token);
+
             if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
 
             var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
@@ -182,60 +109,104 @@ namespace MinimalFirewall
             return aggregatedRules;
         }
 
-        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<INetFwRule2> group, string displayName, string appPath, string serviceName, RuleType type)
+        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<INetFwRule2> group)
         {
             var firstRule = group.First();
+
+            var commonName = GetCommonName(group);
+            if (string.IsNullOrEmpty(commonName) || commonName.StartsWith("@"))
+            {
+                commonName = firstRule.Grouping;
+            }
+
             var aggRule = new AggregatedRuleViewModel
             {
-                Name = displayName,
-                ApplicationName = appPath,
-                ServiceName = serviceName,
-                Type = type,
+                Name = commonName,
+                ApplicationName = firstRule.ApplicationName,
+                ServiceName = firstRule.serviceName,
+                Protocol = firstRule.Protocol,
+                ProtocolName = GetProtocolName(firstRule.Protocol),
+                Type = DetermineRuleType(firstRule),
                 UnderlyingRules = group.Select(CreateAdvancedRuleViewModel).ToList(),
                 IsEnabled = group.All(r => r.Enabled),
                 Profiles = GetProfileString(firstRule.Profiles),
                 Grouping = firstRule.Grouping ?? "",
                 Description = firstRule.Description ?? ""
             };
-            bool hasInAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutAllow = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
-            bool hasInBlock = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutBlock = group.Any(r => r.Enabled && r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
 
-            var statusParts = new List<string>();
-            var directionParts = new List<Directions>();
+            bool hasInAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+            bool hasInBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
 
-            if (hasOutAllow) { statusParts.Add("Allow Outbound"); directionParts.Add(Directions.Outgoing); }
-            if (hasOutBlock) { statusParts.Add("Block Outbound"); directionParts.Add(Directions.Outgoing); }
-            if (hasInAllow) { statusParts.Add("Allow Inbound"); directionParts.Add(Directions.Incoming); }
-            if (hasInBlock) { statusParts.Add("Block Inbound"); directionParts.Add(Directions.Incoming); }
+            aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "N/A");
+            if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
 
-            if (statusParts.Count == 0)
-            {
-                aggRule.Status = "Undefined";
-            }
-            else
-            {
-                aggRule.Status = string.Join(", ", statusParts);
-            }
+            aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "N/A");
+            if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
 
-            aggRule.Direction = directionParts.Distinct().Aggregate((Directions)0, (current, d) => current | d);
-            var protocols = group.Select(r => GetProtocolName(r.Protocol)).Distinct().OrderBy(p => p).ToList();
-            var protocolString = string.Join(", ", protocols);
-            if (protocols.Contains("TCP") && protocols.Contains("UDP"))
-            {
-                protocolString = "TCP, UDP";
-            }
-            aggRule.ProtocolName = protocolString;
+            var localPorts = group.Select(r => r.LocalPorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.LocalPorts = localPorts.Any() ? string.Join(", ", localPorts) : "*";
 
-            // Set memory-optimized string properties from firstRule for aggregated view
-            aggRule.LocalPorts = firstRule.LocalPorts ?? "*";
-            aggRule.RemotePorts = firstRule.RemotePorts ?? "*";
-            aggRule.LocalAddresses = firstRule.LocalAddresses ?? "*";
-            aggRule.RemoteAddresses = firstRule.RemoteAddresses ?? "*";
+            var remotePorts = group.Select(r => r.RemotePorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.RemotePorts = remotePorts.Any() ? string.Join(", ", remotePorts) : "*";
+
+            var localAddresses = group.Select(r => r.LocalAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.LocalAddresses = localAddresses.Any() ? string.Join(", ", localAddresses) : "*";
+
+            var remoteAddresses = group.Select(r => r.RemoteAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.RemoteAddresses = remoteAddresses.Any() ? string.Join(", ", remoteAddresses) : "*";
 
             return aggRule;
         }
+
+        private string GetCommonName(List<INetFwRule2> group)
+        {
+            if (group.Count == 0) return string.Empty;
+            if (group.Count == 1) return group[0].Name;
+
+            var names = group.Select(r => r.Name).ToList();
+            string first = names[0];
+            int commonPrefixLength = first.Length;
+
+            foreach (string name in names.Skip(1))
+            {
+                commonPrefixLength = Math.Min(commonPrefixLength, name.Length);
+                for (int i = 0; i < commonPrefixLength; i++)
+                {
+                    if (first[i] != name[i])
+                    {
+                        commonPrefixLength = i;
+                        break;
+                    }
+                }
+            }
+
+            string commonPrefix = first.Substring(0, commonPrefixLength).Trim();
+            if (commonPrefix.EndsWith("-") || commonPrefix.EndsWith("("))
+            {
+                commonPrefix = commonPrefix.Substring(0, commonPrefix.Length - 1).Trim();
+            }
+
+            return string.IsNullOrEmpty(commonPrefix) ? group[0].Grouping : commonPrefix;
+        }
+
+
+        private RuleType DetermineRuleType(INetFwRule2 rule)
+        {
+            if (!string.IsNullOrEmpty(rule.serviceName) && rule.serviceName != "*")
+                return RuleType.Service;
+            if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*")
+            {
+                bool hasSpecifics = (!string.IsNullOrEmpty(rule.LocalPorts) && rule.LocalPorts != "*") ||
+                                    (!string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*") ||
+                                    (!string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*") ||
+                                    (!string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*");
+                return hasSpecifics ? RuleType.Advanced : RuleType.Program;
+            }
+            return RuleType.Advanced;
+        }
+
 
         private List<AdvancedRuleViewModel> GetMfwRulesFromCache()
         {
@@ -311,36 +282,9 @@ namespace MinimalFirewall
             _localCache.Remove(AggregatedRulesCacheKey);
         }
 
-        private void AddWildcardViewModels(Dictionary<string, AggregatedRuleViewModel> rules, List<WildcardRule> wildcards)
-        {
-            foreach (var wildcard in wildcards)
-            {
-                var aggRule = new AggregatedRuleViewModel
-                {
-                    Name = $"*{wildcard.ExeName} in {Path.GetFileName(wildcard.FolderPath)}",
-                    Description = $"[WILDCARD DEFINITION] Path: {wildcard.FolderPath}",
-                    Grouping = MFWConstants.WildcardRuleGroup,
-                    Status = wildcard.Action,
-                    Direction = Directions.Outgoing,
-                    Protocol = ProtocolTypes.Any.Value,
-                    ProtocolName = ProtocolTypes.Any.Name,
-                    ApplicationName = wildcard.FolderPath,
-                    LocalPorts = "*",
-                    RemotePorts = "*",
-                    LocalAddresses = "*",
-                    RemoteAddresses = "*",
-                    Profiles = "All",
-                    ServiceName = "N/A",
-                    Type = RuleType.Wildcard,
-                    WildcardDefinition = wildcard
-                };
-                string key = $"{aggRule.Name}|{aggRule.ApplicationName}|{aggRule.ServiceName}";
-                rules[key] = aggRule;
-            }
-        }
-
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
         {
+            var appName = rule.ApplicationName ?? string.Empty;
             return new AdvancedRuleViewModel
             {
                 Name = rule.Name ?? "Unnamed Rule",
@@ -348,18 +292,21 @@ namespace MinimalFirewall
                 IsEnabled = rule.Enabled,
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = (Directions)rule.Direction,
-                ApplicationName = PathResolver.NormalizePath(rule.ApplicationName ?? string.Empty),
-                LocalPorts = rule.LocalPorts ?? "*",
-                RemotePorts = rule.RemotePorts ?? "*",
-                Protocol = (short)rule.Protocol,
+                ApplicationName = appName == "*" ? "*" : PathResolver.NormalizePath(appName),
+                LocalPorts = string.IsNullOrEmpty(rule.LocalPorts) ? "*" : rule.LocalPorts,
+                RemotePorts = string.IsNullOrEmpty(rule.RemotePorts) ? "*" : rule.RemotePorts,
+                Protocol = (int)rule.Protocol,
                 ProtocolName = GetProtocolName(rule.Protocol),
-                ServiceName = string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*" ? "Any" : rule.serviceName,
-                LocalAddresses = rule.LocalAddresses ?? "*",
-                RemoteAddresses = rule.RemoteAddresses ?? "*",
+                ServiceName = (string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*") ? string.Empty : rule.serviceName,
+                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ? "*" : rule.LocalAddresses,
+                RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
                 Profiles = GetProfileString(rule.Profiles),
-                Grouping = rule.Grouping ?? string.Empty
+                Grouping = rule.Grouping ?? string.Empty,
+                InterfaceTypes = rule.InterfaceTypes ?? "All",
+                IcmpTypesAndCodes = rule.IcmpTypesAndCodes ?? ""
             };
         }
+
 
         private static string GetProtocolName(int protocolValue)
         {

@@ -2,6 +2,12 @@
 using DarkModeForms;
 using MinimalFirewall.Groups;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Linq;
+using System.ComponentModel;
+using System.Collections.Generic;
+using System;
+using System.Drawing;
 
 namespace MinimalFirewall
 {
@@ -11,16 +17,11 @@ namespace MinimalFirewall
         _groupManager;
         private BackgroundFirewallTaskService? _backgroundTaskService;
         private DarkModeCS? _dm;
-        private int _sortColumn = -1;
-        private SortOrder _sortOrder = SortOrder.None;
-        private ListViewItem?
-        _hoveredItem = null;
-
+        private BindingSource _bindingSource;
         public GroupsControl()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
-            typeof(ListView).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(groupsListView, true);
         }
 
         public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, DarkModeCS dm)
@@ -28,21 +29,15 @@ namespace MinimalFirewall
             _groupManager = groupManager;
             _backgroundTaskService = backgroundTaskService;
             _dm = dm;
-            SetDefaultColumnWidths();
-            this.groupsListView.Resize += new System.EventHandler(this.GroupsListView_Resize);
+
+            groupsDataGridView.AutoGenerateColumns = false;
+            _bindingSource = new BindingSource();
+            groupsDataGridView.DataSource = _bindingSource;
         }
 
         public void ClearGroups()
         {
-            if (groupsListView != null)
-            {
-                groupsListView.Items.Clear();
-            }
-        }
-
-        private void SetDefaultColumnWidths()
-        {
-            groupNameColumn.Width = 400;
+            _bindingSource.DataSource = null;
         }
 
         public async Task OnTabSelectedAsync()
@@ -52,19 +47,68 @@ namespace MinimalFirewall
 
         private async Task DisplayGroupsAsync()
         {
-            if (groupsListView is null || _groupManager is null) return;
+            if (groupsDataGridView is null || _groupManager is null) return;
             var groups = await Task.Run(() => _groupManager.GetAllGroups());
-            groupsListView.BeginUpdate();
-            groupsListView.Items.Clear();
-            foreach (var group in groups)
+            _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups);
+            groupsDataGridView.Refresh();
+        }
+
+        private void deleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (groupsDataGridView.SelectedRows.Count > 0 && _backgroundTaskService != null)
             {
-                var item = new ListViewItem(new[] { group.Name, "" })
+                var result = MessageBox.Show("Are you sure you want to delete the \nselected group(s) and all associated rules?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (result == DialogResult.Yes)
                 {
-                    Tag = group,
-                };
-                groupsListView.Items.Add(item);
+                    var rowsToDelete = new List<DataGridViewRow>();
+                    foreach (DataGridViewRow row in groupsDataGridView.SelectedRows)
+                    {
+                        if (row.DataBoundItem is FirewallGroup group)
+
+                        {
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
+                            rowsToDelete.Add(row);
+                        }
+                    }
+
+                    foreach (var row in rowsToDelete)
+                    {
+                        groupsDataGridView.Rows.Remove(row);
+                    }
+                }
             }
-            groupsListView.EndUpdate();
+        }
+
+        private void groupsDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
+            {
+                if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group && _backgroundTaskService != null)
+
+                {
+                    bool newState = !group.IsEnabled;
+                    group.SetEnabledState(newState);
+
+                    var payload = new SetGroupEnabledStatePayload { GroupName = group.Name, IsEnabled = newState };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.SetGroupEnabledState, payload));
+
+                    groupsDataGridView.InvalidateCell(e.ColumnIndex, e.RowIndex);
+                }
+            }
+        }
+
+        private void groupsDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
+            {
+                e.PaintBackground(e.CellBounds, true);
+                if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group)
+                {
+                    DrawToggleSwitch(e.Graphics, e.CellBounds, group.IsEnabled);
+                }
+
+                e.Handled = true;
+            }
         }
 
         private void DrawToggleSwitch(Graphics g, Rectangle bounds, bool isChecked)
@@ -75,7 +119,7 @@ namespace MinimalFirewall
             int thumbSize = (int)(21 * (g.DpiY / 96f));
             int padding = (int)(10 * (g.DpiY / 96f));
             Rectangle switchRect = new Rectangle(
-                bounds.X + padding,
+                bounds.X + (bounds.Width - switchWidth) / 2, // Centered
                 bounds.Y + (bounds.Height - switchHeight) / 2,
                 switchWidth,
                 switchHeight);
@@ -91,7 +135,7 @@ namespace MinimalFirewall
             }
 
             int thumbX = isChecked ?
-                switchRect.Right - thumbSize - (int)(2 * (g.DpiY / 96f)) : switchRect.X + (int)(2 * (g.DpiY / 96f));
+            switchRect.Right - thumbSize - (int)(2 * (g.DpiY / 96f)) : switchRect.X + (int)(2 * (g.DpiY / 96f));
             Rectangle thumbRect = new Rectangle(
                 thumbX,
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
@@ -103,160 +147,83 @@ namespace MinimalFirewall
             }
         }
 
-        private void groupsListView_MouseClick(object? sender, MouseEventArgs e)
+        private void groupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Left) return;
-            var hitInfo = groupsListView.HitTest(e.Location);
-            if (hitInfo.Item == null || hitInfo.SubItem == null) return;
-            if (hitInfo.Item.SubItems.IndexOf(hitInfo.SubItem) == 1)
-            {
-                if (hitInfo.Item.Tag is FirewallGroup group && _backgroundTaskService != null)
-                {
-                    bool newState = !group.IsEnabled;
-                    group.SetEnabledState(newState);
-                    groupsListView.Invalidate(hitInfo.Item.Bounds);
+            var column = groupsDataGridView.Columns[e.ColumnIndex];
+            string propertyName = column.DataPropertyName;
 
-                    var payload = new SetGroupEnabledStatePayload { GroupName = group.Name, IsEnabled = newState };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.SetGroupEnabledState, payload));
+            if (string.IsNullOrEmpty(propertyName)) return;
+
+            var sortDirection = ListSortDirection.Ascending;
+            if (groupsDataGridView.SortedColumn?.Name == column.Name && groupsDataGridView.SortOrder == SortOrder.Ascending)
+            {
+                sortDirection = ListSortDirection.Descending;
+            }
+
+            if (_bindingSource.DataSource is SortableBindingList<FirewallGroup> list)
+            {
+                list.Sort(propertyName, sortDirection);
+            }
+
+            groupsDataGridView.Sort(column, sortDirection);
+        }
+
+        private void groupsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                var clickedRow = grid.Rows[e.RowIndex];
+
+                if (!clickedRow.Selected)
+                {
+                    grid.ClearSelection();
+                    clickedRow.Selected = true;
                 }
             }
         }
 
-        private async void deleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
+        public class SortableBindingList<T> : BindingList<T>
         {
-            if (groupsListView.SelectedItems.Count > 0 && _backgroundTaskService != null)
+            private PropertyDescriptor?
+            _sortProperty;
+            private ListSortDirection _sortDirection;
+
+            public SortableBindingList(IList<T> list) : base(list) { }
+
+            protected override bool SupportsSortingCore => true;
+            protected override bool IsSortedCore => _sortProperty != null;
+            protected override PropertyDescriptor? SortPropertyCore => _sortProperty;
+            protected override ListSortDirection SortDirectionCore => _sortDirection;
+            protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
             {
-                var result = MessageBox.Show("Are you sure you want to delete the \nselected group(s) and all associated rules?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (result == DialogResult.Yes)
+                _sortProperty = prop;
+                _sortDirection = direction;
+
+                if (Items is List<T> items)
                 {
-                    foreach (ListViewItem item in groupsListView.SelectedItems)
+                    items.Sort((a, b) =>
                     {
-                        if (item.Tag is FirewallGroup group)
-                        {
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
-                        }
-                    }
-                    await DisplayGroupsAsync();
+                        var valueA = prop.GetValue(a);
+
+                        var valueB = prop.GetValue(b);
+
+                        int result = (valueA as IComparable)?.CompareTo(valueB) ?? 0;
+                        return direction == ListSortDirection.Ascending ? result : -result;
+
+                    });
+
+                    ResetBindings();
                 }
             }
-        }
 
-        private void groupsListView_DrawItem(object sender, DrawListViewItemEventArgs e)
-        {
-            e.DrawBackground();
-            if ((e.State & ListViewItemStates.Focused) != 0)
+            public void Sort(string propertyName, ListSortDirection direction)
             {
-                e.DrawFocusRectangle();
-            }
-        }
-
-        private void groupsListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
-        {
-            Color backColor;
-            Color foreColor;
-
-            if (e.Item.Selected)
-            {
-                backColor = SystemColors.Highlight;
-                foreColor = SystemColors.HighlightText;
-            }
-            else
-            {
-                backColor = e.Item.ListView.BackColor;
-                foreColor = e.Item.ListView.ForeColor;
-            }
-
-            using (var backBrush = new SolidBrush(backColor))
-            {
-                e.Graphics.FillRectangle(backBrush, e.Bounds);
-            }
-
-            if (_hoveredItem == e.Item && !e.Item.Selected)
-            {
-                using var overlayBrush = new SolidBrush(Color.FromArgb(20, Color.Black));
-                e.Graphics.FillRectangle(overlayBrush, e.Bounds);
-            }
-
-            if (e.ColumnIndex == 0)
-            {
-                TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.SubItem.Font, e.Bounds, foreColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-            }
-            else if (e.ColumnIndex == 1)
-            {
-                if (e.Item.Tag is FirewallGroup group)
+                var prop = TypeDescriptor.GetProperties(typeof(T)).Find(propertyName, true);
+                if (prop != null)
                 {
-                    DrawToggleSwitch(e.Graphics, e.Bounds, group.IsEnabled);
+                    ApplySortCore(prop, direction);
                 }
-            }
-        }
-
-        private void groupsListView_MouseMove(object sender, MouseEventArgs e)
-        {
-            ListViewItem?
-            itemUnderMouse = groupsListView.GetItemAt(e.X, e.Y);
-
-            if (_hoveredItem != itemUnderMouse)
-            {
-                if (_hoveredItem != null && _hoveredItem.ListView != null && _hoveredItem.Index >= 0)
-                {
-                    try { groupsListView.Invalidate(_hoveredItem.Bounds); }
-                    catch (ArgumentOutOfRangeException) { }
-                }
-                _hoveredItem = itemUnderMouse;
-                if (_hoveredItem != null)
-                {
-                    try { groupsListView.Invalidate(_hoveredItem.Bounds); }
-                    catch (ArgumentOutOfRangeException) { }
-                }
-            }
-        }
-
-        private void groupsListView_MouseLeave(object sender, EventArgs e)
-        {
-            if (_hoveredItem != null)
-            {
-                try { groupsListView.Invalidate(_hoveredItem.Bounds); }
-                catch (ArgumentOutOfRangeException) { }
-                _hoveredItem = null;
-            }
-        }
-
-        private void groupsListView_ColumnClick(object sender, ColumnClickEventArgs e)
-        {
-            if (e.Column == _sortColumn)
-            {
-                _sortOrder = (_sortOrder == SortOrder.Ascending) ?
-                    SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                _sortOrder = SortOrder.Ascending;
-            }
-            _sortColumn = e.Column;
-            groupsListView.ListViewItemSorter = new ListViewItemComparer(e.Column, _sortOrder);
-            groupsListView.Sort();
-        }
-
-        private void GroupsListView_Resize(object? sender, EventArgs e)
-        {
-            if (groupsListView.Columns.Count < 2) return;
-            int totalColumnWidths = 0;
-            for (int i = 0; i < groupsListView.Columns.Count - 1; i++)
-            {
-                totalColumnWidths += groupsListView.Columns[i].Width;
-            }
-
-            int lastColumnIndex = groupsListView.Columns.Count - 1;
-            int lastColumnWidth = groupsListView.ClientSize.Width - totalColumnWidths;
-
-            int minWidth = TextRenderer.MeasureText(groupsListView.Columns[lastColumnIndex].Text, groupsListView.Font).Width + 10;
-            if (lastColumnWidth > minWidth)
-            {
-                groupsListView.Columns[lastColumnIndex].Width = lastColumnWidth;
-            }
-            else
-            {
-                groupsListView.Columns[lastColumnIndex].Width = minWidth;
             }
         }
     }

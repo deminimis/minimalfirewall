@@ -1,9 +1,13 @@
-﻿// File: AuditControl.cs
-using MinimalFirewall.TypedObjects;
+﻿using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using DarkModeForms;
 using System.Diagnostics;
-
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 namespace MinimalFirewall
 {
     public partial class AuditControl : UserControl
@@ -13,15 +17,13 @@ namespace MinimalFirewall
         private ForeignRuleTracker _foreignRuleTracker;
         private FirewallSentryService _firewallSentryService;
         private DarkModeCS _dm;
-
+        private BindingSource _bindingSource;
         private int _sortColumn = -1;
         private SortOrder _sortOrder = SortOrder.None;
-
         public AuditControl()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
-            typeof(ListView).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(systemChangesListView, true);
         }
 
         public void Initialize(
@@ -34,29 +36,11 @@ namespace MinimalFirewall
             _foreignRuleTracker = foreignRuleTracker;
             _firewallSentryService = firewallSentryService;
             _dm = dm;
-            systemChangesListView.DarkMode = dm;
-            systemChangesListView.AcceptClicked += SystemChanges_AcceptClicked;
-            systemChangesListView.DeleteClicked += SystemChanges_DeleteClicked;
-            _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
-            SetDefaultColumnWidths();
-            this.systemChangesListView.Resize += new System.EventHandler(this.SystemChangesListView_Resize);
-        }
 
-        private void SetDefaultColumnWidths()
-        {
-            changeActionColumn.Width = 220;
-            advNameColumn.Width = 200;
-            advStatusColumn.Width = 150;
-            advProtocolColumn.Width = 80;
-            advLocalPortsColumn.Width = 120;
-            advRemotePortsColumn.Width = 120;
-            advLocalAddressColumn.Width = 150;
-            advRemoteAddressColumn.Width = 150;
-            advProgramColumn.Width = 250;
-            advServiceColumn.Width = 150;
-            advProfilesColumn.Width = 100;
-            advGroupingColumn.Width = 150;
-            advDescColumn.Width = 300;
+            systemChangesDataGridView.AutoGenerateColumns = false;
+            _bindingSource = new BindingSource();
+            systemChangesDataGridView.DataSource = _bindingSource;
+            _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
         }
 
         private void OnSystemChangesUpdated()
@@ -86,56 +70,17 @@ namespace MinimalFirewall
 
         public void ApplySearchFilter()
         {
-            if (systemChangesListView is null || _viewModel?.SystemChanges is null) return;
-            systemChangesListView.BeginUpdate();
-            systemChangesListView.Items.Clear();
+            if (systemChangesDataGridView is null || _viewModel?.SystemChanges is null) return;
             string searchText = auditSearchTextBox.Text;
 
             var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
                 _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c => c.Rule?.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
                                                    c.Rule?.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
+
                                                    c.Rule?.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true);
-            foreach (var change in filteredChanges)
-            {
-                var item = new ListViewItem(
-                    new[]
-                    {
-                        "",
-                        change.Rule?.Name ?? "N/A",
-                        change.Rule?.Status ?? "N/A",
-                        change.Rule?.ProtocolName ?? "Any",
-                        change.Rule?.LocalPorts.Any() == true ? string.Join(",", change.Rule.LocalPorts) : "Any",
-                        change.Rule?.RemotePorts.Any() == true ? string.Join(",", change.Rule.RemotePorts) : "Any",
-                        change.Rule?.LocalAddresses.Any() == true ? string.Join(",", change.Rule.LocalAddresses) : "Any",
-                        change.Rule?.RemoteAddresses.Any() == true ? string.Join(",", change.Rule.RemoteAddresses) : "Any",
-                        change.Rule?.ApplicationName,
-                        change.Rule?.ServiceName,
-                        change.Rule?.Profiles,
-                        change.Rule?.Grouping,
-                        change.Rule?.Description
-                    })
-                {
-                    Tag = change
-                };
-                systemChangesListView.Items.Add(item);
-            }
-            systemChangesListView.EndUpdate();
-        }
-
-        private void SystemChanges_AcceptClicked(object? sender, ListViewItemEventArgs e)
-        {
-            if (e.Item.Tag is FirewallRuleChange change)
-            {
-                _viewModel.AcceptForeignRule(change);
-            }
-        }
-
-        private void SystemChanges_DeleteClicked(object? sender, ListViewItemEventArgs e)
-        {
-            if (e.Item.Tag is FirewallRuleChange change)
-            {
-                _viewModel.DeleteForeignRule(change);
-            }
+            _bindingSource.DataSource = filteredChanges.ToList();
+            _bindingSource.ResetBindings(false);
+            systemChangesDataGridView.Refresh();
         }
 
         private void AcceptAllToolStripMenuItem_Click(object sender, EventArgs e)
@@ -153,7 +98,8 @@ namespace MinimalFirewall
             if (_viewModel != null)
             {
                 var result = DarkModeForms.Messenger.MessageBox("This will clear all accepted (hidden) rules from the Audit list, causing them to be displayed again. Are you sure?", "Clear Accepted Rules", MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
+
+                                       MessageBoxIcon.Warning);
                 if (result != DialogResult.Yes) return;
 
                 await _viewModel.RebuildBaselineAsync();
@@ -165,32 +111,44 @@ namespace MinimalFirewall
             ApplySearchFilter();
         }
 
-        private void systemChangesListView_ColumnClick(object sender, ColumnClickEventArgs e)
+        private void systemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.Column == _sortColumn)
+            var propertyName = systemChangesDataGridView.Columns[e.ColumnIndex].DataPropertyName;
+            if (string.IsNullOrEmpty(propertyName)) return;
+
+            if (propertyName.StartsWith("Rule."))
             {
-                _sortOrder = (_sortOrder == SortOrder.Ascending) ?
-                    SortOrder.Descending : SortOrder.Ascending;
+                propertyName = propertyName.Substring(5);
             }
-            else
+
+            _sortOrder = (_sortColumn == e.ColumnIndex && _sortOrder == SortOrder.Ascending) ?
+                         SortOrder.Descending : SortOrder.Ascending;
+            _sortColumn = e.ColumnIndex;
+            if (_bindingSource.DataSource is List<FirewallRuleChange> list)
             {
-                _sortOrder = SortOrder.Ascending;
+                var sortedList = (_sortOrder == SortOrder.Ascending)
+                    ? list.OrderBy(c => GetPropertyValue(c.Rule, propertyName)).ToList()
+                    : list.OrderByDescending(c => GetPropertyValue(c.Rule, propertyName)).ToList();
+                _bindingSource.DataSource = sortedList;
+                _bindingSource.ResetBindings(false);
             }
-            _sortColumn = e.Column;
-            systemChangesListView.ListViewItemSorter = new ListViewItemComparer(e.Column > 0 ? e.Column : 1, _sortOrder);
-            systemChangesListView.Sort();
+        }
+
+        private static object GetPropertyValue(object obj, string propertyName)
+        {
+            if (obj == null || string.IsNullOrEmpty(propertyName)) return string.Empty;
+            return obj.GetType().GetProperty(propertyName)?.GetValue(obj, null) ?? string.Empty;
         }
 
         private bool TryGetSelectedAppContext(out string? appPath)
         {
             appPath = null;
-            if (systemChangesListView.SelectedItems.Count == 0)
+            if (systemChangesDataGridView.SelectedRows.Count == 0)
             {
                 return false;
             }
 
-            var selectedItem = systemChangesListView.SelectedItems[0];
-            if (selectedItem.Tag is FirewallRuleChange change)
+            if (systemChangesDataGridView.SelectedRows[0].DataBoundItem is FirewallRuleChange change)
             {
                 appPath = change.Rule?.ApplicationName;
             }
@@ -235,52 +193,176 @@ namespace MinimalFirewall
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (systemChangesListView.SelectedItems.Count == 0)
+            if (systemChangesDataGridView.SelectedRows.Count > 0)
             {
-                return;
-            }
+                var details = new System.Text.StringBuilder();
 
-            var selectedItem = systemChangesListView.SelectedItems[0];
-            if (selectedItem.Tag is not FirewallRuleChange change) return;
+                foreach (DataGridViewRow row in systemChangesDataGridView.SelectedRows)
+                {
+                    if (row.DataBoundItem is FirewallRuleChange change)
+                    {
+                        if (details.Length > 0)
+                        {
+                            details.AppendLine();
+                            details.AppendLine();
+                        }
 
-            var details = new System.Text.StringBuilder();
-            details.AppendLine($"Type: Audited Change ({change.Type})");
-            if (change.Rule != null)
-            {
-                details.AppendLine($"Rule Name: {change.Rule.Name}");
-                details.AppendLine($"Application: {change.Rule.ApplicationName}");
-                details.AppendLine($"Action: {change.Rule.Status}");
-                details.AppendLine($"Direction: {change.Rule.Direction}");
-                details.AppendLine($"Protocol: {change.Rule.ProtocolName}");
-                details.AppendLine($"Remote Addresses: {(change.Rule.RemoteAddresses.Any() ? string.Join(", ", change.Rule.RemoteAddresses) : "Any")}");
-            }
+                        details.AppendLine($"Type: Audited Change ({change.Type})");
+                        if (change.Rule != null)
+                        {
+                            details.AppendLine($"Rule Name: {change.Rule.Name}");
+                            details.AppendLine($"Application: {change.Rule.ApplicationName}");
+                            details.AppendLine($"Action: {change.Rule.Status}");
+                            details.AppendLine($"Direction: {change.Rule.Direction}");
+                            details.AppendLine($"Protocol: {change.Rule.ProtocolName}");
+                            details.AppendLine($"Local Ports: {change.Rule.LocalPorts}");
+                            details.AppendLine($"Remote Ports: {change.Rule.RemotePorts}");
+                            details.AppendLine($"Local Addresses: {change.Rule.LocalAddresses}");
+                            details.AppendLine($"Remote Addresses: {change.Rule.RemoteAddresses}");
+                        }
+                    }
+                }
 
-            if (details.Length > 0)
-            {
-                Clipboard.SetText(details.ToString());
+                if (details.Length > 0)
+                {
+                    Clipboard.SetText(details.ToString());
+                }
             }
         }
 
-        private void SystemChangesListView_Resize(object? sender, EventArgs e)
+        private void systemChangesDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (systemChangesListView.Columns.Count < 2) return;
-            int totalColumnWidths = 0;
-            for (int i = 0; i < systemChangesListView.Columns.Count - 1; i++)
+            if (e.RowIndex < 0) return;
+            var grid = (DataGridView)sender;
+            var column = grid.Columns[e.ColumnIndex];
+
+            if (grid.Rows[e.RowIndex].DataBoundItem is FirewallRuleChange change)
             {
-                totalColumnWidths += systemChangesListView.Columns[i].Width;
+                if (column is DataGridViewButtonColumn)
+                {
+                    if (column.Name == "acceptButtonColumn")
+                    {
+                        _viewModel.AcceptForeignRule(change);
+                    }
+                    else if (column.Name == "deleteButtonColumn")
+                    {
+                        _viewModel.DeleteForeignRule(change);
+                    }
+                }
+            }
+        }
+
+        private void systemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var grid = (DataGridView)sender;
+            if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change || change.Rule == null) return;
+
+            var column = grid.Columns[e.ColumnIndex];
+            if (column == advNameColumn) e.Value = change.Rule.Name;
+            else if (column == advStatusColumn) e.Value = change.Rule.Status;
+            else if (column == advProtocolColumn) e.Value = change.Rule.ProtocolName;
+            else if (column == advLocalPortsColumn) e.Value = change.Rule.LocalPorts;
+            else if (column == advRemotePortsColumn) e.Value = change.Rule.RemotePorts;
+            else if (column == advLocalAddressColumn) e.Value = change.Rule.LocalAddresses;
+            else if (column == advRemoteAddressColumn) e.Value = change.Rule.RemoteAddresses;
+            else if (column == advProgramColumn) e.Value = change.Rule.ApplicationName;
+            else if (column == advServiceColumn) e.Value = change.Rule.ServiceName;
+            else if (column == advProfilesColumn) e.Value = change.Rule.Profiles;
+            else if (column == advGroupingColumn) e.Value = change.Rule.Grouping;
+            else if (column == advDescColumn) e.Value = change.Rule.Description;
+
+            Color rowBackColor;
+            switch (change.Type)
+            {
+                case ChangeType.New:
+                    rowBackColor = Color.FromArgb(204, 255, 204);
+                    break;
+                case ChangeType.Modified:
+                    rowBackColor = change.Rule.Status.Contains("Allow", StringComparison.OrdinalIgnoreCase)
+                        ? Color.FromArgb(204, 255, 204)
+                        : Color.FromArgb(255, 204, 204);
+                    break;
+                case ChangeType.Deleted:
+                    rowBackColor = Color.FromArgb(255, 204, 204);
+                    break;
+                default:
+                    rowBackColor = e.CellStyle.BackColor;
+                    break;
             }
 
-            int lastColumnIndex = systemChangesListView.Columns.Count - 1;
-            int lastColumnWidth = systemChangesListView.ClientSize.Width - totalColumnWidths;
-
-            int minWidth = TextRenderer.MeasureText(systemChangesListView.Columns[lastColumnIndex].Text, systemChangesListView.Font).Width + 10;
-            if (lastColumnWidth > minWidth)
+            if (column.Name == "acceptButtonColumn")
             {
-                systemChangesListView.Columns[lastColumnIndex].Width = lastColumnWidth;
+                e.CellStyle.BackColor = Color.FromArgb(108, 117, 125);
+                e.CellStyle.ForeColor = Color.White;
+            }
+            else if (column.Name == "deleteButtonColumn")
+            {
+                e.CellStyle.BackColor = Color.FromArgb(52, 58, 64);
+                e.CellStyle.ForeColor = Color.White;
             }
             else
             {
-                systemChangesListView.Columns[lastColumnIndex].Width = minWidth;
+                e.CellStyle.BackColor = rowBackColor;
+                e.CellStyle.ForeColor = Color.Black;
+            }
+
+            if (grid.Rows[e.RowIndex].Selected)
+            {
+                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
+                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+            }
+            else
+            {
+                e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
+                e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+            }
+        }
+
+        private void systemChangesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            var grid = (DataGridView)sender;
+            var row = grid.Rows[e.RowIndex];
+
+            if (row.Selected) return;
+            var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
+            if (e.RowIndex == mouseOverRow)
+            {
+                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
+            }
+        }
+
+        private void systemChangesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void systemChangesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void systemChangesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                var clickedRow = grid.Rows[e.RowIndex];
+
+                if (!clickedRow.Selected)
+                {
+                    grid.ClearSelection();
+                    clickedRow.Selected = true;
+                }
             }
         }
     }

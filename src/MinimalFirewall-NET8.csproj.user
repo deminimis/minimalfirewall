@@ -4,9 +4,6 @@
     <_LastSelectedProfileId>C:\Users\anon\PROGRAMMING\C#\SimpleFirewall\VS Minimal Firewall\MinimalFirewall-NET8\MinimalFirewall-NET8\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="AddRuleSelectionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Update="AuditControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -51,6 +48,9 @@
     </Compile>
     <Compile Update="RulesControl.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="RuleWizardForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Update="SettingsControl.cs">
       <SubType>UserControl</SubType>

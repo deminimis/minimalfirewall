@@ -1,4 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallEventListenerService.cs
+﻿// File: FirewallEventListenerService.cs
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
@@ -61,10 +61,13 @@ namespace MinimalFirewall
 
         public void Stop()
         {
-            if (_eventWatcher != null && _eventWatcher.Enabled)
+            if (_eventWatcher != null)
             {
                 _eventWatcher.Enabled = false;
-                _logAction("[EventListener] Event watcher disabled.");
+                _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
+                _eventWatcher.Dispose();
+                _eventWatcher = null;
+                _logAction("[EventListener] Event watcher stopped and disposed.");
             }
         }
 
@@ -104,7 +107,17 @@ namespace MinimalFirewall
                     return;
                 }
 
-                if (_dataService.DoesAnyRuleExist(appPath, string.Empty, eventDirection))
+                string serviceName = string.Empty;
+                if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    string processId = GetValueFromXml(xmlContent, "ProcessID");
+                    if (!string.IsNullOrEmpty(processId) && processId != "0")
+                    {
+                        serviceName = SystemDiscoveryService.GetServicesByPID(processId);
+                    }
+                }
+
+                if (_dataService.DoesAnyRuleExist(appPath, serviceName, eventDirection))
                 {
                     ClearPendingNotification(appPath, eventDirection);
                     return;
@@ -136,7 +149,7 @@ namespace MinimalFirewall
                 {
                     AppPath = appPath,
                     Direction = eventDirection,
-                    ServiceName = string.Empty
+                    ServiceName = serviceName
                 };
                 PendingConnectionDetected?.Invoke(pendingVm);
             }
@@ -217,12 +230,7 @@ namespace MinimalFirewall
 
         public void Dispose()
         {
-            if (_eventWatcher != null)
-            {
-                _eventWatcher.Enabled = false;
-                _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
-                _eventWatcher.Dispose();
-            }
+            Stop();
             GC.SuppressFinalize(this);
         }
     }

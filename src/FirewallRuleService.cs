@@ -8,7 +8,6 @@ namespace MinimalFirewall
     public class FirewallRuleService
     {
         private readonly INetFwPolicy2 _firewallPolicy;
-
         public FirewallRuleService(INetFwPolicy2 firewallPolicy)
         {
             _firewallPolicy = firewallPolicy;
@@ -42,7 +41,8 @@ namespace MinimalFirewall
             }
         }
 
-        public INetFwRule2? GetRuleByName(string name)
+        public INetFwRule2?
+        GetRuleByName(string name)
         {
             if (_firewallPolicy == null) return null;
             try
@@ -61,7 +61,8 @@ namespace MinimalFirewall
             {
                 NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
                 NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE,
-                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
+
+               NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
             })
             {
                 try
@@ -77,9 +78,20 @@ namespace MinimalFirewall
 
         public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
         {
+            var rules = GetRulesByPathAndDirection(appPath, direction);
+            var names = rules.Select(r => r.Name).ToList();
+            foreach (var rule in rules)
+            {
+                Marshal.ReleaseComObject(rule);
+            }
+            return names;
+        }
+
+        public List<INetFwRule2> GetRulesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        {
             if (_firewallPolicy == null || string.IsNullOrEmpty(appPath)) return [];
             string normalizedAppPath = PathResolver.NormalizePath(appPath);
-            var names = new List<string>();
+            var matchingRules = new List<INetFwRule2>();
             var allRules = GetAllRules();
             try
             {
@@ -87,21 +99,31 @@ namespace MinimalFirewall
                 {
                     if (rule != null &&
                         !string.IsNullOrEmpty(rule.ApplicationName) &&
-                        string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+
+                         string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
                         rule.Direction == direction)
                     {
-                        names.Add(rule.Name);
+                        matchingRules.Add(rule);
+                    }
+                    else
+                    {
+                        Marshal.ReleaseComObject(rule);
                     }
                 }
             }
             finally
             {
-                foreach (var rule in allRules)
+                var allRulesSet = new HashSet<INetFwRule2>(allRules);
+                foreach (var rule in matchingRules)
                 {
-                    Marshal.ReleaseComObject(rule);
+                    allRulesSet.Remove(rule);
+                }
+                foreach (var rule in allRulesSet)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
                 }
             }
-            return names;
+            return matchingRules;
         }
 
         public NET_FW_ACTION_ GetDefaultOutboundAction()
@@ -143,6 +165,7 @@ namespace MinimalFirewall
                 {
                     if (rule != null && !string.IsNullOrEmpty(rule.ApplicationName) && pathSet.Contains(PathResolver.NormalizePath(rule.ApplicationName)))
                     {
+
                         rulesToRemove.Add(rule.Name);
                     }
                 }
@@ -151,13 +174,21 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
+
                     Marshal.ReleaseComObject(rule);
                 }
             }
 
             foreach (var ruleName in rulesToRemove)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
             }
             return rulesToRemove;
         }
@@ -172,6 +203,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule is INetFwRule2 rule2 && rule2 != null && string.Equals(rule2.serviceName, serviceName, StringComparison.OrdinalIgnoreCase))
+
                     {
                         rulesToRemove.Add(rule2.Name);
                     }
@@ -181,13 +213,21 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
+
                     Marshal.ReleaseComObject(rule);
                 }
             }
 
             foreach (var ruleName in rulesToRemove)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
             }
             return rulesToRemove;
         }
@@ -204,6 +244,7 @@ namespace MinimalFirewall
                 {
                     if (rule != null && rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
                     {
+
                         string pfnInRule = rule.Description[MFWConstants.UwpDescriptionPrefix.Length..];
                         if (pfnSet.Contains(pfnInRule))
                         {
@@ -215,6 +256,7 @@ namespace MinimalFirewall
             finally
             {
                 foreach (var rule in allRules)
+
                 {
                     Marshal.ReleaseComObject(rule);
                 }
@@ -222,7 +264,14 @@ namespace MinimalFirewall
 
             foreach (var ruleName in rulesToRemove)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
             }
             return rulesToRemove;
         }
@@ -232,7 +281,14 @@ namespace MinimalFirewall
             if (_firewallPolicy == null || ruleNames.Count == 0) return;
             foreach (var name in ruleNames)
             {
-                try { _firewallPolicy.Rules.Remove(name); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{name}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(name);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{name}': {ex.Message}");
+                }
             }
         }
 
@@ -258,6 +314,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule != null && string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase))
+
                     {
                         rulesToRemove.Add(rule.Name);
                     }
@@ -267,13 +324,21 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
+
                     Marshal.ReleaseComObject(rule);
                 }
             }
 
             foreach (var ruleName in rulesToRemove)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
             }
             return rulesToRemove;
         }
@@ -288,6 +353,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule != null && string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
+
                     {
                         rulesToRemove.Add(rule.Name);
                     }
@@ -297,13 +363,21 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
+
                     Marshal.ReleaseComObject(rule);
                 }
             }
 
             foreach (var ruleName in rulesToRemove)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                try
+                {
+                    _firewallPolicy.Rules.Remove(ruleName);
+                }
+                catch (Exception ex) when (ex is COMException or FileNotFoundException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}");
+                }
             }
             return rulesToRemove;
         }
@@ -318,6 +392,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule != null && !string.IsNullOrEmpty(rule.Grouping) && rule.Grouping.Contains("MFW"))
+
                     {
                         rulesToRemove.Add(rule.Name);
                     }
@@ -327,6 +402,7 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
+
                     Marshal.ReleaseComObject(rule);
                 }
             }
@@ -335,6 +411,7 @@ namespace MinimalFirewall
             {
                 try
                 {
+
                     _firewallPolicy.Rules.Remove(ruleName);
                 }
                 catch (Exception ex) when (ex is COMException or FileNotFoundException)

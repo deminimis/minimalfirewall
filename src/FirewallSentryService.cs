@@ -77,7 +77,6 @@ namespace MinimalFirewall
                     return changes;
                 }
                 int processedRules = 0;
-
                 foreach (var rule in allRules)
                 {
                     if (token.IsCancellationRequested) return new List<FirewallRuleChange>();
@@ -107,8 +106,8 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(rule.Grouping)) return false;
             return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                   rule.Grouping == "Minimal Firewall" ||
-                   rule.Grouping == "Minimal Firewall (Wildcard)";
+                   rule.Grouping == MFWConstants.MainRuleGroup ||
+                   rule.Grouping == MFWConstants.WildcardRuleGroup;
         }
 
         public void Dispose()

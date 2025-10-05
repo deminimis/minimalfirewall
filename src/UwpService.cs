@@ -1,8 +1,13 @@
 ﻿// File: UwpService.cs
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MinimalFirewall
 {
@@ -15,14 +20,14 @@ namespace MinimalFirewall
             _cachePath = Path.Combine(baseDirectory, "uwp_apps.json");
         }
 
-        public async Task<List<UwpApp>> ScanForUwpApps()
+        public async Task<List<UwpApp>> GetUwpAppsAsync(CancellationToken token)
         {
             return await Task.Run(() =>
             {
                 var psi = new ProcessStartInfo
                 {
                     FileName = "powershell",
-                    Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"Get-AppxPackage | Where-Object { !$_.IsFramework -and !$_.IsResourcePackage } | Select-Object Name, PackageFamilyName | ConvertTo-Json\"",
+                    Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"Get-AppxPackage | Where-Object { !$_.IsFramework -and !$_.IsResourcePackage } | Select-Object Name, PackageFamilyName, Publisher | ConvertTo-Json\"",
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
                     CreateNoWindow = true,
@@ -36,6 +41,8 @@ namespace MinimalFirewall
                         if (process == null) return new List<UwpApp>();
                         var output = process.StandardOutput.ReadToEnd();
                         process.WaitForExit();
+
+                        if (token.IsCancellationRequested) return new List<UwpApp>();
 
                         if (string.IsNullOrWhiteSpace(output))
                         {
@@ -54,7 +61,7 @@ namespace MinimalFirewall
                     Debug.WriteLine("[ERROR] Failed to scan for UWP apps via PowerShell: " + ex.Message);
                     return new List<UwpApp>();
                 }
-            }).ConfigureAwait(false);
+            }, token).ConfigureAwait(false);
         }
 
         public List<UwpApp> LoadUwpAppsFromCache()

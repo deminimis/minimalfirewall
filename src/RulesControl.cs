@@ -1,5 +1,4 @@
-﻿// File: RulesControl.cs
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
 using System.Data;
 using System.ComponentModel;
@@ -11,12 +10,13 @@ using System.Windows.Forms;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
+using System;
+using System.Drawing;
 
 namespace MinimalFirewall
 {
     public partial class RulesControl : UserControl
     {
-        private IContainer? components = null;
         private MainViewModel _mainViewModel = null!;
         private FirewallActionsService _actionsService = null!;
         private INetFwPolicy2 _firewallPolicy = null!;
@@ -28,16 +28,12 @@ namespace MinimalFirewall
 
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
-        private bool _uwpAppsScanned = false;
-        private ListViewItem? _hoveredItem = null;
-        private readonly ToolTip _cellToolTip = new ToolTip();
-        private ListViewItem.ListViewSubItem? _lastHoveredSubItem = null;
-
+        private BindingSource _bindingSource;
+        public event Func<Task> DataRefreshRequested;
         public RulesControl()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
-            typeof(ListView).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(rulesListView, true);
         }
 
         public void Initialize(
@@ -60,26 +56,24 @@ namespace MinimalFirewall
             _appSettings = appSettings;
             _dm = dm;
 
-            rulesListView.SmallImageList = appIconList;
-            _mainViewModel.RulesListUpdated += OnRulesListUpdated;
-            SetDefaultColumnWidths();
-            this.rulesListView.Resize += new System.EventHandler(this.RulesListView_Resize);
-        }
+            programFilterCheckBox.Checked = _appSettings.FilterPrograms;
+            serviceFilterCheckBox.Checked = _appSettings.FilterServices;
+            uwpFilterCheckBox.Checked = _appSettings.FilterUwp;
+            wildcardFilterCheckBox.Checked = _appSettings.FilterWildcards;
+            systemFilterCheckBox.Checked = _appSettings.FilterSystem;
+            rulesSearchTextBox.Text = _appSettings.RulesSearchText;
+            _rulesSortColumn = _appSettings.RulesSortColumn;
+            _rulesSortOrder = (SortOrder)_appSettings.RulesSortOrder;
 
-        private void SetDefaultColumnWidths()
-        {
-            advNameColumn.Width = 200;
-            advStatusColumn.Width = 150;
-            advProtocolColumn.Width = 80;
-            advLocalPortsColumn.Width = 120;
-            advRemotePortsColumn.Width = 120;
-            advLocalAddressColumn.Width = 150;
-            advRemoteAddressColumn.Width = 150;
-            advProgramColumn.Width = 250;
-            advServiceColumn.Width = 150;
-            advProfilesColumn.Width = 100;
-            advGroupingColumn.Width = 150;
-            advDescColumn.Width = 300;
+            rulesDataGridView.AutoGenerateColumns = false;
+            _bindingSource = new BindingSource();
+            rulesDataGridView.DataSource = _bindingSource;
+            _mainViewModel.RulesListUpdated += OnRulesListUpdated;
+
+            programFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+            serviceFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+            uwpFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+            wildcardFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
         }
 
         private void OnRulesListUpdated()
@@ -89,8 +83,9 @@ namespace MinimalFirewall
                 this.Invoke(OnRulesListUpdated);
                 return;
             }
-            rulesListView.VirtualListSize = _mainViewModel.VirtualRulesData.Count;
-            rulesListView.Invalidate();
+            _bindingSource.DataSource = _mainViewModel.VirtualRulesData;
+            _bindingSource.ResetBindings(false);
+            rulesDataGridView.Refresh();
         }
 
         public void ApplyThemeFixes()
@@ -98,26 +93,18 @@ namespace MinimalFirewall
             if (_dm == null) return;
             createRuleButton.FlatAppearance.BorderSize = 1;
             createRuleButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            advancedRuleButton.FlatAppearance.BorderSize = 1;
-            advancedRuleButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             if (_dm.IsDarkMode)
             {
                 createRuleButton.ForeColor = Color.White;
-                advancedRuleButton.ForeColor = Color.White;
             }
             else
             {
                 createRuleButton.ForeColor = SystemColors.ControlText;
-                advancedRuleButton.ForeColor = SystemColors.ControlText;
             }
         }
 
         public async Task RefreshDataAsync(bool forceUwpScan = false, IProgress<int>? progress = null, CancellationToken token = default)
         {
-            if (forceUwpScan)
-            {
-                _uwpAppsScanned = true;
-            }
             await _mainViewModel.RefreshRulesDataAsync(token, progress);
             await DisplayRulesAsync();
         }
@@ -131,7 +118,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null)
             {
-                advIconColumn.Width = _appSettings.ShowAppIcons ? 32 : 0;
+                advIconColumn.Visible = _appSettings.ShowAppIcons;
             }
         }
 
@@ -141,236 +128,53 @@ namespace MinimalFirewall
             await Task.CompletedTask;
         }
 
-        private void ApplyRulesFilters()
+        private void filterCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            var enabledTypes = new HashSet<RuleType>();
-            if (advFilterProgramCheck.Checked) enabledTypes.Add(RuleType.Program);
-            if (advFilterServiceCheck.Checked) enabledTypes.Add(RuleType.Service);
-            if (advFilterUwpCheck.Checked) enabledTypes.Add(RuleType.UWP);
-            if (advFilterWildcardCheck.Checked) enabledTypes.Add(RuleType.Wildcard);
-            if (advFilterAdvancedCheck.Checked) enabledTypes.Add(RuleType.Advanced);
-
-            _mainViewModel.ApplyRulesFilters(rulesSearchTextBox.Text, enabledTypes, _rulesSortColumn, _rulesSortOrder);
-        }
-
-        private void ListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-            if (e.ItemIndex >= 0 && e.ItemIndex < _mainViewModel.VirtualRulesData.Count)
-            {
-                var rule = _mainViewModel.VirtualRulesData[e.ItemIndex];
-                int iconIndex = _appSettings.ShowAppIcons && !string.IsNullOrEmpty(rule.ApplicationName) ?
-                    _iconService.GetIconIndex(rule.ApplicationName) : -1;
-                var item = new ListViewItem("", iconIndex) { Tag = rule };
-                item.SubItems.AddRange(new[]
-                {
-                    rule.Name,
-                    rule.Status,
-                    rule.ProtocolName,
-                    !string.IsNullOrEmpty(rule.LocalPorts) && rule.LocalPorts != "*" ?
-                        rule.LocalPorts : "Any",
-                    !string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*" ?
-                        rule.RemotePorts : "Any",
-                    !string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*" ?
-                        rule.LocalAddresses : "Any",
-                    !string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*" ?
-                        rule.RemoteAddresses : "Any",
-                    rule.ApplicationName,
-                    rule.ServiceName,
-                    rule.Profiles,
-                    rule.Grouping,
-                    rule.Description
-                });
-                e.Item = item;
-            }
-        }
-
-        private void RulesListView_DrawItem(object sender, DrawListViewItemEventArgs e)
-        {
-            e.DrawDefault = false;
-        }
-
-        private void RulesListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
-        {
-            Color backColor;
-            Color foreColor;
-
-            if (e.Item.Selected)
-            {
-                backColor = e.Item.ListView.Focused ? SystemColors.Highlight : SystemColors.ControlDark;
-                foreColor = e.Item.ListView.Focused ? SystemColors.HighlightText : SystemColors.ControlText;
-            }
-            else
-            {
-                string statusText = string.Empty;
-                if (e.Item.Tag is AdvancedRuleViewModel advancedRule)
-                {
-                    statusText = advancedRule.Status;
-                }
-                else if (e.Item.Tag is AggregatedRuleViewModel aggregatedRule)
-                {
-                    statusText = aggregatedRule.Status;
-                }
-
-                bool isAllow = statusText.Contains("Allow", StringComparison.OrdinalIgnoreCase);
-                bool isBlock = statusText.Contains("Block", StringComparison.OrdinalIgnoreCase);
-
-                if (isAllow && isBlock)
-                {
-                    backColor = Color.FromArgb(255, 255, 204);
-                    foreColor = Color.Black;
-                }
-                else if (isAllow)
-                {
-                    backColor = Color.FromArgb(204, 255, 204);
-                    foreColor = Color.Black;
-                }
-                else if (isBlock)
-                {
-                    backColor = Color.FromArgb(255, 204, 204);
-                    foreColor = Color.Black;
-                }
-                else
-                {
-                    backColor = e.Item.ListView.BackColor;
-                    foreColor = e.Item.ListView.ForeColor;
-                }
-            }
-
-            using (var backBrush = new SolidBrush(backColor))
-            {
-                e.Graphics.FillRectangle(backBrush, e.Bounds);
-            }
-
-            if (_hoveredItem == e.Item && !e.Item.Selected)
-            {
-                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
-                e.Graphics.FillRectangle(overlayBrush, e.Bounds);
-            }
-
-            if (e.ColumnIndex == 0)
-            {
-                if (e.Item.ImageIndex != -1 && e.Item.ImageList != null)
-                {
-                    Image img = e.Item.ImageList.Images[e.Item.ImageIndex];
-                    int imgX = e.Bounds.Left + (e.Bounds.Width - img.Width) / 2;
-                    int imgY = e.Bounds.Top + (e.Bounds.Height - img.Height) / 2;
-                    e.Graphics.DrawImage(img, imgX, imgY);
-                }
-                return;
-            }
-
-            TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.PathEllipsis;
-            TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.SubItem.Font, e.Bounds, foreColor, flags);
-        }
-
-        private void ListView_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (sender is not ListView listView) return;
-            ListViewItem? itemUnderMouse = listView.GetItemAt(e.X, e.Y);
-
-            if (_hoveredItem != itemUnderMouse)
-            {
-                if (_hoveredItem != null && _hoveredItem.ListView != null && _hoveredItem.Index >= 0)
-                {
-                    try { listView.Invalidate(_hoveredItem.Bounds); }
-                    catch (ArgumentOutOfRangeException) { }
-                }
-                _hoveredItem = itemUnderMouse;
-                if (_hoveredItem != null)
-                {
-                    try { listView.Invalidate(_hoveredItem.Bounds); }
-                    catch (ArgumentOutOfRangeException) { }
-                }
-            }
-
-            var hitTest = listView.HitTest(e.Location);
-            var subItem = hitTest.SubItem;
-
-            if (subItem != _lastHoveredSubItem)
-            {
-                _lastHoveredSubItem = subItem;
-                if (subItem != null)
-                {
-                    int textWidth = TextRenderer.MeasureText(subItem.Text, listView.Font).Width;
-                    if (textWidth > subItem.Bounds.Width)
-                    {
-                        _cellToolTip.Show(subItem.Text, listView, e.X + 10, e.Y + 10, 3000);
-                    }
-                    else
-                    {
-                        _cellToolTip.Hide(listView);
-                    }
-                }
-                else
-                {
-                    _cellToolTip.Hide(listView);
-                }
-            }
-        }
-
-        private void ListView_MouseLeave(object sender, EventArgs e)
-        {
-            _cellToolTip.Hide(rulesListView);
-            _lastHoveredSubItem = null;
-            if (_hoveredItem != null)
-            {
-                if (sender is ListView listView)
-                {
-                    try { listView.Invalidate(_hoveredItem.Bounds); }
-                    catch (ArgumentOutOfRangeException) { }
-                }
-                _hoveredItem = null;
-            }
-        }
-
-        private void ListView_ColumnClick(object sender, ColumnClickEventArgs e)
-        {
-            if (e.Column == _rulesSortColumn)
-            {
-                _rulesSortOrder = (_rulesSortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                _rulesSortOrder = SortOrder.Ascending;
-            }
-
-            _rulesSortColumn = e.Column;
+            _appSettings.FilterPrograms = programFilterCheckBox.Checked;
+            _appSettings.FilterServices = serviceFilterCheckBox.Checked;
+            _appSettings.FilterUwp = uwpFilterCheckBox.Checked;
+            _appSettings.FilterWildcards = wildcardFilterCheckBox.Checked;
+            _appSettings.FilterSystem = systemFilterCheckBox.Checked;
             ApplyRulesFilters();
         }
 
-        private async void AdvFilter_CheckedChanged(object sender, EventArgs e)
+        private void ApplyRulesFilters()
         {
-            if (advFilterUwpCheck.Checked && !_uwpAppsScanned)
-            {
-                if (this.FindForm() is MainForm mainForm)
-                {
-                    await mainForm.ForceDataRefreshAsync(forceUwpScan: true);
-                }
-                _uwpAppsScanned = true;
-            }
-            await DisplayRulesAsync();
+            var enabledTypes = new HashSet<RuleType>();
+            if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
+            if (serviceFilterCheckBox.Checked) enabledTypes.Add(RuleType.Service);
+            if (uwpFilterCheckBox.Checked) enabledTypes.Add(RuleType.UWP);
+            if (wildcardFilterCheckBox.Checked) enabledTypes.Add(RuleType.Wildcard);
+            enabledTypes.Add(RuleType.Advanced);
+
+            bool showSystemRules = systemFilterCheckBox.Checked;
+            _mainViewModel.ApplyRulesFilters(rulesSearchTextBox.Text, enabledTypes, _rulesSortColumn, _rulesSortOrder, showSystemRules);
         }
 
-        private void RulesListView_MouseClick(object? sender, MouseEventArgs e)
+        private void rulesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
-                if (rulesListView.FocusedItem != null && rulesListView.FocusedItem.Bounds.Contains(e.Location))
+                var grid = (DataGridView)sender;
+                var clickedRow = grid.Rows[e.RowIndex];
+
+                if (!clickedRow.Selected)
                 {
-                    rulesContextMenu.Show(Cursor.Position);
+                    grid.ClearSelection();
+                    clickedRow.Selected = true;
                 }
             }
         }
 
         private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesListView.SelectedIndices.Count == 0) return;
-            var items = new List<AggregatedRuleViewModel>(rulesListView.SelectedIndices.Count);
-            foreach (int index in rulesListView.SelectedIndices)
+            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesDataGridView.SelectedRows.Count == 0) return;
+            var items = new List<AggregatedRuleViewModel>();
+            foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
             {
-                if (index >= 0 && index < _mainViewModel.VirtualRulesData.Count)
+                if (row.DataBoundItem is AggregatedRuleViewModel vm)
                 {
-                    items.Add(_mainViewModel.VirtualRulesData[index]);
+                    items.Add(vm);
                 }
             }
 
@@ -378,28 +182,40 @@ namespace MinimalFirewall
             {
                 foreach (var item in items)
                 {
-                    var firstRule = item.UnderlyingRules.FirstOrDefault();
-                    if (firstRule == null) continue;
+                    _mainViewModel.ApplyRuleChange(item, action);
+                }
+            }
+        }
 
-                    switch (firstRule.Type)
+        private async void editRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (rulesDataGridView.SelectedRows.Count == 1 && rulesDataGridView.SelectedRows[0].DataBoundItem is AggregatedRuleViewModel aggRule)
+            {
+                var originalRule = aggRule.UnderlyingRules.FirstOrDefault();
+                if (originalRule == null)
+                {
+                    DarkModeForms.Messenger.MessageBox("Cannot edit this rule as it has no underlying rule definition.", "Edit Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, originalRule);
+                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                {
+                    if (dialog.RuleVm != null)
                     {
-                        case RuleType.Program:
-                            var appPayload = new ApplyApplicationRulePayload { AppPaths = [firstRule.ApplicationName], Action = action };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
-                            break;
-                        case RuleType.Service:
-                            var servicePayload = new ApplyServiceRulePayload { ServiceName = firstRule.ServiceName, Action = action };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload));
-                            break;
-                        case RuleType.UWP:
-                            if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
-                            {
-                                var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
-                                var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
-                                var uwpPayload = new ApplyUwpRulePayload { UwpApps = [uwpApp], Action = action };
-                                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload));
-                            }
-                            break;
+                        if (originalRule.HasSameSettings(dialog.RuleVm))
+                        {
+                            return;
+                        }
+
+                        var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules.Select(r => r.Name).ToList() };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
+
+                        var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, createPayload));
+
+                        await Task.Delay(500);
+                        DataRefreshRequested?.Invoke();
                     }
                 }
             }
@@ -407,13 +223,13 @@ namespace MinimalFirewall
 
         private void DeleteRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesListView.SelectedIndices.Count == 0) return;
-            var items = new List<AggregatedRuleViewModel>(rulesListView.SelectedIndices.Count);
-            foreach (int index in rulesListView.SelectedIndices)
+            if (rulesDataGridView.SelectedRows.Count == 0) return;
+            var items = new List<AggregatedRuleViewModel>();
+            foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
             {
-                if (index >= 0 && index < _mainViewModel.VirtualRulesData.Count)
+                if (row.DataBoundItem is AggregatedRuleViewModel vm)
                 {
-                    items.Add(_mainViewModel.VirtualRulesData[index]);
+                    items.Add(vm);
                 }
             }
 
@@ -422,45 +238,13 @@ namespace MinimalFirewall
                 var result = DarkModeForms.Messenger.MessageBox($"Are you sure you want to delete the {items.Count} selected rule(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (result == DialogResult.No) return;
 
-                var wildcardRulesToDelete = items
-                    .Where(i => i.Type == RuleType.Wildcard && i.WildcardDefinition != null)
-                    .Select(i => i.WildcardDefinition!)
-                    .ToList();
-                var standardRuleNamesToDelete = items
-                    .Where(i => i.Type != RuleType.Wildcard)
-                    .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
-                    .ToList();
-                foreach (var wildcardRule in wildcardRulesToDelete)
-                {
-                    var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload));
-                    _wildcardRuleService.RemoveRule(wildcardRule);
-                }
-
-                if (standardRuleNamesToDelete.Count > 0)
-                {
-                    var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload));
-                }
-
-                var nameSet = new HashSet<string>(standardRuleNamesToDelete);
-                var wildcardSet = new HashSet<WildcardRule>(wildcardRulesToDelete);
-                _mainViewModel.AllAggregatedRules.RemoveAll(r => nameSet.Contains(r.Name) || (r.WildcardDefinition != null && wildcardSet.Contains(r.WildcardDefinition)));
-                ApplyRulesFilters();
+                _mainViewModel.DeleteRules(items);
             }
         }
 
         private void CreateRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new AddRuleSelectionForm(_actionsService, _wildcardRuleService, _backgroundTaskService);
-            if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
-            {
-            }
-        }
-
-        private void AdvancedRuleButton_Click(object sender, EventArgs e)
-        {
-            using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService);
+            using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _firewallPolicy);
             if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
             {
             }
@@ -468,112 +252,201 @@ namespace MinimalFirewall
 
         private async void SearchTextBox_TextChanged(object sender, EventArgs e)
         {
+            _appSettings.RulesSearchText = rulesSearchTextBox.Text;
             await DisplayRulesAsync();
-        }
-
-        private void RulesListView_Resize(object? sender, EventArgs e)
-        {
-            if (rulesListView.Columns.Count < 2) return;
-            int totalColumnWidths = 0;
-            for (int i = 0; i < rulesListView.Columns.Count - 1; i++)
-            {
-                totalColumnWidths += rulesListView.Columns[i].Width;
-            }
-
-            int lastColumnIndex = rulesListView.Columns.Count - 1;
-            int lastColumnWidth = rulesListView.ClientSize.Width - totalColumnWidths;
-
-            int minWidth = TextRenderer.MeasureText(rulesListView.Columns[lastColumnIndex].Text, rulesListView.Font).Width + 10;
-            if (lastColumnWidth > minWidth)
-            {
-                rulesListView.Columns[lastColumnIndex].Width = lastColumnWidth;
-            }
-            else
-            {
-                rulesListView.Columns[lastColumnIndex].Width = minWidth;
-            }
         }
 
         private void rulesContextMenu_Opening(object sender, CancelEventArgs e)
         {
-            if (rulesListView.SelectedIndices.Count == 0)
+            if (rulesDataGridView.SelectedRows.Count == 0)
             {
                 e.Cancel = true;
                 return;
             }
 
-            int index = rulesListView.SelectedIndices[0];
-            if (index < 0 || index >= _mainViewModel.VirtualRulesData.Count)
+            if (rulesDataGridView.SelectedRows[0].DataBoundItem is not AggregatedRuleViewModel rule)
             {
                 e.Cancel = true;
                 return;
             }
 
-            var rule = _mainViewModel.VirtualRulesData[index];
             string? appPath = rule.ApplicationName;
-
             openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && File.Exists(appPath);
+
+            var firstUnderlyingRule = rule.UnderlyingRules.FirstOrDefault();
+            bool isEditableType = rule.Type == RuleType.Program || rule.Type == RuleType.Service ||
+                                  rule.Type == RuleType.Advanced;
+            bool hasTarget = firstUnderlyingRule != null &&
+                             ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
+                              !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
+            editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
         }
+
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesListView.SelectedIndices.Count > 0)
+            if (rulesDataGridView.SelectedRows.Count > 0 && rulesDataGridView.SelectedRows[0].DataBoundItem is AggregatedRuleViewModel rule)
             {
-                int index = rulesListView.SelectedIndices[0];
-                if (index >= 0 && index < _mainViewModel.VirtualRulesData.Count)
-                {
-                    var rule = _mainViewModel.VirtualRulesData[index];
-                    string? appPath = rule.ApplicationName;
+                string? appPath = rule.ApplicationName;
 
-                    if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
+                if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
+                {
+                    try
                     {
-                        try
-                        {
-                            Process.Start("explorer.exe", $"/select, \"{appPath}\"");
-                        }
-                        catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
-                        {
-                            DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                        Process.Start("explorer.exe", $"/select, \"{appPath}\"");
                     }
-                    else
+                    catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
                     {
-                        DarkModeForms.Messenger.MessageBox("The path for this item is not available or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+                }
+                else
+                {
+                    DarkModeForms.Messenger.MessageBox("The path for this item is not available or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesListView.SelectedIndices.Count > 0)
+            if (rulesDataGridView.SelectedRows.Count > 0)
             {
-                int index = rulesListView.SelectedIndices[0];
-                if (index >= 0 && index < _mainViewModel.VirtualRulesData.Count)
+                var details = new System.Text.StringBuilder();
+
+                foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
                 {
-                    var rule = _mainViewModel.VirtualRulesData[index];
-                    var details = new System.Text.StringBuilder();
-
-                    details.AppendLine($"Rule Name: {rule.Name}");
-                    details.AppendLine($"Type: {rule.Type}");
-                    details.AppendLine($"Action: {rule.Status}");
-                    details.AppendLine($"Direction: {rule.Direction}");
-                    details.AppendLine($"Application: {rule.ApplicationName}");
-                    details.AppendLine($"Service: {rule.ServiceName}");
-                    details.AppendLine($"Protocol: {rule.ProtocolName}");
-                    details.AppendLine($"Local Ports: {rule.LocalPorts}");
-                    details.AppendLine($"Remote Ports: {rule.RemotePorts}");
-                    details.AppendLine($"Local Addresses: {rule.LocalAddresses}");
-                    details.AppendLine($"Remote Addresses: {rule.RemoteAddresses}");
-                    details.AppendLine($"Profiles: {rule.Profiles}");
-                    details.AppendLine($"Group: {rule.Grouping}");
-                    details.AppendLine($"Description: {rule.Description}");
-
-                    if (details.Length > 0)
+                    if (row.DataBoundItem is AggregatedRuleViewModel rule)
                     {
-                        Clipboard.SetText(details.ToString());
+                        if (details.Length > 0)
+                        {
+                            details.AppendLine();
+                            details.AppendLine();
+                        }
+
+                        details.AppendLine($"Rule Name: {rule.Name}");
+                        details.AppendLine($"Type: {rule.Type}");
+                        details.AppendLine($"Inbound: {rule.InboundStatus}");
+                        details.AppendLine($"Outbound: {rule.OutboundStatus}");
+                        details.AppendLine($"Application: {rule.ApplicationName}");
+                        details.AppendLine($"Service: {rule.ServiceName}");
+                        details.AppendLine($"Protocol: {rule.ProtocolName}");
+                        details.AppendLine($"Local Ports: {rule.LocalPorts}");
+                        details.AppendLine($"Remote Ports: {rule.RemotePorts}");
+                        details.AppendLine($"Local Addresses: {rule.LocalAddresses}");
+                        details.AppendLine($"Remote Addresses: {rule.RemoteAddresses}");
+                        details.AppendLine($"Profiles: {rule.Profiles}");
+                        details.AppendLine($"Group: {rule.Grouping}");
+                        details.AppendLine($"Description: {rule.Description}");
                     }
                 }
+
+                if (details.Length > 0)
+                {
+                    Clipboard.SetText(details.ToString());
+                }
+            }
+        }
+
+        private void rulesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var grid = (DataGridView)sender;
+
+            if (grid.Rows[e.RowIndex].DataBoundItem is not AggregatedRuleViewModel rule) return;
+            if (grid.Columns[e.ColumnIndex].Name == "advIconColumn")
+            {
+                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(rule.ApplicationName))
+                {
+                    int iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
+                    if (iconIndex != -1 && _iconService.ImageList != null)
+                    {
+                        e.Value = _iconService.ImageList.Images[iconIndex];
+                    }
+                }
+                return;
+            }
+
+            bool hasAllow = rule.InboundStatus.Contains("Allow") || rule.OutboundStatus.Contains("Allow");
+            bool hasBlock = rule.InboundStatus.Contains("Block") || rule.OutboundStatus.Contains("Block");
+
+            if (hasAllow && hasBlock)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(255, 255, 204);
+            }
+            else if (hasAllow)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204);
+            }
+            else if (hasBlock)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204);
+            }
+
+            if (hasAllow || hasBlock)
+            {
+                e.CellStyle.ForeColor = Color.Black;
+            }
+
+            if (grid.Rows[e.RowIndex].Selected)
+            {
+                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
+                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+            }
+            else
+            {
+                e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
+                e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+            }
+        }
+
+        private void rulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.ColumnIndex == _rulesSortColumn)
+            {
+                _rulesSortOrder = (_rulesSortOrder == SortOrder.Ascending) ?
+                                  SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _rulesSortOrder = SortOrder.Ascending;
+            }
+
+            _rulesSortColumn = e.ColumnIndex;
+            _appSettings.RulesSortColumn = _rulesSortColumn;
+            _appSettings.RulesSortOrder = (int)_rulesSortOrder;
+
+            ApplyRulesFilters();
+        }
+
+        private void rulesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            var grid = (DataGridView)sender;
+            var row = grid.Rows[e.RowIndex];
+
+            if (row.Selected) return;
+            var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
+            if (e.RowIndex == mouseOverRow)
+            {
+                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
+            }
+        }
+
+        private void rulesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void rulesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
             }
         }
     }

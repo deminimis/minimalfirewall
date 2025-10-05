@@ -4,6 +4,8 @@ using System;
 using System.Collections.Specialized;
 using System.Windows.Forms;
 using System.Linq;
+using MinimalFirewall.TypedObjects;
+using System.Drawing;
 
 namespace MinimalFirewall
 {
@@ -15,6 +17,8 @@ namespace MinimalFirewall
         private WildcardRuleService _wildcardRuleService;
         private FirewallActionsService _actionsService;
         private NetFwTypeLib.INetFwPolicy2 _firewallPolicy;
+        private BindingSource _bindingSource;
+
         public DashboardControl()
         {
             InitializeComponent();
@@ -30,32 +34,20 @@ namespace MinimalFirewall
             _actionsService = actionsService;
             _firewallPolicy = firewallPolicy;
 
-            dashboardListView.DarkMode = dm;
-            dashboardListView.AllowClicked += Dashboard_AllowClicked;
-            dashboardListView.BlockClicked += Dashboard_BlockClicked;
-            dashboardListView.IgnoreClicked += Dashboard_IgnoreClicked;
+            dashboardDataGridView.AutoGenerateColumns = false;
+            _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
+            dashboardDataGridView.DataSource = _bindingSource;
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
 
             LoadDashboardItems();
-            SetDefaultColumnWidths();
-            this.dashboardListView.Resize += new System.EventHandler(this.DashboardListView_Resize);
-        }
-
-        private void SetDefaultColumnWidths()
-        {
-            dashActionColumn.Width = 300;
-            dashAppColumn.Width = 150;
-            dashServiceColumn.Width = 150;
-            dashDirectionColumn.Width = 100;
-            dashPathColumn.Width = 300;
         }
 
         public void SetIconColumnVisibility(bool visible)
         {
             if (dashIconColumn != null)
             {
-                dashIconColumn.Width = visible ? 32 : 0;
+                dashIconColumn.Visible = visible;
             }
         }
 
@@ -73,62 +65,125 @@ namespace MinimalFirewall
 
         private void LoadDashboardItems()
         {
-            if (dashboardListView == null) return;
-            dashboardListView.BeginUpdate();
-            dashboardListView.Items.Clear();
+            _bindingSource.ResetBindings(false);
+            dashboardDataGridView.Refresh();
+        }
 
-            foreach (var pending in _viewModel.PendingConnections)
+        private void dashboardDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Ensure the click is on a button cell and not on a header
+            if (e.RowIndex < 0) return;
+
+            var grid = (DataGridView)sender;
+            var column = grid.Columns[e.ColumnIndex];
+
+            if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
             {
-                int iconIndex = -1;
-                // Optimization: Do not call _iconService.GetIconIndex here. 
-                // We only need to know if the icon column is visible. The icon will be loaded
-                // just-in-time when the rule is created.
-                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(pending.AppPath) && _iconService.ImageList != null)
+                if (column is DataGridViewButtonColumn)
                 {
-                    // Use a placeholder index if available to reserve space, but avoid extraction/caching.
-                    // Since the list view is designed for virtualization, setting index to -1 is fine if we skip extraction.
-                    // We can still try to get the icon from the cache if it happens to be there, but won't force loading.
-                    if (_iconService.ImageList.Images.ContainsKey(pending.AppPath))
+                    if (column.Name == "allowButtonColumn")
                     {
-                        iconIndex = _iconService.ImageList.Images.IndexOfKey(pending.AppPath);
+                        _viewModel.ProcessDashboardAction(pending, "Allow");
+                    }
+                    else if (column.Name == "blockButtonColumn")
+                    {
+                        _viewModel.ProcessDashboardAction(pending, "Block");
+                    }
+                    else if (column.Name == "ignoreButtonColumn")
+                    {
+                        _viewModel.ProcessDashboardAction(pending, "Ignore");
                     }
                 }
-
-                var item = new ListViewItem("", iconIndex) { Tag = pending };
-                item.SubItems.AddRange(new[] { "", pending.FileName, pending.ServiceName, pending.Direction, pending.AppPath });
-                dashboardListView.Items.Add(item);
-            }
-            dashboardListView.EndUpdate();
-        }
-
-        private void Dashboard_AllowClicked(object sender, ListViewItemEventArgs e)
-        {
-            if (e.Item.Tag is PendingConnectionViewModel pending)
-            {
-                _viewModel.ProcessDashboardAction(pending, "Allow");
             }
         }
 
-        private void Dashboard_BlockClicked(object sender, ListViewItemEventArgs e)
+        private void dashboardDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.Item.Tag is PendingConnectionViewModel pending)
+            if (e.RowIndex < 0) return;
+
+            var grid = (DataGridView)sender;
+
+            // Handle App Icons
+            if (grid.Columns[e.ColumnIndex].Name == "dashIconColumn")
             {
-                _viewModel.ProcessDashboardAction(pending, "Block");
+                if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending && _appSettings.ShowAppIcons)
+                {
+                    int iconIndex = _iconService.GetIconIndex(pending.AppPath);
+                    if (iconIndex != -1 && _iconService.ImageList != null)
+                    {
+                        e.Value = _iconService.ImageList.Images[iconIndex];
+                    }
+                }
+                return;
+            }
+
+            // Handle Button Colors
+            var allowColumn = grid.Columns["allowButtonColumn"];
+            var blockColumn = grid.Columns["blockButtonColumn"];
+            var ignoreColumn = grid.Columns["ignoreButtonColumn"];
+
+            if (e.ColumnIndex == allowColumn.Index)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204);
+                e.CellStyle.ForeColor = Color.Black;
+            }
+            else if (e.ColumnIndex == blockColumn.Index)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204);
+                e.CellStyle.ForeColor = Color.Black;
+            }
+
+            // Selection Color
+            if (grid.Rows[e.RowIndex].Selected)
+            {
+                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
+                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+            }
+            else
+            {
+                e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
+                e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
             }
         }
 
-        private void Dashboard_IgnoreClicked(object sender, ListViewItemEventArgs e)
+        private void dashboardDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
-            if (e.Item.Tag is PendingConnectionViewModel pending)
+            var grid = (DataGridView)sender;
+            var row = grid.Rows[e.RowIndex];
+
+            // Draw hover effect
+            if (row.Selected) return;
+
+            var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
+            if (e.RowIndex == mouseOverRow)
             {
-                _viewModel.ProcessDashboardAction(pending, "Ignore");
+                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
+            }
+        }
+
+        private void dashboardDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void dashboardDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
             }
         }
 
         private void TempAllowMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending &&
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
                 sender is ToolStripMenuItem menuItem &&
                 int.TryParse(menuItem.Tag?.ToString(), out int minutes))
             {
@@ -138,8 +193,8 @@ namespace MinimalFirewall
 
         private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 _viewModel.ProcessDashboardAction(pending, "Allow");
             }
@@ -147,8 +202,8 @@ namespace MinimalFirewall
 
         private void AllowAndTrustPublisherToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 _viewModel.ProcessDashboardAction(pending, "Allow", trustPublisher: true);
             }
@@ -156,8 +211,8 @@ namespace MinimalFirewall
 
         private void PermanentBlockToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 _viewModel.ProcessDashboardAction(pending, "Block");
             }
@@ -165,8 +220,8 @@ namespace MinimalFirewall
 
         private void IgnoreToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 _viewModel.ProcessDashboardAction(pending, "Ignore");
             }
@@ -174,8 +229,8 @@ namespace MinimalFirewall
 
         private void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
                 if (wildcardDialog.ShowDialog(this.FindForm()) == DialogResult.OK)
@@ -194,13 +249,13 @@ namespace MinimalFirewall
 
         private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count == 0)
+            if (dashboardDataGridView.SelectedRows.Count == 0)
             {
                 e.Cancel = true;
                 return;
             }
 
-            if (dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 bool isSigned = SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
                 allowAndTrustPublisherToolStripMenuItem.Visible = isSigned;
@@ -209,8 +264,8 @@ namespace MinimalFirewall
 
         private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 using var dialog = new
                     CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!);
@@ -220,8 +275,8 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending &&
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
                 !string.IsNullOrEmpty(pending.AppPath) &&
                 System.IO.File.Exists(pending.AppPath))
             {
@@ -231,8 +286,8 @@ namespace MinimalFirewall
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardListView.SelectedItems.Count > 0 &&
-                dashboardListView.SelectedItems[0].Tag is PendingConnectionViewModel pending)
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 var details = new System.Text.StringBuilder();
                 details.AppendLine($"Type: Pending Connection");
@@ -241,29 +296,6 @@ namespace MinimalFirewall
                 details.AppendLine($"Service: {pending.ServiceName}");
                 details.AppendLine($"Direction: {pending.Direction}");
                 Clipboard.SetText(details.ToString());
-            }
-        }
-
-        private void DashboardListView_Resize(object? sender, EventArgs e)
-        {
-            if (dashboardListView.Columns.Count < 2) return;
-            int totalColumnWidths = 0;
-            for (int i = 0; i < dashboardListView.Columns.Count - 1; i++)
-            {
-                totalColumnWidths += dashboardListView.Columns[i].Width;
-            }
-
-            int lastColumnIndex = dashboardListView.Columns.Count - 1;
-            int lastColumnWidth = dashboardListView.ClientSize.Width - totalColumnWidths;
-
-            int minWidth = TextRenderer.MeasureText(dashboardListView.Columns[lastColumnIndex].Text, dashboardListView.Font).Width + 10;
-            if (lastColumnWidth > minWidth)
-            {
-                dashboardListView.Columns[lastColumnIndex].Width = lastColumnWidth;
-            }
-            else
-            {
-                dashboardListView.Columns[lastColumnIndex].Width = minWidth;
             }
         }
     }

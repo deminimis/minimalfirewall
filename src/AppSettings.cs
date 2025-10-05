@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
-
 namespace MinimalFirewall
 {
     public class AppSettings : INotifyPropertyChanged
@@ -23,6 +22,14 @@ namespace MinimalFirewall
         private bool _showAppIcons = true;
         private bool _autoAllowSystemTrusted = false;
         private bool _alertOnForeignRules = true;
+        private bool _filterPrograms = true;
+        private bool _filterServices = true;
+        private bool _filterUwp = true;
+        private bool _filterWildcards = true;
+        private bool _filterSystem = false;
+        private string _rulesSearchText = "";
+        private int _rulesSortColumn = -1;
+        private int _rulesSortOrder = 0;
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
@@ -34,6 +41,14 @@ namespace MinimalFirewall
         public bool ShowAppIcons { get => _showAppIcons; set => SetField(ref _showAppIcons, value); }
         public bool AutoAllowSystemTrusted { get => _autoAllowSystemTrusted; set => SetField(ref _autoAllowSystemTrusted, value); }
         public bool AlertOnForeignRules { get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value); }
+        public bool FilterPrograms { get => _filterPrograms; set => SetField(ref _filterPrograms, value); }
+        public bool FilterServices { get => _filterServices; set => SetField(ref _filterServices, value); }
+        public bool FilterUwp { get => _filterUwp; set => SetField(ref _filterUwp, value); }
+        public bool FilterWildcards { get => _filterWildcards; set => SetField(ref _filterWildcards, value); }
+        public bool FilterSystem { get => _filterSystem; set => SetField(ref _filterSystem, value); }
+        public string RulesSearchText { get => _rulesSearchText; set => SetField(ref _rulesSearchText, value); }
+        public int RulesSortColumn { get => _rulesSortColumn; set => SetField(ref _rulesSortColumn, value); }
+        public int RulesSortOrder { get => _rulesSortOrder; set => SetField(ref _rulesSortOrder, value); }
 
         public Point WindowLocation { get; set; } = new Point(100, 100);
         public Size WindowSize { get; set; } = new Size(1280, 800);
@@ -73,6 +88,7 @@ namespace MinimalFirewall
             {
                 if (File.Exists(_configPath))
                 {
+
                     string json = File.ReadAllText(_configPath);
                     return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
                 }

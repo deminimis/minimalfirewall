@@ -9,8 +9,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.TextBox exeNameTextBox;
         private System.Windows.Forms.RadioButton allowRadio;
         private System.Windows.Forms.RadioButton blockRadio;
-        private DarkModeForms.FlatComboBox allowDirectionCombo;
-        private DarkModeForms.FlatComboBox blockDirectionCombo;
+        private DarkModeForms.FlatComboBox directionCombo;
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.GroupBox actionGroupBox;
@@ -33,8 +32,7 @@ namespace MinimalFirewall
             this.folderPathTextBox = new System.Windows.Forms.TextBox();
             this.exeNameTextBox = new System.Windows.Forms.TextBox();
             this.actionGroupBox = new System.Windows.Forms.GroupBox();
-            this.blockDirectionCombo = new DarkModeForms.FlatComboBox();
-            this.allowDirectionCombo = new DarkModeForms.FlatComboBox();
+            this.directionCombo = new DarkModeForms.FlatComboBox();
             this.blockRadio = new System.Windows.Forms.RadioButton();
             this.allowRadio = new System.Windows.Forms.RadioButton();
             this.okButton = new System.Windows.Forms.Button();
@@ -72,8 +70,7 @@ namespace MinimalFirewall
             // 
             // actionGroupBox
             // 
-            this.actionGroupBox.Controls.Add(this.blockDirectionCombo);
-            this.actionGroupBox.Controls.Add(this.allowDirectionCombo);
+            this.actionGroupBox.Controls.Add(this.directionCombo);
             this.actionGroupBox.Controls.Add(this.blockRadio);
             this.actionGroupBox.Controls.Add(this.allowRadio);
             this.actionGroupBox.Location = new System.Drawing.Point(23, 240);
@@ -83,35 +80,20 @@ namespace MinimalFirewall
             this.actionGroupBox.TabStop = false;
             this.actionGroupBox.Text = "Action";
             // 
-            // blockDirectionCombo
+            // directionCombo
             // 
-            this.blockDirectionCombo.BorderColor = System.Drawing.Color.Gray;
-            this.blockDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
-            this.blockDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.blockDirectionCombo.FormattingEnabled = true;
-            this.blockDirectionCombo.Items.AddRange(new object[] {
+            this.directionCombo.BorderColor = System.Drawing.Color.Gray;
+            this.directionCombo.ButtonColor = System.Drawing.Color.LightGray;
+            this.directionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.directionCombo.FormattingEnabled = true;
+            this.directionCombo.Items.AddRange(new object[] {
             "Outbound",
             "Inbound",
             "All"});
-            this.blockDirectionCombo.Location = new System.Drawing.Point(150, 90);
-            this.blockDirectionCombo.Name = "blockDirectionCombo";
-            this.blockDirectionCombo.Size = new System.Drawing.Size(280, 23);
-            this.blockDirectionCombo.TabIndex = 3;
-            // 
-            // allowDirectionCombo
-            // 
-            this.allowDirectionCombo.BorderColor = System.Drawing.Color.Gray;
-            this.allowDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
-            this.allowDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.allowDirectionCombo.FormattingEnabled = true;
-            this.allowDirectionCombo.Items.AddRange(new object[] {
-            "Outbound",
-            "Inbound",
-            "All"});
-            this.allowDirectionCombo.Location = new System.Drawing.Point(150, 30);
-            this.allowDirectionCombo.Name = "allowDirectionCombo";
-            this.allowDirectionCombo.Size = new System.Drawing.Size(280, 23);
-            this.allowDirectionCombo.TabIndex = 2;
+            this.directionCombo.Location = new System.Drawing.Point(150, 60);
+            this.directionCombo.Name = "directionCombo";
+            this.directionCombo.Size = new System.Drawing.Size(280, 23);
+            this.directionCombo.TabIndex = 2;
             // 
             // blockRadio
             // 
