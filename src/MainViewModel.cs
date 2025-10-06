@@ -1,5 +1,4 @@
-﻿// File: MainViewModel.cs
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Forms;
 using MinimalFirewall.TypedObjects;
@@ -42,7 +41,6 @@ namespace MinimalFirewall
             FirewallSentryService firewallSentryService,
             ForeignRuleTracker foreignRuleTracker,
             TrafficMonitorViewModel trafficMonitorViewModel,
-
             FirewallEventListenerService eventListenerService,
             AppSettings appSettings,
             UserActivityLogger activityLogger)
@@ -86,7 +84,6 @@ namespace MinimalFirewall
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, int sortColumn, SortOrder sortOrder, bool showSystemRules)
         {
             IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
-
             if (!showSystemRules)
             {
                 filteredRules = filteredRules.Where(r => r.Grouping.EndsWith(" - MFW"));
@@ -102,7 +99,6 @@ namespace MinimalFirewall
                 filteredRules = filteredRules.Where(r =>
                     r.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                     r.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-
                     r.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase));
             }
 
@@ -129,19 +125,16 @@ namespace MinimalFirewall
             {
                 2 => rule => rule.InboundStatus,
                 3 => rule => rule.OutboundStatus,
-
                 4 => rule => rule.ProtocolName,
                 5 => rule => rule.LocalPorts,
                 6 => rule => rule.RemotePorts,
                 7 => rule => rule.LocalAddresses,
                 8 => rule => rule.RemoteAddresses,
-
                 9 => rule => rule.ApplicationName,
                 10 => rule => rule.ServiceName,
                 11 => rule => rule.Profiles,
                 12 => rule => rule.Grouping,
                 13 => rule => rule.Description,
-
                 _ => rule => rule.Name,
             };
         }
@@ -155,7 +148,6 @@ namespace MinimalFirewall
                 {
                     var payload = new ApplyApplicationRulePayload
                     {
-
                         AppPaths = [pending.AppPath],
                         Action = matchingRule.Action,
                         WildcardSourcePath = matchingRule.FolderPath
@@ -191,15 +183,12 @@ namespace MinimalFirewall
                 {
                     Name = pending.FileName,
                     ApplicationName = pending.AppPath,
-                    InboundStatus = parsedDirection == Directions.Incoming ?
-                        parsedAction.ToString() : "N/A",
-                    OutboundStatus = parsedDirection == Directions.Outgoing ?
-                        parsedAction.ToString() : "N/A",
+                    InboundStatus = parsedDirection == Directions.Incoming ? parsedAction.ToString() : "N/A",
+                    OutboundStatus = parsedDirection == Directions.Outgoing ? parsedAction.ToString() : "N/A",
                     Type = RuleType.Program,
                     IsEnabled = true,
                     Grouping = MFWConstants.MainRuleGroup,
                     Profiles = "All",
-
                     ProtocolName = "Any"
                 };
                 AllAggregatedRules.Add(newAggregatedRule);
@@ -324,7 +313,6 @@ namespace MinimalFirewall
             }
 
             AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
         }
 
         public AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
@@ -333,21 +321,17 @@ namespace MinimalFirewall
             {
                 Name = advancedRule.Name,
                 ApplicationName = advancedRule.ApplicationName,
-
                 ServiceName = advancedRule.ServiceName,
                 Description = advancedRule.Description,
                 Grouping = advancedRule.Grouping,
                 IsEnabled = advancedRule.IsEnabled,
-                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ?
-                    advancedRule.Status : "N/A",
-                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ?
-                    advancedRule.Status : "N/A",
+                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ? advancedRule.Status : "N/A",
+                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ? advancedRule.Status : "N/A",
                 ProtocolName = advancedRule.ProtocolName,
                 LocalPorts = advancedRule.LocalPorts,
                 RemotePorts = advancedRule.RemotePorts,
                 LocalAddresses = advancedRule.LocalAddresses,
                 RemoteAddresses = advancedRule.RemoteAddresses,
-
                 Profiles = advancedRule.Profiles,
                 Type = advancedRule.Type,
                 UnderlyingRules = new List<AdvancedRuleViewModel> { advancedRule }
@@ -366,19 +350,15 @@ namespace MinimalFirewall
                 ApplicationName = vm.ApplicationName,
                 ServiceName = vm.ServiceName,
                 Description = vm.Description,
-
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
-                    vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
-                    vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
                 LocalAddresses = vm.LocalAddresses,
                 RemoteAddresses = vm.RemoteAddresses,
-
                 Profiles = vm.Profiles,
                 Type = vm.Type,
                 UnderlyingRules = [vm]
@@ -394,23 +374,19 @@ namespace MinimalFirewall
             {
                 Name = Path.GetFileName(appPath),
                 ApplicationName = appPath,
-                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ?
-                    parsedAction.ToString() : "N/A",
-                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ?
-                    parsedAction.ToString() : "N/A",
+                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ? parsedAction.ToString() : "N/A",
+                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ? parsedAction.ToString() : "N/A",
                 Type = RuleType.Program,
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Profiles = "All",
                 ProtocolName = "Any",
-
                 LocalPorts = "Any",
                 RemotePorts = "Any",
                 LocalAddresses = "Any",
                 RemoteAddresses = "Any",
                 Description = "N/A",
-                ServiceName =
-                    "N/A"
+                ServiceName = "N/A"
             };
             AllAggregatedRules.Add(newAggregatedRule);
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
@@ -426,7 +402,6 @@ namespace MinimalFirewall
                 return;
             }
 
-            _activityLogger.LogDebug("Sentry: Firewall rule change detected. Debouncing for 1 second.");
             _sentryRefreshDebounceTimer?.Change(1000, Timeout.Infinite);
         }
 
@@ -461,16 +436,13 @@ namespace MinimalFirewall
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Allow",
-                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ?
-                    Directions.Incoming : Directions.Outgoing,
-                Protocol = int.TryParse(pending.Protocol, out int proto) ?
-                    proto : 256,
+                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ? Directions.Incoming : Directions.Outgoing,
+                Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
                 ApplicationName = pending.AppPath,
                 RemotePorts = pending.RemotePort,
                 RemoteAddresses = pending.RemoteAddress,
                 LocalPorts = "*",
                 LocalAddresses = "*",
-
                 Profiles = "All",
                 Type = RuleType.Advanced
             };
@@ -482,18 +454,14 @@ namespace MinimalFirewall
                 ApplicationName = vm.ApplicationName,
                 Description = vm.Description,
                 Grouping = vm.Grouping,
-
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
-                    vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
-                    vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
                 LocalAddresses = vm.LocalAddresses,
                 RemoteAddresses = vm.RemoteAddresses,
-
                 Profiles = vm.Profiles,
                 Type = vm.Type,
                 UnderlyingRules = new List<AdvancedRuleViewModel> { vm }

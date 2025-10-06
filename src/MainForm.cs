@@ -1,5 +1,4 @@
-﻿// File: MainForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -96,8 +95,7 @@ namespace MinimalFirewall
 
             try
             {
-                Type?
-                firewallPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                Type? firewallPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
                 if (firewallPolicyType != null)
                 {
                     _firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(firewallPolicyType)!;
@@ -137,7 +135,7 @@ namespace MinimalFirewall
 
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _firewallPolicy);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _firewallPolicy, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
-            auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, dm);
+            auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
             groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, appIconList);
 
@@ -265,7 +263,7 @@ namespace MinimalFirewall
                     if (notifyIcon != null)
                     {
                         notifyIcon.Icon = _mainViewModel.IsLockedDown ?
-                        _defaultTrayIcon : _unlockedTrayIcon;
+                                          _defaultTrayIcon : _unlockedTrayIcon;
                     }
                 }
             }
@@ -421,7 +419,6 @@ namespace MinimalFirewall
             {
                 if (_isPopupVisible || _popupQueue.Count == 0)
                 {
-
                     return;
                 }
 
@@ -450,24 +447,19 @@ namespace MinimalFirewall
                     this.BeginInvoke(new Action(() =>
                     {
                         using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
-
                         if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
                         {
                             var newRule = new WildcardRule
-
                             {
                                 FolderPath = wildcardDialog.FolderPath,
                                 ExeName = wildcardDialog.ExeName,
-
                                 Action = wildcardDialog.FinalAction
                             };
                             _wildcardRuleService.AddRule(newRule);
                             var payload = new ApplyApplicationRulePayload
-
                             {
                                 AppPaths = [pending.AppPath],
                                 Action = newRule.Action,
-
                                 WildcardSourcePath = newRule.FolderPath
                             };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
@@ -484,11 +476,10 @@ namespace MinimalFirewall
                 {
                     var payload = new ProcessPendingConnectionPayload
                     {
-
                         PendingConnection = pending,
                         Decision = result.ToString(),
                         Duration = (result == NotifierForm.NotifierResult.TemporaryAllow) ?
-                        notifier.TemporaryDuration : default,
+                                   notifier.TemporaryDuration : default,
                         TrustPublisher = notifier.TrustPublisher
                     };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
@@ -505,8 +496,7 @@ namespace MinimalFirewall
             }
             finally
             {
-                if
-                (sender is IDisposable disposable)
+                if (sender is IDisposable disposable)
                 {
                     disposable.Dispose();
                 }
@@ -527,7 +517,6 @@ namespace MinimalFirewall
                 var newQueue = new Queue<PendingConnectionViewModel>(
                     _popupQueue.Where(p =>
                         !(p.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-
                           p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
                     )
                 );
@@ -575,7 +564,6 @@ namespace MinimalFirewall
                 Text = "Minimal Firewall",
                 Visible = true,
                 ContextMenuStrip = contextMenu
-
             };
             notifyIcon.DoubleClick += ShowWindow;
         }
@@ -591,7 +579,7 @@ namespace MinimalFirewall
             if (lockdownTrayMenuItem != null)
             {
                 lockdownTrayMenuItem.Text = _mainViewModel.IsLockedDown ?
-                "Disable Lockdown" : "Enable Lockdown";
+                                            "Disable Lockdown" : "Enable Lockdown";
             }
         }
 
@@ -606,23 +594,19 @@ namespace MinimalFirewall
                     if (this.IsDisposed || !this.IsHandleCreated)
                     {
                         return;
-
                     }
 
                     try
                     {
                         this.Invoke(new Action(async () =>
                         {
-
                             if (this.Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
                             {
                                 await ForceDataRefreshAsync();
-
                             }
                         }));
                     }
                     catch (ObjectDisposedException)
-
                     {
                     }
                 }, null, interval, interval);
@@ -760,7 +744,6 @@ namespace MinimalFirewall
                 GC.WaitForPendingFinalizers();
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-
                     SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1);
                 }
             });
@@ -785,7 +768,6 @@ namespace MinimalFirewall
                 switch (selectedTab.Name)
                 {
                     case "dashboardTabPage":
-
                         break;
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
@@ -942,7 +924,6 @@ namespace MinimalFirewall
                 switch (selectedTab.Name)
                 {
                     case "dashboardTabPage":
-
                         break;
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
@@ -994,23 +975,19 @@ namespace MinimalFirewall
                     return;
                 }
 
-
                 switch (tabName)
                 {
                     case "rulesTabPage":
                         _mainViewModel.ClearRulesData();
                         break;
-
                     case "systemChangesTabPage":
                         if (_auditStatusForm?.IsDisposed == false) _auditStatusForm?.Close();
                         _auditStatusForm = null;
                         _mainViewModel.SystemChanges.Clear();
-
                         auditControl1.ApplySearchFilter();
                         UpdateUiWithChangesCount();
                         _firewallSentryService.Stop();
                         _isSentryServiceStarted = false;
-
                         break;
                     case "groupsTabPage":
                         groupsControl1.ClearGroups();
@@ -1124,7 +1101,6 @@ namespace MinimalFirewall
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0],
-
                     [0, 0, 0, 1, 0],
                     [r, g_, b, 0, 1]
                 ]);
@@ -1149,7 +1125,7 @@ namespace MinimalFirewall
             if (button.Name == "lockdownButton")
             {
                 imageToDraw = _mainViewModel.IsLockedDown ?
-                _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
+                              _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
             }
             else if (button.Name == "rescanButton")
             {
@@ -1159,7 +1135,7 @@ namespace MinimalFirewall
                     return;
                 }
                 imageToDraw = (_appSettings.Theme == "Dark") ?
-                _refreshWhiteIcon : appImageList.Images["refresh.png"];
+                              _refreshWhiteIcon : appImageList.Images["refresh.png"];
             }
 
             if (imageToDraw != null)

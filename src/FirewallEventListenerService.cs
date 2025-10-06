@@ -1,10 +1,8 @@
-﻿// File: FirewallEventListenerService.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
 using System.Collections.Concurrent;
-
 namespace MinimalFirewall
 {
     public partial class FirewallEventListenerService : IDisposable
@@ -90,13 +88,18 @@ namespace MinimalFirewall
 
         private void OnFirewallBlockEvent(string xmlContent)
         {
+            string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
+            string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
+            string directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
             try
             {
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
+                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}'");
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
                 if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase)) return;
                 appPath = PathResolver.NormalizePath(appPath);
                 string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                _logAction($"[EventListener] Normalized path: '{appPath}', Direction: '{eventDirection}'");
 
                 string notificationKey = $"{appPath}|{eventDirection}";
                 if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
@@ -119,6 +122,7 @@ namespace MinimalFirewall
 
                 if (_dataService.DoesAnyRuleExist(appPath, serviceName, eventDirection))
                 {
+                    _logAction($"[EventListener] A rule already exists for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}'). Ignoring event.");
                     ClearPendingNotification(appPath, eventDirection);
                     return;
                 }
@@ -126,6 +130,7 @@ namespace MinimalFirewall
                 var matchingRule = _wildcardRuleService.Match(appPath);
                 if (matchingRule != null)
                 {
+                    _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
                     if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
                     {
                         ActionsService.ApplyApplicationRuleChange(new List<string> { appPath }, matchingRule.Action, matchingRule.FolderPath);
@@ -138,6 +143,7 @@ namespace MinimalFirewall
                 {
                     if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
                     {
+                        _logAction($"[EventListener] Auto-allowing trusted application '{appPath}' by publisher '{trustedPublisherName}'.");
                         string allowAction = $"Allow ({eventDirection})";
                         ActionsService?.ApplyApplicationRuleChange(new List<string> { appPath }, allowAction);
                         ClearPendingNotification(appPath, eventDirection);
@@ -156,8 +162,6 @@ namespace MinimalFirewall
             catch (Exception ex)
             {
                 _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex}");
-                string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(GetValueFromXml(xmlContent, "Application")));
-                string directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
                 if (!string.IsNullOrEmpty(appPathForClear))
                 {
                     ClearPendingNotification(appPathForClear, directionForClear);
@@ -191,6 +195,7 @@ namespace MinimalFirewall
 
             if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
             {
+                _logAction($"[EventListener] Event for '{appPath}' is snoozed. Ignoring.");
                 return false;
             }
 

@@ -239,6 +239,7 @@ namespace MinimalFirewall
                 if (result == DialogResult.No) return;
 
                 _mainViewModel.DeleteRules(items);
+                ApplyRulesFilters();
             }
         }
 

@@ -45,6 +45,9 @@ namespace MinimalFirewall
             _bindingSource = new BindingSource();
             liveConnectionsDataGridView.DataSource = _bindingSource;
             _trafficMonitorViewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
+
+            _sortColumn = _appSettings.LiveConnectionsSortColumn;
+            _sortOrder = (SortOrder)_appSettings.LiveConnectionsSortOrder;
         }
 
         public void OnTabSelected()
@@ -198,6 +201,9 @@ namespace MinimalFirewall
             }
 
             _sortColumn = e.ColumnIndex;
+            _appSettings.LiveConnectionsSortColumn = _sortColumn;
+            _appSettings.LiveConnectionsSortOrder = (int)_sortOrder;
+
             UpdateLiveConnectionsView();
         }
 
