@@ -53,6 +53,8 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button addGroupButton;
         private System.Windows.Forms.Panel mainPanel;
         private System.Windows.Forms.Panel bottomPanel;
+        private System.Windows.Forms.RadioButton serviceRadioButton;
+        private System.Windows.Forms.RadioButton programRadioButton;
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -79,6 +81,8 @@ namespace MinimalFirewall
             this.outboundRadioButton = new System.Windows.Forms.RadioButton();
             this.inboundRadioButton = new System.Windows.Forms.RadioButton();
             this.programGroupBox = new System.Windows.Forms.GroupBox();
+            this.serviceRadioButton = new System.Windows.Forms.RadioButton();
+            this.programRadioButton = new System.Windows.Forms.RadioButton();
             this.serviceNameTextBox = new System.Windows.Forms.TextBox();
             this.labelService = new System.Windows.Forms.Label();
             this.browseButton = new System.Windows.Forms.Button();
@@ -257,6 +261,8 @@ namespace MinimalFirewall
             // 
             this.programGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.programGroupBox.Controls.Add(this.serviceRadioButton);
+            this.programGroupBox.Controls.Add(this.programRadioButton);
             this.programGroupBox.Controls.Add(this.serviceNameTextBox);
             this.programGroupBox.Controls.Add(this.labelService);
             this.programGroupBox.Controls.Add(this.browseButton);
@@ -269,11 +275,31 @@ namespace MinimalFirewall
             this.programGroupBox.TabStop = false;
             this.programGroupBox.Text = "Program / Service";
             // 
+            // serviceRadioButton
+            // 
+            this.serviceRadioButton.AutoSize = true;
+            this.serviceRadioButton.Location = new System.Drawing.Point(120, 22);
+            this.serviceRadioButton.Name = "serviceRadioButton";
+            this.serviceRadioButton.Size = new System.Drawing.Size(62, 19);
+            this.serviceRadioButton.TabIndex = 6;
+            this.serviceRadioButton.Text = "Service";
+            this.serviceRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // programRadioButton
+            // 
+            this.programRadioButton.AutoSize = true;
+            this.programRadioButton.Location = new System.Drawing.Point(15, 22);
+            this.programRadioButton.Name = "programRadioButton";
+            this.programRadioButton.Size = new System.Drawing.Size(71, 19);
+            this.programRadioButton.TabIndex = 5;
+            this.programRadioButton.Text = "Program";
+            this.programRadioButton.UseVisualStyleBackColor = true;
+            // 
             // serviceNameTextBox
             // 
             this.serviceNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.serviceNameTextBox.Location = new System.Drawing.Point(75, 53);
+            this.serviceNameTextBox.Location = new System.Drawing.Point(75, 52);
             this.serviceNameTextBox.Name = "serviceNameTextBox";
             this.serviceNameTextBox.Size = new System.Drawing.Size(576, 23);
             this.serviceNameTextBox.TabIndex = 4;
@@ -281,7 +307,7 @@ namespace MinimalFirewall
             // labelService
             // 
             this.labelService.AutoSize = true;
-            this.labelService.Location = new System.Drawing.Point(15, 56);
+            this.labelService.Location = new System.Drawing.Point(15, 55);
             this.labelService.Name = "labelService";
             this.labelService.Size = new System.Drawing.Size(44, 15);
             this.labelService.TabIndex = 3;
@@ -290,7 +316,7 @@ namespace MinimalFirewall
             // browseButton
             // 
             this.browseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.browseButton.Location = new System.Drawing.Point(657, 22);
+            this.browseButton.Location = new System.Drawing.Point(657, 52);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(94, 23);
             this.browseButton.TabIndex = 2;
@@ -302,7 +328,7 @@ namespace MinimalFirewall
             // 
             this.programPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.programPathTextBox.Location = new System.Drawing.Point(75, 22);
+            this.programPathTextBox.Location = new System.Drawing.Point(75, 52);
             this.programPathTextBox.Name = "programPathTextBox";
             this.programPathTextBox.Size = new System.Drawing.Size(576, 23);
             this.programPathTextBox.TabIndex = 1;
@@ -310,7 +336,7 @@ namespace MinimalFirewall
             // labelProgram
             // 
             this.labelProgram.AutoSize = true;
-            this.labelProgram.Location = new System.Drawing.Point(15, 25);
+            this.labelProgram.Location = new System.Drawing.Point(15, 55);
             this.labelProgram.Name = "labelProgram";
             this.labelProgram.Size = new System.Drawing.Size(53, 15);
             this.labelProgram.TabIndex = 0;

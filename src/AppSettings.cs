@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿// File: AppSettings.cs
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -10,7 +11,13 @@ namespace MinimalFirewall
 {
     public class AppSettings : INotifyPropertyChanged
     {
-        private static readonly string _configPath = Path.Combine(AppContext.BaseDirectory, "settings.json");
+        private static string GetSettingsPath()
+        {
+            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+            return Path.Combine(exeDirectory, "settings.json");
+        }
+
+        private static readonly string _configPath = GetSettingsPath();
         private bool _isPopupsEnabled = false;
         private bool _isLoggingEnabled;
         private string _theme = "Dark";

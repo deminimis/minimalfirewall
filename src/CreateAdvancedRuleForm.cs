@@ -1,4 +1,4 @@
-﻿// File: CreateAdvancedRuleForm.cs
+﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateAdvancedRuleForm.cs
 using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
@@ -27,6 +27,9 @@ namespace MinimalFirewall
             _viewModel = new FirewallRuleViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
+            programRadioButton.CheckedChanged += RuleType_CheckedChanged;
+            serviceRadioButton.CheckedChanged += RuleType_CheckedChanged;
+
             protocolComboBox.Items.AddRange([
                 ProtocolTypes.Any,
                 ProtocolTypes.TCP,
@@ -48,6 +51,8 @@ namespace MinimalFirewall
                 }
                 this.CenterToParent();
             };
+
+            programRadioButton.Checked = true;
         }
 
         public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, string appPath, string direction)
@@ -76,6 +81,27 @@ namespace MinimalFirewall
             PopulateFormFromRule(ruleToEdit);
         }
 
+        private void RuleType_CheckedChanged(object? sender, EventArgs e)
+        {
+            bool isProgram = programRadioButton.Checked;
+
+            labelProgram.Visible = isProgram;
+            programPathTextBox.Visible = isProgram;
+            browseButton.Visible = isProgram;
+
+            labelService.Visible = !isProgram;
+            serviceNameTextBox.Visible = !isProgram;
+
+            if (!isProgram)
+            {
+                programPathTextBox.Text = string.Empty;
+            }
+            else
+            {
+                serviceNameTextBox.Text = string.Empty;
+            }
+        }
+
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)
         {
             ruleNameTextBox.Text = rule.Name;
@@ -86,6 +112,7 @@ namespace MinimalFirewall
                 allowRadioButton.Checked = true;
             else
                 blockRadioButton.Checked = true;
+
             if (rule.Direction == (Directions.Incoming | Directions.Outgoing))
                 bothDirRadioButton.Checked = true;
             else if (rule.Direction == Directions.Incoming)
@@ -93,19 +120,15 @@ namespace MinimalFirewall
             else
                 outboundRadioButton.Checked = true;
 
-            if (!string.IsNullOrEmpty(rule.ServiceName))
+            if (!string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*")
             {
+                serviceRadioButton.Checked = true;
                 serviceNameTextBox.Text = rule.ServiceName;
-                programPathTextBox.Text = rule.ApplicationName;
-                programPathTextBox.ReadOnly = true;
-                browseButton.Enabled = false;
             }
             else
             {
+                programRadioButton.Checked = true;
                 programPathTextBox.Text = rule.ApplicationName;
-                serviceNameTextBox.Text = string.Empty;
-                programPathTextBox.ReadOnly = false;
-                browseButton.Enabled = true;
             }
 
 
@@ -132,14 +155,16 @@ namespace MinimalFirewall
             localAddressTextBox.Text = rule.LocalAddresses;
             remoteAddressTextBox.Text = rule.RemoteAddresses;
 
-            domainCheckBox.Checked = rule.Profiles.Contains("Domain") || rule.Profiles == "All";
+            domainCheckBox.Checked = rule.Profiles.Contains("Domain") ||
+                rule.Profiles == "All";
             privateCheckBox.Checked = rule.Profiles.Contains("Private") || rule.Profiles == "All";
             publicCheckBox.Checked = rule.Profiles.Contains("Public") || rule.Profiles == "All";
 
             groupComboBox.Text = rule.Grouping;
             lanCheckBox.Checked = rule.InterfaceTypes.Contains("Lan") || rule.InterfaceTypes == "All";
             wirelessCheckBox.Checked = rule.InterfaceTypes.Contains("Wireless") || rule.InterfaceTypes == "All";
-            remoteAccessCheckBox.Checked = rule.InterfaceTypes.Contains("RemoteAccess") || rule.InterfaceTypes == "All";
+            remoteAccessCheckBox.Checked = rule.InterfaceTypes.Contains("RemoteAccess") ||
+                rule.InterfaceTypes == "All";
 
             if (_viewModel.IsIcmpSectionVisible)
             {
@@ -193,12 +218,6 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (!programPathTextBox.ReadOnly && !string.IsNullOrWhiteSpace(programPathTextBox.Text) && !string.IsNullOrWhiteSpace(serviceNameTextBox.Text))
-            {
-                MessageBox.Show("A rule cannot specify both a program path and a service name. Please choose one.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             if (protocolComboBox.SelectedItem is not ProtocolTypes selectedProtocol)
             {
                 MessageBox.Show("A valid protocol must be selected.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -230,22 +249,26 @@ namespace MinimalFirewall
                 Description = descriptionTextBox.Text,
                 IsEnabled = enabledCheckBox.Checked,
                 Grouping = groupName,
-                Status = allowRadioButton.Checked ? "Allow" : "Block",
+                Status = allowRadioButton.Checked ?
+                    "Allow" : "Block",
                 Direction = GetDirection(),
                 Protocol = selectedProtocol.Value,
                 ProtocolName = selectedProtocol.Name,
                 ApplicationName = programPathTextBox.Text,
                 ServiceName = serviceNameTextBox.Text,
-                LocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text,
-                RemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text,
-                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ? "*" : localAddressTextBox.Text,
-                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text,
+                LocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ?
+                    "*" : localPortsTextBox.Text,
+                RemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ?
+                    "*" : remotePortsTextBox.Text,
+                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ?
+                    "*" : localAddressTextBox.Text,
+                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ?
+                    "*" : remoteAddressTextBox.Text,
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced,
                 InterfaceTypes = GetInterfaceTypes(),
                 IcmpTypesAndCodes = icmpTypesAndCodesTextBox.Text
             };
-
             this.RuleVm = rule;
 
             DialogResult = DialogResult.OK;
