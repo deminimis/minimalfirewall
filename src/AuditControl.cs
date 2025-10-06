@@ -14,6 +14,7 @@ namespace MinimalFirewall
     {
         private IContainer components = null;
         private MainViewModel _viewModel = null!;
+        private AppSettings _appSettings = null!;
         private ForeignRuleTracker _foreignRuleTracker;
         private FirewallSentryService _firewallSentryService;
         private DarkModeCS _dm;
@@ -30,17 +31,23 @@ namespace MinimalFirewall
             MainViewModel viewModel,
             ForeignRuleTracker foreignRuleTracker,
             FirewallSentryService firewallSentryService,
+            AppSettings appSettings,
             DarkModeCS dm)
         {
             _viewModel = viewModel;
             _foreignRuleTracker = foreignRuleTracker;
             _firewallSentryService = firewallSentryService;
+            _appSettings = appSettings;
             _dm = dm;
 
             systemChangesDataGridView.AutoGenerateColumns = false;
             _bindingSource = new BindingSource();
             systemChangesDataGridView.DataSource = _bindingSource;
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
+
+            auditSearchTextBox.Text = _appSettings.AuditSearchText;
+            _sortColumn = _appSettings.AuditSortColumn;
+            _sortOrder = (SortOrder)_appSettings.AuditSortOrder;
         }
 
         private void OnSystemChangesUpdated()
@@ -108,6 +115,7 @@ namespace MinimalFirewall
 
         private void auditSearchTextBox_TextChanged(object sender, EventArgs e)
         {
+            _appSettings.AuditSearchText = auditSearchTextBox.Text;
             ApplySearchFilter();
         }
 
@@ -132,6 +140,9 @@ namespace MinimalFirewall
                 _bindingSource.DataSource = sortedList;
                 _bindingSource.ResetBindings(false);
             }
+
+            _appSettings.AuditSortColumn = _sortColumn;
+            _appSettings.AuditSortOrder = (int)_sortOrder;
         }
 
         private static object GetPropertyValue(object obj, string propertyName)

@@ -1,5 +1,4 @@
-﻿// File: AppSettings.cs
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -30,6 +29,11 @@ namespace MinimalFirewall
         private string _rulesSearchText = "";
         private int _rulesSortColumn = -1;
         private int _rulesSortOrder = 0;
+        private string _auditSearchText = "";
+        private int _auditSortColumn = -1;
+        private int _auditSortOrder = 0;
+        private int _liveConnectionsSortColumn = -1;
+        private int _liveConnectionsSortOrder = 0;
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
@@ -49,6 +53,11 @@ namespace MinimalFirewall
         public string RulesSearchText { get => _rulesSearchText; set => SetField(ref _rulesSearchText, value); }
         public int RulesSortColumn { get => _rulesSortColumn; set => SetField(ref _rulesSortColumn, value); }
         public int RulesSortOrder { get => _rulesSortOrder; set => SetField(ref _rulesSortOrder, value); }
+        public string AuditSearchText { get => _auditSearchText; set => SetField(ref _auditSearchText, value); }
+        public int AuditSortColumn { get => _auditSortColumn; set => SetField(ref _auditSortColumn, value); }
+        public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
+        public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
+        public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
 
         public Point WindowLocation { get; set; } = new Point(100, 100);
         public Size WindowSize { get; set; } = new Size(1280, 800);
@@ -88,7 +97,6 @@ namespace MinimalFirewall
             {
                 if (File.Exists(_configPath))
                 {
-
                     string json = File.ReadAllText(_configPath);
                     return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
                 }

@@ -1,5 +1,4 @@
-﻿// File: FirewallActionService.cs
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using System.Data;
 using System.IO;
 using MinimalFirewall.TypedObjects;
@@ -80,7 +79,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule != null &&
-                        IsMfwRule(rule) &&
+                         IsMfwRule(rule) &&
                         rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
                         string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
                         rule.Protocol == 256 &&
@@ -144,7 +143,7 @@ namespace MinimalFirewall
                 void createRule(string baseName, Directions dir, Actions act)
                 {
                     string description = string.IsNullOrEmpty(wildcardSourcePath) ?
-                        "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                                         "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
                     CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
                 }
 
@@ -300,6 +299,7 @@ namespace MinimalFirewall
         {
             var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
+            activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
 
             try
             {
@@ -359,12 +359,13 @@ namespace MinimalFirewall
             if (!newLockdownState)
             {
                 ReenableMfwRules();
-                activityLogger.LogDebug("All MFW rules re-enabled by per-rule toggle.");
+                activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
             }
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
+            activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
             TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
 
@@ -483,6 +484,7 @@ namespace MinimalFirewall
             {
                 foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
                 activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: Accepting foreign rule '{change.Rule.Name}'");
             }
         }
 
@@ -490,6 +492,7 @@ namespace MinimalFirewall
         {
             if (change.Rule?.Name is not null)
             {
+                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{change.Rule.Name}'");
                 DeleteAdvancedRules([change.Rule.Name]);
             }
         }
@@ -551,6 +554,7 @@ namespace MinimalFirewall
             {
                 foreignRuleTracker.AcknowledgeRules(ruleNames);
                 activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
+                activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
             }
         }
 
@@ -686,6 +690,7 @@ namespace MinimalFirewall
 
             firewallService.CreateRule(firewallRule);
             activityLogger.LogChange("Advanced Rule Created", vm.Name);
+            activityLogger.LogDebug($"Created Advanced Rule: '{vm.Name}'");
         }
 
         public static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
@@ -762,12 +767,14 @@ namespace MinimalFirewall
 
         private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
         {
+            activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
             var firewallRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
             firewallService.CreateRule(firewallRule);
         }
 
         private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol)
         {
+            activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}'");
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
             firewallRule.Name = name;
             firewallRule.serviceName = serviceName;
@@ -781,6 +788,7 @@ namespace MinimalFirewall
 
         private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
         {
+            activityLogger.LogDebug($"Creating UWP Rule: '{name}' for PFN '{packageFamilyName}'");
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
             firewallRule.Name = name;
             firewallRule.Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName;
@@ -798,6 +806,7 @@ namespace MinimalFirewall
             {
                 try
                 {
+                    activityLogger.LogDebug($"Deleting all rules in group: {groupName}");
                     firewallService.DeleteRulesByGroup(groupName);
                 }
                 catch (COMException ex)
