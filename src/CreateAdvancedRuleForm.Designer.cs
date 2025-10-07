@@ -1,5 +1,4 @@
-﻿// File: CreateAdvancedRuleForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class CreateAdvancedRuleForm
     {
@@ -53,8 +52,9 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button addGroupButton;
         private System.Windows.Forms.Panel mainPanel;
         private System.Windows.Forms.Panel bottomPanel;
-        private System.Windows.Forms.RadioButton serviceRadioButton;
-        private System.Windows.Forms.RadioButton programRadioButton;
+        private System.Windows.Forms.Label programPathNoteLabel;
+        private System.Windows.Forms.Button browseServiceButton;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -81,8 +81,8 @@ namespace MinimalFirewall
             this.outboundRadioButton = new System.Windows.Forms.RadioButton();
             this.inboundRadioButton = new System.Windows.Forms.RadioButton();
             this.programGroupBox = new System.Windows.Forms.GroupBox();
-            this.serviceRadioButton = new System.Windows.Forms.RadioButton();
-            this.programRadioButton = new System.Windows.Forms.RadioButton();
+            this.browseServiceButton = new System.Windows.Forms.Button();
+            this.programPathNoteLabel = new System.Windows.Forms.Label();
             this.serviceNameTextBox = new System.Windows.Forms.TextBox();
             this.labelService = new System.Windows.Forms.Label();
             this.browseButton = new System.Windows.Forms.Button();
@@ -261,8 +261,8 @@ namespace MinimalFirewall
             // 
             this.programGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.programGroupBox.Controls.Add(this.serviceRadioButton);
-            this.programGroupBox.Controls.Add(this.programRadioButton);
+            this.programGroupBox.Controls.Add(this.browseServiceButton);
+            this.programGroupBox.Controls.Add(this.programPathNoteLabel);
             this.programGroupBox.Controls.Add(this.serviceNameTextBox);
             this.programGroupBox.Controls.Add(this.labelService);
             this.programGroupBox.Controls.Add(this.browseButton);
@@ -270,36 +270,37 @@ namespace MinimalFirewall
             this.programGroupBox.Controls.Add(this.labelProgram);
             this.programGroupBox.Location = new System.Drawing.Point(15, 211);
             this.programGroupBox.Name = "programGroupBox";
-            this.programGroupBox.Size = new System.Drawing.Size(757, 90);
+            this.programGroupBox.Size = new System.Drawing.Size(757, 140);
             this.programGroupBox.TabIndex = 7;
             this.programGroupBox.TabStop = false;
-            this.programGroupBox.Text = "Program / Service";
+            this.programGroupBox.Text = "Program and Service";
             // 
-            // serviceRadioButton
+            // browseServiceButton
             // 
-            this.serviceRadioButton.AutoSize = true;
-            this.serviceRadioButton.Location = new System.Drawing.Point(120, 22);
-            this.serviceRadioButton.Name = "serviceRadioButton";
-            this.serviceRadioButton.Size = new System.Drawing.Size(62, 19);
-            this.serviceRadioButton.TabIndex = 6;
-            this.serviceRadioButton.Text = "Service";
-            this.serviceRadioButton.UseVisualStyleBackColor = true;
+            this.browseServiceButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.browseServiceButton.Location = new System.Drawing.Point(657, 82);
+            this.browseServiceButton.Name = "browseServiceButton";
+            this.browseServiceButton.Size = new System.Drawing.Size(94, 23);
+            this.browseServiceButton.TabIndex = 7;
+            this.browseServiceButton.Text = "Browse...";
+            this.browseServiceButton.UseVisualStyleBackColor = true;
+            this.browseServiceButton.Click += new System.EventHandler(this.browseServiceButton_Click);
             // 
-            // programRadioButton
+            // programPathNoteLabel
             // 
-            this.programRadioButton.AutoSize = true;
-            this.programRadioButton.Location = new System.Drawing.Point(15, 22);
-            this.programRadioButton.Name = "programRadioButton";
-            this.programRadioButton.Size = new System.Drawing.Size(71, 19);
-            this.programRadioButton.TabIndex = 5;
-            this.programRadioButton.Text = "Program";
-            this.programRadioButton.UseVisualStyleBackColor = true;
+            this.programPathNoteLabel.AutoSize = true;
+            this.programPathNoteLabel.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.programPathNoteLabel.Location = new System.Drawing.Point(75, 50);
+            this.programPathNoteLabel.Name = "programPathNoteLabel";
+            this.programPathNoteLabel.Size = new System.Drawing.Size(350, 15);
+            this.programPathNoteLabel.TabIndex = 6;
+            this.programPathNoteLabel.Text = "Leave blank to apply the rule to any program hosting the service.";
             // 
             // serviceNameTextBox
             // 
             this.serviceNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.serviceNameTextBox.Location = new System.Drawing.Point(75, 52);
+            this.serviceNameTextBox.Location = new System.Drawing.Point(75, 82);
             this.serviceNameTextBox.Name = "serviceNameTextBox";
             this.serviceNameTextBox.Size = new System.Drawing.Size(576, 23);
             this.serviceNameTextBox.TabIndex = 4;
@@ -307,7 +308,7 @@ namespace MinimalFirewall
             // labelService
             // 
             this.labelService.AutoSize = true;
-            this.labelService.Location = new System.Drawing.Point(15, 55);
+            this.labelService.Location = new System.Drawing.Point(15, 85);
             this.labelService.Name = "labelService";
             this.labelService.Size = new System.Drawing.Size(44, 15);
             this.labelService.TabIndex = 3;
@@ -316,7 +317,7 @@ namespace MinimalFirewall
             // browseButton
             // 
             this.browseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.browseButton.Location = new System.Drawing.Point(657, 52);
+            this.browseButton.Location = new System.Drawing.Point(657, 22);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(94, 23);
             this.browseButton.TabIndex = 2;
@@ -328,7 +329,7 @@ namespace MinimalFirewall
             // 
             this.programPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.programPathTextBox.Location = new System.Drawing.Point(75, 52);
+            this.programPathTextBox.Location = new System.Drawing.Point(75, 22);
             this.programPathTextBox.Name = "programPathTextBox";
             this.programPathTextBox.Size = new System.Drawing.Size(576, 23);
             this.programPathTextBox.TabIndex = 1;
@@ -336,7 +337,7 @@ namespace MinimalFirewall
             // labelProgram
             // 
             this.labelProgram.AutoSize = true;
-            this.labelProgram.Location = new System.Drawing.Point(15, 55);
+            this.labelProgram.Location = new System.Drawing.Point(15, 25);
             this.labelProgram.Name = "labelProgram";
             this.labelProgram.Size = new System.Drawing.Size(53, 15);
             this.labelProgram.TabIndex = 0;
@@ -348,7 +349,7 @@ namespace MinimalFirewall
             | System.Windows.Forms.AnchorStyles.Right)));
             this.protocolGroupBox.Controls.Add(this.protocolComboBox);
             this.protocolGroupBox.Controls.Add(this.labelProtocol);
-            this.protocolGroupBox.Location = new System.Drawing.Point(15, 307);
+            this.protocolGroupBox.Location = new System.Drawing.Point(15, 357);
             this.protocolGroupBox.Name = "protocolGroupBox";
             this.protocolGroupBox.Size = new System.Drawing.Size(757, 60);
             this.protocolGroupBox.TabIndex = 8;
@@ -384,7 +385,7 @@ namespace MinimalFirewall
             this.portsGroupBox.Controls.Add(this.labelRemotePorts);
             this.portsGroupBox.Controls.Add(this.localPortsTextBox);
             this.portsGroupBox.Controls.Add(this.labelLocalPorts);
-            this.portsGroupBox.Location = new System.Drawing.Point(15, 373);
+            this.portsGroupBox.Location = new System.Drawing.Point(15, 423);
             this.portsGroupBox.Name = "portsGroupBox";
             this.portsGroupBox.Size = new System.Drawing.Size(757, 90);
             this.portsGroupBox.TabIndex = 9;
@@ -436,7 +437,7 @@ namespace MinimalFirewall
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
             this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
-            this.icmpGroupBox.Location = new System.Drawing.Point(15, 373);
+            this.icmpGroupBox.Location = new System.Drawing.Point(15, 423);
             this.icmpGroupBox.Name = "icmpGroupBox";
             this.icmpGroupBox.Size = new System.Drawing.Size(757, 90);
             this.icmpGroupBox.TabIndex = 10;
@@ -471,7 +472,7 @@ namespace MinimalFirewall
             this.scopeGroupBox.Controls.Add(this.labelRemoteAddress);
             this.scopeGroupBox.Controls.Add(this.localAddressTextBox);
             this.scopeGroupBox.Controls.Add(this.labelLocalAddress);
-            this.scopeGroupBox.Location = new System.Drawing.Point(15, 469);
+            this.scopeGroupBox.Location = new System.Drawing.Point(15, 519);
             this.scopeGroupBox.Name = "scopeGroupBox";
             this.scopeGroupBox.Size = new System.Drawing.Size(757, 90);
             this.scopeGroupBox.TabIndex = 11;

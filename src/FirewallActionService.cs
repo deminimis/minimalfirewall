@@ -158,12 +158,12 @@ namespace MinimalFirewall
             }
         }
 
-        public void ApplyServiceRuleChange(string serviceName, string action)
+        public void ApplyServiceRuleChange(string serviceName, string action, string appPath = "")
         {
             if (string.IsNullOrEmpty(serviceName)) return;
             var rulesToRemove = firewallService.DeleteRulesByServiceName(serviceName);
 
-            void createRule(string name, Directions dir, Actions act) => CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value);
+            void createRule(string name, Directions dir, Actions act) => CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value, appPath);
             ApplyRuleAction(serviceName, action, createRule);
             if (rulesToRemove.Any())
             {
@@ -387,7 +387,7 @@ namespace MinimalFirewall
                         var serviceNames = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
                         foreach (var serviceName in serviceNames)
                         {
-                            ApplyServiceRuleChange(serviceName, action);
+                            ApplyServiceRuleChange(serviceName, action, pending.AppPath);
                         }
                     }
                     else if (!string.IsNullOrEmpty(pending.AppPath))
@@ -397,7 +397,7 @@ namespace MinimalFirewall
                     break;
                 case "TemporaryAllow":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
-                    CreateTemporaryAllowRule(pending.AppPath, pending.Direction, duration);
+                    CreateTemporaryAllowRule(pending.AppPath, pending.ServiceName, pending.Direction, duration);
                     break;
 
                 case "Ignore":
@@ -442,18 +442,26 @@ namespace MinimalFirewall
             }
         }
 
-        private void CreateTemporaryAllowRule(string appPath, string direction, TimeSpan duration)
+        private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)
         {
             if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection)) return;
-            string appName = Path.GetFileNameWithoutExtension(appPath);
+            string baseName = !string.IsNullOrEmpty(serviceName) ? serviceName.Split(',')[0].Trim() : Path.GetFileNameWithoutExtension(appPath);
             string guid = Guid.NewGuid().ToString();
             string description = "Temporarily allowed by Minimal Firewall.";
-            string ruleName = $"Temp Allow - {appName} - {direction} - {guid}";
+            string ruleName = $"Temp Allow - {baseName} - {direction} - {guid}";
 
-            CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
+            if (!string.IsNullOrEmpty(serviceName))
+            {
+                CreateServiceRule(ruleName, serviceName, parsedDirection, parsedAction, ProtocolTypes.Any.Value, appPath);
+            }
+            else
+            {
+                CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
+            }
+
             DateTime expiry = DateTime.UtcNow.Add(duration);
             _temporaryRuleManager.Add(ruleName, expiry);
-            activityLogger.LogChange("Temporary Rule Created", $"Allowed {appPath} for {duration.TotalMinutes} minutes.");
+            activityLogger.LogChange("Temporary Rule Created", $"Allowed {baseName} ({appPath}) for {duration.TotalMinutes} minutes.");
             var timer = new System.Threading.Timer(_ =>
             {
                 try
@@ -773,12 +781,16 @@ namespace MinimalFirewall
             firewallService.CreateRule(firewallRule);
         }
 
-        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol)
+        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string appPath = "")
         {
-            activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}'");
+            activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with program '{appPath}'");
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
             firewallRule.Name = name;
             firewallRule.serviceName = serviceName;
+            if (!string.IsNullOrEmpty(appPath))
+            {
+                firewallRule.ApplicationName = appPath;
+            }
             firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
             firewallRule.Action = (NET_FW_ACTION_)action;
             firewallRule.Protocol = protocol;

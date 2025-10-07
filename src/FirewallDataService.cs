@@ -47,7 +47,7 @@ namespace MinimalFirewall
 
             services = SystemDiscoveryService.GetServicesWithExePaths();
             var cacheOptions = new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+             .SetSlidingExpiration(TimeSpan.FromMinutes(10));
             _localCache.Set(ServicesCacheKey, services, cacheOptions);
             return services;
         }
@@ -116,14 +116,14 @@ namespace MinimalFirewall
             var commonName = GetCommonName(group);
             if (string.IsNullOrEmpty(commonName) || commonName.StartsWith("@"))
             {
-                commonName = firstRule.Grouping;
+                commonName = firstRule.Grouping ?? string.Empty;
             }
 
             var aggRule = new AggregatedRuleViewModel
             {
                 Name = commonName,
-                ApplicationName = firstRule.ApplicationName,
-                ServiceName = firstRule.serviceName,
+                ApplicationName = firstRule.ApplicationName ?? string.Empty,
+                ServiceName = firstRule.serviceName ?? string.Empty,
                 Protocol = firstRule.Protocol,
                 ProtocolName = GetProtocolName(firstRule.Protocol),
                 Type = DetermineRuleType(firstRule),
@@ -163,9 +163,9 @@ namespace MinimalFirewall
         private string GetCommonName(List<INetFwRule2> group)
         {
             if (group.Count == 0) return string.Empty;
-            if (group.Count == 1) return group[0].Name;
+            if (group.Count == 1) return group[0].Name ?? string.Empty;
 
-            var names = group.Select(r => r.Name).ToList();
+            var names = group.Select(r => r.Name ?? string.Empty).ToList();
             string first = names[0];
             int commonPrefixLength = first.Length;
 
@@ -188,7 +188,7 @@ namespace MinimalFirewall
                 commonPrefix = commonPrefix.Substring(0, commonPrefix.Length - 1).Trim();
             }
 
-            return string.IsNullOrEmpty(commonPrefix) ? group[0].Grouping : commonPrefix;
+            return string.IsNullOrEmpty(commonPrefix) ? (group[0].Grouping ?? string.Empty) : commonPrefix;
         }
 
 

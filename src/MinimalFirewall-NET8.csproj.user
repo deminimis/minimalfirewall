@@ -7,6 +7,9 @@
     <Compile Update="AuditControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="BrowseServicesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="CreateAdvancedRuleForm.cs">
       <SubType>Form</SubType>
     </Compile>
