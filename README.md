@@ -125,7 +125,11 @@ For dark theme, Minimal Firewall uses a modified version of [Dark-Mode-Forms](ht
 
 ## Contributing
 
-Contributions are welcome! Please submit issues or pull requests to the GitHub repository. If you have questions, feel free to open an issue.
+Contributions are welcome! Please submit an issue, a discussion, or a pull request. Feel free to drop a question or discussion in the discussions tab. 
+
+### Thanks to
+@shewolf56
+@Hanatarou
 
 ## License
 
