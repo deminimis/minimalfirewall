@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateAdvancedRuleForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using NetFwTypeLib;
@@ -27,9 +26,6 @@ namespace MinimalFirewall
             _viewModel = new FirewallRuleViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-            programRadioButton.CheckedChanged += RuleType_CheckedChanged;
-            serviceRadioButton.CheckedChanged += RuleType_CheckedChanged;
-
             protocolComboBox.Items.AddRange([
                 ProtocolTypes.Any,
                 ProtocolTypes.TCP,
@@ -42,6 +38,7 @@ namespace MinimalFirewall
 
             LoadFirewallGroups();
             _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
+            _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
             this.Load += (sender, e) =>
             {
                 var workingArea = Screen.FromControl(this).WorkingArea;
@@ -51,12 +48,10 @@ namespace MinimalFirewall
                 }
                 this.CenterToParent();
             };
-
-            programRadioButton.Checked = true;
         }
 
         public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, string appPath, string direction)
-        : this(firewallPolicy, actionsService)
+               : this(firewallPolicy, actionsService)
         {
             programPathTextBox.Text = appPath;
             if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
@@ -81,27 +76,6 @@ namespace MinimalFirewall
             PopulateFormFromRule(ruleToEdit);
         }
 
-        private void RuleType_CheckedChanged(object? sender, EventArgs e)
-        {
-            bool isProgram = programRadioButton.Checked;
-
-            labelProgram.Visible = isProgram;
-            programPathTextBox.Visible = isProgram;
-            browseButton.Visible = isProgram;
-
-            labelService.Visible = !isProgram;
-            serviceNameTextBox.Visible = !isProgram;
-
-            if (!isProgram)
-            {
-                programPathTextBox.Text = string.Empty;
-            }
-            else
-            {
-                serviceNameTextBox.Text = string.Empty;
-            }
-        }
-
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)
         {
             ruleNameTextBox.Text = rule.Name;
@@ -120,17 +94,8 @@ namespace MinimalFirewall
             else
                 outboundRadioButton.Checked = true;
 
-            if (!string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*")
-            {
-                serviceRadioButton.Checked = true;
-                serviceNameTextBox.Text = rule.ServiceName;
-            }
-            else
-            {
-                programRadioButton.Checked = true;
-                programPathTextBox.Text = rule.ApplicationName;
-            }
-
+            programPathTextBox.Text = rule.ApplicationName;
+            serviceNameTextBox.Text = (rule.ServiceName == "*" || string.IsNullOrEmpty(rule.ServiceName)) ? string.Empty : rule.ServiceName;
 
             int protocolIndex = -1;
             var items = protocolComboBox.Items.OfType<ProtocolTypes>().ToList();
@@ -312,6 +277,20 @@ namespace MinimalFirewall
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 programPathTextBox.Text = openFileDialog.FileName;
+            }
+        }
+
+        private void browseServiceButton_Click(object sender, EventArgs e)
+        {
+            var services = SystemDiscoveryService.GetServicesWithExePaths();
+            using var browseForm = new BrowseServicesForm(services);
+            if (browseForm.ShowDialog(this) == DialogResult.OK && browseForm.SelectedService != null)
+            {
+                serviceNameTextBox.Text = browseForm.SelectedService.ServiceName;
+                if (!string.IsNullOrEmpty(browseForm.SelectedService.ExePath))
+                {
+                    programPathTextBox.Text = PathResolver.NormalizePath(browseForm.SelectedService.ExePath);
+                }
             }
         }
 

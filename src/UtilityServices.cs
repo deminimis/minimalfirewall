@@ -1,23 +1,34 @@
-﻿using DarkModeForms;
+﻿// File: UtilityServices.cs
+using DarkModeForms;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using NetFwTypeLib;
+using System;
 
 namespace MinimalFirewall
 {
     public static class AdminTaskService
     {
-        public static void ExecutePowerShellRuleCommand(string command)
-        {
-            string fullCommand = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"";
-            Execute(fullCommand, "powershell.exe", out _);
-        }
-
         public static void ResetFirewall()
         {
-            Execute("advfirewall reset", "netsh.exe", out _);
+            try
+            {
+                Type fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
+                if (fwMgrType != null)
+                {
+                    INetFwMgr fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);
+                    fwMgr.RestoreDefaults();
+                    Debug.WriteLine("[AdminTask] Firewall reset to defaults using COM interface.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AdminTask ERROR] Firewall reset failed: {ex.Message}");
+                Messenger.MessageBox($"Could not reset Windows Firewall.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         public static void SetAuditPolicy(bool enable)
@@ -232,3 +243,4 @@ namespace MinimalFirewall
         }
     }
 }
+
