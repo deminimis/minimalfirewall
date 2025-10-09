@@ -1,4 +1,4 @@
-﻿// ForeignRuleTracker.cs
+﻿// File: ForeignRuleTracker.cs
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -13,8 +13,8 @@ namespace MinimalFirewall
 
         public ForeignRuleTracker()
         {
-            string baseDirectory = AppContext.BaseDirectory;
-            _baselinePath = Path.Combine(baseDirectory, "foreign_rules_baseline.json");
+            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+            _baselinePath = Path.Combine(exeDirectory, "foreign_rules_baseline.json");
             LoadAcknowledgedRules();
         }
 

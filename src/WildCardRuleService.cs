@@ -12,8 +12,8 @@ namespace MinimalFirewall
 
         public WildcardRuleService()
         {
-            string baseDirectory = AppContext.BaseDirectory;
-            _configPath = Path.Combine(baseDirectory, "wildcard_rules.json");
+            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+            _configPath = Path.Combine(exeDirectory, "wildcard_rules.json");
             LoadRules();
         }
 

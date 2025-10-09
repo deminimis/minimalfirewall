@@ -1,4 +1,5 @@
-﻿using DarkModeForms;
+﻿// File:MainForm.cs
+using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -120,7 +121,7 @@ namespace MinimalFirewall
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
             _wildcardRuleService = new WildcardRuleService();
             _foreignRuleTracker = new ForeignRuleTracker();
-            var uwpService = new UwpService();
+            var uwpService = new UwpService(_firewallRuleService);
             _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService);
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
             var trafficMonitorViewModel = new TrafficMonitorViewModel();
@@ -218,6 +219,10 @@ namespace MinimalFirewall
             }
 
             _actionsService.CleanupTemporaryRulesOnStartup();
+            if (_appSettings.StartOnSystemStartup)
+            {
+                _startupService.VerifyAndCorrectStartupTaskPath();
+            }
             if (_mainViewModel.IsLockedDown)
             {
                 AdminTaskService.SetAuditPolicy(true);
@@ -458,7 +463,7 @@ namespace MinimalFirewall
                             _wildcardRuleService.AddRule(newRule);
                             var payload = new ApplyApplicationRulePayload
                             {
-                                AppPaths = [pending.AppPath],
+                                AppPaths = new List<string> { pending.AppPath },
                                 Action = newRule.Action,
                                 WildcardSourcePath = newRule.FolderPath
                             };
@@ -533,7 +538,7 @@ namespace MinimalFirewall
                     {
                         var pendingInPopup = activeNotifier.PendingConnection;
                         if (pendingInPopup.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                            pendingInPopup.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                             pendingInPopup.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
                         {
                             notifierToClose = activeNotifier;
                         }
@@ -579,7 +584,7 @@ namespace MinimalFirewall
             if (lockdownTrayMenuItem != null)
             {
                 lockdownTrayMenuItem.Text = _mainViewModel.IsLockedDown ?
-                                            "Disable Lockdown" : "Enable Lockdown";
+ "Disable Lockdown" : "Enable Lockdown";
             }
         }
 
@@ -1097,13 +1102,14 @@ namespace MinimalFirewall
                 float g_ = newColor.G / 255f;
                 float b = newColor.B / 255f;
                 var colorMatrix = new ColorMatrix(
-                [
-                    [0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, 0],
-                    [0, 0, 0, 1, 0],
-                    [r, g_, b, 0, 1]
-                ]);
+                new float[][]
+                {
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 1, 0},
+                    new float[] {r, g_, b, 0, 1}
+                });
                 using (var attributes = new ImageAttributes())
                 {
                     attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);

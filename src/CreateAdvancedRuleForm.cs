@@ -1,4 +1,5 @@
-﻿using DarkModeForms;
+﻿// File: CreateAdvancedRuleForm.cs
+using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using NetFwTypeLib;
@@ -26,14 +27,14 @@ namespace MinimalFirewall
             _viewModel = new FirewallRuleViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-            protocolComboBox.Items.AddRange([
+            protocolComboBox.Items.AddRange(new object[] {
                 ProtocolTypes.Any,
                 ProtocolTypes.TCP,
                 ProtocolTypes.UDP,
                 ProtocolTypes.ICMPv4,
                 ProtocolTypes.ICMPv6,
                 ProtocolTypes.IGMP
-            ]);
+            });
             protocolComboBox.SelectedItem = ProtocolTypes.Any;
 
             LoadFirewallGroups();

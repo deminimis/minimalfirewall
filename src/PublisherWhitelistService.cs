@@ -1,4 +1,4 @@
-﻿// PublisherWhitelistService.cs
+﻿// File: PublisherWhitelistService.cs
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
@@ -13,7 +13,8 @@ namespace MinimalFirewall
 
         public PublisherWhitelistService()
         {
-            _configPath = Path.Combine(AppContext.BaseDirectory, "trusted_publishers.json");
+            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+            _configPath = Path.Combine(exeDirectory, "trusted_publishers.json");
             _trustedPublishers = Load();
         }
 
