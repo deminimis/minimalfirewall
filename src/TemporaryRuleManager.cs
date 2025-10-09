@@ -1,4 +1,4 @@
-﻿// TemporaryRuleManager.cs
+﻿// File: TemporaryRuleManager.cs
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
@@ -14,7 +14,8 @@ namespace MinimalFirewall
 
         public TemporaryRuleManager()
         {
-            _storagePath = Path.Combine(AppContext.BaseDirectory, "temporary_rules.json");
+            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
+            _storagePath = Path.Combine(exeDirectory, "temporary_rules.json");
             _temporaryRules = Load();
         }
 

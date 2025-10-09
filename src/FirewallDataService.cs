@@ -47,7 +47,7 @@ namespace MinimalFirewall
 
             services = SystemDiscoveryService.GetServicesWithExePaths();
             var cacheOptions = new MemoryCacheEntryOptions()
-             .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                .SetSlidingExpiration(TimeSpan.FromMinutes(10));
             _localCache.Set(ServicesCacheKey, services, cacheOptions);
             return services;
         }
@@ -194,14 +194,22 @@ namespace MinimalFirewall
 
         private RuleType DetermineRuleType(INetFwRule2 rule)
         {
+            if ((rule.Description != null && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal)) ||
+                (rule.ApplicationName != null && rule.ApplicationName.StartsWith("@", StringComparison.Ordinal)) ||
+                (rule.Name != null && rule.Name.StartsWith("@", StringComparison.Ordinal)))
+            {
+                return RuleType.UWP;
+            }
+
             if (!string.IsNullOrEmpty(rule.serviceName) && rule.serviceName != "*")
                 return RuleType.Service;
+
             if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*")
             {
                 bool hasSpecifics = (!string.IsNullOrEmpty(rule.LocalPorts) && rule.LocalPorts != "*") ||
-                                    (!string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*") ||
-                                    (!string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*") ||
-                                    (!string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*");
+                                     (!string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*") ||
+                                     (!string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*") ||
+                                     (!string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*");
                 return hasSpecifics ? RuleType.Advanced : RuleType.Program;
             }
             return RuleType.Advanced;
@@ -259,7 +267,7 @@ namespace MinimalFirewall
                     }
                     if (!string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(rule.ServiceName))
                     {
-                        var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                        var serviceNames = serviceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var sName in serviceNames)
                         {
                             if (rule.ServiceName.Equals(sName, StringComparison.OrdinalIgnoreCase))

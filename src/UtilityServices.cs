@@ -198,16 +198,61 @@ namespace MinimalFirewall
             if (isEnabled)
             {
                 string arguments = $"/create /tn \"{_taskName}\" /tr \"\\\"{_appPath}\\\" -tray\" /sc onlogon /rl highest /f";
-                Execute("schtasks.exe", arguments);
+                Execute("schtasks.exe", arguments, out _, out _);
             }
             else
             {
                 string arguments = $"/delete /tn \"{_taskName}\" /f";
-                Execute("schtasks.exe", arguments);
+                Execute("schtasks.exe", arguments, out _, out _);
             }
         }
 
-        private void Execute(string fileName, string arguments)
+        public void VerifyAndCorrectStartupTaskPath()
+        {
+            if (string.IsNullOrEmpty(_taskName) || string.IsNullOrEmpty(_appPath)) return;
+            string arguments = $"/query /tn \"{_taskName}\" /v /fo CSV /nh";
+            Execute("schtasks.exe", arguments, out string? output, out string? error);
+            if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(output))
+            {
+                Debug.WriteLine($"[Startup] Could not query task '{_taskName}'. It might not exist. Error: {error}");
+                return;
+            }
+            try
+            {
+                var parts = output.Split('"');
+                string storedPath = string.Empty;
+                foreach (var part in parts)
+                {
+                    if (part.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        storedPath = part;
+                        break;
+                    }
+                }
+                if (string.IsNullOrEmpty(storedPath))
+                {
+                    Debug.WriteLine($"[Startup] Could not parse executable path from schtasks output: {output}");
+                    return;
+                }
+                string normalizedStoredPath = PathResolver.NormalizePath(storedPath);
+                string normalizedCurrentPath = PathResolver.NormalizePath(_appPath);
+                if (!normalizedStoredPath.Equals(normalizedCurrentPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    Debug.WriteLine($"[Startup] Mismatch detected. Stored: '{normalizedStoredPath}', Current: '{normalizedCurrentPath}'. Correcting task.");
+                    SetStartup(true);
+                }
+                else
+                {
+                    Debug.WriteLine($"[Startup] Startup task path is correct.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Startup] Error during startup path verification: {ex.Message}");
+            }
+        }
+
+        private void Execute(string fileName, string arguments, out string output, out string error)
         {
             Debug.WriteLine($"[Startup] Executing: {fileName} {arguments}");
             var startInfo = new ProcessStartInfo()
@@ -218,29 +263,37 @@ namespace MinimalFirewall
                 CreateNoWindow = true,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
             };
             try
             {
                 using var process = Process.Start(startInfo);
                 if (process != null)
                 {
-                    string? stdOut = process.StandardOutput.ReadToEnd();
-                    string? stdErr = process.StandardError.ReadToEnd();
+                    output = process.StandardOutput.ReadToEnd();
+                    error = process.StandardError.ReadToEnd();
                     process.WaitForExit(5000);
 
                     if (process.ExitCode != 0)
                     {
                         Debug.WriteLine($"[Startup ERROR] Process exited with code {process.ExitCode}.");
-                        if (!string.IsNullOrEmpty(stdOut)) Debug.WriteLine($"[Startup ERROR] STDOUT: {stdOut}");
-                        if (!string.IsNullOrEmpty(stdErr)) Debug.WriteLine($"[Startup ERROR] STDERR: {stdErr}");
+                        if (!string.IsNullOrEmpty(output)) Debug.WriteLine($"[Startup ERROR] STDOUT: {output}");
+                        if (!string.IsNullOrEmpty(error)) Debug.WriteLine($"[Startup ERROR] STDERR: {error}");
                     }
+                }
+                else
+                {
+                    output = string.Empty;
+                    error = "Failed to start process.";
                 }
             }
             catch (Exception ex)
             {
+                output = string.Empty;
+                error = ex.Message;
                 Debug.WriteLine($"[Startup FATAL ERROR] {ex.Message}");
             }
         }
     }
 }
-
