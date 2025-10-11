@@ -30,9 +30,13 @@ Unlike most other Firewall programs, Minimal Firewall acts as a frontend, avoidi
     
 - **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder.
 
+- **Rule Import & Export**: Save your entire rule configuration (including advanced and wildcard rules) to a single JSON file. This is perfect for backups or migrating your setup to a new computer. Paths are made portable using environment variables (%LOCALAPPDATA%, etc.) for easy sharing. You can choose to either add imported rules to your existing set or completely replace them.
+
 - **Trust Publishers/Digital Certificates:** This works similar to wildcard rules. You can automatically trust apps with digital certificates trusted by Windows. Or you can whitelist publishers yourself. 
     
 - **UWP & Service Support:** Manage rules for modern Windows Store (UWP) apps and background system services, not just traditional desktop programs.
+
+- **Trust Publishers/Digital Certificates**: Automatically allow applications signed with a trusted digital certificate. You can also manage your own list of trusted publishers to automatically allow any software they create.
     
 - **Light & Dark Themes:** A clean, modern user interface that's easy on the eyes, day or night.
     
@@ -72,20 +76,20 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 
 
-#### The Dashboard shows blocked connections for you to manage.
-
-#### Or, choose to get interactive pop-up notifications.
-
-#### Includes both light and dark themes.
-
-#### Create simple program rules or powerful, detailed advanced rules.
 
 ## FAQ
 
 1. **Do I need to keep the app running?**
     
-    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again. 
-        
+    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
+  
+2. **How do I completely uninstall Minimal Firewall?**
+
+    - Because the application is portable, you can simply delete the executable file. To clean up the rules it has created, you have two options on the Settings tab: "Delete all Minimal Firewall rules": This will remove only the rules created by this application. "Revert Windows Firewall": This is a more drastic option that resets your entire Windows Firewall configuration to its factory default state, deleting all custom rules from any source.
+  
+3. **Does this work with other antivirus or security software?**
+
+   - Yes. Minimal Firewall is designed to be compatible with other security products. It does not install any kernel drivers or low-level services. It exclusively uses the official `NetFwTypeLib` COM library, which is the standard Microsoft API for managing the built-in Windows Firewall. This prevents the types of conflicts that can occur with firewalls that use their own filtering drivers.
 
 ## Security by Default
 
