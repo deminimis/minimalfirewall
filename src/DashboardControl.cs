@@ -11,12 +11,13 @@ namespace MinimalFirewall
 {
     public partial class DashboardControl : UserControl
     {
-        private MainViewModel _viewModel;
-        private AppSettings _appSettings;
-        private IconService _iconService;
-        private WildcardRuleService _wildcardRuleService;
-        private FirewallActionsService _actionsService;
-        private NetFwTypeLib.INetFwPolicy2 _firewallPolicy;
+        private MainViewModel _viewModel = null!;
+        private AppSettings _appSettings = null!;
+        private IconService _iconService = null!;
+        private WildcardRuleService _wildcardRuleService = null!;
+        private FirewallActionsService _actionsService = null!;
+        private NetFwTypeLib.INetFwPolicy2 _firewallPolicy = null!;
+        private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource;
 
         public DashboardControl()
@@ -25,7 +26,7 @@ namespace MinimalFirewall
             this.DoubleBuffered = true;
         }
 
-        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, NetFwTypeLib.INetFwPolicy2 firewallPolicy)
+        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, NetFwTypeLib.INetFwPolicy2 firewallPolicy, BackgroundFirewallTaskService backgroundTaskService)
         {
             _viewModel = viewModel;
             _appSettings = appSettings;
@@ -33,6 +34,7 @@ namespace MinimalFirewall
             _wildcardRuleService = wildcardRuleService;
             _actionsService = actionsService;
             _firewallPolicy = firewallPolicy;
+            _backgroundTaskService = backgroundTaskService;
 
             dashboardDataGridView.AutoGenerateColumns = false;
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
@@ -51,7 +53,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void PendingConnections_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (this.InvokeRequired)
             {
@@ -71,7 +73,6 @@ namespace MinimalFirewall
 
         private void dashboardDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            // Ensure the click is on a button cell and not on a header
             if (e.RowIndex < 0) return;
 
             var grid = (DataGridView)sender;
@@ -103,7 +104,6 @@ namespace MinimalFirewall
 
             var grid = (DataGridView)sender;
 
-            // Handle App Icons
             if (grid.Columns[e.ColumnIndex].Name == "dashIconColumn")
             {
                 if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending && _appSettings.ShowAppIcons)
@@ -117,7 +117,6 @@ namespace MinimalFirewall
                 return;
             }
 
-            // Handle Button Colors
             var allowColumn = grid.Columns["allowButtonColumn"];
             var blockColumn = grid.Columns["blockButtonColumn"];
             var ignoreColumn = grid.Columns["ignoreButtonColumn"];
@@ -133,7 +132,6 @@ namespace MinimalFirewall
                 e.CellStyle.ForeColor = Color.Black;
             }
 
-            // Selection Color
             if (grid.Rows[e.RowIndex].Selected)
             {
                 e.CellStyle.SelectionBackColor = SystemColors.Highlight;
@@ -151,7 +149,6 @@ namespace MinimalFirewall
             var grid = (DataGridView)sender;
             var row = grid.Rows[e.RowIndex];
 
-            // Draw hover effect
             if (row.Selected) return;
 
             var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
@@ -232,16 +229,11 @@ namespace MinimalFirewall
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
-                using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
+                using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath, _appSettings);
                 if (wildcardDialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    var newRule = new WildcardRule
-                    {
-                        FolderPath = wildcardDialog.FolderPath,
-                        ExeName = wildcardDialog.ExeName,
-                        Action = wildcardDialog.FinalAction
-                    };
-                    _wildcardRuleService.AddRule(newRule);
+                    var newRule = wildcardDialog.NewRule;
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
                     _viewModel.PendingConnections.Remove(pending);
                 }
             }
@@ -268,7 +260,7 @@ namespace MinimalFirewall
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 using var dialog = new
-                    CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!);
+                    CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!, _appSettings);
                 dialog.ShowDialog(this.FindForm());
             }
         }

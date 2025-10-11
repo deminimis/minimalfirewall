@@ -202,96 +202,11 @@ namespace Firewall.Traffic.ViewModels
 
     public class TrafficMonitorViewModel
     {
-        private System.Threading.Timer? _timer;
-        private bool _isRefreshing = false;
-        private readonly SynchronizationContext? _syncContext;
         public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = [];
-        public TrafficMonitorViewModel()
-        {
-            _syncContext = SynchronizationContext.Current;
-        }
-
-        public void StartMonitoring()
-        {
-            if (_timer != null) return;
-            _timer = new System.Threading.Timer(RefreshConnections, null, 0, 5000);
-        }
 
         public void StopMonitoring()
         {
-            _timer?.Dispose();
-            _timer = null;
             ActiveConnections.Clear();
-        }
-
-        private async void RefreshConnections(object? state)
-        {
-            if (_isRefreshing) return;
-            _isRefreshing = true;
-
-            try
-            {
-                var newVms = await Task.Run(() =>
-                {
-                    var connections = TcpTrafficTracker.GetConnections().Distinct().ToList();
-                    var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
-                    var viewModels = new List<TcpConnectionViewModel>();
-
-                    foreach (var conn in connections)
-                    {
-                        if (!processInfoCache.TryGetValue(conn.ProcessId, out var info))
-                        {
-                            try
-                            {
-                                using (var p = Process.GetProcessById(conn.ProcessId))
-                                {
-                                    string name = p.ProcessName;
-                                    string path = string.Empty;
-                                    string serviceName = string.Empty;
-                                    try { if (p.MainModule != null) path = p.MainModule.FileName; }
-                                    catch (Win32Exception) { path = "N/A (Access Denied)"; }
-
-                                    if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        serviceName = SystemDiscoveryService.GetServicesByPID(conn.ProcessId.ToString());
-                                    }
-
-                                    info = (name, path, serviceName);
-                                }
-                            }
-                            catch (ArgumentException) { info = ("(Exited)", string.Empty, string.Empty); }
-                            catch { info = ("System", string.Empty, string.Empty); }
-                            processInfoCache[conn.ProcessId] = info;
-                        }
-                        viewModels.Add(new TcpConnectionViewModel(conn, info));
-                    }
-                    return viewModels;
-                });
-
-                _syncContext?.Post(_ =>
-                {
-                    if (ActiveConnections == null) return;
-
-                    var newViewModelMap = newVms.ToDictionary(vm => vm.Connection);
-                    var existingViewModelMap = ActiveConnections.ToDictionary(vm => vm.Connection);
-
-                    var keysToRemove = existingViewModelMap.Keys.Except(newViewModelMap.Keys).ToList();
-                    foreach (var key in keysToRemove)
-                    {
-                        ActiveConnections.Remove(existingViewModelMap[key]);
-                    }
-
-                    var keysToAdd = newViewModelMap.Keys.Except(existingViewModelMap.Keys).ToList();
-                    foreach (var key in keysToAdd)
-                    {
-                        ActiveConnections.Add(newViewModelMap[key]);
-                    }
-                }, null);
-            }
-            finally
-            {
-                _isRefreshing = false;
-            }
         }
     }
 

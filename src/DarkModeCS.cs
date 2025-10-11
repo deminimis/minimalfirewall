@@ -113,7 +113,6 @@ namespace DarkModeForms
                         LineAlignment = StringAlignment.Center
                     })
                     {
-
                         g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
                     }
                 }
@@ -126,7 +125,6 @@ namespace DarkModeForms
             public uint ColorizationColor,
               ColorizationAfterglow,
               ColorizationColorBalance,
-
               ColorizationAfterglowBalance,
               ColorizationBlurBalance,
               ColorizationGlassReflectionIntensity,
@@ -195,19 +193,8 @@ namespace DarkModeForms
             Components = null;
             ColorizeIcons = _ColorizeIcons;
             RoundedPanels = _RoundedPanels;
-
-            OScolors = GetSystemColors(1);
+            OScolors = GetSystemColors(isDarkMode() ? 0 : 1);
             OwnerForm.HandleCreated += (sender, e) => ApplyTitleBarTheme();
-            _Form.Load += (sender, e) =>
-            {
-                _IsDarkMode = isDarkMode();
-                if (ColorMode != DisplayMode.SystemDefault)
-                {
-                    _IsDarkMode = ColorMode == DisplayMode.DarkMode;
-                }
-
-                ApplyTheme(_IsDarkMode);
-            };
         }
 
         private static void SuspendDrawing(Control parent)
@@ -248,7 +235,6 @@ namespace DarkModeForms
                 OwnerForm.SuspendLayout();
 
                 ApplyTitleBarTheme();
-
                 OwnerForm.BackColor = OScolors.Background;
                 OwnerForm.ForeColor = OScolors.TextInactive;
                 if (OwnerForm.Controls != null)
@@ -262,7 +248,6 @@ namespace DarkModeForms
                     {
                         if (e.Control != null)
                         {
-
                             ThemeControl(e.Control!);
                         }
                     };
@@ -698,9 +683,8 @@ namespace DarkModeForms
             {
                 return (int?)Registry.GetValue(
                    @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
-
                    GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
-                  -1) ??
+                   -1) ??
                     1;
             }
             catch
@@ -835,7 +819,6 @@ namespace DarkModeForms
                 {
                     new float[] {0, 0, 0, 0, 0},
                     new float[] {0, 0, 0, 0, 0},
-
                     new float[] {0, 0, 0, 0, 0},
                     new float[] {0, 0, 0, 1, 0},
                     new float[] {r, g_, b, 0, 1}
@@ -844,7 +827,7 @@ namespace DarkModeForms
                 {
                     attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
                     g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-                                0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
                 }
             }
             return newBitmap;

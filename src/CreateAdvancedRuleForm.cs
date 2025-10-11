@@ -4,6 +4,8 @@ using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using NetFwTypeLib;
 using MinimalFirewall.Groups;
+using System.Text.RegularExpressions;
+using System.Net;
 
 namespace MinimalFirewall
 {
@@ -14,16 +16,21 @@ namespace MinimalFirewall
         private readonly FirewallRuleViewModel _viewModel;
         private readonly FirewallGroupManager _groupManager;
         private readonly ToolTip _toolTip;
+        private readonly AppSettings _appSettings;
         public AdvancedRuleViewModel? RuleVm { get; private set; }
         private readonly AdvancedRuleViewModel? _originalRuleVm;
-        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService)
+
+        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, AppSettings appSettings)
         {
             InitializeComponent();
+            _appSettings = appSettings;
             dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
+
             _actionsService = actionsService;
             _groupManager = new FirewallGroupManager(firewallPolicy);
             _toolTip = new ToolTip();
-
             _viewModel = new FirewallRuleViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
@@ -36,7 +43,6 @@ namespace MinimalFirewall
                 ProtocolTypes.IGMP
             });
             protocolComboBox.SelectedItem = ProtocolTypes.Any;
-
             LoadFirewallGroups();
             _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
             _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
@@ -51,8 +57,8 @@ namespace MinimalFirewall
             };
         }
 
-        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, string appPath, string direction)
-               : this(firewallPolicy, actionsService)
+        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, string appPath, string direction, AppSettings appSettings)
+               : this(firewallPolicy, actionsService, appSettings)
         {
             programPathTextBox.Text = appPath;
             if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
@@ -69,8 +75,8 @@ namespace MinimalFirewall
             }
         }
 
-        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit)
-            : this(firewallPolicy, actionsService)
+        public CreateAdvancedRuleForm(INetFwPolicy2 firewallPolicy, FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit, AppSettings appSettings)
+            : this(firewallPolicy, actionsService, appSettings)
         {
             _originalRuleVm = ruleToEdit;
             this.Text = "Edit Advanced Rule";
@@ -178,15 +184,22 @@ namespace MinimalFirewall
 
         private void OkButton_Click(object sender, EventArgs e)
         {
+            if (!this.ValidateChildren())
+            {
+                Messenger.MessageBox("Please correct the validation errors before submitting.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(ruleNameTextBox.Text))
             {
-                MessageBox.Show("Rule name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("Rule name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ruleNameTextBox.Focus();
                 return;
             }
 
             if (protocolComboBox.SelectedItem is not ProtocolTypes selectedProtocol)
             {
-                MessageBox.Show("A valid protocol must be selected.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("A valid protocol must be selected.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -198,7 +211,7 @@ namespace MinimalFirewall
                 bool protocolIsNotAny = selectedProtocol.Value != ProtocolTypes.Any.Value;
                 if (hasService && hasWildcardPorts && protocolIsNotAny)
                 {
-                    MessageBox.Show("When creating a rule for a service with a specific protocol (like TCP or UDP), you must also specify concrete Local and Remote ports. Wildcards (*) are only allowed if the protocol is 'Any'.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("When creating a rule for a service with a specific protocol (like TCP or UDP), you must also specify concrete Local and Remote ports. Wildcards (*) are only allowed if the protocol is 'Any'.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
             }
@@ -284,7 +297,7 @@ namespace MinimalFirewall
         private void browseServiceButton_Click(object sender, EventArgs e)
         {
             var services = SystemDiscoveryService.GetServicesWithExePaths();
-            using var browseForm = new BrowseServicesForm(services);
+            using var browseForm = new BrowseServicesForm(services, _appSettings);
             if (browseForm.ShowDialog(this) == DialogResult.OK && browseForm.SelectedService != null)
             {
                 serviceNameTextBox.Text = browseForm.SelectedService.ServiceName;
@@ -313,6 +326,86 @@ namespace MinimalFirewall
             {
                 groupComboBox.Items.Add(newGroupName);
                 groupComboBox.SelectedItem = newGroupName;
+            }
+        }
+
+        private void localPortsTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void remotePortsTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void localAddressTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateIcmpString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
             }
         }
     }

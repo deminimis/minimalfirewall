@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿// File: FirewallEventListenerService.cs
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -133,7 +134,7 @@ namespace MinimalFirewall
                     _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
                     if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
                     {
-                        ActionsService.ApplyApplicationRuleChange(new List<string> { appPath }, matchingRule.Action, matchingRule.FolderPath);
+                        ActionsService.ApplyWildcardMatch(appPath, matchingRule);
                     }
                     ClearPendingNotification(appPath, eventDirection);
                     return;

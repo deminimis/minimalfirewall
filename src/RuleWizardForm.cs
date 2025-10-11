@@ -9,8 +9,8 @@ namespace MinimalFirewall
 {
     public partial class RuleWizardForm : Form
     {
-        private enum WizardStep { Selection, GetAction, GetProgram, GetDirection, GetPorts, GetProtocol, GetName, Summary, GetService, GetFileShareIP, GetBlockDeviceIP, GetRestrictApp }
-        private enum RuleTemplate { None, ProgramRule, PortRule, BlockService, AllowFileShare, BlockDevice, RestrictApp }
+        private enum WizardStep { Selection, GetAction, GetProgram, GetDirection, GetPorts, GetProtocol, GetName, Summary, GetService, GetFileShareIP, GetBlockDeviceIP, GetRestrictApp, GetFolder }
+        private enum RuleTemplate { None, ProgramRule, PortRule, BlockService, AllowFileShare, BlockDevice, RestrictApp, BatchProgramRule }
 
         private WizardStep _currentStep = WizardStep.Selection;
         private RuleTemplate _selectedTemplate = RuleTemplate.None;
@@ -21,8 +21,10 @@ namespace MinimalFirewall
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
         private readonly INetFwPolicy2 _firewallPolicy;
         private readonly DarkModeCS dm;
+        private readonly AppSettings _appSettings;
 
         private string _wizardAppPath = "";
+        private string _wizardFolderPath = "";
         private string _wizardPorts = "";
         private int _wizardProtocol = 0;
         private string _wizardRuleName = "";
@@ -30,14 +32,18 @@ namespace MinimalFirewall
         private Directions _wizardDirection = Directions.Outgoing;
         private string _wizardServiceName = "";
         private string _wizardRemoteIP = "";
-        public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, INetFwPolicy2 firewallPolicy)
+        public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, INetFwPolicy2 firewallPolicy, AppSettings appSettings)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
+
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;
             _backgroundTaskService = backgroundTaskService;
             _firewallPolicy = firewallPolicy;
+            _appSettings = appSettings;
 
             GoToStep(WizardStep.Selection);
         }
@@ -63,6 +69,7 @@ namespace MinimalFirewall
             pnlSelection.Visible = _currentStep == WizardStep.Selection;
             pnlGetAction.Visible = _currentStep == WizardStep.GetAction;
             pnlGetProgram.Visible = _currentStep == WizardStep.GetProgram;
+            pnlGetFolder.Visible = _currentStep == WizardStep.GetFolder;
             pnlGetDirection.Visible = _currentStep == WizardStep.GetDirection;
             pnlGetPorts.Visible = _currentStep == WizardStep.GetPorts;
             pnlGetProtocol.Visible = _currentStep == WizardStep.GetProtocol;
@@ -83,9 +90,18 @@ namespace MinimalFirewall
                     backButton.Enabled = false;
                     nextButton.Visible = false;
                     break;
+                case WizardStep.GetFolder:
+                    this.Text = "Step 1: Select a Folder";
+                    mainHeaderLabel.Text = "Select a folder to apply rules to all programs within it";
+                    nextButton.Visible = true;
+                    break;
                 case WizardStep.GetAction:
                     this.Text = "Step 1: Choose Action";
-                    mainHeaderLabel.Text = "Do you want to allow or block the program?";
+                    if (_selectedTemplate == RuleTemplate.BatchProgramRule)
+                    {
+                        this.Text = "Step 2: Choose Action";
+                    }
+                    mainHeaderLabel.Text = "Do you want to allow or block the program(s)?";
                     nextButton.Visible = true;
                     break;
                 case WizardStep.GetProgram:
@@ -175,6 +191,12 @@ namespace MinimalFirewall
             GoForwardTo(WizardStep.GetAction);
         }
 
+        private void batchProgramRuleButton_Click(object sender, EventArgs e)
+        {
+            _selectedTemplate = RuleTemplate.BatchProgramRule;
+            GoForwardTo(WizardStep.GetFolder);
+        }
+
         private void portRuleButton_Click(object sender, EventArgs e)
         {
             _selectedTemplate = RuleTemplate.PortRule;
@@ -191,6 +213,17 @@ namespace MinimalFirewall
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 programPathTextBox.Text = openFileDialog.FileName;
+            }
+        }
+
+        private void batchBrowseFolderButton_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    batchFolderPathTextBox.Text = dialog.SelectedPath;
+                }
             }
         }
 
@@ -223,15 +256,10 @@ namespace MinimalFirewall
 
         private void wildcardRuleButton_Click(object sender, EventArgs e)
         {
-            using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService);
+            using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, _appSettings);
             if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
             {
-                var newRule = new WildcardRule
-                {
-                    FolderPath = wildcardDialog.FolderPath,
-                    ExeName = wildcardDialog.ExeName,
-                    Action = wildcardDialog.FinalAction
-                };
+                var newRule = wildcardDialog.NewRule;
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
                 this.DialogResult = DialogResult.OK;
                 this.Close();
@@ -240,7 +268,7 @@ namespace MinimalFirewall
 
         private void advancedRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService);
+            using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, _appSettings);
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
                 if (dialog.RuleVm != null)
@@ -288,10 +316,54 @@ namespace MinimalFirewall
             }
         }
 
+        private bool ValidatePortString(string portString, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+            if (string.IsNullOrWhiteSpace(portString) || portString == "*") return true;
+
+            var parts = portString.Split(',');
+            foreach (var part in parts)
+            {
+                var trimmedPart = part.Trim();
+                if (string.IsNullOrEmpty(trimmedPart)) continue;
+
+                if (trimmedPart.Contains('-'))
+                {
+                    var rangeParts = trimmedPart.Split('-');
+                    if (rangeParts.Length != 2 ||
+                        !ushort.TryParse(rangeParts[0], out ushort start) ||
+                        !ushort.TryParse(rangeParts[1], out ushort end) ||
+                        start > end)
+                    {
+                        errorMessage = $"Invalid port range '{trimmedPart}'. Must be in the format 'start-end' (e.g., 80-88).";
+                        return false;
+                    }
+                }
+                else if (!ushort.TryParse(trimmedPart, out _))
+                {
+                    errorMessage = $"Invalid port number '{trimmedPart}'. Must be a number between 0 and 65535.";
+                    return false;
+                }
+            }
+            return true;
+        }
+
         private bool ValidateStep()
         {
             switch (_currentStep)
             {
+                case WizardStep.GetFolder:
+                    if (string.IsNullOrWhiteSpace(batchFolderPathTextBox.Text) || !Directory.Exists(Environment.ExpandEnvironmentVariables(batchFolderPathTextBox.Text)))
+                    {
+                        Messenger.MessageBox("Please select a valid folder.", "Invalid Folder", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                    if (!exeCheckBox.Checked && !dllCheckBox.Checked)
+                    {
+                        Messenger.MessageBox("Please select at least one file type to apply rules to (.exe or .dll).", "No File Type Selected", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                    break;
                 case WizardStep.GetProgram:
                     if (string.IsNullOrWhiteSpace(programPathTextBox.Text) || !File.Exists(Environment.ExpandEnvironmentVariables(programPathTextBox.Text)))
                     {
@@ -300,9 +372,9 @@ namespace MinimalFirewall
                     }
                     break;
                 case WizardStep.GetPorts:
-                    if (string.IsNullOrWhiteSpace(portsTextBox.Text))
+                    if (!ValidatePortString(portsTextBox.Text, out string portError))
                     {
-                        Messenger.MessageBox("Please enter a port or port range.", "Invalid Port", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        Messenger.MessageBox(portError, "Invalid Port", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return false;
                     }
                     if (restrictToProgramCheckBox.Checked && (string.IsNullOrWhiteSpace(portsProgramPathTextBox.Text) || !File.Exists(Environment.ExpandEnvironmentVariables(portsProgramPathTextBox.Text))))
@@ -319,11 +391,26 @@ namespace MinimalFirewall
                     }
                     break;
                 case WizardStep.GetService:
-                    if (serviceListBox.SelectedItem == null && string.IsNullOrWhiteSpace(serviceNameTextBox.Text))
+                    string serviceName = serviceNameTextBox.Text;
+                    if (serviceListBox.SelectedItem != null)
+                    {
+                        string selected = serviceListBox.SelectedItem.ToString()!;
+                        serviceName = selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
+                    }
+
+                    if (string.IsNullOrWhiteSpace(serviceName))
                     {
                         Messenger.MessageBox("Please select a service from the list or enter a service name.", "No Service Selected", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return false;
                     }
+
+                    var services = SystemDiscoveryService.GetServicesWithExePaths();
+                    if (!services.Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Messenger.MessageBox($"Service '{serviceName}' not found on this system.", "Invalid Service", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+
                     break;
                 case WizardStep.GetFileShareIP:
                     if (string.IsNullOrWhiteSpace(fileShareIpTextBox.Text) || !IPAddress.TryParse(fileShareIpTextBox.Text, out _))
@@ -354,21 +441,40 @@ namespace MinimalFirewall
         {
             switch (_currentStep)
             {
+                case WizardStep.GetFolder:
+                    _wizardFolderPath = batchFolderPathTextBox.Text;
+                    GoForwardTo(WizardStep.GetAction);
+                    break;
                 case WizardStep.GetAction:
                     _wizardAction = allowActionRadioButton.Checked ? Actions.Allow : Actions.Block;
-                    GoForwardTo(WizardStep.GetProgram);
+                    if (_selectedTemplate == RuleTemplate.BatchProgramRule)
+                    {
+                        GoForwardTo(WizardStep.GetDirection);
+                    }
+                    else
+                    {
+                        GoForwardTo(WizardStep.GetProgram);
+                    }
                     break;
-
                 case WizardStep.GetProgram:
                     _wizardAppPath = programPathTextBox.Text;
                     GoForwardTo(WizardStep.GetDirection);
                     break;
-
                 case WizardStep.GetDirection:
                     if (inboundRadioButton.Checked) _wizardDirection = Directions.Incoming;
                     else if (outboundRadioButton.Checked) _wizardDirection = Directions.Outgoing;
                     else _wizardDirection = Directions.Incoming | Directions.Outgoing;
-                    GoForwardTo(WizardStep.Summary);
+
+                    if (_selectedTemplate == RuleTemplate.BatchProgramRule)
+                    {
+                        CreateRule();
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                    }
+                    else
+                    {
+                        GoForwardTo(WizardStep.Summary);
+                    }
                     break;
                 case WizardStep.GetPorts:
                     _wizardPorts = portsTextBox.Text;
@@ -394,7 +500,7 @@ namespace MinimalFirewall
                 case WizardStep.GetService:
                     if (serviceListBox.SelectedItem != null)
                     {
-                        string selected = serviceListBox.SelectedItem.ToString();
+                        string selected = serviceListBox.SelectedItem.ToString()!;
                         _wizardServiceName = selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
                     }
                     else
@@ -481,6 +587,28 @@ namespace MinimalFirewall
         {
             switch (_selectedTemplate)
             {
+                case RuleTemplate.BatchProgramRule:
+                    var searchPatterns = new List<string>();
+                    if (exeCheckBox.Checked)
+                    {
+                        searchPatterns.Add("*.exe");
+                    }
+                    if (dllCheckBox.Checked)
+                    {
+                        searchPatterns.Add("*.dll");
+                    }
+
+                    var executables = SystemDiscoveryService.GetFilesInFolder(_wizardFolderPath, searchPatterns);
+                    if (executables.Count == 0)
+                    {
+                        Messenger.MessageBox($"No matching files found in '{_wizardFolderPath}' or its subfolders.", "No Files Found", MessageBoxButtons.OK, MessageBoxIcon.None);
+                        return;
+                    }
+                    string batchAction = $"{_wizardAction} ({_wizardDirection})";
+                    var batchPayload = new ApplyApplicationRulePayload { AppPaths = executables, Action = batchAction };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, batchPayload));
+                    Messenger.MessageBox($"{executables.Count} rules have been queued for creation.", "Task Queued", MessageBoxButtons.OK, MessageBoxIcon.None);
+                    break;
                 case RuleTemplate.ProgramRule:
                     string action = $"{_wizardAction} ({_wizardDirection})";
                     var payload = new ApplyApplicationRulePayload { AppPaths = { _wizardAppPath }, Action = action };
@@ -518,7 +646,7 @@ namespace MinimalFirewall
                         IsEnabled = true,
                         Status = "Allow",
                         Direction = Directions.Incoming,
-                        Protocol = 6, // TCP
+                        Protocol = 6,
                         LocalPorts = "445",
                         RemoteAddresses = _wizardRemoteIP,
                         Grouping = MFWConstants.MainRuleGroup,
@@ -538,7 +666,7 @@ namespace MinimalFirewall
                         IsEnabled = true,
                         Status = "Block",
                         Direction = Directions.Incoming,
-                        Protocol = 256, // Any
+                        Protocol = 256,
                         RemoteAddresses = _wizardRemoteIP,
                         Grouping = MFWConstants.MainRuleGroup,
                         Type = RuleType.Advanced,
@@ -576,3 +704,4 @@ namespace MinimalFirewall
         }
     }
 }
+

@@ -4,6 +4,10 @@ using Firewall.Traffic.ViewModels;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System;
+using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Drawing;
 
 namespace MinimalFirewall
 {
@@ -64,6 +68,15 @@ namespace MinimalFirewall
             openFirewallButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             checkForUpdatesButton.FlatAppearance.BorderSize = 1;
             checkForUpdatesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 1;
+            cleanUpOrphanedRulesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            exportRulesButton.FlatAppearance.BorderSize = 1;
+            exportRulesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            importMergeButton.FlatAppearance.BorderSize = 1;
+            importMergeButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            importReplaceButton.FlatAppearance.BorderSize = 1;
+            importReplaceButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+
             if (_dm.IsDarkMode)
             {
                 deleteAllRulesButton.ForeColor = Color.White;
@@ -71,6 +84,10 @@ namespace MinimalFirewall
                 managePublishersButton.ForeColor = Color.White;
                 openFirewallButton.ForeColor = Color.White;
                 checkForUpdatesButton.ForeColor = Color.White;
+                cleanUpOrphanedRulesButton.ForeColor = Color.White;
+                exportRulesButton.ForeColor = Color.White;
+                importMergeButton.ForeColor = Color.White;
+                importReplaceButton.ForeColor = Color.White;
             }
             else
             {
@@ -79,6 +96,10 @@ namespace MinimalFirewall
                 managePublishersButton.ForeColor = SystemColors.ControlText;
                 openFirewallButton.ForeColor = SystemColors.ControlText;
                 checkForUpdatesButton.ForeColor = SystemColors.ControlText;
+                cleanUpOrphanedRulesButton.ForeColor = SystemColors.ControlText;
+                exportRulesButton.ForeColor = SystemColors.ControlText;
+                importMergeButton.ForeColor = SystemColors.ControlText;
+                importReplaceButton.ForeColor = SystemColors.ControlText;
             }
         }
 
@@ -114,11 +135,8 @@ namespace MinimalFirewall
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
-            if (_appSettings.IsTrafficMonitorEnabled)
-            {
-                _mainViewModel.TrafficMonitorViewModel.StartMonitoring();
-            }
-            else
+
+            if (!_appSettings.IsTrafficMonitorEnabled)
             {
                 _mainViewModel.TrafficMonitorViewModel.StopMonitoring();
             }
@@ -188,7 +206,7 @@ namespace MinimalFirewall
 
         private void managePublishersButton_Click(object sender, EventArgs e)
         {
-            using var form = new ManagePublishersForm(_whitelistService);
+            using var form = new ManagePublishersForm(_whitelistService, _appSettings);
             form.ShowDialog(this.FindForm());
         }
 
@@ -278,6 +296,99 @@ namespace MinimalFirewall
                 await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
                 Messenger.MessageBox("Windows Firewall has been reset to its default settings. It is recommended to restart the application.",
                     "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+            }
+        }
+
+        private async void cleanUpOrphanedRulesButton_Click(object sender, EventArgs e)
+        {
+            var result = Messenger.MessageBox(
+                "This will scan for rules whose associated application no longer exists on disk and delete them.\n\nAre you sure you want to continue?",
+                "Clean Up Orphaned Rules",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                await _mainViewModel.CleanUpOrphanedRulesAsync();
+            }
+        }
+
+        private async void exportRulesButton_Click(object sender, EventArgs e)
+        {
+            using var saveDialog = new SaveFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                Title = "Export Minimal Firewall Rules",
+                FileName = $"mfw_rules_backup_{DateTime.Now:yyyyMMdd}.json"
+            };
+
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    string jsonContent = await _actionsService.ExportAllMfwRulesAsync();
+                    await File.WriteAllTextAsync(saveDialog.FileName, jsonContent);
+                    Messenger.MessageBox("All rules have been successfully exported.", "Export Complete", MessageBoxButtons.OK, MsgIcon.Success);
+                }
+                catch (Exception ex)
+                {
+                    Messenger.MessageBox($"An error occurred during export: {ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private async void importMergeButton_Click(object sender, EventArgs e)
+        {
+            using var openDialog = new OpenFileDialog
+            {
+                Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                Title = "Import and Add Rules"
+            };
+
+            if (openDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    string jsonContent = await File.ReadAllTextAsync(openDialog.FileName);
+                    await _actionsService.ImportRulesAsync(jsonContent, replace: false);
+                    await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
+                    Messenger.MessageBox("Rules have been successfully imported and added.", "Import Complete", MessageBoxButtons.OK, MsgIcon.Success);
+                }
+                catch (Exception ex)
+                {
+                    Messenger.MessageBox($"An error occurred during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private async void importReplaceButton_Click(object sender, EventArgs e)
+        {
+            var confirmResult = Messenger.MessageBox(
+                "WARNING: This will delete ALL current Minimal Firewall rules before importing the new ones. This action cannot be undone.\n\nAre you sure you want to continue?",
+                "Confirm Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirmResult == DialogResult.Yes)
+            {
+                using var openDialog = new OpenFileDialog
+                {
+                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+                    Title = "Import and Replace Rules"
+                };
+
+                if (openDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string jsonContent = await File.ReadAllTextAsync(openDialog.FileName);
+                        await _actionsService.ImportRulesAsync(jsonContent, replace: true);
+                        await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
+                        Messenger.MessageBox("All rules have been replaced successfully.", "Import Complete", MessageBoxButtons.OK, MsgIcon.Success);
+                    }
+                    catch (Exception ex)
+                    {
+                        Messenger.MessageBox($"An error occurred during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
         }
     }

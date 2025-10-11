@@ -7,6 +7,13 @@ using MinimalFirewall.TypedObjects;
 
 namespace MinimalFirewall
 {
+    public class ExportContainer
+    {
+        public DateTime ExportDate { get; set; }
+        public List<AdvancedRuleViewModel> AdvancedRules { get; set; } = [];
+        public List<WildcardRule> WildcardRules { get; set; } = [];
+    }
+
     public enum SearchMode { Name, Path }
     public enum RuleType { Program, Service, UWP, Wildcard, Advanced }
     public enum ChangeType { New, Modified, Deleted }
@@ -154,10 +161,16 @@ namespace MinimalFirewall
         public string FolderPath { get; set; } = string.Empty;
         public string ExeName { get; set; } = string.Empty;
         public string Action { get; set; } = string.Empty;
+        public int Protocol { get; set; } = 256;
+        public string LocalPorts { get; set; } = "*";
+        public string RemotePorts { get; set; } = "*";
+        public string RemoteAddresses { get; set; } = "*";
     }
 
     [JsonSerializable(typeof(List<WildcardRule>))]
     internal partial class WildcardRuleJsonContext : JsonSerializerContext { }
+    [JsonSerializable(typeof(ExportContainer))]
+    internal partial class ExportContainerJsonContext : JsonSerializerContext { }
 
     public class UwpApp
     {
@@ -205,7 +218,12 @@ namespace MinimalFirewall
         AcceptAllForeignRules,
         CreateAdvancedRule,
         AddWildcardRule,
-        SetGroupEnabledState
+        SetGroupEnabledState,
+        UpdateWildcardRule,
+        RemoveWildcardRule,
+        RemoveWildcardDefinitionOnly,
+        DeleteAllMfwRules,
+        ImportRules
     }
 
     public class FirewallTask
@@ -230,4 +248,6 @@ namespace MinimalFirewall
     public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
     public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
     public class SetGroupEnabledStatePayload { public string GroupName { get; set; } = string.Empty; public bool IsEnabled { get; set; } }
+    public class UpdateWildcardRulePayload { public WildcardRule OldRule { get; set; } = new(); public WildcardRule NewRule { get; set; } = new(); }
+    public class ImportRulesPayload { public string JsonContent { get; set; } = string.Empty; public bool Replace { get; set; } }
 }

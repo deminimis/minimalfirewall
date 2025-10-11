@@ -1,4 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallActionService.cs
+﻿// File: FirewallActionService.cs
 using NetFwTypeLib;
 using System.Data;
 using System.IO;
@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System;
+using System.Threading;
+using System.Text.Json;
+
 namespace MinimalFirewall
 {
     public partial class FirewallActionsService
@@ -26,6 +30,9 @@ namespace MinimalFirewall
         private readonly FirewallDataService _dataService;
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
+
+        public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
+
         public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, INetFwPolicy2 firewallPolicy, WildcardRuleService wildcardRuleService, FirewallDataService dataService)
         {
             this.firewallService = firewallService;
@@ -127,6 +134,12 @@ namespace MinimalFirewall
 
             foreach (var appPath in normalizedAppPaths)
             {
+                if (!File.Exists(appPath))
+                {
+                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent path: {appPath}");
+                    continue;
+                }
+
                 var rulesToRemove = new List<string>();
                 if (string.IsNullOrEmpty(wildcardSourcePath))
                 {
@@ -161,6 +174,14 @@ namespace MinimalFirewall
         public void ApplyServiceRuleChange(string serviceName, string action, string appPath = "")
         {
             if (string.IsNullOrEmpty(serviceName)) return;
+
+            var allServices = _dataService.GetCachedServicesWithExePaths();
+            if (!allServices.Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase)))
+            {
+                activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent service: {serviceName}");
+                return;
+            }
+
             var rulesToRemove = firewallService.DeleteRulesByServiceName(serviceName);
 
             void createRule(string name, Directions dir, Actions act) => CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value, appPath);
@@ -175,10 +196,28 @@ namespace MinimalFirewall
 
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)
         {
-            var packageFamilyNames = uwpApps.Select(app => app.PackageFamilyName).ToList();
-            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
+            var validApps = new List<UwpApp>();
+            var cachedUwpApps = _dataService.LoadUwpAppsFromCache();
+            var cachedPfnSet = new HashSet<string>(cachedUwpApps.Select(a => a.PackageFamilyName), StringComparer.OrdinalIgnoreCase);
 
             foreach (var app in uwpApps)
+            {
+                if (cachedPfnSet.Contains(app.PackageFamilyName))
+                {
+                    validApps.Add(app);
+                }
+                else
+                {
+                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent UWP app: {app.Name} ({app.PackageFamilyName})");
+                }
+            }
+
+            if (validApps.Count == 0) return;
+
+            var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
+            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
+
+            foreach (var app in validApps)
             {
                 void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
                 ApplyRuleAction(app.Name, action, createRule);
@@ -368,7 +407,6 @@ namespace MinimalFirewall
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
             TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
-
             if (trustPublisher && SignatureValidationService.GetPublisherInfo(pending.AppPath, out var publisherName) && publisherName != null)
             {
                 _whitelistService.Add(publisherName);
@@ -567,6 +605,11 @@ namespace MinimalFirewall
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
+                if (!File.Exists(vm.ApplicationName))
+                {
+                    activityLogger.LogDebug($"[Validation] Aborted creating advanced rule due to non-existent path: {vm.ApplicationName}");
+                    return;
+                }
             }
 
             if (vm.Status == "Allow" && !string.IsNullOrWhiteSpace(vm.ApplicationName))
@@ -840,6 +883,215 @@ namespace MinimalFirewall
             catch (COMException ex)
             {
                 activityLogger.LogException("DeleteAllMfwRules", ex);
+            }
+        }
+
+        public void UpdateWildcardRule(WildcardRule oldRule, WildcardRule newRule)
+        {
+            _wildcardRuleService.UpdateRule(oldRule, newRule);
+            DeleteRulesForWildcard(oldRule);
+            activityLogger.LogChange("Wildcard Rule Updated", newRule.FolderPath);
+        }
+
+        public void RemoveWildcardRule(WildcardRule rule)
+        {
+            _wildcardRuleService.RemoveRule(rule);
+            DeleteRulesForWildcard(rule);
+            activityLogger.LogChange("Wildcard Rule Removed", rule.FolderPath);
+        }
+
+        public void RemoveWildcardDefinitionOnly(WildcardRule rule)
+        {
+            _wildcardRuleService.RemoveRule(rule);
+            activityLogger.LogChange("Wildcard Definition Removed", rule.FolderPath);
+        }
+
+        public void ApplyWildcardMatch(string appPath, WildcardRule rule)
+        {
+            if (!ParseActionString(rule.Action, out Actions parsedAction, out Directions parsedDirection))
+            {
+                return;
+            }
+
+            var appName = Path.GetFileNameWithoutExtension(appPath);
+
+            void createRule(string baseName, Directions dir, Actions act)
+            {
+                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                firewallRule.Name = baseName;
+                firewallRule.ApplicationName = appPath;
+                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)dir;
+                firewallRule.Action = (NET_FW_ACTION_)act;
+                firewallRule.Enabled = true;
+                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
+                firewallRule.Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]";
+                firewallRule.Protocol = rule.Protocol;
+                firewallRule.LocalPorts = rule.LocalPorts;
+                firewallRule.RemotePorts = rule.RemotePorts;
+                firewallRule.RemoteAddresses = rule.RemoteAddresses;
+                firewallService.CreateRule(firewallRule);
+            }
+
+            ApplyRuleAction(appName, rule.Action, createRule);
+            activityLogger.LogChange("Wildcard Rule Applied", rule.Action + " for " + appPath);
+        }
+
+        public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            var orphanedRuleNames = new List<string>();
+            var mfwRules = new List<INetFwRule2>();
+            var allRules = firewallService.GetAllRules();
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (IsMfwRule(rule))
+                    {
+                        mfwRules.Add(rule);
+                    }
+                    else
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+
+                int total = mfwRules.Count;
+                if (total == 0)
+                {
+                    progress?.Report(100);
+                    return orphanedRuleNames;
+                }
+
+                int processed = 0;
+                await Task.Run(() =>
+                {
+                    foreach (var rule in mfwRules)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        string appPath = rule.ApplicationName;
+
+                        if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
+                        {
+                            string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
+                            if (!File.Exists(expandedPath))
+                            {
+                                orphanedRuleNames.Add(rule.Name);
+                                activityLogger.LogDebug($"Found orphaned rule '{rule.Name}' for path: {expandedPath}");
+                            }
+                        }
+
+                        processed++;
+                        progress?.Report((processed * 100) / total);
+                    }
+                }, token);
+
+                if (token.IsCancellationRequested)
+                {
+                    return new List<string>();
+                }
+
+                if (orphanedRuleNames.Any())
+                {
+                    activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
+                    try
+                    {
+                        firewallService.DeleteRulesByName(orphanedRuleNames);
+                        activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
+                    }
+                    catch (COMException ex)
+                    {
+                        activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
+                    }
+                }
+                else
+                {
+                    activityLogger.LogDebug("No orphaned rules found.");
+                }
+            }
+            finally
+            {
+                foreach (var rule in mfwRules)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            return orphanedRuleNames;
+        }
+
+        public async Task<string> ExportAllMfwRulesAsync()
+        {
+            var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
+            var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules)
+                .Select(r =>
+                {
+                    r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
+                    return r;
+                }).ToList();
+
+            var wildcardRules = _wildcardRuleService.GetRules()
+                .Select(r =>
+                {
+                    r.FolderPath = PathResolver.ConvertToEnvironmentPath(r.FolderPath);
+                    return r;
+                }).ToList();
+
+            var container = new ExportContainer
+            {
+                ExportDate = DateTime.UtcNow,
+                AdvancedRules = portableAdvancedRules,
+                WildcardRules = wildcardRules
+            };
+
+            return JsonSerializer.Serialize(container, ExportContainerJsonContext.Default.ExportContainer);
+        }
+
+        public async Task ImportRulesAsync(string jsonContent, bool replace)
+        {
+            if (BackgroundTaskService == null)
+            {
+                activityLogger.LogDebug("[Import] BackgroundTaskService is not available.");
+                return;
+            }
+
+            try
+            {
+                var container = JsonSerializer.Deserialize(jsonContent, ExportContainerJsonContext.Default.ExportContainer);
+                if (container == null)
+                {
+                    activityLogger.LogDebug("[Import] Failed to deserialize JSON content.");
+                    return;
+                }
+
+                if (replace)
+                {
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
+                    await Task.Delay(1000);
+                }
+
+                foreach (var ruleVm in container.AdvancedRules)
+                {
+                    ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
+                    var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                }
+
+                foreach (var wildcardRule in container.WildcardRules)
+                {
+                    wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
+                }
+
+                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules.Count} advanced rules and {container.WildcardRules.Count} wildcard rules. Replace: {replace}");
+            }
+            catch (JsonException ex)
+            {
+                activityLogger.LogException("ImportRules", ex);
             }
         }
     }

@@ -26,6 +26,9 @@ namespace MinimalFirewall
         private GroupsControl groupsControl1;
         private LiveConnectionsControl liveConnectionsControl1;
         private SettingsControl settingsControl1;
+        private System.Windows.Forms.TabPage wildcardRulesTabPage;
+        private WildcardRulesControl wildcardRulesControl1;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -60,6 +63,8 @@ namespace MinimalFirewall
             this.dashboardControl1 = new MinimalFirewall.DashboardControl();
             this.rulesTabPage = new System.Windows.Forms.TabPage();
             this.rulesControl1 = new MinimalFirewall.RulesControl();
+            this.wildcardRulesTabPage = new System.Windows.Forms.TabPage();
+            this.wildcardRulesControl1 = new MinimalFirewall.WildcardRulesControl();
             this.systemChangesTabPage = new System.Windows.Forms.TabPage();
             this.auditControl1 = new MinimalFirewall.AuditControl();
             this.groupsTabPage = new System.Windows.Forms.TabPage();
@@ -79,6 +84,7 @@ namespace MinimalFirewall
             this.logoPictureBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.arrowPictureBox)).BeginInit();
             this.rulesTabPage.SuspendLayout();
+            this.wildcardRulesTabPage.SuspendLayout();
             this.systemChangesTabPage.SuspendLayout();
             this.groupsTabPage.SuspendLayout();
             this.liveConnectionsTabPage.SuspendLayout();
@@ -91,6 +97,7 @@ namespace MinimalFirewall
             this.mainTabControl.BorderColor = System.Drawing.SystemColors.ControlDark;
             this.mainTabControl.Controls.Add(this.dashboardTabPage);
             this.mainTabControl.Controls.Add(this.rulesTabPage);
+            this.mainTabControl.Controls.Add(this.wildcardRulesTabPage);
             this.mainTabControl.Controls.Add(this.systemChangesTabPage);
             this.mainTabControl.Controls.Add(this.groupsTabPage);
             this.mainTabControl.Controls.Add(this.liveConnectionsTabPage);
@@ -193,6 +200,26 @@ namespace MinimalFirewall
             this.rulesControl1.Name = "rulesControl1";
             this.rulesControl1.Size = new System.Drawing.Size(1009, 917);
             this.rulesControl1.TabIndex = 0;
+            // 
+            // wildcardRulesTabPage
+            // 
+            this.wildcardRulesTabPage.Controls.Add(this.wildcardRulesControl1);
+            this.wildcardRulesTabPage.ImageIndex = 5;
+            this.wildcardRulesTabPage.Location = new System.Drawing.Point(124, 4);
+            this.wildcardRulesTabPage.Name = "wildcardRulesTabPage";
+            this.wildcardRulesTabPage.Padding = new System.Windows.Forms.Padding(3);
+            this.wildcardRulesTabPage.Size = new System.Drawing.Size(1015, 925);
+            this.wildcardRulesTabPage.TabIndex = 7;
+            this.wildcardRulesTabPage.Text = "Wildcard Rules";
+            this.wildcardRulesTabPage.UseVisualStyleBackColor = true;
+            // 
+            // wildcardRulesControl1
+            // 
+            this.wildcardRulesControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.wildcardRulesControl1.Location = new System.Drawing.Point(3, 3);
+            this.wildcardRulesControl1.Name = "wildcardRulesControl1";
+            this.wildcardRulesControl1.Size = new System.Drawing.Size(1009, 919);
+            this.wildcardRulesControl1.TabIndex = 0;
             // 
             // systemChangesTabPage
             // 
@@ -351,6 +378,7 @@ namespace MinimalFirewall
             this.logoPictureBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.arrowPictureBox)).EndInit();
             this.rulesTabPage.ResumeLayout(false);
+            this.wildcardRulesTabPage.ResumeLayout(false);
             this.systemChangesTabPage.ResumeLayout(false);
             this.groupsTabPage.ResumeLayout(false);
             this.liveConnectionsTabPage.ResumeLayout(false);

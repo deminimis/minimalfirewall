@@ -1,4 +1,5 @@
-﻿using MinimalFirewall.TypedObjects;
+﻿// File: LiveConnectionsControl.cs
+using MinimalFirewall.TypedObjects;
 using System.Collections.Specialized;
 using System.Windows.Forms;
 using Firewall.Traffic.ViewModels;
@@ -9,6 +10,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.ComponentModel;
+using System.Threading;
+
 namespace MinimalFirewall
 {
     public partial class LiveConnectionsControl : UserControl
@@ -32,8 +35,7 @@ namespace MinimalFirewall
             TrafficMonitorViewModel trafficMonitorViewModel,
             AppSettings appSettings,
             IconService iconService,
-            BackgroundFirewallTaskService backgroundTaskService,
-            ImageList appIconList)
+            BackgroundFirewallTaskService backgroundTaskService)
         {
             _trafficMonitorViewModel =
                        trafficMonitorViewModel;
@@ -44,25 +46,9 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.AutoGenerateColumns = false;
             _bindingSource = new BindingSource();
             liveConnectionsDataGridView.DataSource = _bindingSource;
-            _trafficMonitorViewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
 
             _sortColumn = _appSettings.LiveConnectionsSortColumn;
             _sortOrder = (SortOrder)_appSettings.LiveConnectionsSortOrder;
-        }
-
-        public void OnTabSelected()
-        {
-            liveConnectionsDataGridView.Visible = _appSettings.IsTrafficMonitorEnabled;
-            liveConnectionsDisabledLabel.Visible = !_appSettings.IsTrafficMonitorEnabled;
-            if (_appSettings.IsTrafficMonitorEnabled)
-            {
-                _trafficMonitorViewModel.StartMonitoring();
-                UpdateLiveConnectionsView();
-            }
-            else
-            {
-                _bindingSource.DataSource = null;
-            }
         }
 
         public void OnTabDeselected()
@@ -75,48 +61,23 @@ namespace MinimalFirewall
             liveIconColumn.Visible = _appSettings.ShowAppIcons;
         }
 
-        private void ActiveConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            if (this.Parent is TabPage parentTabPage && parentTabPage.Parent is TabControl parentTabControl && parentTabControl.SelectedTab == parentTabPage)
-            {
-                if (InvokeRequired)
-                {
-                    Invoke(new Action(UpdateLiveConnectionsView));
-                }
-                else
-                {
-                    UpdateLiveConnectionsView();
-                }
-            }
-        }
-
         public void UpdateLiveConnectionsView()
         {
-            IEnumerable<TcpConnectionViewModel> connections = _trafficMonitorViewModel.ActiveConnections;
+            var connections = _trafficMonitorViewModel.ActiveConnections.ToList();
+            var sortableList = new SortableBindingList<TcpConnectionViewModel>(connections);
+
             if (_sortOrder != SortOrder.None && _sortColumn != -1)
             {
-                Func<TcpConnectionViewModel, object> keySelector = GetLiveConnectionKeySelector(_sortColumn);
-                connections = (_sortOrder == SortOrder.Ascending)
-                    ? connections.OrderBy(keySelector)
-                    : connections.OrderByDescending(keySelector);
+                string propertyName = liveConnectionsDataGridView.Columns[_sortColumn].DataPropertyName;
+                if (!string.IsNullOrEmpty(propertyName))
+                {
+                    sortableList.Sort(propertyName, _sortOrder == SortOrder.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                }
             }
 
-            _bindingSource.DataSource = new SortableBindingList<TcpConnectionViewModel>(connections.ToList());
+            _bindingSource.DataSource = sortableList;
             _bindingSource.ResetBindings(false);
             liveConnectionsDataGridView.Refresh();
-        }
-
-        private Func<TcpConnectionViewModel, object> GetLiveConnectionKeySelector(int columnIndex)
-        {
-            return columnIndex switch
-            {
-                2 => conn => conn.LocalAddress,
-                3 => conn => conn.LocalPort,
-                4 => conn => conn.RemoteAddress,
-                5 => conn => conn.RemotePort,
-                6 => conn => conn.State,
-                _ => conn => conn.ProcessName,
-            };
         }
 
         private void killProcessToolStripMenuItem_Click(object sender, EventArgs e)
@@ -272,10 +233,5 @@ namespace MinimalFirewall
                 }
             }
         }
-    }
-
-    public class SortableBindingList<T> : BindingList<T>
-    {
-        public SortableBindingList(IList<T> list) : base(list) { }
     }
 }

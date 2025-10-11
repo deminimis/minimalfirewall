@@ -3,15 +3,8 @@ namespace MinimalFirewall
 {
     partial class SettingsControl
     {
-        /// <summary> 
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -23,10 +16,6 @@ namespace MinimalFirewall
 
         #region Component Designer generated code
 
-        /// <summary> 
-        /// Required method for Designer support - do not modify 
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             this.deleteAllRulesButton = new System.Windows.Forms.Button();
@@ -54,6 +43,10 @@ namespace MinimalFirewall
             this.startOnStartupSwitch = new System.Windows.Forms.CheckBox();
             this.closeToTraySwitch = new System.Windows.Forms.CheckBox();
             this.mainSettingsPanel = new System.Windows.Forms.Panel();
+            this.importReplaceButton = new System.Windows.Forms.Button();
+            this.importMergeButton = new System.Windows.Forms.Button();
+            this.exportRulesButton = new System.Windows.Forms.Button();
+            this.cleanUpOrphanedRulesButton = new System.Windows.Forms.Button();
             this.coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.coffeePictureBox)).BeginInit();
             this.mainSettingsPanel.SuspendLayout();
@@ -346,6 +339,10 @@ namespace MinimalFirewall
             // mainSettingsPanel
             // 
             this.mainSettingsPanel.AutoScroll = true;
+            this.mainSettingsPanel.Controls.Add(this.importReplaceButton);
+            this.mainSettingsPanel.Controls.Add(this.importMergeButton);
+            this.mainSettingsPanel.Controls.Add(this.exportRulesButton);
+            this.mainSettingsPanel.Controls.Add(this.cleanUpOrphanedRulesButton);
             this.mainSettingsPanel.Controls.Add(this.deleteAllRulesButton);
             this.mainSettingsPanel.Controls.Add(this.revertFirewallButton);
             this.mainSettingsPanel.Controls.Add(this.auditAlertsSwitch);
@@ -374,6 +371,58 @@ namespace MinimalFirewall
             this.mainSettingsPanel.Size = new System.Drawing.Size(1015, 925);
             this.mainSettingsPanel.TabIndex = 27;
             // 
+            // importReplaceButton
+            // 
+            this.importReplaceButton.FlatAppearance.BorderSize = 0;
+            this.importReplaceButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.importReplaceButton.Location = new System.Drawing.Point(531, 790);
+            this.importReplaceButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.importReplaceButton.Name = "importReplaceButton";
+            this.importReplaceButton.Size = new System.Drawing.Size(240, 37);
+            this.importReplaceButton.TabIndex = 30;
+            this.importReplaceButton.Text = "Import && Replace Rules...";
+            this.importReplaceButton.UseVisualStyleBackColor = true;
+            this.importReplaceButton.Click += new System.EventHandler(this.importReplaceButton_Click);
+            // 
+            // importMergeButton
+            // 
+            this.importMergeButton.FlatAppearance.BorderSize = 0;
+            this.importMergeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.importMergeButton.Location = new System.Drawing.Point(280, 790);
+            this.importMergeButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.importMergeButton.Name = "importMergeButton";
+            this.importMergeButton.Size = new System.Drawing.Size(240, 37);
+            this.importMergeButton.TabIndex = 29;
+            this.importMergeButton.Text = "Import && Add Rules...";
+            this.importMergeButton.UseVisualStyleBackColor = true;
+            this.importMergeButton.Click += new System.EventHandler(this.importMergeButton_Click);
+            // 
+            // exportRulesButton
+            // 
+            this.exportRulesButton.FlatAppearance.BorderSize = 0;
+            this.exportRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.exportRulesButton.Location = new System.Drawing.Point(29, 790);
+            this.exportRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.exportRulesButton.Name = "exportRulesButton";
+            this.exportRulesButton.Size = new System.Drawing.Size(240, 37);
+            this.exportRulesButton.TabIndex = 28;
+            this.exportRulesButton.Text = "Export Rules...";
+            this.exportRulesButton.UseVisualStyleBackColor = true;
+            this.exportRulesButton.Click += new System.EventHandler(this.exportRulesButton_Click);
+            // 
+            // cleanUpOrphanedRulesButton
+            // 
+            this.cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
+            this.cleanUpOrphanedRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 700);
+            this.cleanUpOrphanedRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
+            this.cleanUpOrphanedRulesButton.Size = new System.Drawing.Size(240, 37);
+            this.cleanUpOrphanedRulesButton.TabIndex = 27;
+            this.cleanUpOrphanedRulesButton.Text = "Clean Up Orphaned Rules";
+            this.cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
+            this.cleanUpOrphanedRulesButton.Click += new System.EventHandler(this.cleanUpOrphanedRulesButton_Click);
+            // 
             // SettingsControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -387,6 +436,7 @@ namespace MinimalFirewall
             this.mainSettingsPanel.ResumeLayout(false);
             this.mainSettingsPanel.PerformLayout();
             this.ResumeLayout(false);
+
         }
 
         #endregion
@@ -414,6 +464,10 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox darkModeSwitch;
         private System.Windows.Forms.CheckBox startOnStartupSwitch;
         private System.Windows.Forms.CheckBox closeToTraySwitch;
-        private Panel mainSettingsPanel;
+        private System.Windows.Forms.Panel mainSettingsPanel;
+        private System.Windows.Forms.Button cleanUpOrphanedRulesButton;
+        private Button importReplaceButton;
+        private Button importMergeButton;
+        private Button exportRulesButton;
     }
 }

@@ -1,13 +1,18 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows.Forms;
-using MinimalFirewall.TypedObjects;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Threading;
+﻿// File: MainViewModel.cs
 using Firewall.Traffic.ViewModels;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System;
+using DarkModeForms;
+
 namespace MinimalFirewall
 {
     public class MainViewModel : ObservableViewModel
@@ -21,12 +26,13 @@ namespace MinimalFirewall
         private readonly FirewallEventListenerService _eventListenerService;
         private readonly AppSettings _appSettings;
         private readonly UserActivityLogger _activityLogger;
+        private readonly FirewallActionsService _actionsService;
         private System.Threading.Timer? _sentryRefreshDebounceTimer;
 
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = new();
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
-        public List<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = [];
+        public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
         public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
         public int UnseenSystemChangesCount => SystemChanges.Count;
         public event Action? RulesListUpdated;
@@ -43,7 +49,8 @@ namespace MinimalFirewall
             TrafficMonitorViewModel trafficMonitorViewModel,
             FirewallEventListenerService eventListenerService,
             AppSettings appSettings,
-            UserActivityLogger activityLogger)
+            UserActivityLogger activityLogger,
+            FirewallActionsService actionsService)
         {
             _firewallRuleService = firewallRuleService;
             _wildcardRuleService = wildcardRuleService;
@@ -55,6 +62,7 @@ namespace MinimalFirewall
             _eventListenerService = eventListenerService;
             _appSettings = appSettings;
             _activityLogger = activityLogger;
+            _actionsService = actionsService;
 
             _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
 
@@ -81,7 +89,63 @@ namespace MinimalFirewall
             AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
         }
 
-        public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, int sortColumn, SortOrder sortOrder, bool showSystemRules)
+        public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            var vms = await Task.Run(() =>
+            {
+                var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
+                var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
+                var viewModels = new List<TcpConnectionViewModel>();
+                int total = connections.Count > 0 ? connections.Count : 1;
+                int current = 0;
+
+                foreach (var conn in connections)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    if (!processInfoCache.TryGetValue(conn.ProcessId, out var info))
+                    {
+                        try
+                        {
+                            using (var p = Process.GetProcessById(conn.ProcessId))
+                            {
+                                string name = p.ProcessName;
+                                string path = string.Empty;
+                                string serviceName = string.Empty;
+                                try { if (p.MainModule != null) path = p.MainModule.FileName; }
+                                catch (Win32Exception) { path = "N/A (Access Denied)"; }
+
+                                if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    serviceName = SystemDiscoveryService.GetServicesByPID(conn.ProcessId.ToString());
+                                }
+                                info = (name, path, serviceName);
+                            }
+                        }
+                        catch (ArgumentException) { info = ("(Exited)", string.Empty, string.Empty); }
+                        catch { info = ("System", string.Empty, string.Empty); }
+                        processInfoCache[conn.ProcessId] = info;
+                    }
+                    viewModels.Add(new TcpConnectionViewModel(conn, info));
+                    current++;
+                    progress?.Report((current * 100) / total);
+                }
+                return viewModels;
+            }, token);
+
+            if (token.IsCancellationRequested) return;
+
+            TrafficMonitorViewModel.ActiveConnections.Clear();
+            foreach (var vm in vms)
+            {
+                TrafficMonitorViewModel.ActiveConnections.Add(vm);
+            }
+        }
+
+        public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
         {
             IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
             if (!showSystemRules)
@@ -102,20 +166,7 @@ namespace MinimalFirewall
                     r.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase));
             }
 
-            if (sortOrder != SortOrder.None && sortColumn != -1)
-            {
-                Func<AggregatedRuleViewModel, object> keySelector = GetRuleKeySelector(sortColumn);
-                if (sortOrder == SortOrder.Ascending)
-                {
-                    filteredRules = filteredRules.OrderBy(keySelector);
-                }
-                else
-                {
-                    filteredRules = filteredRules.OrderByDescending(keySelector);
-                }
-            }
-
-            VirtualRulesData = filteredRules.ToList();
+            VirtualRulesData = new SortableBindingList<AggregatedRuleViewModel>(filteredRules.ToList());
             RulesListUpdated?.Invoke();
         }
 
@@ -192,7 +243,7 @@ namespace MinimalFirewall
                     ProtocolName = "Any"
                 };
                 AllAggregatedRules.Add(newAggregatedRule);
-                ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
+                ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
             }
 
             DashboardActionProcessed?.Invoke(pending);
@@ -364,7 +415,7 @@ namespace MinimalFirewall
                 UnderlyingRules = [vm]
             };
             AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
         }
 
         public void CreateProgramRule(string appPath, string action)
@@ -389,7 +440,7 @@ namespace MinimalFirewall
                 ServiceName = "N/A"
             };
             AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
             var payload = new ApplyApplicationRulePayload { AppPaths = { appPath }, Action = action };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
         }
@@ -467,9 +518,54 @@ namespace MinimalFirewall
                 UnderlyingRules = new List<AdvancedRuleViewModel> { vm }
             };
             AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), -1, SortOrder.None, false);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
 
             DashboardActionProcessed?.Invoke(pending);
+        }
+        public async Task CleanUpOrphanedRulesAsync()
+        {
+            using var statusForm = new StatusForm("Scanning for orphaned rules...", _appSettings);
+            statusForm.Show(Form.ActiveForm);
+            var progress = new Progress<int>(p => statusForm.UpdateProgress(p));
+            var cts = new CancellationTokenSource();
+            statusForm.FormClosing += (s, e) =>
+            {
+                if (e.CloseReason == CloseReason.UserClosing)
+                {
+                    cts.Cancel();
+                }
+            };
+
+            try
+            {
+                var deletedRules = await _actionsService.CleanUpOrphanedRulesAsync(cts.Token, progress);
+                if (!cts.IsCancellationRequested)
+                {
+                    statusForm.Close();
+                    Messenger.MessageBox(
+                        $"{deletedRules.Count} orphaned rule(s) found and deleted.",
+                        "Cleanup Complete",
+                        MessageBoxButtons.OK,
+                        MsgIcon.None);
+                    ClearRulesCache();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("CleanUpOrphanedRulesAsync", ex);
+                if (!statusForm.IsDisposed)
+                {
+                    statusForm.Close();
+                }
+                Messenger.MessageBox(
+                    "An error occurred during the cleanup process. Please check the debug log for details.",
+                    "Cleanup Error",
+                    MessageBoxButtons.OK,
+                    MsgIcon.Error);
+            }
         }
     }
 }
