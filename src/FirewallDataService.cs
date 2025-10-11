@@ -52,6 +52,11 @@ namespace MinimalFirewall
             return services;
         }
 
+        public List<UwpApp> LoadUwpAppsFromCache()
+        {
+            return _uwpService.LoadUwpAppsFromCache();
+        }
+
         public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             if (_localCache.TryGetValue(AggregatedRulesCacheKey, out List<AggregatedRuleViewModel>? cachedRules) && cachedRules != null)

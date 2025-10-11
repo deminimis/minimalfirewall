@@ -1,4 +1,5 @@
-﻿using MinimalFirewall.TypedObjects;
+﻿// File: AuditControl.cs
+using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using DarkModeForms;
 using System.Diagnostics;
@@ -83,9 +84,9 @@ namespace MinimalFirewall
             var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
                 _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c => c.Rule?.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
                                                    c.Rule?.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
-
                                                    c.Rule?.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true);
-            _bindingSource.DataSource = filteredChanges.ToList();
+
+            _bindingSource.DataSource = new SortableBindingList<FirewallRuleChange>(filteredChanges.ToList());
             _bindingSource.ResetBindings(false);
             systemChangesDataGridView.Refresh();
         }
@@ -121,7 +122,8 @@ namespace MinimalFirewall
 
         private void systemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            var propertyName = systemChangesDataGridView.Columns[e.ColumnIndex].DataPropertyName;
+            var column = systemChangesDataGridView.Columns[e.ColumnIndex];
+            string propertyName = column.DataPropertyName;
             if (string.IsNullOrEmpty(propertyName)) return;
 
             if (propertyName.StartsWith("Rule."))
@@ -129,20 +131,21 @@ namespace MinimalFirewall
                 propertyName = propertyName.Substring(5);
             }
 
-            _sortOrder = (_sortColumn == e.ColumnIndex && _sortOrder == SortOrder.Ascending) ?
-                         SortOrder.Descending : SortOrder.Ascending;
-            _sortColumn = e.ColumnIndex;
-            if (_bindingSource.DataSource is List<FirewallRuleChange> list)
+            var sortDirection = ListSortDirection.Ascending;
+            if (systemChangesDataGridView.SortedColumn?.Name == column.Name && systemChangesDataGridView.SortOrder == SortOrder.Ascending)
             {
-                var sortedList = (_sortOrder == SortOrder.Ascending)
-                    ? list.OrderBy(c => GetPropertyValue(c.Rule, propertyName)).ToList()
-                    : list.OrderByDescending(c => GetPropertyValue(c.Rule, propertyName)).ToList();
-                _bindingSource.DataSource = sortedList;
-                _bindingSource.ResetBindings(false);
+                sortDirection = ListSortDirection.Descending;
             }
 
-            _appSettings.AuditSortColumn = _sortColumn;
-            _appSettings.AuditSortOrder = (int)_sortOrder;
+            if (_bindingSource.DataSource is SortableBindingList<FirewallRuleChange> list)
+            {
+                list.Sort(propertyName, sortDirection);
+            }
+
+            systemChangesDataGridView.Sort(column, sortDirection);
+
+            _appSettings.AuditSortColumn = e.ColumnIndex;
+            _appSettings.AuditSortOrder = (int)(sortDirection == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending);
         }
 
         private static object GetPropertyValue(object obj, string propertyName)

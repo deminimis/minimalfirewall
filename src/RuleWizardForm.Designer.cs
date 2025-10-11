@@ -1,4 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/RuleWizardForm.Designer.cs
+﻿// File: RuleWizardForm.Designer.cs
 namespace MinimalFirewall
 {
     partial class RuleWizardForm
@@ -26,9 +26,15 @@ namespace MinimalFirewall
             this.wildcardRuleButton = new System.Windows.Forms.Button();
             this.portRuleButton = new System.Windows.Forms.Button();
             this.programRuleButton = new System.Windows.Forms.Button();
+            this.batchProgramRuleButton = new System.Windows.Forms.Button();
             this.pnlGetProgram = new System.Windows.Forms.Panel();
             this.browseButton = new System.Windows.Forms.Button();
             this.programPathTextBox = new System.Windows.Forms.TextBox();
+            this.pnlGetFolder = new System.Windows.Forms.Panel();
+            this.dllCheckBox = new System.Windows.Forms.CheckBox();
+            this.exeCheckBox = new System.Windows.Forms.CheckBox();
+            this.batchBrowseFolderButton = new System.Windows.Forms.Button();
+            this.batchFolderPathTextBox = new System.Windows.Forms.TextBox();
             this.pnlGetPorts = new System.Windows.Forms.Panel();
             this.portsProgramPathTextBox = new System.Windows.Forms.TextBox();
             this.portsBrowseButton = new System.Windows.Forms.Button();
@@ -70,6 +76,7 @@ namespace MinimalFirewall
             this.restrictAppBrowseButton = new System.Windows.Forms.Button();
             this.pnlSelection.SuspendLayout();
             this.pnlGetProgram.SuspendLayout();
+            this.pnlGetFolder.SuspendLayout();
             this.pnlGetPorts.SuspendLayout();
             this.pnlGetProtocol.SuspendLayout();
             this.pnlSummary.SuspendLayout();
@@ -93,6 +100,7 @@ namespace MinimalFirewall
             this.pnlSelection.Controls.Add(this.advancedRuleButton);
             this.pnlSelection.Controls.Add(this.wildcardRuleButton);
             this.pnlSelection.Controls.Add(this.portRuleButton);
+            this.pnlSelection.Controls.Add(this.batchProgramRuleButton);
             this.pnlSelection.Controls.Add(this.programRuleButton);
             this.pnlSelection.Location = new System.Drawing.Point(0, 58);
             this.pnlSelection.Name = "pnlSelection";
@@ -101,7 +109,7 @@ namespace MinimalFirewall
             // 
             // restrictAppButton
             // 
-            this.restrictAppButton.Location = new System.Drawing.Point(50, 246);
+            this.restrictAppButton.Location = new System.Drawing.Point(50, 284);
             this.restrictAppButton.Name = "restrictAppButton";
             this.restrictAppButton.Size = new System.Drawing.Size(434, 28);
             this.restrictAppButton.TabIndex = 7;
@@ -111,7 +119,7 @@ namespace MinimalFirewall
             // 
             // blockDeviceButton
             // 
-            this.blockDeviceButton.Location = new System.Drawing.Point(50, 208);
+            this.blockDeviceButton.Location = new System.Drawing.Point(50, 246);
             this.blockDeviceButton.Name = "blockDeviceButton";
             this.blockDeviceButton.Size = new System.Drawing.Size(434, 28);
             this.blockDeviceButton.TabIndex = 6;
@@ -121,7 +129,7 @@ namespace MinimalFirewall
             // 
             // allowFileShareButton
             // 
-            this.allowFileShareButton.Location = new System.Drawing.Point(50, 170);
+            this.allowFileShareButton.Location = new System.Drawing.Point(50, 208);
             this.allowFileShareButton.Name = "allowFileShareButton";
             this.allowFileShareButton.Size = new System.Drawing.Size(434, 28);
             this.allowFileShareButton.TabIndex = 5;
@@ -131,7 +139,7 @@ namespace MinimalFirewall
             // 
             // blockServiceButton
             // 
-            this.blockServiceButton.Location = new System.Drawing.Point(50, 132);
+            this.blockServiceButton.Location = new System.Drawing.Point(50, 170);
             this.blockServiceButton.Name = "blockServiceButton";
             this.blockServiceButton.Size = new System.Drawing.Size(434, 28);
             this.blockServiceButton.TabIndex = 4;
@@ -141,7 +149,7 @@ namespace MinimalFirewall
             // 
             // advancedRuleButton
             // 
-            this.advancedRuleButton.Location = new System.Drawing.Point(50, 284);
+            this.advancedRuleButton.Location = new System.Drawing.Point(50, 322);
             this.advancedRuleButton.Name = "advancedRuleButton";
             this.advancedRuleButton.Size = new System.Drawing.Size(434, 28);
             this.advancedRuleButton.TabIndex = 3;
@@ -151,7 +159,7 @@ namespace MinimalFirewall
             // 
             // wildcardRuleButton
             // 
-            this.wildcardRuleButton.Location = new System.Drawing.Point(50, 94);
+            this.wildcardRuleButton.Location = new System.Drawing.Point(50, 132);
             this.wildcardRuleButton.Name = "wildcardRuleButton";
             this.wildcardRuleButton.Size = new System.Drawing.Size(434, 28);
             this.wildcardRuleButton.TabIndex = 2;
@@ -161,7 +169,7 @@ namespace MinimalFirewall
             // 
             // portRuleButton
             // 
-            this.portRuleButton.Location = new System.Drawing.Point(50, 56);
+            this.portRuleButton.Location = new System.Drawing.Point(50, 94);
             this.portRuleButton.Name = "portRuleButton";
             this.portRuleButton.Size = new System.Drawing.Size(434, 28);
             this.portRuleButton.TabIndex = 1;
@@ -178,6 +186,16 @@ namespace MinimalFirewall
             this.programRuleButton.Text = "Allow or Block a Program";
             this.programRuleButton.UseVisualStyleBackColor = true;
             this.programRuleButton.Click += new System.EventHandler(this.programRuleButton_Click);
+            // 
+            // batchProgramRuleButton
+            // 
+            this.batchProgramRuleButton.Location = new System.Drawing.Point(50, 56);
+            this.batchProgramRuleButton.Name = "batchProgramRuleButton";
+            this.batchProgramRuleButton.Size = new System.Drawing.Size(434, 28);
+            this.batchProgramRuleButton.TabIndex = 8;
+            this.batchProgramRuleButton.Text = "Allow or Block All Programs in a Folder";
+            this.batchProgramRuleButton.UseVisualStyleBackColor = true;
+            this.batchProgramRuleButton.Click += new System.EventHandler(this.batchProgramRuleButton_Click);
             // 
             // pnlGetProgram
             // 
@@ -205,6 +223,57 @@ namespace MinimalFirewall
             this.programPathTextBox.Size = new System.Drawing.Size(393, 23);
             this.programPathTextBox.TabIndex = 0;
             this.programPathTextBox.PlaceholderText = "Path to application executable";
+            // 
+            // pnlGetFolder
+            // 
+            this.pnlGetFolder.Controls.Add(this.dllCheckBox);
+            this.pnlGetFolder.Controls.Add(this.exeCheckBox);
+            this.pnlGetFolder.Controls.Add(this.batchBrowseFolderButton);
+            this.pnlGetFolder.Controls.Add(this.batchFolderPathTextBox);
+            this.pnlGetFolder.Location = new System.Drawing.Point(0, 58);
+            this.pnlGetFolder.Name = "pnlGetFolder";
+            this.pnlGetFolder.Size = new System.Drawing.Size(534, 340);
+            this.pnlGetFolder.TabIndex = 14;
+            // 
+            // dllCheckBox
+            // 
+            this.dllCheckBox.AutoSize = true;
+            this.dllCheckBox.Location = new System.Drawing.Point(112, 178);
+            this.dllCheckBox.Name = "dllCheckBox";
+            this.dllCheckBox.Size = new System.Drawing.Size(74, 19);
+            this.dllCheckBox.TabIndex = 3;
+            this.dllCheckBox.Text = ".dll files";
+            this.dllCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // exeCheckBox
+            // 
+            this.exeCheckBox.AutoSize = true;
+            this.exeCheckBox.Checked = true;
+            this.exeCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.exeCheckBox.Location = new System.Drawing.Point(23, 178);
+            this.exeCheckBox.Name = "exeCheckBox";
+            this.exeCheckBox.Size = new System.Drawing.Size(83, 19);
+            this.exeCheckBox.TabIndex = 2;
+            this.exeCheckBox.Text = ".exe files";
+            this.exeCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // batchBrowseFolderButton
+            // 
+            this.batchBrowseFolderButton.Location = new System.Drawing.Point(422, 149);
+            this.batchBrowseFolderButton.Name = "batchBrowseFolderButton";
+            this.batchBrowseFolderButton.Size = new System.Drawing.Size(90, 23);
+            this.batchBrowseFolderButton.TabIndex = 1;
+            this.batchBrowseFolderButton.Text = "Browse...";
+            this.batchBrowseFolderButton.UseVisualStyleBackColor = true;
+            this.batchBrowseFolderButton.Click += new System.EventHandler(this.batchBrowseFolderButton_Click);
+            // 
+            // batchFolderPathTextBox
+            // 
+            this.batchFolderPathTextBox.Location = new System.Drawing.Point(23, 149);
+            this.batchFolderPathTextBox.Name = "batchFolderPathTextBox";
+            this.batchFolderPathTextBox.PlaceholderText = "Path to folder";
+            this.batchFolderPathTextBox.Size = new System.Drawing.Size(393, 23);
+            this.batchFolderPathTextBox.TabIndex = 0;
             // 
             // pnlGetPorts
             // 
@@ -589,6 +658,7 @@ namespace MinimalFirewall
             this.ClientSize = new System.Drawing.Size(534, 461);
             this.Controls.Add(this.topPanel);
             this.Controls.Add(this.bottomPanel);
+            this.Controls.Add(this.pnlGetFolder);
             this.Controls.Add(this.pnlSelection);
             this.Controls.Add(this.pnlGetRestrictApp);
             this.Controls.Add(this.pnlGetBlockDeviceIP);
@@ -610,6 +680,8 @@ namespace MinimalFirewall
             this.pnlSelection.ResumeLayout(false);
             this.pnlGetProgram.ResumeLayout(false);
             this.pnlGetProgram.PerformLayout();
+            this.pnlGetFolder.ResumeLayout(false);
+            this.pnlGetFolder.PerformLayout();
             this.pnlGetPorts.ResumeLayout(false);
             this.pnlGetPorts.PerformLayout();
             this.pnlGetProtocol.ResumeLayout(false);
@@ -642,7 +714,9 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button wildcardRuleButton;
         private System.Windows.Forms.Button portRuleButton;
         private System.Windows.Forms.Button programRuleButton;
+        private System.Windows.Forms.Button batchProgramRuleButton;
         private System.Windows.Forms.Panel pnlGetProgram;
+        private System.Windows.Forms.Panel pnlGetFolder;
         private System.Windows.Forms.Panel pnlGetPorts;
         private System.Windows.Forms.Panel pnlGetProtocol;
         private System.Windows.Forms.Panel pnlSummary;
@@ -655,6 +729,8 @@ namespace MinimalFirewall
         private System.Windows.Forms.Label mainHeaderLabel;
         private System.Windows.Forms.Button browseButton;
         private System.Windows.Forms.TextBox programPathTextBox;
+        private System.Windows.Forms.Button batchBrowseFolderButton;
+        private System.Windows.Forms.TextBox batchFolderPathTextBox;
         private System.Windows.Forms.TextBox portsTextBox;
         private System.Windows.Forms.Label portsLabel;
         private System.Windows.Forms.RadioButton bothProtocolRadioButton;
@@ -688,5 +764,8 @@ namespace MinimalFirewall
         private TextBox blockDeviceIpTextBox;
         private TextBox restrictAppPathTextBox;
         private Button restrictAppBrowseButton;
+        private CheckBox dllCheckBox;
+        private CheckBox exeCheckBox;
     }
 }
+

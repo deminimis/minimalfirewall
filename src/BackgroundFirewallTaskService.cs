@@ -40,7 +40,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    await Task.Run(() =>
+                    await Task.Run(async () =>
                     {
                         switch (task.TaskType)
                         {
@@ -63,7 +63,7 @@ namespace MinimalFirewall
                                 if (task.Payload is DeleteRulesPayload p6) _actionsService.DeleteAdvancedRules(p6.RuleIdentifiers);
                                 break;
                             case FirewallTaskType.DeleteGroup:
-                                if (task.Payload is string p7) _actionsService.DeleteGroupAsync(p7).Wait();
+                                if (task.Payload is string p7) await _actionsService.DeleteGroupAsync(p7);
                                 break;
                             case FirewallTaskType.DeleteWildcardRules:
                                 if (task.Payload is DeleteWildcardRulePayload p8) _actionsService.DeleteRulesForWildcard(p8.Wildcard);
@@ -88,6 +88,21 @@ namespace MinimalFirewall
                                 break;
                             case FirewallTaskType.SetGroupEnabledState:
                                 if (task.Payload is SetGroupEnabledStatePayload p17) _actionsService.SetGroupEnabledState(p17.GroupName, p17.IsEnabled);
+                                break;
+                            case FirewallTaskType.UpdateWildcardRule:
+                                if (task.Payload is UpdateWildcardRulePayload p18) _actionsService.UpdateWildcardRule(p18.OldRule, p18.NewRule);
+                                break;
+                            case FirewallTaskType.RemoveWildcardRule:
+                                if (task.Payload is DeleteWildcardRulePayload p19) _actionsService.RemoveWildcardRule(p19.Wildcard);
+                                break;
+                            case FirewallTaskType.RemoveWildcardDefinitionOnly:
+                                if (task.Payload is DeleteWildcardRulePayload p20) _actionsService.RemoveWildcardDefinitionOnly(p20.Wildcard);
+                                break;
+                            case FirewallTaskType.DeleteAllMfwRules:
+                                _actionsService.DeleteAllMfwRules();
+                                break;
+                            case FirewallTaskType.ImportRules:
+                                if (task.Payload is ImportRulesPayload p21) await _actionsService.ImportRulesAsync(p21.JsonContent, p21.Replace);
                                 break;
                         }
                     }, _cancellationTokenSource.Token);

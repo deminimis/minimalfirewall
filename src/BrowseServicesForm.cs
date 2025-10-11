@@ -1,4 +1,5 @@
-﻿using DarkModeForms;
+﻿// File: BrowseServicesForm.cs
+using DarkModeForms;
 using System.Data;
 
 namespace MinimalFirewall
@@ -9,10 +10,12 @@ namespace MinimalFirewall
         private readonly List<ServiceViewModel> _allServices;
         public ServiceViewModel? SelectedService { get; private set; }
 
-        public BrowseServicesForm(List<ServiceViewModel> services)
+        public BrowseServicesForm(List<ServiceViewModel> services, AppSettings appSettings)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
             _allServices = services;
             LoadServices();
         }

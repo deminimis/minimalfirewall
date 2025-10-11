@@ -31,9 +31,23 @@ namespace MinimalFirewall
             }
         }
 
+        public void UpdateRule(WildcardRule oldRule, WildcardRule newRule)
+        {
+            RemoveRule(oldRule);
+            AddRule(newRule);
+        }
+
         public void RemoveRule(WildcardRule rule)
         {
-            var ruleToRemove = _rules.FirstOrDefault(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase));
+            var ruleToRemove = _rules.FirstOrDefault(r =>
+                r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase) &&
+                r.Action.Equals(rule.Action, StringComparison.OrdinalIgnoreCase) &&
+                r.Protocol == rule.Protocol &&
+                r.LocalPorts.Equals(rule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
+                r.RemotePorts.Equals(rule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
+                r.RemoteAddresses.Equals(rule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
+
             if (ruleToRemove != null)
             {
                 _rules.Remove(ruleToRemove);

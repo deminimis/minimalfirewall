@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File:CreateAdvancedRuleForm.Designer.cs
+namespace MinimalFirewall
 {
     partial class CreateAdvancedRuleForm
     {
@@ -54,6 +55,7 @@
         private System.Windows.Forms.Panel bottomPanel;
         private System.Windows.Forms.Label programPathNoteLabel;
         private System.Windows.Forms.Button browseServiceButton;
+        private System.Windows.Forms.ErrorProvider errorProvider1;
 
         protected override void Dispose(bool disposing)
         {
@@ -68,6 +70,7 @@
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.labelName = new System.Windows.Forms.Label();
             this.ruleNameTextBox = new System.Windows.Forms.TextBox();
             this.labelDescription = new System.Windows.Forms.Label();
@@ -119,6 +122,7 @@
             this.addGroupButton = new System.Windows.Forms.Button();
             this.mainPanel = new System.Windows.Forms.Panel();
             this.bottomPanel = new System.Windows.Forms.Panel();
+            this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
             this.actionGroupBox.SuspendLayout();
             this.directionGroupBox.SuspendLayout();
             this.programGroupBox.SuspendLayout();
@@ -130,6 +134,7 @@
             this.interfaceTypesGroupBox.SuspendLayout();
             this.mainPanel.SuspendLayout();
             this.bottomPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.SuspendLayout();
             // 
             // labelName
@@ -137,7 +142,7 @@
             this.labelName.AutoSize = true;
             this.labelName.Location = new System.Drawing.Point(12, 15);
             this.labelName.Name = "labelName";
-            this.labelName.Size = new System.Drawing.Size(39, 15);
+            this.labelName.Size = new System.Drawing.Size(49, 20);
             this.labelName.TabIndex = 0;
             this.labelName.Text = "Name";
             // 
@@ -147,7 +152,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.ruleNameTextBox.Location = new System.Drawing.Point(80, 12);
             this.ruleNameTextBox.Name = "ruleNameTextBox";
-            this.ruleNameTextBox.Size = new System.Drawing.Size(692, 23);
+            this.ruleNameTextBox.Size = new System.Drawing.Size(692, 27);
             this.ruleNameTextBox.TabIndex = 1;
             // 
             // labelDescription
@@ -155,7 +160,7 @@
             this.labelDescription.AutoSize = true;
             this.labelDescription.Location = new System.Drawing.Point(12, 44);
             this.labelDescription.Name = "labelDescription";
-            this.labelDescription.Size = new System.Drawing.Size(67, 15);
+            this.labelDescription.Size = new System.Drawing.Size(85, 20);
             this.labelDescription.TabIndex = 2;
             this.labelDescription.Text = "Description";
             // 
@@ -165,7 +170,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.descriptionTextBox.Location = new System.Drawing.Point(80, 41);
             this.descriptionTextBox.Name = "descriptionTextBox";
-            this.descriptionTextBox.Size = new System.Drawing.Size(692, 23);
+            this.descriptionTextBox.Size = new System.Drawing.Size(692, 27);
             this.descriptionTextBox.TabIndex = 3;
             // 
             // enabledCheckBox
@@ -175,7 +180,7 @@
             this.enabledCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.enabledCheckBox.Location = new System.Drawing.Point(15, 75);
             this.enabledCheckBox.Name = "enabledCheckBox";
-            this.enabledCheckBox.Size = new System.Drawing.Size(92, 19);
+            this.enabledCheckBox.Size = new System.Drawing.Size(84, 24);
             this.enabledCheckBox.TabIndex = 4;
             this.enabledCheckBox.Text = "Enabled";
             this.enabledCheckBox.UseVisualStyleBackColor = true;
@@ -196,7 +201,7 @@
             this.blockRadioButton.AutoSize = true;
             this.blockRadioButton.Location = new System.Drawing.Point(15, 60);
             this.blockRadioButton.Name = "blockRadioButton";
-            this.blockRadioButton.Size = new System.Drawing.Size(53, 19);
+            this.blockRadioButton.Size = new System.Drawing.Size(66, 24);
             this.blockRadioButton.TabIndex = 1;
             this.blockRadioButton.Text = "Block";
             this.blockRadioButton.UseVisualStyleBackColor = true;
@@ -207,7 +212,7 @@
             this.allowRadioButton.Checked = true;
             this.allowRadioButton.Location = new System.Drawing.Point(15, 30);
             this.allowRadioButton.Name = "allowRadioButton";
-            this.allowRadioButton.Size = new System.Drawing.Size(54, 19);
+            this.allowRadioButton.Size = new System.Drawing.Size(68, 24);
             this.allowRadioButton.TabIndex = 0;
             this.allowRadioButton.TabStop = true;
             this.allowRadioButton.Text = "Allow";
@@ -230,7 +235,7 @@
             this.bothDirRadioButton.AutoSize = true;
             this.bothDirRadioButton.Location = new System.Drawing.Point(15, 72);
             this.bothDirRadioButton.Name = "bothDirRadioButton";
-            this.bothDirRadioButton.Size = new System.Drawing.Size(50, 19);
+            this.bothDirRadioButton.Size = new System.Drawing.Size(62, 24);
             this.bothDirRadioButton.TabIndex = 2;
             this.bothDirRadioButton.Text = "Both";
             this.bothDirRadioButton.UseVisualStyleBackColor = true;
@@ -241,7 +246,7 @@
             this.outboundRadioButton.Checked = true;
             this.outboundRadioButton.Location = new System.Drawing.Point(15, 47);
             this.outboundRadioButton.Name = "outboundRadioButton";
-            this.outboundRadioButton.Size = new System.Drawing.Size(78, 19);
+            this.outboundRadioButton.Size = new System.Drawing.Size(98, 24);
             this.outboundRadioButton.TabIndex = 1;
             this.outboundRadioButton.TabStop = true;
             this.outboundRadioButton.Text = "Outbound";
@@ -252,7 +257,7 @@
             this.inboundRadioButton.AutoSize = true;
             this.inboundRadioButton.Location = new System.Drawing.Point(15, 22);
             this.inboundRadioButton.Name = "inboundRadioButton";
-            this.inboundRadioButton.Size = new System.Drawing.Size(70, 19);
+            this.inboundRadioButton.Size = new System.Drawing.Size(86, 24);
             this.inboundRadioButton.TabIndex = 0;
             this.inboundRadioButton.Text = "Inbound";
             this.inboundRadioButton.UseVisualStyleBackColor = true;
@@ -280,7 +285,7 @@
             this.browseServiceButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.browseServiceButton.Location = new System.Drawing.Point(657, 82);
             this.browseServiceButton.Name = "browseServiceButton";
-            this.browseServiceButton.Size = new System.Drawing.Size(94, 23);
+            this.browseServiceButton.Size = new System.Drawing.Size(94, 29);
             this.browseServiceButton.TabIndex = 7;
             this.browseServiceButton.Text = "Browse...";
             this.browseServiceButton.UseVisualStyleBackColor = true;
@@ -292,7 +297,7 @@
             this.programPathNoteLabel.ForeColor = System.Drawing.SystemColors.GrayText;
             this.programPathNoteLabel.Location = new System.Drawing.Point(75, 50);
             this.programPathNoteLabel.Name = "programPathNoteLabel";
-            this.programPathNoteLabel.Size = new System.Drawing.Size(350, 15);
+            this.programPathNoteLabel.Size = new System.Drawing.Size(431, 20);
             this.programPathNoteLabel.TabIndex = 6;
             this.programPathNoteLabel.Text = "Leave blank to apply the rule to any program hosting the service.";
             // 
@@ -302,7 +307,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.serviceNameTextBox.Location = new System.Drawing.Point(75, 82);
             this.serviceNameTextBox.Name = "serviceNameTextBox";
-            this.serviceNameTextBox.Size = new System.Drawing.Size(576, 23);
+            this.serviceNameTextBox.Size = new System.Drawing.Size(576, 27);
             this.serviceNameTextBox.TabIndex = 4;
             // 
             // labelService
@@ -310,7 +315,7 @@
             this.labelService.AutoSize = true;
             this.labelService.Location = new System.Drawing.Point(15, 85);
             this.labelService.Name = "labelService";
-            this.labelService.Size = new System.Drawing.Size(44, 15);
+            this.labelService.Size = new System.Drawing.Size(56, 20);
             this.labelService.TabIndex = 3;
             this.labelService.Text = "Service";
             // 
@@ -319,7 +324,7 @@
             this.browseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.browseButton.Location = new System.Drawing.Point(657, 22);
             this.browseButton.Name = "browseButton";
-            this.browseButton.Size = new System.Drawing.Size(94, 23);
+            this.browseButton.Size = new System.Drawing.Size(94, 29);
             this.browseButton.TabIndex = 2;
             this.browseButton.Text = "Browse...";
             this.browseButton.UseVisualStyleBackColor = true;
@@ -331,7 +336,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.programPathTextBox.Location = new System.Drawing.Point(75, 22);
             this.programPathTextBox.Name = "programPathTextBox";
-            this.programPathTextBox.Size = new System.Drawing.Size(576, 23);
+            this.programPathTextBox.Size = new System.Drawing.Size(576, 27);
             this.programPathTextBox.TabIndex = 1;
             // 
             // labelProgram
@@ -339,7 +344,7 @@
             this.labelProgram.AutoSize = true;
             this.labelProgram.Location = new System.Drawing.Point(15, 25);
             this.labelProgram.Name = "labelProgram";
-            this.labelProgram.Size = new System.Drawing.Size(53, 15);
+            this.labelProgram.Size = new System.Drawing.Size(66, 20);
             this.labelProgram.TabIndex = 0;
             this.labelProgram.Text = "Program";
             // 
@@ -364,7 +369,7 @@
             this.protocolComboBox.FormattingEnabled = true;
             this.protocolComboBox.Location = new System.Drawing.Point(75, 22);
             this.protocolComboBox.Name = "protocolComboBox";
-            this.protocolComboBox.Size = new System.Drawing.Size(150, 23);
+            this.protocolComboBox.Size = new System.Drawing.Size(150, 28);
             this.protocolComboBox.TabIndex = 1;
             this.protocolComboBox.SelectedIndexChanged += new System.EventHandler(this.ProtocolComboBox_SelectedIndexChanged);
             // 
@@ -373,7 +378,7 @@
             this.labelProtocol.AutoSize = true;
             this.labelProtocol.Location = new System.Drawing.Point(15, 25);
             this.labelProtocol.Name = "labelProtocol";
-            this.labelProtocol.Size = new System.Drawing.Size(52, 15);
+            this.labelProtocol.Size = new System.Drawing.Size(64, 20);
             this.labelProtocol.TabIndex = 0;
             this.labelProtocol.Text = "Protocol";
             // 
@@ -399,16 +404,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remotePortsTextBox.Location = new System.Drawing.Point(90, 53);
             this.remotePortsTextBox.Name = "remotePortsTextBox";
-            this.remotePortsTextBox.Size = new System.Drawing.Size(657, 23);
+            this.remotePortsTextBox.Size = new System.Drawing.Size(657, 27);
             this.remotePortsTextBox.TabIndex = 3;
             this.remotePortsTextBox.Text = "*";
+            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remotePortsTextBox_Validating);
             // 
             // labelRemotePorts
             // 
             this.labelRemotePorts.AutoSize = true;
             this.labelRemotePorts.Location = new System.Drawing.Point(6, 56);
             this.labelRemotePorts.Name = "labelRemotePorts";
-            this.labelRemotePorts.Size = new System.Drawing.Size(77, 15);
+            this.labelRemotePorts.Size = new System.Drawing.Size(95, 20);
             this.labelRemotePorts.TabIndex = 2;
             this.labelRemotePorts.Text = "Remote Ports";
             // 
@@ -418,16 +424,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localPortsTextBox.Location = new System.Drawing.Point(90, 22);
             this.localPortsTextBox.Name = "localPortsTextBox";
-            this.localPortsTextBox.Size = new System.Drawing.Size(657, 23);
+            this.localPortsTextBox.Size = new System.Drawing.Size(657, 27);
             this.localPortsTextBox.TabIndex = 1;
             this.localPortsTextBox.Text = "*";
+            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localPortsTextBox_Validating);
             // 
             // labelLocalPorts
             // 
             this.labelLocalPorts.AutoSize = true;
             this.labelLocalPorts.Location = new System.Drawing.Point(6, 25);
             this.labelLocalPorts.Name = "labelLocalPorts";
-            this.labelLocalPorts.Size = new System.Drawing.Size(65, 15);
+            this.labelLocalPorts.Size = new System.Drawing.Size(81, 20);
             this.labelLocalPorts.TabIndex = 0;
             this.labelLocalPorts.Text = "Local Ports";
             // 
@@ -451,16 +458,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpTypesAndCodesTextBox.Location = new System.Drawing.Point(110, 22);
             this.icmpTypesAndCodesTextBox.Name = "icmpTypesAndCodesTextBox";
-            this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(637, 23);
+            this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(637, 27);
             this.icmpTypesAndCodesTextBox.TabIndex = 1;
             this.icmpTypesAndCodesTextBox.Text = "*";
+            this.icmpTypesAndCodesTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.icmpTypesAndCodesTextBox_Validating);
             // 
             // labelIcmpInfo
             // 
             this.labelIcmpInfo.AutoSize = true;
             this.labelIcmpInfo.Location = new System.Drawing.Point(15, 25);
             this.labelIcmpInfo.Name = "labelIcmpInfo";
-            this.labelIcmpInfo.Size = new System.Drawing.Size(89, 15);
+            this.labelIcmpInfo.Size = new System.Drawing.Size(125, 20);
             this.labelIcmpInfo.TabIndex = 0;
             this.labelIcmpInfo.Text = "Type:Code (e.g. 8:0)";
             // 
@@ -485,16 +493,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remoteAddressTextBox.Location = new System.Drawing.Point(105, 53);
             this.remoteAddressTextBox.Name = "remoteAddressTextBox";
-            this.remoteAddressTextBox.Size = new System.Drawing.Size(642, 23);
+            this.remoteAddressTextBox.Size = new System.Drawing.Size(642, 27);
             this.remoteAddressTextBox.TabIndex = 3;
             this.remoteAddressTextBox.Text = "*";
+            this.remoteAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remoteAddressTextBox_Validating);
             // 
             // labelRemoteAddress
             // 
             this.labelRemoteAddress.AutoSize = true;
             this.labelRemoteAddress.Location = new System.Drawing.Point(6, 56);
             this.labelRemoteAddress.Name = "labelRemoteAddress";
-            this.labelRemoteAddress.Size = new System.Drawing.Size(93, 15);
+            this.labelRemoteAddress.Size = new System.Drawing.Size(117, 20);
             this.labelRemoteAddress.TabIndex = 2;
             this.labelRemoteAddress.Text = "Remote Address";
             // 
@@ -504,16 +513,17 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localAddressTextBox.Location = new System.Drawing.Point(105, 22);
             this.localAddressTextBox.Name = "localAddressTextBox";
-            this.localAddressTextBox.Size = new System.Drawing.Size(642, 23);
+            this.localAddressTextBox.Size = new System.Drawing.Size(642, 27);
             this.localAddressTextBox.TabIndex = 1;
             this.localAddressTextBox.Text = "*";
+            this.localAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localAddressTextBox_Validating);
             // 
             // labelLocalAddress
             // 
             this.labelLocalAddress.AutoSize = true;
             this.labelLocalAddress.Location = new System.Drawing.Point(6, 25);
             this.labelLocalAddress.Name = "labelLocalAddress";
-            this.labelLocalAddress.Size = new System.Drawing.Size(81, 15);
+            this.labelLocalAddress.Size = new System.Drawing.Size(101, 20);
             this.labelLocalAddress.TabIndex = 0;
             this.labelLocalAddress.Text = "Local Address";
             // 
@@ -536,7 +546,7 @@
             this.publicCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.publicCheckBox.Location = new System.Drawing.Point(15, 72);
             this.publicCheckBox.Name = "publicCheckBox";
-            this.publicCheckBox.Size = new System.Drawing.Size(59, 19);
+            this.publicCheckBox.Size = new System.Drawing.Size(71, 24);
             this.publicCheckBox.TabIndex = 2;
             this.publicCheckBox.Text = "Public";
             this.publicCheckBox.UseVisualStyleBackColor = true;
@@ -548,7 +558,7 @@
             this.privateCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.privateCheckBox.Location = new System.Drawing.Point(15, 47);
             this.privateCheckBox.Name = "privateCheckBox";
-            this.privateCheckBox.Size = new System.Drawing.Size(62, 19);
+            this.privateCheckBox.Size = new System.Drawing.Size(75, 24);
             this.privateCheckBox.TabIndex = 1;
             this.privateCheckBox.Text = "Private";
             this.privateCheckBox.UseVisualStyleBackColor = true;
@@ -560,7 +570,7 @@
             this.domainCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.domainCheckBox.Location = new System.Drawing.Point(15, 22);
             this.domainCheckBox.Name = "domainCheckBox";
-            this.domainCheckBox.Size = new System.Drawing.Size(67, 19);
+            this.domainCheckBox.Size = new System.Drawing.Size(83, 24);
             this.domainCheckBox.TabIndex = 0;
             this.domainCheckBox.Text = "Domain";
             this.domainCheckBox.UseVisualStyleBackColor = true;
@@ -606,7 +616,7 @@
             this.lanCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.lanCheckBox.Location = new System.Drawing.Point(15, 72);
             this.lanCheckBox.Name = "lanCheckBox";
-            this.lanCheckBox.Size = new System.Drawing.Size(109, 19);
+            this.lanCheckBox.Size = new System.Drawing.Size(116, 24);
             this.lanCheckBox.TabIndex = 2;
             this.lanCheckBox.Text = "Wired (LAN)";
             this.lanCheckBox.UseVisualStyleBackColor = true;
@@ -618,7 +628,7 @@
             this.wirelessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.wirelessCheckBox.Location = new System.Drawing.Point(15, 47);
             this.wirelessCheckBox.Name = "wirelessCheckBox";
-            this.wirelessCheckBox.Size = new System.Drawing.Size(68, 19);
+            this.wirelessCheckBox.Size = new System.Drawing.Size(85, 24);
             this.wirelessCheckBox.TabIndex = 1;
             this.wirelessCheckBox.Text = "Wireless";
             this.wirelessCheckBox.UseVisualStyleBackColor = true;
@@ -630,7 +640,7 @@
             this.remoteAccessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
             this.remoteAccessCheckBox.Location = new System.Drawing.Point(15, 22);
             this.remoteAccessCheckBox.Name = "remoteAccessCheckBox";
-            this.remoteAccessCheckBox.Size = new System.Drawing.Size(128, 19);
+            this.remoteAccessCheckBox.Size = new System.Drawing.Size(126, 24);
             this.remoteAccessCheckBox.TabIndex = 0;
             this.remoteAccessCheckBox.Text = "Remote (VPN)";
             this.remoteAccessCheckBox.UseVisualStyleBackColor = true;
@@ -641,7 +651,7 @@
             this.labelGroup.AutoSize = true;
             this.labelGroup.Location = new System.Drawing.Point(12, 16);
             this.labelGroup.Name = "labelGroup";
-            this.labelGroup.Size = new System.Drawing.Size(40, 15);
+            this.labelGroup.Size = new System.Drawing.Size(50, 20);
             this.labelGroup.TabIndex = 16;
             this.labelGroup.Text = "Group";
             // 
@@ -654,7 +664,7 @@
             this.groupComboBox.FormattingEnabled = true;
             this.groupComboBox.Location = new System.Drawing.Point(80, 13);
             this.groupComboBox.Name = "groupComboBox";
-            this.groupComboBox.Size = new System.Drawing.Size(350, 23);
+            this.groupComboBox.Size = new System.Drawing.Size(350, 28);
             this.groupComboBox.TabIndex = 17;
             // 
             // addGroupButton
@@ -662,7 +672,7 @@
             this.addGroupButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.addGroupButton.Location = new System.Drawing.Point(436, 13);
             this.addGroupButton.Name = "addGroupButton";
-            this.addGroupButton.Size = new System.Drawing.Size(110, 23);
+            this.addGroupButton.Size = new System.Drawing.Size(110, 29);
             this.addGroupButton.TabIndex = 18;
             this.addGroupButton.Text = "Add Group";
             this.addGroupButton.UseVisualStyleBackColor = true;
@@ -704,9 +714,13 @@
             this.bottomPanel.Size = new System.Drawing.Size(800, 60);
             this.bottomPanel.TabIndex = 20;
             // 
+            // errorProvider1
+            // 
+            this.errorProvider1.ContainerControl = this;
+            // 
             // CreateAdvancedRuleForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 620);
             this.Controls.Add(this.mainPanel);
@@ -740,6 +754,7 @@
             this.mainPanel.PerformLayout();
             this.bottomPanel.ResumeLayout(false);
             this.bottomPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
             this.ResumeLayout(false);
 
         }

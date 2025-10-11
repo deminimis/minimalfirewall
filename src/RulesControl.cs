@@ -1,4 +1,5 @@
-﻿using NetFwTypeLib;
+﻿// File: RulesControl.cs
+using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
 using System.Data;
 using System.ComponentModel;
@@ -148,7 +149,7 @@ namespace MinimalFirewall
             enabledTypes.Add(RuleType.Advanced);
 
             bool showSystemRules = systemFilterCheckBox.Checked;
-            _mainViewModel.ApplyRulesFilters(rulesSearchTextBox.Text, enabledTypes, _rulesSortColumn, _rulesSortOrder, showSystemRules);
+            _mainViewModel.ApplyRulesFilters(rulesSearchTextBox.Text, enabledTypes, showSystemRules);
         }
 
         private void rulesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
@@ -198,7 +199,7 @@ namespace MinimalFirewall
                     return;
                 }
 
-                using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, originalRule);
+                using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, originalRule, _appSettings);
                 if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
                     if (dialog.RuleVm != null)
@@ -245,7 +246,7 @@ namespace MinimalFirewall
 
         private void CreateRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _firewallPolicy);
+            using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _firewallPolicy, _appSettings);
             if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
             {
             }
@@ -288,7 +289,8 @@ namespace MinimalFirewall
         {
             if (rulesDataGridView.SelectedRows.Count > 0 && rulesDataGridView.SelectedRows[0].DataBoundItem is AggregatedRuleViewModel rule)
             {
-                string? appPath = rule.ApplicationName;
+                string?
+                appPath = rule.ApplicationName;
 
                 if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
                 {
@@ -402,21 +404,25 @@ namespace MinimalFirewall
 
         private void rulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex == _rulesSortColumn)
+            var column = rulesDataGridView.Columns[e.ColumnIndex];
+            string propertyName = column.DataPropertyName;
+            if (string.IsNullOrEmpty(propertyName)) return;
+
+            var sortDirection = ListSortDirection.Ascending;
+            if (rulesDataGridView.SortedColumn?.Name == column.Name && rulesDataGridView.SortOrder == SortOrder.Ascending)
             {
-                _rulesSortOrder = (_rulesSortOrder == SortOrder.Ascending) ?
-                                  SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                _rulesSortOrder = SortOrder.Ascending;
+                sortDirection = ListSortDirection.Descending;
             }
 
-            _rulesSortColumn = e.ColumnIndex;
-            _appSettings.RulesSortColumn = _rulesSortColumn;
-            _appSettings.RulesSortOrder = (int)_rulesSortOrder;
+            if (_bindingSource.DataSource is SortableBindingList<AggregatedRuleViewModel> list)
+            {
+                list.Sort(propertyName, sortDirection);
+            }
 
-            ApplyRulesFilters();
+            rulesDataGridView.Sort(column, sortDirection);
+
+            _appSettings.RulesSortColumn = e.ColumnIndex;
+            _appSettings.RulesSortOrder = (int)(sortDirection == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending);
         }
 
         private void rulesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)

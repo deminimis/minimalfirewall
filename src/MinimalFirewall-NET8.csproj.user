@@ -67,6 +67,9 @@
     <Compile Update="WildcardCreatorForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="WildcardRulesControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="IconService.resx">

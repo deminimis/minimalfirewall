@@ -13,10 +13,12 @@ namespace MinimalFirewall
         private int _fakeProgress;
         private bool _realProgressStarted;
 
-        public StatusForm(string title)
+        public StatusForm(string title, AppSettings appSettings)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
             this.Text = title;
             this.statusLabel.Text = title;
             this.progressLabel.Text = "0%";

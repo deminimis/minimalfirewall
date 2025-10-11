@@ -1,4 +1,4 @@
-﻿// File:MainForm.cs
+﻿// File: MainForm.cs
 using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
@@ -13,6 +13,12 @@ using System.Windows.Forms;
 using System.ComponentModel;
 using MinimalFirewall;
 using System.Collections.Concurrent;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MinimalFirewall
 {
@@ -129,16 +135,18 @@ namespace MinimalFirewall
             _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _firewallPolicy, _wildcardRuleService, _dataService);
             _eventListenerService.ActionsService = _actionsService;
             _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService);
-            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger);
+            _actionsService.BackgroundTaskService = _backgroundTaskService;
+            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
             _backgroundTaskService.QueueCountChanged += OnQueueCountChanged;
             _mainViewModel.PopupRequired += OnPopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
 
-            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _firewallPolicy);
+            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _firewallPolicy, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _firewallPolicy, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
+            wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
             groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
-            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, appIconList);
+            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService);
 
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _mainViewModel.SystemChangesUpdated += () => {
@@ -175,6 +183,7 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            UpdateThemeAndColors();
             ApplyLastWindowState();
         }
 
@@ -187,12 +196,10 @@ namespace MinimalFirewall
             lockdownButton.BackColor = Color.Transparent;
             lockdownButton.Paint += OwnerDrawnButton_Paint;
             rescanButton.Paint += OwnerDrawnButton_Paint;
-
             SetupAppIcons();
             if (!_startMinimized)
             {
                 await DisplayCurrentTabData();
-                UpdateThemeAndColors();
 
                 this.ShowInTaskbar = true;
 
@@ -333,7 +340,6 @@ namespace MinimalFirewall
             this.Refresh();
             lockdownButton.FlatAppearance.BorderColor = this.BackColor;
             rescanButton.FlatAppearance.BorderColor = this.BackColor;
-
             lockdownButton.BringToFront();
             rescanButton.BringToFront();
         }
@@ -451,23 +457,11 @@ namespace MinimalFirewall
                 {
                     this.BeginInvoke(new Action(() =>
                     {
-                        using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath);
+                        using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath, _appSettings);
                         if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
                         {
-                            var newRule = new WildcardRule
-                            {
-                                FolderPath = wildcardDialog.FolderPath,
-                                ExeName = wildcardDialog.ExeName,
-                                Action = wildcardDialog.FinalAction
-                            };
-                            _wildcardRuleService.AddRule(newRule);
-                            var payload = new ApplyApplicationRulePayload
-                            {
-                                AppPaths = new List<string> { pending.AppPath },
-                                Action = newRule.Action,
-                                WildcardSourcePath = newRule.FolderPath
-                            };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+                            var newRule = wildcardDialog.NewRule;
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
                         }
 
                         lock (_popupLock)
@@ -522,7 +516,7 @@ namespace MinimalFirewall
                 var newQueue = new Queue<PendingConnectionViewModel>(
                     _popupQueue.Where(p =>
                         !(p.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                          p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                           p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
                     )
                 );
                 _popupQueue.Clear();
@@ -740,6 +734,7 @@ namespace MinimalFirewall
             _mainViewModel.SystemChanges.Clear();
             auditControl1.ApplySearchFilter();
             groupsControl1.ClearGroups();
+            wildcardRulesControl1.ClearRules();
 
             _dataService.ClearCaches();
             _iconService.ClearCache();
@@ -777,6 +772,9 @@ namespace MinimalFirewall
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
                         break;
+                    case "wildcardRulesTabPage":
+                        wildcardRulesControl1.LoadRules();
+                        break;
                     case "systemChangesTabPage":
                         await ScanForSystemChangesAsync(true);
                         break;
@@ -784,7 +782,7 @@ namespace MinimalFirewall
                         await groupsControl1.OnTabSelectedAsync();
                         break;
                     case "liveConnectionsTabPage":
-                        liveConnectionsControl1.OnTabSelected();
+                        await LoadLiveConnectionsAsync();
                         break;
                 }
             }
@@ -805,7 +803,7 @@ namespace MinimalFirewall
                 statusForm = statusFormInstance;
                 if (showStatus && statusForm == null && this.Visible)
                 {
-                    statusForm = new StatusForm("Scanning firewall rules...");
+                    statusForm = new StatusForm("Scanning firewall rules...", _appSettings);
                     statusForm.Show(this);
                 }
 
@@ -886,7 +884,7 @@ namespace MinimalFirewall
             {
                 if (showStatusWindow && this.Visible)
                 {
-                    _auditStatusForm = new StatusForm("Scanning for system changes...");
+                    _auditStatusForm = new StatusForm("Scanning for system changes...", _appSettings);
                     var progressIndicator = new Progress<int>(p => _auditStatusForm?.UpdateProgress(p));
                     _auditStatusForm.Show(this);
                     progress = progressIndicator;
@@ -903,6 +901,44 @@ namespace MinimalFirewall
                 }
                 if (_auditStatusForm?.IsDisposed == false) _auditStatusForm?.Close();
                 _auditStatusForm = null;
+            }
+        }
+
+        private async Task LoadLiveConnectionsAsync(StatusForm? statusFormInstance = null)
+        {
+            if (_isRefreshingData) return;
+            _scanCts?.Cancel();
+            _scanCts = new CancellationTokenSource();
+            var token = _scanCts.Token;
+            StatusForm? statusForm = null;
+            try
+            {
+                _isRefreshingData = true;
+                statusForm = statusFormInstance;
+                if (statusForm == null && this.Visible)
+                {
+                    statusForm = new StatusForm("Scanning live connections...", _appSettings);
+                    statusForm.Show(this);
+                }
+
+                var progress = new Progress<int>(p => statusForm?.UpdateProgress(p));
+                UpdateUIForRefresh(true);
+
+                await _mainViewModel.RefreshLiveConnectionsAsync(token, progress);
+                liveConnectionsControl1.UpdateLiveConnectionsView();
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            finally
+            {
+                if (statusForm != null && statusFormInstance == null && !statusForm.IsDisposed)
+                {
+                    statusForm.Close();
+                }
+                _isRefreshingData = false;
+                UpdateUIAfterRefresh(true);
             }
         }
         #endregion
@@ -933,6 +969,9 @@ namespace MinimalFirewall
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
                         break;
+                    case "wildcardRulesTabPage":
+                        wildcardRulesControl1.LoadRules();
+                        break;
                     case "systemChangesTabPage":
                         if (!_isSentryServiceStarted)
                         {
@@ -945,7 +984,7 @@ namespace MinimalFirewall
                         await groupsControl1.OnTabSelectedAsync();
                         break;
                     case "liveConnectionsTabPage":
-                        liveConnectionsControl1.OnTabSelected();
+                        await LoadLiveConnectionsAsync();
                         break;
                 }
             }
@@ -957,7 +996,7 @@ namespace MinimalFirewall
             if (e.TabPage == null) return;
             _scanCts?.Cancel();
 
-            var tabsToUnload = new[] { "rulesTabPage", "systemChangesTabPage", "groupsTabPage" };
+            var tabsToUnload = new[] { "rulesTabPage", "systemChangesTabPage", "groupsTabPage", "liveConnectionsTabPage", "wildcardRulesTabPage" };
             if (tabsToUnload.Contains(e.TabPage.Name))
             {
                 if (_tabUnloadTimers.TryGetValue(e.TabPage.Name, out var existingTimer))
@@ -985,6 +1024,9 @@ namespace MinimalFirewall
                     case "rulesTabPage":
                         _mainViewModel.ClearRulesData();
                         break;
+                    case "wildcardRulesTabPage":
+                        wildcardRulesControl1.ClearRules();
+                        break;
                     case "systemChangesTabPage":
                         if (_auditStatusForm?.IsDisposed == false) _auditStatusForm?.Close();
                         _auditStatusForm = null;
@@ -996,6 +1038,9 @@ namespace MinimalFirewall
                         break;
                     case "groupsTabPage":
                         groupsControl1.ClearGroups();
+                        break;
+                    case "liveConnectionsTabPage":
+                        liveConnectionsControl1.OnTabDeselected();
                         break;
                 }
 
@@ -1021,6 +1066,10 @@ namespace MinimalFirewall
                 if (mainTabControl.SelectedTab == systemChangesTabPage)
                 {
                     await ScanForSystemChangesAsync(true);
+                }
+                else if (mainTabControl.SelectedTab == liveConnectionsTabPage)
+                {
+                    await LoadLiveConnectionsAsync();
                 }
                 else
                 {
@@ -1114,7 +1163,7 @@ namespace MinimalFirewall
                 {
                     attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
                     g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-                                0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
                 }
             }
             return newBitmap;
