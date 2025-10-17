@@ -14,8 +14,7 @@ namespace MinimalFirewall
 
         public TemporaryRuleManager()
         {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            _storagePath = Path.Combine(exeDirectory, "temporary_rules.json");
+            _storagePath = ConfigPathManager.GetConfigPath("temporary_rules.json");
             _temporaryRules = Load();
         }
 

@@ -31,6 +31,7 @@ namespace MinimalFirewall
 
         protected override void Dispose(bool disposing)
         {
+
             if (disposing)
             {
                 _autoRefreshTimer?.Dispose();
@@ -53,337 +54,334 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.mainTabControl = new DarkModeForms.FlatTabControl();
-            this.dashboardTabPage = new System.Windows.Forms.TabPage();
-            this.logoPictureBox = new System.Windows.Forms.PictureBox();
-            this.arrowPictureBox = new System.Windows.Forms.PictureBox();
-            this.instructionLabel = new System.Windows.Forms.Label();
-            this.dashboardControl1 = new MinimalFirewall.DashboardControl();
-            this.rulesTabPage = new System.Windows.Forms.TabPage();
-            this.rulesControl1 = new MinimalFirewall.RulesControl();
-            this.wildcardRulesTabPage = new System.Windows.Forms.TabPage();
-            this.wildcardRulesControl1 = new MinimalFirewall.WildcardRulesControl();
-            this.systemChangesTabPage = new System.Windows.Forms.TabPage();
-            this.auditControl1 = new MinimalFirewall.AuditControl();
-            this.groupsTabPage = new System.Windows.Forms.TabPage();
-            this.groupsControl1 = new MinimalFirewall.GroupsControl();
-            this.liveConnectionsTabPage = new System.Windows.Forms.TabPage();
-            this.liveConnectionsControl1 = new MinimalFirewall.LiveConnectionsControl();
-            this.settingsTabPage = new System.Windows.Forms.TabPage();
-            this.settingsControl1 = new MinimalFirewall.SettingsControl();
-            this.appImageList = new System.Windows.Forms.ImageList(this.components);
-            this.lockdownButton = new System.Windows.Forms.Button();
-            this.rescanButton = new System.Windows.Forms.Button();
-            this.mainToolTip = new System.Windows.Forms.ToolTip(this.components);
-            this.appIconList = new System.Windows.Forms.ImageList(this.components);
-            this.mainTabControl.SuspendLayout();
-            this.dashboardTabPage.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.logoPictureBox)).BeginInit();
-            this.logoPictureBox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.arrowPictureBox)).BeginInit();
-            this.rulesTabPage.SuspendLayout();
-            this.wildcardRulesTabPage.SuspendLayout();
-            this.systemChangesTabPage.SuspendLayout();
-            this.groupsTabPage.SuspendLayout();
-            this.liveConnectionsTabPage.SuspendLayout();
-            this.settingsTabPage.SuspendLayout();
-            this.SuspendLayout();
+            mainTabControl = new DarkModeForms.FlatTabControl();
+            dashboardTabPage = new TabPage();
+            logoPictureBox = new PictureBox();
+            arrowPictureBox = new PictureBox();
+            instructionLabel = new Label();
+            dashboardControl1 = new DashboardControl();
+            rulesTabPage = new TabPage();
+            rulesControl1 = new RulesControl();
+            wildcardRulesTabPage = new TabPage();
+            wildcardRulesControl1 = new WildcardRulesControl();
+            systemChangesTabPage = new TabPage();
+            auditControl1 = new AuditControl();
+            groupsTabPage = new TabPage();
+            groupsControl1 = new GroupsControl();
+            liveConnectionsTabPage = new TabPage();
+            liveConnectionsControl1 = new LiveConnectionsControl();
+            settingsTabPage = new TabPage();
+            settingsControl1 = new SettingsControl();
+            appImageList = new ImageList(components);
+            lockdownButton = new Button();
+            rescanButton = new Button();
+            mainToolTip = new ToolTip(components);
+            appIconList = new ImageList(components);
+            mainTabControl.SuspendLayout();
+            dashboardTabPage.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(logoPictureBox)).BeginInit();
+            logoPictureBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(arrowPictureBox)).BeginInit();
+            rulesTabPage.SuspendLayout();
+            wildcardRulesTabPage.SuspendLayout();
+            systemChangesTabPage.SuspendLayout();
+            groupsTabPage.SuspendLayout();
+            liveConnectionsTabPage.SuspendLayout();
+            settingsTabPage.SuspendLayout();
+            SuspendLayout();
             // 
             // mainTabControl
             // 
-            this.mainTabControl.Alignment = System.Windows.Forms.TabAlignment.Left;
-            this.mainTabControl.BorderColor = System.Drawing.SystemColors.ControlDark;
-            this.mainTabControl.Controls.Add(this.dashboardTabPage);
-            this.mainTabControl.Controls.Add(this.rulesTabPage);
-            this.mainTabControl.Controls.Add(this.wildcardRulesTabPage);
-            this.mainTabControl.Controls.Add(this.systemChangesTabPage);
-            this.mainTabControl.Controls.Add(this.groupsTabPage);
-            this.mainTabControl.Controls.Add(this.liveConnectionsTabPage);
-            this.mainTabControl.Controls.Add(this.settingsTabPage);
-            this.mainTabControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.mainTabControl.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
-            this.mainTabControl.ImageList = this.appImageList;
-            this.mainTabControl.ItemSize = new System.Drawing.Size(70, 120);
-            this.mainTabControl.LineColor = System.Drawing.SystemColors.Highlight;
-            this.mainTabControl.Location = new System.Drawing.Point(0, 0);
-            this.mainTabControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.mainTabControl.Multiline = true;
-            this.mainTabControl.Name = "mainTabControl";
-            this.mainTabControl.SelectedForeColor = System.Drawing.SystemColors.HighlightText;
-            this.mainTabControl.SelectedIndex = 0;
-            this.mainTabControl.SelectTabColor = System.Drawing.SystemColors.ControlLight;
-            this.mainTabControl.Size = new System.Drawing.Size(1143, 933);
-            this.mainTabControl.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
-            this.mainTabControl.TabColor = System.Drawing.SystemColors.ControlLight;
-            this.mainTabControl.TabIndex = 0;
-            this.mainTabControl.SelectedIndexChanged += new System.EventHandler(this.MainTabControl_SelectedIndexChanged);
-            this.mainTabControl.Deselecting += new System.Windows.Forms.TabControlCancelEventHandler(this.MainTabControl_Deselecting);
+            mainTabControl.Alignment = TabAlignment.Left;
+            mainTabControl.BorderColor = SystemColors.ControlDark;
+            mainTabControl.Controls.Add(dashboardTabPage);
+            mainTabControl.Controls.Add(rulesTabPage);
+            mainTabControl.Controls.Add(wildcardRulesTabPage);
+            mainTabControl.Controls.Add(systemChangesTabPage);
+            mainTabControl.Controls.Add(groupsTabPage);
+            mainTabControl.Controls.Add(liveConnectionsTabPage);
+            mainTabControl.Controls.Add(settingsTabPage);
+            mainTabControl.Dock = DockStyle.Fill;
+            mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            mainTabControl.ImageList = appImageList;
+            mainTabControl.ItemSize = new Size(70, 120);
+            mainTabControl.LineColor = SystemColors.Highlight;
+            mainTabControl.Location = new Point(0, 0);
+            mainTabControl.Multiline = true;
+            mainTabControl.Name = "mainTabControl";
+            mainTabControl.SelectedForeColor = SystemColors.HighlightText;
+            mainTabControl.SelectedIndex = 0;
+            mainTabControl.SelectTabColor = SystemColors.ControlLight;
+            mainTabControl.Size = new Size(1000, 700);
+            mainTabControl.SizeMode = TabSizeMode.Fixed;
+            mainTabControl.TabColor = SystemColors.ControlLight;
+            mainTabControl.TabIndex = 0;
+            mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
+            mainTabControl.Deselecting += MainTabControl_Deselecting;
             // 
             // dashboardTabPage
             // 
-            this.dashboardTabPage.Controls.Add(this.logoPictureBox);
-            this.dashboardTabPage.Controls.Add(this.dashboardControl1);
-            this.dashboardTabPage.ImageIndex = 7;
-            this.dashboardTabPage.Location = new System.Drawing.Point(124, 4);
-            this.dashboardTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dashboardTabPage.Name = "dashboardTabPage";
-            this.dashboardTabPage.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dashboardTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.dashboardTabPage.TabIndex = 0;
-            this.dashboardTabPage.Text = "Dashboard";
-            this.dashboardTabPage.UseVisualStyleBackColor = true;
+            dashboardTabPage.Controls.Add(logoPictureBox);
+            dashboardTabPage.Controls.Add(dashboardControl1);
+            dashboardTabPage.ImageIndex = 3;
+            dashboardTabPage.Location = new Point(124, 4);
+            dashboardTabPage.Name = "dashboardTabPage";
+            dashboardTabPage.Padding = new Padding(3, 3, 3, 3);
+            dashboardTabPage.Size = new Size(872, 692);
+            dashboardTabPage.TabIndex = 0;
+            dashboardTabPage.Text = "Dashboard";
+            dashboardTabPage.UseVisualStyleBackColor = true;
             // 
             // logoPictureBox
             // 
-            this.logoPictureBox.Controls.Add(this.arrowPictureBox);
-            this.logoPictureBox.Controls.Add(this.instructionLabel);
-            this.logoPictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.logoPictureBox.Location = new System.Drawing.Point(3, 4);
-            this.logoPictureBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.logoPictureBox.Name = "logoPictureBox";
-            this.logoPictureBox.Size = new System.Drawing.Size(1009, 917);
-            this.logoPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-            this.logoPictureBox.TabIndex = 1;
-            this.logoPictureBox.TabStop = false;
+            logoPictureBox.Controls.Add(arrowPictureBox);
+            logoPictureBox.Controls.Add(instructionLabel);
+            logoPictureBox.Dock = DockStyle.Fill;
+            logoPictureBox.Location = new Point(3, 3);
+            logoPictureBox.Name = "logoPictureBox";
+            logoPictureBox.Size = new Size(866, 686);
+            logoPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+            logoPictureBox.TabIndex = 1;
+            logoPictureBox.TabStop = false;
             // 
             // arrowPictureBox
             // 
-            this.arrowPictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.arrowPictureBox.BackColor = System.Drawing.Color.Transparent;
-            this.arrowPictureBox.Location = new System.Drawing.Point(23, 829);
-            this.arrowPictureBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.arrowPictureBox.Name = "arrowPictureBox";
-            this.arrowPictureBox.Size = new System.Drawing.Size(69, 53);
-            this.arrowPictureBox.TabIndex = 3;
-            this.arrowPictureBox.TabStop = false;
-            this.arrowPictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.ArrowPictureBox_Paint);
+            arrowPictureBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            arrowPictureBox.BackColor = Color.Transparent;
+            arrowPictureBox.Location = new Point(20, 620);
+            arrowPictureBox.Name = "arrowPictureBox";
+            arrowPictureBox.Size = new Size(60, 40);
+            arrowPictureBox.TabIndex = 3;
+            arrowPictureBox.TabStop = false;
+            arrowPictureBox.Paint += ArrowPictureBox_Paint;
             // 
             // instructionLabel
             // 
-            this.instructionLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.instructionLabel.AutoSize = true;
-            this.instructionLabel.BackColor = System.Drawing.Color.Transparent;
-            this.instructionLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.instructionLabel.Location = new System.Drawing.Point(23, 789);
-            this.instructionLabel.Name = "instructionLabel";
-            this.instructionLabel.Size = new System.Drawing.Size(304, 20);
-            this.instructionLabel.TabIndex = 2;
-            this.instructionLabel.Text = "Press the lock key to initiate firewall defense.";
+            instructionLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            instructionLabel.AutoSize = true;
+            instructionLabel.BackColor = Color.Transparent;
+            instructionLabel.Font = new Font("Segoe UI", 9F);
+            instructionLabel.Location = new Point(20, 590);
+            instructionLabel.Name = "instructionLabel";
+            instructionLabel.Size = new Size(241, 15);
+            instructionLabel.TabIndex = 2;
+            instructionLabel.Text = "Press the lock key to initiate firewall defense.";
             // 
             // dashboardControl1
             // 
-            this.dashboardControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dashboardControl1.Location = new System.Drawing.Point(3, 4);
-            this.dashboardControl1.Name = "dashboardControl1";
-            this.dashboardControl1.Size = new System.Drawing.Size(1009, 917);
-            this.dashboardControl1.TabIndex = 2;
+            dashboardControl1.Dock = DockStyle.Fill;
+            dashboardControl1.Location = new Point(3, 3);
+            dashboardControl1.Margin = new Padding(3, 2, 3, 2);
+            dashboardControl1.Name = "dashboardControl1";
+            dashboardControl1.Size = new Size(866, 686);
+            dashboardControl1.TabIndex = 2;
             // 
             // rulesTabPage
             // 
-            this.rulesTabPage.Controls.Add(this.rulesControl1);
-            this.rulesTabPage.ImageIndex = 5;
-            this.rulesTabPage.Location = new System.Drawing.Point(124, 4);
-            this.rulesTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rulesTabPage.Name = "rulesTabPage";
-            this.rulesTabPage.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rulesTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.rulesTabPage.TabIndex = 1;
-            this.rulesTabPage.Text = "Rules";
-            this.rulesTabPage.UseVisualStyleBackColor = true;
+            rulesTabPage.Controls.Add(rulesControl1);
+            rulesTabPage.ImageIndex = 8;
+            rulesTabPage.Location = new Point(124, 4);
+            rulesTabPage.Name = "rulesTabPage";
+            rulesTabPage.Padding = new Padding(3, 3, 3, 3);
+            rulesTabPage.Size = new Size(872, 692);
+            rulesTabPage.TabIndex = 1;
+            rulesTabPage.Text = "Rules";
+            rulesTabPage.UseVisualStyleBackColor = true;
             // 
             // rulesControl1
             // 
-            this.rulesControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.rulesControl1.Location = new System.Drawing.Point(3, 4);
-            this.rulesControl1.Name = "rulesControl1";
-            this.rulesControl1.Size = new System.Drawing.Size(1009, 917);
-            this.rulesControl1.TabIndex = 0;
+            rulesControl1.Dock = DockStyle.Fill;
+            rulesControl1.Location = new Point(3, 3);
+            rulesControl1.Margin = new Padding(3, 2, 3, 2);
+            rulesControl1.Name = "rulesControl1";
+            rulesControl1.Size = new Size(866, 686);
+            rulesControl1.TabIndex = 0;
             // 
             // wildcardRulesTabPage
             // 
-            this.wildcardRulesTabPage.Controls.Add(this.wildcardRulesControl1);
-            this.wildcardRulesTabPage.ImageIndex = 5;
-            this.wildcardRulesTabPage.Location = new System.Drawing.Point(124, 4);
-            this.wildcardRulesTabPage.Name = "wildcardRulesTabPage";
-            this.wildcardRulesTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.wildcardRulesTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.wildcardRulesTabPage.TabIndex = 7;
-            this.wildcardRulesTabPage.Text = "Wildcard Rules";
-            this.wildcardRulesTabPage.UseVisualStyleBackColor = true;
+            wildcardRulesTabPage.Controls.Add(wildcardRulesControl1);
+            wildcardRulesTabPage.ImageIndex = 11;
+            wildcardRulesTabPage.Location = new Point(124, 4);
+            wildcardRulesTabPage.Margin = new Padding(3, 2, 3, 2);
+            wildcardRulesTabPage.Name = "wildcardRulesTabPage";
+            wildcardRulesTabPage.Padding = new Padding(3, 2, 3, 2);
+            wildcardRulesTabPage.Size = new Size(872, 692);
+            wildcardRulesTabPage.TabIndex = 7;
+            wildcardRulesTabPage.Text = "Wildcard Rules";
+            wildcardRulesTabPage.UseVisualStyleBackColor = true;
             // 
             // wildcardRulesControl1
             // 
-            this.wildcardRulesControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.wildcardRulesControl1.Location = new System.Drawing.Point(3, 3);
-            this.wildcardRulesControl1.Name = "wildcardRulesControl1";
-            this.wildcardRulesControl1.Size = new System.Drawing.Size(1009, 919);
-            this.wildcardRulesControl1.TabIndex = 0;
+            wildcardRulesControl1.Dock = DockStyle.Fill;
+            wildcardRulesControl1.Location = new Point(3, 2);
+            wildcardRulesControl1.Margin = new Padding(3, 2, 3, 2);
+            wildcardRulesControl1.Name = "wildcardRulesControl1";
+            wildcardRulesControl1.Size = new Size(866, 688);
+            wildcardRulesControl1.TabIndex = 0;
             // 
             // systemChangesTabPage
             // 
-            this.systemChangesTabPage.Controls.Add(this.auditControl1);
-            this.systemChangesTabPage.ImageIndex = 3;
-            this.systemChangesTabPage.Location = new System.Drawing.Point(124, 4);
-            this.systemChangesTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.systemChangesTabPage.Name = "systemChangesTabPage";
-            this.systemChangesTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.systemChangesTabPage.TabIndex = 2;
-            this.systemChangesTabPage.Text = "Audit";
-            this.systemChangesTabPage.UseVisualStyleBackColor = true;
+            systemChangesTabPage.Controls.Add(auditControl1);
+            systemChangesTabPage.ImageIndex = 1;
+            systemChangesTabPage.Location = new Point(124, 4);
+            systemChangesTabPage.Name = "systemChangesTabPage";
+            systemChangesTabPage.Size = new Size(872, 692);
+            systemChangesTabPage.TabIndex = 2;
+            systemChangesTabPage.Text = "Audit";
+            systemChangesTabPage.UseVisualStyleBackColor = true;
             // 
             // auditControl1
             // 
-            this.auditControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.auditControl1.Location = new System.Drawing.Point(0, 0);
-            this.auditControl1.Name = "auditControl1";
-            this.auditControl1.Size = new System.Drawing.Size(1015, 925);
-            this.auditControl1.TabIndex = 0;
+            auditControl1.Dock = DockStyle.Fill;
+            auditControl1.Location = new Point(0, 0);
+            auditControl1.Margin = new Padding(3, 2, 3, 2);
+            auditControl1.Name = "auditControl1";
+            auditControl1.Size = new Size(872, 692);
+            auditControl1.TabIndex = 0;
             // 
             // groupsTabPage
             // 
-            this.groupsTabPage.Controls.Add(this.groupsControl1);
-            this.groupsTabPage.ImageIndex = 5;
-            this.groupsTabPage.Location = new System.Drawing.Point(124, 4);
-            this.groupsTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.groupsTabPage.Name = "groupsTabPage";
-            this.groupsTabPage.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.groupsTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.groupsTabPage.TabIndex = 5;
-            this.groupsTabPage.Text = "Groups";
-            this.groupsTabPage.UseVisualStyleBackColor = true;
+            groupsTabPage.Controls.Add(groupsControl1);
+            groupsTabPage.ImageIndex = 4;
+            groupsTabPage.Location = new Point(124, 4);
+            groupsTabPage.Name = "groupsTabPage";
+            groupsTabPage.Padding = new Padding(3, 3, 3, 3);
+            groupsTabPage.Size = new Size(872, 692);
+            groupsTabPage.TabIndex = 5;
+            groupsTabPage.Text = "Groups";
+            groupsTabPage.UseVisualStyleBackColor = true;
             // 
             // groupsControl1
             // 
-            this.groupsControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupsControl1.Location = new System.Drawing.Point(3, 4);
-            this.groupsControl1.Name = "groupsControl1";
-            this.groupsControl1.Size = new System.Drawing.Size(1009, 917);
-            this.groupsControl1.TabIndex = 0;
+            groupsControl1.Dock = DockStyle.Fill;
+            groupsControl1.Location = new Point(3, 3);
+            groupsControl1.Margin = new Padding(3, 2, 3, 2);
+            groupsControl1.Name = "groupsControl1";
+            groupsControl1.Size = new Size(866, 686);
+            groupsControl1.TabIndex = 0;
             // 
             // liveConnectionsTabPage
             // 
-            this.liveConnectionsTabPage.Controls.Add(this.liveConnectionsControl1);
-            this.liveConnectionsTabPage.ImageIndex = 10;
-            this.liveConnectionsTabPage.Location = new System.Drawing.Point(124, 4);
-            this.liveConnectionsTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.liveConnectionsTabPage.Name = "liveConnectionsTabPage";
-            this.liveConnectionsTabPage.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.liveConnectionsTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.liveConnectionsTabPage.TabIndex = 6;
-            this.liveConnectionsTabPage.Text = "Live Connections";
-            this.liveConnectionsTabPage.UseVisualStyleBackColor = true;
+            liveConnectionsTabPage.Controls.Add(liveConnectionsControl1);
+            liveConnectionsTabPage.ImageIndex = 0;
+            liveConnectionsTabPage.Location = new Point(124, 4);
+            liveConnectionsTabPage.Name = "liveConnectionsTabPage";
+            liveConnectionsTabPage.Padding = new Padding(3, 3, 3, 3);
+            liveConnectionsTabPage.Size = new Size(872, 692);
+            liveConnectionsTabPage.TabIndex = 6;
+            liveConnectionsTabPage.Text = "Live Connections";
+            liveConnectionsTabPage.UseVisualStyleBackColor = true;
             // 
             // liveConnectionsControl1
             // 
-            this.liveConnectionsControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.liveConnectionsControl1.Location = new System.Drawing.Point(3, 4);
-            this.liveConnectionsControl1.Name = "liveConnectionsControl1";
-            this.liveConnectionsControl1.Size = new System.Drawing.Size(1009, 917);
-            this.liveConnectionsControl1.TabIndex = 0;
+            liveConnectionsControl1.Dock = DockStyle.Fill;
+            liveConnectionsControl1.Location = new Point(3, 3);
+            liveConnectionsControl1.Margin = new Padding(3, 2, 3, 2);
+            liveConnectionsControl1.Name = "liveConnectionsControl1";
+            liveConnectionsControl1.Size = new Size(866, 686);
+            liveConnectionsControl1.TabIndex = 0;
             // 
             // settingsTabPage
             // 
-            this.settingsTabPage.Controls.Add(this.settingsControl1);
-            this.settingsTabPage.ImageIndex = 6;
-            this.settingsTabPage.Location = new System.Drawing.Point(124, 4);
-            this.settingsTabPage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.settingsTabPage.Name = "settingsTabPage";
-            this.settingsTabPage.Size = new System.Drawing.Size(1015, 925);
-            this.settingsTabPage.TabIndex = 4;
-            this.settingsTabPage.Text = "Settings";
-            this.settingsTabPage.UseVisualStyleBackColor = true;
+            settingsTabPage.Controls.Add(settingsControl1);
+            settingsTabPage.ImageIndex = 9;
+            settingsTabPage.Location = new Point(124, 4);
+            settingsTabPage.Name = "settingsTabPage";
+            settingsTabPage.Size = new Size(872, 692);
+            settingsTabPage.TabIndex = 4;
+            settingsTabPage.Text = "Settings";
+            settingsTabPage.UseVisualStyleBackColor = true;
             // 
             // settingsControl1
             // 
-            this.settingsControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.settingsControl1.Location = new System.Drawing.Point(0, 0);
-            this.settingsControl1.Name = "settingsControl1";
-            this.settingsControl1.Size = new System.Drawing.Size(1015, 925);
-            this.settingsControl1.TabIndex = 0;
+            settingsControl1.Dock = DockStyle.Fill;
+            settingsControl1.Location = new Point(0, 0);
+            settingsControl1.Margin = new Padding(3, 2, 3, 2);
+            settingsControl1.Name = "settingsControl1";
+            settingsControl1.Size = new Size(872, 692);
+            settingsControl1.TabIndex = 0;
             // 
             // appImageList
             // 
-            this.appImageList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
-            this.appImageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("appImageList.ImageStream")));
-            this.appImageList.TransparentColor = System.Drawing.Color.Transparent;
-            this.appImageList.Images.SetKeyName(0, "coffee.png");
-            this.appImageList.Images.SetKeyName(1, "refresh.png");
-            this.appImageList.Images.SetKeyName(2, "rules.png");
-            this.appImageList.Images.SetKeyName(3, "system_changes.png");
-            this.appImageList.Images.SetKeyName(4, "locked.png");
-            this.appImageList.Images.SetKeyName(5, "advanced.png");
-            this.appImageList.Images.SetKeyName(6, "settings.png");
-            this.appImageList.Images.SetKeyName(7, "dashboard.png");
-            this.appImageList.Images.SetKeyName(8, "unlocked.png");
-            this.appImageList.Images.SetKeyName(9, "logo.png");
-            this.appImageList.Images.SetKeyName(10, "antenna.png");
+            appImageList.ColorDepth = ColorDepth.Depth32Bit;
+            appImageList.ImageStream = (ImageListStreamer)resources.GetObject("appImageList.ImageStream");
+            appImageList.TransparentColor = Color.Transparent;
+            appImageList.Images.SetKeyName(0, "antenna.png");
+            appImageList.Images.SetKeyName(1, "audit.png");
+            appImageList.Images.SetKeyName(2, "coffee.png");
+            appImageList.Images.SetKeyName(3, "dashboard.png");
+            appImageList.Images.SetKeyName(4, "groups.png");
+            appImageList.Images.SetKeyName(5, "locked.png");
+            appImageList.Images.SetKeyName(6, "logo.png");
+            appImageList.Images.SetKeyName(7, "refresh.png");
+            appImageList.Images.SetKeyName(8, "rules.png");
+            appImageList.Images.SetKeyName(9, "settings.png");
+            appImageList.Images.SetKeyName(10, "unlocked.png");
+            appImageList.Images.SetKeyName(11, "wildcard.png");
             // 
             // lockdownButton
             // 
-            this.lockdownButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.lockdownButton.BackColor = System.Drawing.Color.Transparent;
-            this.lockdownButton.FlatAppearance.BorderColor = System.Drawing.SystemColors.Control;
-            this.lockdownButton.FlatAppearance.BorderSize = 2;
-            this.lockdownButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.lockdownButton.Location = new System.Drawing.Point(74, 869);
-            this.lockdownButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.lockdownButton.Name = "lockdownButton";
-            this.lockdownButton.Size = new System.Drawing.Size(46, 48);
-            this.lockdownButton.TabIndex = 3;
-            this.lockdownButton.UseVisualStyleBackColor = false;
-            this.lockdownButton.Click += new System.EventHandler(this.ToggleLockdownButton_Click);
-            this.lockdownButton.MouseEnter += new System.EventHandler(this.LockdownButton_MouseEnter);
-            this.lockdownButton.MouseLeave += new System.EventHandler(this.LockdownButton_MouseLeave);
+            lockdownButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lockdownButton.BackColor = Color.Transparent;
+            lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
+            lockdownButton.FlatAppearance.BorderSize = 2;
+            lockdownButton.FlatStyle = FlatStyle.Flat;
+            lockdownButton.Location = new Point(65, 652);
+            lockdownButton.Name = "lockdownButton";
+            lockdownButton.Size = new Size(40, 36);
+            lockdownButton.TabIndex = 3;
+            lockdownButton.UseVisualStyleBackColor = false;
+            lockdownButton.Click += ToggleLockdownButton_Click;
+            lockdownButton.MouseEnter += LockdownButton_MouseEnter;
+            lockdownButton.MouseLeave += LockdownButton_MouseLeave;
             // 
             // rescanButton
             // 
-            this.rescanButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.rescanButton.BackColor = System.Drawing.Color.Transparent;
-            this.rescanButton.FlatAppearance.BorderColor = System.Drawing.SystemColors.Control;
-            this.rescanButton.FlatAppearance.BorderSize = 2;
-            this.rescanButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.rescanButton.Location = new System.Drawing.Point(17, 869);
-            this.rescanButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rescanButton.Name = "rescanButton";
-            this.rescanButton.Size = new System.Drawing.Size(46, 48);
-            this.rescanButton.TabIndex = 1;
-            this.rescanButton.UseVisualStyleBackColor = false;
-            this.rescanButton.Click += new System.EventHandler(this.RescanButton_Click);
-            this.rescanButton.MouseEnter += new System.EventHandler(this.RescanButton_MouseEnter);
-            this.rescanButton.MouseLeave += new System.EventHandler(this.RescanButton_MouseLeave);
+            rescanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            rescanButton.BackColor = Color.Transparent;
+            rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
+            rescanButton.FlatAppearance.BorderSize = 2;
+            rescanButton.FlatStyle = FlatStyle.Flat;
+            rescanButton.Location = new Point(15, 652);
+            rescanButton.Name = "rescanButton";
+            rescanButton.Size = new Size(40, 36);
+            rescanButton.TabIndex = 1;
+            rescanButton.UseVisualStyleBackColor = false;
+            rescanButton.Click += RescanButton_Click;
+            rescanButton.MouseEnter += RescanButton_MouseEnter;
+            rescanButton.MouseLeave += RescanButton_MouseLeave;
             // 
             // appIconList
             // 
-            this.appIconList.ColorDepth = System.Windows.Forms.ColorDepth.Depth32Bit;
-            this.appIconList.ImageSize = new System.Drawing.Size(32, 32);
-            this.appIconList.TransparentColor = System.Drawing.Color.Transparent;
+            appIconList.ColorDepth = ColorDepth.Depth32Bit;
+            appIconList.ImageSize = new Size(32, 32);
+            appIconList.TransparentColor = Color.Transparent;
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1143, 933);
-            this.Controls.Add(this.rescanButton);
-            this.Controls.Add(this.lockdownButton);
-            this.Controls.Add(this.mainTabControl);
-            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.Name = "MainForm";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
-            this.mainTabControl.ResumeLayout(false);
-            this.dashboardTabPage.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.logoPictureBox)).EndInit();
-            this.logoPictureBox.ResumeLayout(false);
-            this.logoPictureBox.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.arrowPictureBox)).EndInit();
-            this.rulesTabPage.ResumeLayout(false);
-            this.wildcardRulesTabPage.ResumeLayout(false);
-            this.systemChangesTabPage.ResumeLayout(false);
-            this.groupsTabPage.ResumeLayout(false);
-            this.liveConnectionsTabPage.ResumeLayout(false);
-            this.settingsTabPage.ResumeLayout(false);
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1000, 700);
+            Controls.Add(rescanButton);
+            Controls.Add(lockdownButton);
+            Controls.Add(mainTabControl);
+            Name = "MainForm";
+            FormClosing += MainForm_FormClosing;
+            mainTabControl.ResumeLayout(false);
+            dashboardTabPage.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(logoPictureBox)).EndInit();
+            logoPictureBox.ResumeLayout(false);
+            logoPictureBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(arrowPictureBox)).EndInit();
+            rulesTabPage.ResumeLayout(false);
+            wildcardRulesTabPage.ResumeLayout(false);
+            systemChangesTabPage.ResumeLayout(false);
+            groupsTabPage.ResumeLayout(false);
+            liveConnectionsTabPage.ResumeLayout(false);
+            settingsTabPage.ResumeLayout(false);
+            ResumeLayout(false);
 
         }
         #endregion

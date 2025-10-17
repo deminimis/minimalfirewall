@@ -20,8 +20,6 @@ namespace MinimalFirewall
         private FirewallSentryService _firewallSentryService;
         private DarkModeCS _dm;
         private BindingSource _bindingSource;
-        private int _sortColumn = -1;
-        private SortOrder _sortOrder = SortOrder.None;
         public AuditControl()
         {
             InitializeComponent();
@@ -47,8 +45,6 @@ namespace MinimalFirewall
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
 
             auditSearchTextBox.Text = _appSettings.AuditSearchText;
-            _sortColumn = _appSettings.AuditSortColumn;
-            _sortOrder = (SortOrder)_appSettings.AuditSortOrder;
         }
 
         private void OnSystemChangesUpdated()
@@ -82,11 +78,22 @@ namespace MinimalFirewall
             string searchText = auditSearchTextBox.Text;
 
             var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
-                _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c => c.Rule?.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
-                                                   c.Rule?.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
-                                                   c.Rule?.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true);
+                _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c => c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                                                    c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                                                   c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase));
 
             _bindingSource.DataSource = new SortableBindingList<FirewallRuleChange>(filteredChanges.ToList());
+
+            int sortCol = _appSettings.AuditSortColumn;
+            var sortOrder = (SortOrder)_appSettings.AuditSortOrder;
+
+            if (sortCol > -1 && sortOrder != SortOrder.None)
+            {
+                var column = systemChangesDataGridView.Columns[sortCol];
+                var direction = sortOrder == SortOrder.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                systemChangesDataGridView.Sort(column, direction);
+            }
+
             _bindingSource.ResetBindings(false);
             systemChangesDataGridView.Refresh();
         }
@@ -106,7 +113,6 @@ namespace MinimalFirewall
             if (_viewModel != null)
             {
                 var result = DarkModeForms.Messenger.MessageBox("This will clear all accepted (hidden) rules from the Audit list, causing them to be displayed again. Are you sure?", "Clear Accepted Rules", MessageBoxButtons.YesNo,
-
                                        MessageBoxIcon.Warning);
                 if (result != DialogResult.Yes) return;
 
@@ -122,36 +128,13 @@ namespace MinimalFirewall
 
         private void systemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            var column = systemChangesDataGridView.Columns[e.ColumnIndex];
-            string propertyName = column.DataPropertyName;
-            if (string.IsNullOrEmpty(propertyName)) return;
+            if (e.ColumnIndex < 0) return;
 
-            if (propertyName.StartsWith("Rule."))
-            {
-                propertyName = propertyName.Substring(5);
-            }
-
-            var sortDirection = ListSortDirection.Ascending;
-            if (systemChangesDataGridView.SortedColumn?.Name == column.Name && systemChangesDataGridView.SortOrder == SortOrder.Ascending)
-            {
-                sortDirection = ListSortDirection.Descending;
-            }
-
-            if (_bindingSource.DataSource is SortableBindingList<FirewallRuleChange> list)
-            {
-                list.Sort(propertyName, sortDirection);
-            }
-
-            systemChangesDataGridView.Sort(column, sortDirection);
+            var newColumn = systemChangesDataGridView.Columns[e.ColumnIndex];
+            var sortOrder = systemChangesDataGridView.SortOrder;
 
             _appSettings.AuditSortColumn = e.ColumnIndex;
-            _appSettings.AuditSortOrder = (int)(sortDirection == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending);
-        }
-
-        private static object GetPropertyValue(object obj, string propertyName)
-        {
-            if (obj == null || string.IsNullOrEmpty(propertyName)) return string.Empty;
-            return obj.GetType().GetProperty(propertyName)?.GetValue(obj, null) ?? string.Empty;
+            _appSettings.AuditSortOrder = (int)sortOrder;
         }
 
         private bool TryGetSelectedAppContext(out string? appPath)
@@ -164,7 +147,7 @@ namespace MinimalFirewall
 
             if (systemChangesDataGridView.SelectedRows[0].DataBoundItem is FirewallRuleChange change)
             {
-                appPath = change.Rule?.ApplicationName;
+                appPath = change.ApplicationName;
             }
 
             return !string.IsNullOrEmpty(appPath);
@@ -222,18 +205,15 @@ namespace MinimalFirewall
                         }
 
                         details.AppendLine($"Type: Audited Change ({change.Type})");
-                        if (change.Rule != null)
-                        {
-                            details.AppendLine($"Rule Name: {change.Rule.Name}");
-                            details.AppendLine($"Application: {change.Rule.ApplicationName}");
-                            details.AppendLine($"Action: {change.Rule.Status}");
-                            details.AppendLine($"Direction: {change.Rule.Direction}");
-                            details.AppendLine($"Protocol: {change.Rule.ProtocolName}");
-                            details.AppendLine($"Local Ports: {change.Rule.LocalPorts}");
-                            details.AppendLine($"Remote Ports: {change.Rule.RemotePorts}");
-                            details.AppendLine($"Local Addresses: {change.Rule.LocalAddresses}");
-                            details.AppendLine($"Remote Addresses: {change.Rule.RemoteAddresses}");
-                        }
+                        details.AppendLine($"Rule Name: {change.Name}");
+                        details.AppendLine($"Application: {change.ApplicationName}");
+                        details.AppendLine($"Action: {change.Status}");
+                        details.AppendLine($"Direction: {change.Rule.Direction}");
+                        details.AppendLine($"Protocol: {change.ProtocolName}");
+                        details.AppendLine($"Local Ports: {change.LocalPorts}");
+                        details.AppendLine($"Remote Ports: {change.RemotePorts}");
+                        details.AppendLine($"Local Addresses: {change.LocalAddresses}");
+                        details.AppendLine($"Remote Addresses: {change.RemoteAddresses}");
                     }
                 }
 
@@ -270,21 +250,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex < 0) return;
             var grid = (DataGridView)sender;
-            if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change || change.Rule == null) return;
-
-            var column = grid.Columns[e.ColumnIndex];
-            if (column == advNameColumn) e.Value = change.Rule.Name;
-            else if (column == advStatusColumn) e.Value = change.Rule.Status;
-            else if (column == advProtocolColumn) e.Value = change.Rule.ProtocolName;
-            else if (column == advLocalPortsColumn) e.Value = change.Rule.LocalPorts;
-            else if (column == advRemotePortsColumn) e.Value = change.Rule.RemotePorts;
-            else if (column == advLocalAddressColumn) e.Value = change.Rule.LocalAddresses;
-            else if (column == advRemoteAddressColumn) e.Value = change.Rule.RemoteAddresses;
-            else if (column == advProgramColumn) e.Value = change.Rule.ApplicationName;
-            else if (column == advServiceColumn) e.Value = change.Rule.ServiceName;
-            else if (column == advProfilesColumn) e.Value = change.Rule.Profiles;
-            else if (column == advGroupingColumn) e.Value = change.Rule.Grouping;
-            else if (column == advDescColumn) e.Value = change.Rule.Description;
+            if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
 
             Color rowBackColor;
             switch (change.Type)
@@ -293,7 +259,7 @@ namespace MinimalFirewall
                     rowBackColor = Color.FromArgb(204, 255, 204);
                     break;
                 case ChangeType.Modified:
-                    rowBackColor = change.Rule.Status.Contains("Allow", StringComparison.OrdinalIgnoreCase)
+                    rowBackColor = change.Status.Contains("Allow", StringComparison.OrdinalIgnoreCase)
                         ? Color.FromArgb(204, 255, 204)
                         : Color.FromArgb(255, 204, 204);
                     break;
@@ -305,6 +271,7 @@ namespace MinimalFirewall
                     break;
             }
 
+            var column = grid.Columns[e.ColumnIndex];
             if (column.Name == "acceptButtonColumn")
             {
                 e.CellStyle.BackColor = Color.FromArgb(108, 117, 125);

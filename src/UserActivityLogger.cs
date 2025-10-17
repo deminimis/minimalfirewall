@@ -14,9 +14,8 @@ namespace MinimalFirewall
 
         public UserActivityLogger()
         {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            _debugLogFilePath = Path.Combine(exeDirectory, "debug_log.txt");
-            _changeLogFilePath = Path.Combine(exeDirectory, "changelog.json");
+            _debugLogFilePath = ConfigPathManager.GetConfigPath("debug_log.txt");
+            _changeLogFilePath = ConfigPathManager.GetConfigPath("changelog.json");
         }
 
         public void LogChange(string action, string details)

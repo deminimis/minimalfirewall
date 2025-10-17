@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File: LiveConnectionsControl.Designer.cs
+namespace MinimalFirewall
 {
     partial class LiveConnectionsControl
     {
@@ -17,6 +18,11 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn remoteAddressColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn remotePortColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn stateColumn;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripMenuItem createRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem filePropertiesToolStripMenuItem;
 
         protected override void Dispose(bool disposing)
         {
@@ -36,7 +42,12 @@
             this.liveConnectionsDisabledLabel = new System.Windows.Forms.Label();
             this.liveConnectionsContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.killProcessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.blockRemoteIPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.createRuleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.filePropertiesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.liveConnectionsDataGridView = new System.Windows.Forms.DataGridView();
@@ -68,35 +79,72 @@
             this.liveConnectionsContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.liveConnectionsContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.killProcessToolStripMenuItem,
+            this.toolStripSeparator2,
             this.blockRemoteIPToolStripMenuItem,
+            this.createRuleToolStripMenuItem,
+            this.toolStripSeparator3,
+            this.openFileLocationToolStripMenuItem,
+            this.filePropertiesToolStripMenuItem,
             this.toolStripSeparator1,
             this.copyDetailsToolStripMenuItem});
             this.liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
-            this.liveConnectionsContextMenu.Size = new System.Drawing.Size(186, 82);
+            this.liveConnectionsContextMenu.Size = new System.Drawing.Size(262, 170);
+            this.liveConnectionsContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.liveConnectionsContextMenu_Opening);
             // 
             // killProcessToolStripMenuItem
             // 
             this.killProcessToolStripMenuItem.Name = "killProcessToolStripMenuItem";
-            this.killProcessToolStripMenuItem.Size = new System.Drawing.Size(185, 24);
+            this.killProcessToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
             this.killProcessToolStripMenuItem.Text = "Kill Process";
             this.killProcessToolStripMenuItem.Click += new System.EventHandler(this.killProcessToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(258, 6);
             // 
             // blockRemoteIPToolStripMenuItem
             // 
             this.blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
-            this.blockRemoteIPToolStripMenuItem.Size = new System.Drawing.Size(185, 24);
+            this.blockRemoteIPToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
             this.blockRemoteIPToolStripMenuItem.Text = "Block Remote IP";
             this.blockRemoteIPToolStripMenuItem.Click += new System.EventHandler(this.blockRemoteIPToolStripMenuItem_Click);
+            // 
+            // createRuleToolStripMenuItem
+            // 
+            this.createRuleToolStripMenuItem.Name = "createRuleToolStripMenuItem";
+            this.createRuleToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
+            this.createRuleToolStripMenuItem.Text = "Create Rule for this Process...";
+            this.createRuleToolStripMenuItem.Click += new System.EventHandler(this.createRuleToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(258, 6);
+            // 
+            // openFileLocationToolStripMenuItem
+            // 
+            this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
+            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
+            this.openFileLocationToolStripMenuItem.Text = "Open File Location";
+            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem_Click);
+            // 
+            // filePropertiesToolStripMenuItem
+            // 
+            this.filePropertiesToolStripMenuItem.Name = "filePropertiesToolStripMenuItem";
+            this.filePropertiesToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
+            this.filePropertiesToolStripMenuItem.Text = "File Properties";
+            this.filePropertiesToolStripMenuItem.Click += new System.EventHandler(this.filePropertiesToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(182, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(258, 6);
             // 
             // copyDetailsToolStripMenuItem
             // 
             this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
-            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(185, 24);
+            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(261, 24);
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
             this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
             // 
@@ -219,6 +267,7 @@
             this.liveConnectionsContextMenu.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.liveConnectionsDataGridView)).EndInit();
             this.ResumeLayout(false);
+
         }
         #endregion
     }

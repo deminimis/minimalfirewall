@@ -7,22 +7,18 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
+
 namespace MinimalFirewall
 {
     public class AppSettings : INotifyPropertyChanged
     {
-        private static string GetSettingsPath()
-        {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            return Path.Combine(exeDirectory, "settings.json");
-        }
-
-        private static readonly string _configPath = GetSettingsPath();
+        private static readonly string _configPath = ConfigPathManager.GetSettingsPath();
         private bool _isPopupsEnabled = false;
         private bool _isLoggingEnabled;
         private string _theme = "Dark";
         private bool _startOnSystemStartup;
         private bool _closeToTray = true;
+        private bool _useAppDataStorage = false;
         private int _autoRefreshIntervalMinutes = 10;
         private bool _isTrafficMonitorEnabled = false;
         private bool _showAppIcons = true;
@@ -47,6 +43,7 @@ namespace MinimalFirewall
         public string Theme { get => _theme; set => SetField(ref _theme, value); }
         public bool StartOnSystemStartup { get => _startOnSystemStartup; set => SetField(ref _startOnSystemStartup, value); }
         public bool CloseToTray { get => _closeToTray; set => SetField(ref _closeToTray, value); }
+        public bool UseAppDataStorage { get => _useAppDataStorage; set => SetField(ref _useAppDataStorage, value); }
         public int AutoRefreshIntervalMinutes { get => _autoRefreshIntervalMinutes; set => SetField(ref _autoRefreshIntervalMinutes, value); }
         public bool IsTrafficMonitorEnabled { get => _isTrafficMonitorEnabled; set => SetField(ref _isTrafficMonitorEnabled, value); }
         public bool ShowAppIcons { get => _showAppIcons; set => SetField(ref _showAppIcons, value); }

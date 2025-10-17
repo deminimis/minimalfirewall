@@ -47,6 +47,7 @@ namespace MinimalFirewall
             this.importMergeButton = new System.Windows.Forms.Button();
             this.exportRulesButton = new System.Windows.Forms.Button();
             this.cleanUpOrphanedRulesButton = new System.Windows.Forms.Button();
+            this.useAppDataSwitch = new System.Windows.Forms.CheckBox();
             this.coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.coffeePictureBox)).BeginInit();
             this.mainSettingsPanel.SuspendLayout();
@@ -339,6 +340,7 @@ namespace MinimalFirewall
             // mainSettingsPanel
             // 
             this.mainSettingsPanel.AutoScroll = true;
+            this.mainSettingsPanel.Controls.Add(this.useAppDataSwitch);
             this.mainSettingsPanel.Controls.Add(this.importReplaceButton);
             this.mainSettingsPanel.Controls.Add(this.importMergeButton);
             this.mainSettingsPanel.Controls.Add(this.exportRulesButton);
@@ -423,6 +425,18 @@ namespace MinimalFirewall
             this.cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
             this.cleanUpOrphanedRulesButton.Click += new System.EventHandler(this.cleanUpOrphanedRulesButton_Click);
             // 
+            // useAppDataSwitch
+            // 
+            this.useAppDataSwitch.AutoSize = true;
+            this.useAppDataSwitch.Location = new System.Drawing.Point(350, 247);
+            this.useAppDataSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.useAppDataSwitch.Name = "useAppDataSwitch";
+            this.useAppDataSwitch.Size = new System.Drawing.Size(247, 24);
+            this.useAppDataSwitch.TabIndex = 31;
+            this.useAppDataSwitch.Text = "Store config files in %AppData%";
+            this.useAppDataSwitch.UseVisualStyleBackColor = true;
+            this.useAppDataSwitch.CheckedChanged += new System.EventHandler(this.useAppDataSwitch_CheckedChanged);
+            // 
             // SettingsControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -469,5 +483,6 @@ namespace MinimalFirewall
         private Button importReplaceButton;
         private Button importMergeButton;
         private Button exportRulesButton;
+        private CheckBox useAppDataSwitch;
     }
 }
