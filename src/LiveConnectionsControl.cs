@@ -11,6 +11,8 @@ using System.Linq;
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Runtime.InteropServices;
+using NetFwTypeLib;
 
 namespace MinimalFirewall
 {
@@ -21,6 +23,8 @@ namespace MinimalFirewall
         private IconService _iconService;
         private BackgroundFirewallTaskService _backgroundTaskService;
         private BindingSource _bindingSource;
+        private FirewallActionsService _actionsService;
+        private INetFwPolicy2 _firewallPolicy;
 
         private int _sortColumn = -1;
         private SortOrder _sortOrder = SortOrder.None;
@@ -35,13 +39,17 @@ namespace MinimalFirewall
             TrafficMonitorViewModel trafficMonitorViewModel,
             AppSettings appSettings,
             IconService iconService,
-            BackgroundFirewallTaskService backgroundTaskService)
+            BackgroundFirewallTaskService backgroundTaskService,
+            FirewallActionsService actionsService,
+            INetFwPolicy2 firewallPolicy)
         {
             _trafficMonitorViewModel =
                        trafficMonitorViewModel;
             _appSettings = appSettings;
             _iconService = iconService;
             _backgroundTaskService = backgroundTaskService;
+            _actionsService = actionsService;
+            _firewallPolicy = firewallPolicy;
 
             liveConnectionsDataGridView.AutoGenerateColumns = false;
             _bindingSource = new BindingSource();
@@ -233,5 +241,103 @@ namespace MinimalFirewall
                 }
             }
         }
+
+        private void liveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            if (liveConnectionsDataGridView.SelectedRows.Count == 0 || liveConnectionsDataGridView.SelectedRows[0].DataBoundItem is not TcpConnectionViewModel vm)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            bool pathExists = !string.IsNullOrEmpty(vm.ProcessPath) && !vm.ProcessPath.Equals("N/A (Access Denied)") && File.Exists(vm.ProcessPath);
+
+            killProcessToolStripMenuItem.Enabled = vm.KillProcessCommand.CanExecute(null);
+            createRuleToolStripMenuItem.Enabled = pathExists;
+            openFileLocationToolStripMenuItem.Enabled = pathExists;
+            filePropertiesToolStripMenuItem.Enabled = pathExists;
+        }
+
+        private void createRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (liveConnectionsDataGridView.SelectedRows.Count > 0 && liveConnectionsDataGridView.SelectedRows[0].DataBoundItem is TcpConnectionViewModel vm)
+            {
+                if (!string.IsNullOrEmpty(vm.ProcessPath) && File.Exists(vm.ProcessPath))
+                {
+                    using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, vm.ProcessPath, "Outbound", _appSettings);
+                    dialog.ShowDialog(this.FindForm());
+                }
+                else
+                {
+                    MessageBox.Show("Cannot create a rule because the process path is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (liveConnectionsDataGridView.SelectedRows.Count > 0 && liveConnectionsDataGridView.SelectedRows[0].DataBoundItem is TcpConnectionViewModel vm)
+            {
+                try
+                {
+                    Process.Start("explorer.exe", $"/select, \"{vm.ProcessPath}\"");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void filePropertiesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (liveConnectionsDataGridView.SelectedRows.Count > 0 && liveConnectionsDataGridView.SelectedRows[0].DataBoundItem is TcpConnectionViewModel vm)
+            {
+                ShowFileProperties(vm.ProcessPath);
+            }
+        }
+
+        #region P/Invoke for File Properties
+        [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+        static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct SHELLEXECUTEINFO
+        {
+            public int cbSize;
+            public uint fMask;
+            public IntPtr hwnd;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public string lpVerb;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public string lpFile;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public string lpParameters;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public string lpDirectory;
+            public int nShow;
+            public IntPtr hInstApp;
+            public IntPtr lpIDList;
+            [MarshalAs(UnmanagedType.LPTStr)]
+            public string lpClass;
+            public IntPtr hkeyClass;
+            public uint dwHotKey;
+            public IntPtr hIcon;
+            public IntPtr hProcess;
+        }
+
+        private const uint SEE_MASK_INVOKEIDLIST = 12;
+
+        private static void ShowFileProperties(string filename)
+        {
+            SHELLEXECUTEINFO info = new SHELLEXECUTEINFO();
+            info.cbSize = Marshal.SizeOf(info);
+            info.lpVerb = "properties";
+            info.lpFile = filename;
+            info.nShow = 5;
+            info.fMask = SEE_MASK_INVOKEIDLIST;
+            ShellExecuteEx(ref info);
+        }
+        #endregion
     }
 }

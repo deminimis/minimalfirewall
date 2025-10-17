@@ -1,4 +1,5 @@
-﻿namespace MinimalFirewall
+﻿// File: AuditControl.Designer.cs
+namespace MinimalFirewall
 {
     partial class AuditControl
     {
@@ -227,7 +228,7 @@
             // 
             // advNameColumn
             // 
-            this.advNameColumn.DataPropertyName = "Rule.Name";
+            this.advNameColumn.DataPropertyName = "Name";
             this.advNameColumn.FillWeight = 20F;
             this.advNameColumn.HeaderText = "Name";
             this.advNameColumn.Name = "advNameColumn";
@@ -235,7 +236,7 @@
             // 
             // advStatusColumn
             // 
-            this.advStatusColumn.DataPropertyName = "Rule.Status";
+            this.advStatusColumn.DataPropertyName = "Status";
             this.advStatusColumn.FillWeight = 15F;
             this.advStatusColumn.HeaderText = "Action";
             this.advStatusColumn.Name = "advStatusColumn";
@@ -243,7 +244,7 @@
             // 
             // advProtocolColumn
             // 
-            this.advProtocolColumn.DataPropertyName = "Rule.ProtocolName";
+            this.advProtocolColumn.DataPropertyName = "ProtocolName";
             this.advProtocolColumn.FillWeight = 8F;
             this.advProtocolColumn.HeaderText = "Protocol";
             this.advProtocolColumn.Name = "advProtocolColumn";
@@ -251,7 +252,7 @@
             // 
             // advLocalPortsColumn
             // 
-            this.advLocalPortsColumn.DataPropertyName = "Rule.LocalPorts";
+            this.advLocalPortsColumn.DataPropertyName = "LocalPorts";
             this.advLocalPortsColumn.FillWeight = 12F;
             this.advLocalPortsColumn.HeaderText = "Local Ports";
             this.advLocalPortsColumn.Name = "advLocalPortsColumn";
@@ -259,7 +260,7 @@
             // 
             // advRemotePortsColumn
             // 
-            this.advRemotePortsColumn.DataPropertyName = "Rule.RemotePorts";
+            this.advRemotePortsColumn.DataPropertyName = "RemotePorts";
             this.advRemotePortsColumn.FillWeight = 12F;
             this.advRemotePortsColumn.HeaderText = "Remote Ports";
             this.advRemotePortsColumn.Name = "advRemotePortsColumn";
@@ -267,7 +268,7 @@
             // 
             // advLocalAddressColumn
             // 
-            this.advLocalAddressColumn.DataPropertyName = "Rule.LocalAddresses";
+            this.advLocalAddressColumn.DataPropertyName = "LocalAddresses";
             this.advLocalAddressColumn.FillWeight = 15F;
             this.advLocalAddressColumn.HeaderText = "Local Address";
             this.advLocalAddressColumn.Name = "advLocalAddressColumn";
@@ -275,7 +276,7 @@
             // 
             // advRemoteAddressColumn
             // 
-            this.advRemoteAddressColumn.DataPropertyName = "Rule.RemoteAddresses";
+            this.advRemoteAddressColumn.DataPropertyName = "RemoteAddresses";
             this.advRemoteAddressColumn.FillWeight = 15F;
             this.advRemoteAddressColumn.HeaderText = "Remote Address";
             this.advRemoteAddressColumn.Name = "advRemoteAddressColumn";
@@ -283,7 +284,7 @@
             // 
             // advProgramColumn
             // 
-            this.advProgramColumn.DataPropertyName = "Rule.ApplicationName";
+            this.advProgramColumn.DataPropertyName = "ApplicationName";
             this.advProgramColumn.FillWeight = 25F;
             this.advProgramColumn.HeaderText = "Application";
             this.advProgramColumn.Name = "advProgramColumn";
@@ -291,7 +292,7 @@
             // 
             // advServiceColumn
             // 
-            this.advServiceColumn.DataPropertyName = "Rule.ServiceName";
+            this.advServiceColumn.DataPropertyName = "ServiceName";
             this.advServiceColumn.FillWeight = 15F;
             this.advServiceColumn.HeaderText = "Service";
             this.advServiceColumn.Name = "advServiceColumn";
@@ -299,7 +300,7 @@
             // 
             // advProfilesColumn
             // 
-            this.advProfilesColumn.DataPropertyName = "Rule.Profiles";
+            this.advProfilesColumn.DataPropertyName = "Profiles";
             this.advProfilesColumn.FillWeight = 10F;
             this.advProfilesColumn.HeaderText = "Profiles";
             this.advProfilesColumn.Name = "advProfilesColumn";
@@ -307,7 +308,7 @@
             // 
             // advGroupingColumn
             // 
-            this.advGroupingColumn.DataPropertyName = "Rule.Grouping";
+            this.advGroupingColumn.DataPropertyName = "Grouping";
             this.advGroupingColumn.FillWeight = 15F;
             this.advGroupingColumn.HeaderText = "Group";
             this.advGroupingColumn.Name = "advGroupingColumn";
@@ -315,7 +316,7 @@
             // 
             // advDescColumn
             // 
-            this.advDescColumn.DataPropertyName = "Rule.Description";
+            this.advDescColumn.DataPropertyName = "Description";
             this.advDescColumn.FillWeight = 30F;
             this.advDescColumn.HeaderText = "Description";
             this.advDescColumn.Name = "advDescColumn";

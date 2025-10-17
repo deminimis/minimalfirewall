@@ -13,8 +13,7 @@ namespace MinimalFirewall
 
         public ForeignRuleTracker()
         {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            _baselinePath = Path.Combine(exeDirectory, "foreign_rules_baseline.json");
+            _baselinePath = ConfigPathManager.GetConfigPath("foreign_rules_baseline.json");
             LoadAcknowledgedRules();
         }
 

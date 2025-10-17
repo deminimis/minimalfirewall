@@ -13,8 +13,7 @@ namespace MinimalFirewall
 
         public PublisherWhitelistService()
         {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            _configPath = Path.Combine(exeDirectory, "trusted_publishers.json");
+            _configPath = ConfigPathManager.GetConfigPath("trusted_publishers.json");
             _trustedPublishers = Load();
         }
 

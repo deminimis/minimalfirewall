@@ -110,6 +110,7 @@ namespace MinimalFirewall
             darkModeSwitch.Checked = _appSettings.Theme == "Dark";
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;
+            useAppDataSwitch.Checked = _appSettings.UseAppDataStorage;
             autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
             trafficMonitorSwitch.Checked = _appSettings.IsTrafficMonitorEnabled;
             showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
@@ -133,6 +134,7 @@ namespace MinimalFirewall
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
+            _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
 
@@ -389,6 +391,15 @@ namespace MinimalFirewall
                         Messenger.MessageBox($"An error occurred during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
+            }
+        }
+
+        private void useAppDataSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings.UseAppDataStorage != useAppDataSwitch.Checked)
+            {
+                Messenger.MessageBox("You must restart the application for the configuration location change to take full effect.", "Restart Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
             }
         }
     }

@@ -19,8 +19,7 @@ namespace MinimalFirewall
 
         public UwpService(FirewallRuleService firewallRuleService)
         {
-            string exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-            _cachePath = Path.Combine(exeDirectory, "uwp_apps.json");
+            _cachePath = ConfigPathManager.GetConfigPath("uwp_apps.json");
             _firewallRuleService = firewallRuleService;
         }
 

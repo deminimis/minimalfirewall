@@ -94,6 +94,7 @@ namespace MinimalFirewall
             this.Text = "Minimal Firewall";
 
             _appSettings = AppSettings.Load();
+            ConfigPathManager.Initialize(_appSettings);
             dm = new DarkModeCS(this);
             if (this.components != null)
             {
@@ -146,7 +147,7 @@ namespace MinimalFirewall
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
             groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
-            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService);
+            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService, _firewallPolicy);
 
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _mainViewModel.SystemChangesUpdated += () => {

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Reflection;
 
 namespace MinimalFirewall
 {
@@ -17,6 +18,22 @@ namespace MinimalFirewall
         protected override PropertyDescriptor? SortPropertyCore => _sortProperty;
         protected override ListSortDirection SortDirectionCore => _sortDirection;
 
+        private static object? GetNestedPropertyValue(object? obj, string propertyName)
+        {
+            if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
+
+            object? currentObject = obj;
+            foreach (string part in propertyName.Split('.'))
+            {
+                if (currentObject == null) return null;
+                Type type = currentObject.GetType();
+                PropertyInfo? info = type.GetProperty(part);
+                if (info == null) return null;
+                currentObject = info.GetValue(currentObject, null);
+            }
+            return currentObject;
+        }
+
         protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
         {
             _sortProperty = prop;
@@ -26,8 +43,8 @@ namespace MinimalFirewall
             {
                 items.Sort((a, b) =>
                 {
-                    var valueA = prop.GetValue(a);
-                    var valueB = prop.GetValue(b);
+                    var valueA = GetNestedPropertyValue(a, prop.Name);
+                    var valueB = GetNestedPropertyValue(b, prop.Name);
 
                     int result = (valueA as IComparable)?.CompareTo(valueB) ?? 0;
                     return direction == ListSortDirection.Ascending ? result : -result;

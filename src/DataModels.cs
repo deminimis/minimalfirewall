@@ -22,6 +22,19 @@ namespace MinimalFirewall
     {
         public ChangeType Type { get; set; }
         public AdvancedRuleViewModel Rule { get; set; } = new();
+
+        public string Name => Rule.Name;
+        public string Status => Rule.Status;
+        public string ProtocolName => Rule.ProtocolName;
+        public string LocalPorts => Rule.LocalPorts;
+        public string RemotePorts => Rule.RemotePorts;
+        public string LocalAddresses => Rule.LocalAddresses;
+        public string RemoteAddresses => Rule.RemoteAddresses;
+        public string ApplicationName => Rule.ApplicationName;
+        public string ServiceName => Rule.ServiceName;
+        public string Profiles => Rule.Profiles;
+        public string Grouping => Rule.Grouping;
+        public string Description => Rule.Description;
     }
 
     public class UnifiedRuleViewModel
