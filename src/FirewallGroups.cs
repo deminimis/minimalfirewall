@@ -2,32 +2,44 @@
 using NetFwTypeLib;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
 namespace MinimalFirewall.Groups
 {
     public class FirewallGroup : INotifyPropertyChanged
     {
         private readonly INetFwPolicy2 _firewallPolicy;
+        private bool _isEnabled;
 
         public string Name { get; }
         public int RuleCount { get; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        public FirewallGroup(string name, List<INetFwRule2> groupRules, INetFwPolicy2 firewallPolicy)
+        public FirewallGroup(string name, INetFwPolicy2 firewallPolicy)
         {
             Name = name;
             _firewallPolicy = firewallPolicy;
-            RuleCount = groupRules.Count;
-            IsEnabled = groupRules.Count > 0 && groupRules.All(r => r.Enabled);
+            var rules = _firewallPolicy.Rules.Cast<INetFwRule2>().Where(r => r != null && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+            RuleCount = rules.Count;
+            _isEnabled = rules.Count > 0 && rules.All(r => r.Enabled);
         }
 
-        public bool IsEnabled { get; private set; }
-
-        public void SetEnabledState(bool isEnabled)
+        public bool IsEnabled
         {
-            if (IsEnabled != isEnabled)
+            get
             {
-                IsEnabled = isEnabled;
+                var rules = _firewallPolicy.Rules.Cast<INetFwRule2>().Where(r => r != null && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase)).ToList();
+                if (rules.Count == 0) return false;
+                return rules.All(r => r.Enabled);
+            }
+            set
+            {
+                foreach (INetFwRule2 r in _firewallPolicy.Rules)
+                {
+                    if (r != null && !string.IsNullOrEmpty(r.Grouping) && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        r.Enabled = value;
+                    }
+                }
+                _isEnabled = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
             }
         }
@@ -40,47 +52,20 @@ namespace MinimalFirewall.Groups
 
         public List<FirewallGroup> GetAllGroups()
         {
-            var groupsData = new Dictionary<string, List<INetFwRule2>>(System.StringComparer.OrdinalIgnoreCase);
-            INetFwRules? comRules = null;
-            try
+            var mfwRules = _policy.Rules.Cast<INetFwRule2>()
+                .Where(r => r?.Grouping is { Length: > 0 } && r.Grouping.EndsWith(MFWConstants.MfwRuleSuffix));
+            var groups = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (INetFwRule2 rule in mfwRules)
             {
-                comRules = _policy.Rules;
-                foreach (INetFwRule2 rule in comRules)
-                {
-                    if (rule?.Grouping is { Length: > 0 } && rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
-                    {
-                        if (!groupsData.TryGetValue(rule.Grouping, out var ruleList))
-                        {
-                            ruleList = new List<INetFwRule2>();
-                            groupsData[rule.Grouping] = ruleList;
-                        }
-                        ruleList.Add(rule);
-                    }
-                    else
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
-                }
-            }
-            finally
-            {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                groups[rule.Grouping] = groups.TryGetValue(rule.Grouping, out var c) ?
+                    c + 1 : 1;
             }
 
-            var list = new List<FirewallGroup>(groupsData.Count);
-            foreach (var group in groupsData)
+            var list = new List<FirewallGroup>(groups.Count);
+            foreach (var kv in groups)
             {
-                list.Add(new FirewallGroup(group.Key, group.Value, _policy));
+                list.Add(new FirewallGroup(kv.Key, _policy));
             }
-
-            foreach (var ruleList in groupsData.Values)
-            {
-                foreach (var rule in ruleList)
-                {
-                    Marshal.ReleaseComObject(rule);
-                }
-            }
-
             return list.OrderBy(g => g.Name).ToList();
         }
     }

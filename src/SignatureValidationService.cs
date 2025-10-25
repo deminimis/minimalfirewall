@@ -18,11 +18,9 @@ namespace MinimalFirewall
 
             try
             {
-                using (var cert = X509Certificate.CreateFromSignedFile(filePath))
-                {
-                    publisherName = cert.Subject;
-                    return !string.IsNullOrEmpty(publisherName);
-                }
+                var cert = X509Certificate.CreateFromSignedFile(filePath);
+                publisherName = cert.Subject;
+                return !string.IsNullOrEmpty(publisherName);
             }
             catch (CryptographicException)
             {
@@ -45,12 +43,9 @@ namespace MinimalFirewall
 
             try
             {
-                using (var cert = X509Certificate.CreateFromSignedFile(filePath))
-                using (var cert2 = new X509Certificate2(cert))
-                using (var chain = new X509Chain())
-                {
-                    return chain.Build(cert2);
-                }
+                var cert = X509Certificate.CreateFromSignedFile(filePath);
+                var chain = new X509Chain();
+                return chain.Build(new X509Certificate2(cert));
             }
             catch (Exception ex) when (ex is CryptographicException or IOException or UnauthorizedAccessException)
             {

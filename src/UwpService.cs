@@ -1,84 +1,60 @@
 ﻿// File: UwpService.cs
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using NetFwTypeLib;
 
 namespace MinimalFirewall
 {
     public class UwpService
     {
         private readonly string _cachePath;
-        private readonly FirewallRuleService _firewallRuleService;
-
-        public UwpService(FirewallRuleService firewallRuleService)
+        public UwpService()
         {
-            _cachePath = ConfigPathManager.GetConfigPath("uwp_apps.json");
-            _firewallRuleService = firewallRuleService;
+            string baseDirectory = AppContext.BaseDirectory;
+            _cachePath = Path.Combine(baseDirectory, "uwp_apps.json");
         }
 
-        public async Task<List<UwpApp>> GetUwpAppsAsync(CancellationToken token)
+        public async Task<List<UwpApp>> ScanForUwpApps()
         {
             return await Task.Run(() =>
             {
-                var allRules = _firewallRuleService.GetAllRules();
-                var uwpApps = new Dictionary<string, UwpApp>(StringComparer.OrdinalIgnoreCase);
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = "-NoProfile -ExecutionPolicy Bypass -Command \"Get-AppxPackage | Where-Object { !$_.IsFramework -and !$_.IsResourcePackage } | Select-Object Name, PackageFamilyName | ConvertTo-Json\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8
+                };
 
                 try
                 {
-                    foreach (INetFwRule2 rule in allRules)
+                    using (var process = Process.Start(psi))
                     {
-                        if (token.IsCancellationRequested) return new List<UwpApp>();
+                        if (process == null) return new List<UwpApp>();
+                        var output = process.StandardOutput.ReadToEnd();
+                        process.WaitForExit();
 
-                        string? pfn = null;
-                        string name = rule.Name ?? string.Empty;
-
-                        if (name.StartsWith("@{") && name.Contains("}"))
+                        if (string.IsNullOrWhiteSpace(output))
                         {
-                            int startIndex = 2;
-                            int endIndex = name.IndexOf("?ms-resource");
-                            if (endIndex == -1)
-                            {
-                                endIndex = name.IndexOf("}");
-                            }
-                            if (endIndex > startIndex)
-                            {
-                                pfn = name.Substring(startIndex, endIndex - startIndex);
-                            }
+                            return new List<UwpApp>();
                         }
 
-                        if (!string.IsNullOrEmpty(pfn) && !uwpApps.ContainsKey(pfn))
-                        {
-                            uwpApps[pfn] = new UwpApp
-                            {
-                                Name = name,
-                                PackageFamilyName = pfn,
-                                Publisher = ""
-                            };
-                        }
+                        var apps = JsonSerializer.Deserialize(output, UwpAppJsonContext.Default.ListUwpApp);
+                        var sortedApps = (apps ?? new List<UwpApp>()).OrderBy(app => app.Name).ToList();
+
+                        SaveUwpAppsToCache(sortedApps);
+                        return sortedApps;
                     }
-
-                    var sortedApps = uwpApps.Values.OrderBy(app => app.Name).ToList();
-                    SaveUwpAppsToCache(sortedApps);
-                    return sortedApps;
                 }
-                finally
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or JsonException)
                 {
-                    foreach (var rule in allRules)
-                    {
-                        if (rule != null)
-                        {
-                            Marshal.ReleaseComObject(rule);
-                        }
-                    }
+                    Debug.WriteLine("[ERROR] Failed to scan for UWP apps via PowerShell: " + ex.Message);
+                    return new List<UwpApp>();
                 }
-            }, token).ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
 
         public List<UwpApp> LoadUwpAppsFromCache()

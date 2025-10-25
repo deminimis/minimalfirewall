@@ -71,28 +71,22 @@ namespace MinimalFirewall
             }
         }
 
-        public static List<string> GetFilesInFolder(string directoryPath, List<string> searchPatterns)
+        public static List<string> GetExecutablesInFolder(string directoryPath, string? exeName = null)
         {
             var files = new List<string>();
-            if (searchPatterns == null || searchPatterns.Count == 0)
-            {
-                return files;
-            }
-            GetFilesInFolderRecursive(directoryPath, searchPatterns, files);
+            string searchPattern = string.IsNullOrWhiteSpace(exeName) ? "*.exe" : exeName;
+            GetExecutablesInFolderRecursive(directoryPath, searchPattern, files);
             return files;
         }
 
-        private static void GetFilesInFolderRecursive(string directoryPath, List<string> searchPatterns, List<string> files)
+        private static void GetExecutablesInFolderRecursive(string directoryPath, string searchPattern, List<string> files)
         {
             try
             {
-                foreach (string pattern in searchPatterns)
-                {
-                    files.AddRange(Directory.GetFiles(directoryPath, pattern));
-                }
+                files.AddRange(Directory.GetFiles(directoryPath, searchPattern));
                 foreach (var directory in Directory.GetDirectories(directoryPath))
                 {
-                    GetFilesInFolderRecursive(directory, searchPatterns, files);
+                    GetExecutablesInFolderRecursive(directory, searchPattern, files);
                 }
             }
             catch (UnauthorizedAccessException) { }
