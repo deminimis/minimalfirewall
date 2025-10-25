@@ -5,30 +5,15 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using NetFwTypeLib;
-using System;
 
 namespace MinimalFirewall
 {
-    public static class AdminTaskService
+    public class AdminTaskService
     {
-        public static void ResetFirewall()
+        public static void ExecutePowerShellRuleCommand(string command)
         {
-            try
-            {
-                Type fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
-                if (fwMgrType != null)
-                {
-                    INetFwMgr fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);
-                    fwMgr.RestoreDefaults();
-                    Debug.WriteLine("[AdminTask] Firewall reset to defaults using COM interface.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[AdminTask ERROR] Firewall reset failed: {ex.Message}");
-                Messenger.MessageBox($"Could not reset Windows Firewall.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            string fullCommand = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"";
+            Execute(fullCommand, "powershell.exe", out _);
         }
 
         public static void SetAuditPolicy(bool enable)
@@ -162,137 +147,37 @@ namespace MinimalFirewall
         private const string RegistryKeyPath = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
         private readonly string? _appName;
         private readonly string? _appPath;
-        private readonly string _taskName;
 
         public StartupService()
         {
             _appName = Assembly.GetExecutingAssembly().GetName().Name;
-            _appPath = Environment.ProcessPath;
-            if (_appName != null)
-            {
-                _taskName = _appName + " Startup";
-            }
-            else
-            {
-                _taskName = "MinimalFirewall Startup";
-            }
+            _appPath = Process.GetCurrentProcess().MainModule?.FileName;
         }
 
         public void SetStartup(bool isEnabled)
         {
             if (string.IsNullOrEmpty(_appName) || string.IsNullOrEmpty(_appPath)) return;
-
             try
             {
                 using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegistryKeyPath, true);
-                if (key?.GetValue(_appName) != null)
+                if (key == null)
+                {
+                    Debug.WriteLine("[ERROR] Could not open registry key for startup settings.");
+                    return;
+                }
+
+                if (isEnabled)
+                {
+                    key.SetValue(_appName, $"\"{_appPath}\"");
+                }
+                else if (key.GetValue(_appName) != null)
                 {
                     key.DeleteValue(_appName, false);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
             {
-                Debug.WriteLine($"[Startup] Failed to remove old registry key: {ex.Message}");
-            }
-
-            if (isEnabled)
-            {
-                string arguments = $"/create /tn \"{_taskName}\" /tr \"\\\"{_appPath}\\\" -tray\" /sc onlogon /rl highest /f";
-                Execute("schtasks.exe", arguments, out _, out _);
-            }
-            else
-            {
-                string arguments = $"/delete /tn \"{_taskName}\" /f";
-                Execute("schtasks.exe", arguments, out _, out _);
-            }
-        }
-
-        public void VerifyAndCorrectStartupTaskPath()
-        {
-            if (string.IsNullOrEmpty(_taskName) || string.IsNullOrEmpty(_appPath)) return;
-            string arguments = $"/query /tn \"{_taskName}\" /v /fo CSV /nh";
-            Execute("schtasks.exe", arguments, out string? output, out string? error);
-            if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(output))
-            {
-                Debug.WriteLine($"[Startup] Could not query task '{_taskName}'. It might not exist. Error: {error}");
-                return;
-            }
-            try
-            {
-                var parts = output.Split('"');
-                string storedPath = string.Empty;
-                foreach (var part in parts)
-                {
-                    if (part.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                    {
-                        storedPath = part;
-                        break;
-                    }
-                }
-                if (string.IsNullOrEmpty(storedPath))
-                {
-                    Debug.WriteLine($"[Startup] Could not parse executable path from schtasks output: {output}");
-                    return;
-                }
-                string normalizedStoredPath = PathResolver.NormalizePath(storedPath);
-                string normalizedCurrentPath = PathResolver.NormalizePath(_appPath);
-                if (!normalizedStoredPath.Equals(normalizedCurrentPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    Debug.WriteLine($"[Startup] Mismatch detected. Stored: '{normalizedStoredPath}', Current: '{normalizedCurrentPath}'. Correcting task.");
-                    SetStartup(true);
-                }
-                else
-                {
-                    Debug.WriteLine($"[Startup] Startup task path is correct.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[Startup] Error during startup path verification: {ex.Message}");
-            }
-        }
-
-        private void Execute(string fileName, string arguments, out string output, out string error)
-        {
-            Debug.WriteLine($"[Startup] Executing: {fileName} {arguments}");
-            var startInfo = new ProcessStartInfo()
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-            };
-            try
-            {
-                using var process = Process.Start(startInfo);
-                if (process != null)
-                {
-                    output = process.StandardOutput.ReadToEnd();
-                    error = process.StandardError.ReadToEnd();
-                    process.WaitForExit(5000);
-
-                    if (process.ExitCode != 0)
-                    {
-                        Debug.WriteLine($"[Startup ERROR] Process exited with code {process.ExitCode}.");
-                        if (!string.IsNullOrEmpty(output)) Debug.WriteLine($"[Startup ERROR] STDOUT: {output}");
-                        if (!string.IsNullOrEmpty(error)) Debug.WriteLine($"[Startup ERROR] STDERR: {error}");
-                    }
-                }
-                else
-                {
-                    output = string.Empty;
-                    error = "Failed to start process.";
-                }
-            }
-            catch (Exception ex)
-            {
-                output = string.Empty;
-                error = ex.Message;
-                Debug.WriteLine($"[Startup FATAL ERROR] {ex.Message}");
+                Debug.WriteLine($"[ERROR] Failed to update startup settings: {ex.Message}");
             }
         }
     }

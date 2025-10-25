@@ -7,13 +7,6 @@ using MinimalFirewall.TypedObjects;
 
 namespace MinimalFirewall
 {
-    public class ExportContainer
-    {
-        public DateTime ExportDate { get; set; }
-        public List<AdvancedRuleViewModel> AdvancedRules { get; set; } = [];
-        public List<WildcardRule> WildcardRules { get; set; } = [];
-    }
-
     public enum SearchMode { Name, Path }
     public enum RuleType { Program, Service, UWP, Wildcard, Advanced }
     public enum ChangeType { New, Modified, Deleted }
@@ -22,19 +15,6 @@ namespace MinimalFirewall
     {
         public ChangeType Type { get; set; }
         public AdvancedRuleViewModel Rule { get; set; } = new();
-
-        public string Name => Rule.Name;
-        public string Status => Rule.Status;
-        public string ProtocolName => Rule.ProtocolName;
-        public string LocalPorts => Rule.LocalPorts;
-        public string RemotePorts => Rule.RemotePorts;
-        public string LocalAddresses => Rule.LocalAddresses;
-        public string RemoteAddresses => Rule.RemoteAddresses;
-        public string ApplicationName => Rule.ApplicationName;
-        public string ServiceName => Rule.ServiceName;
-        public string Profiles => Rule.Profiles;
-        public string Grouping => Rule.Grouping;
-        public string Description => Rule.Description;
     }
 
     public class UnifiedRuleViewModel
@@ -68,8 +48,6 @@ namespace MinimalFirewall
 
     public class AggregatedRuleViewModel : AdvancedRuleViewModel
     {
-        public string InboundStatus { get; set; } = string.Empty;
-        public string OutboundStatus { get; set; } = string.Empty;
         public List<AdvancedRuleViewModel> UnderlyingRules { get; set; } = [];
     }
 
@@ -79,44 +57,19 @@ namespace MinimalFirewall
         public string Status { get; set; } = string.Empty;
         public bool IsEnabled { get; set; }
         public Directions Direction { get; set; }
-        public string LocalPorts { get; set; } = string.Empty;
-        public string RemotePorts { get; set; } = string.Empty;
-        public int Protocol { get; set; }
+        public ICollection<PortRange> LocalPorts { get; set; } = [];
+        public ICollection<PortRange> RemotePorts { get; set; } = [];
+        public short Protocol { get; set; }
         public string ProtocolName { get; set; } = string.Empty;
         public string ApplicationName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
-        public string LocalAddresses { get; set; } = string.Empty;
-        public string RemoteAddresses { get; set; } = string.Empty;
+        public ICollection<IPAddressRange> LocalAddresses { get; set; } = [];
+        public ICollection<IPAddressRange> RemoteAddresses { get; set; } = [];
         public string Profiles { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Grouping { get; set; } = string.Empty;
         public RuleType Type { get; set; }
         public WildcardRule? WildcardDefinition { get; set; }
-        public string InterfaceTypes { get; set; } = string.Empty;
-        public string IcmpTypesAndCodes { get; set; } = string.Empty;
-
-        public bool HasSameSettings(AdvancedRuleViewModel? other)
-        {
-            if (other == null) return false;
-
-            return
-                this.Name == other.Name &&
-                this.Description == other.Description &&
-                this.IsEnabled == other.IsEnabled &&
-                this.Status == other.Status &&
-                this.Direction == other.Direction &&
-                this.Protocol == other.Protocol &&
-                this.ApplicationName == other.ApplicationName &&
-                this.ServiceName == other.ServiceName &&
-                this.LocalPorts == other.LocalPorts &&
-                this.RemotePorts == other.RemotePorts &&
-                this.LocalAddresses == other.LocalAddresses &&
-                this.RemoteAddresses == other.RemoteAddresses &&
-                this.Profiles == other.Profiles &&
-                this.Grouping == other.Grouping &&
-                this.InterfaceTypes == other.InterfaceTypes &&
-                this.IcmpTypesAndCodes == other.IcmpTypesAndCodes;
-        }
     }
 
     public class FirewallRuleHashModel
@@ -164,9 +117,6 @@ namespace MinimalFirewall
         public string FileName => Path.GetFileName(AppPath);
         public string Direction { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
-        public string Protocol { get; set; } = string.Empty;
-        public string RemotePort { get; set; } = string.Empty;
-        public string RemoteAddress { get; set; } = string.Empty;
     }
 
     public class WildcardRule
@@ -174,22 +124,15 @@ namespace MinimalFirewall
         public string FolderPath { get; set; } = string.Empty;
         public string ExeName { get; set; } = string.Empty;
         public string Action { get; set; } = string.Empty;
-        public int Protocol { get; set; } = 256;
-        public string LocalPorts { get; set; } = "*";
-        public string RemotePorts { get; set; } = "*";
-        public string RemoteAddresses { get; set; } = "*";
     }
 
     [JsonSerializable(typeof(List<WildcardRule>))]
     internal partial class WildcardRuleJsonContext : JsonSerializerContext { }
-    [JsonSerializable(typeof(ExportContainer))]
-    internal partial class ExportContainerJsonContext : JsonSerializerContext { }
 
     public class UwpApp
     {
         public string Name { get; set; } = string.Empty;
         public string PackageFamilyName { get; set; } = string.Empty;
-        public string Publisher { get; set; } = string.Empty;
         public string Status { get; set; } = "Undefined";
     }
 
@@ -227,16 +170,12 @@ namespace MinimalFirewall
         DeleteWildcardRules,
         ProcessPendingConnection,
         AcceptForeignRule,
+        AcknowledgeForeignRule,
         DeleteForeignRule,
         AcceptAllForeignRules,
+        AcknowledgeAllForeignRules,
         CreateAdvancedRule,
-        AddWildcardRule,
-        SetGroupEnabledState,
-        UpdateWildcardRule,
-        RemoveWildcardRule,
-        RemoveWildcardDefinitionOnly,
-        DeleteAllMfwRules,
-        ImportRules
+        AddWildcardRule
     }
 
     public class FirewallTask
@@ -260,7 +199,5 @@ namespace MinimalFirewall
     public class ForeignRuleChangePayload { public FirewallRuleChange Change { get; set; } = new(); }
     public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
     public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
-    public class SetGroupEnabledStatePayload { public string GroupName { get; set; } = string.Empty; public bool IsEnabled { get; set; } }
-    public class UpdateWildcardRulePayload { public WildcardRule OldRule { get; set; } = new(); public WildcardRule NewRule { get; set; } = new(); }
-    public class ImportRulesPayload { public string JsonContent { get; set; } = string.Empty; public bool Replace { get; set; } }
 }
+

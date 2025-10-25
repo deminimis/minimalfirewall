@@ -1,4 +1,4 @@
-﻿// File: FirewallActionService.cs
+﻿// File: FirewallActionsService.cs
 using NetFwTypeLib;
 using System.Data;
 using System.IO;
@@ -9,10 +9,6 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System;
-using System.Threading;
-using System.Text.Json;
 
 namespace MinimalFirewall
 {
@@ -26,14 +22,10 @@ namespace MinimalFirewall
         private readonly PublisherWhitelistService _whitelistService;
         private readonly INetFwPolicy2 _firewallPolicy;
         private readonly TemporaryRuleManager _temporaryRuleManager;
-        private readonly WildcardRuleService _wildcardRuleService;
         private readonly FirewallDataService _dataService;
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
-
-        public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
-
-        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, INetFwPolicy2 firewallPolicy, WildcardRuleService wildcardRuleService, FirewallDataService dataService)
+        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, INetFwPolicy2 firewallPolicy, FirewallDataService dataService)
         {
             this.firewallService = firewallService;
             this.activityLogger = activityLogger;
@@ -42,7 +34,6 @@ namespace MinimalFirewall
             this.sentryService = sentryService;
             this._whitelistService = whitelistService;
             this._firewallPolicy = firewallPolicy;
-            this._wildcardRuleService = wildcardRuleService;
             _temporaryRuleManager = new TemporaryRuleManager();
             _dataService = dataService;
         }
@@ -69,78 +60,13 @@ namespace MinimalFirewall
             }
         }
 
-        private static bool IsMfwRule(INetFwRule2 rule)
-        {
-            if (string.IsNullOrEmpty(rule.Grouping)) return false;
-            return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                   rule.Grouping == MFWConstants.MainRuleGroup ||
-                   rule.Grouping == MFWConstants.WildcardRuleGroup;
-        }
-
-        private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
-        {
-            string normalizedAppPath = PathResolver.NormalizePath(appPath);
-            var rulesToDelete = new List<string>();
-            var allRules = firewallService.GetAllRules();
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null &&
-                        IsMfwRule(rule) &&
-                        rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
-                        string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
-                        rule.Protocol == 256 &&
-                        rule.LocalPorts == "*" &&
-                        rule.RemotePorts == "*")
-                    {
-                        rulesToDelete.Add(rule.Name);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
-                }
-            }
-
-            if (rulesToDelete.Any())
-            {
-                activityLogger.LogDebug($"Auto-deleting general block rule(s) for {appPath} to apply new Allow rule: {string.Join(", ", rulesToDelete)}");
-                try
-                {
-                    firewallService.DeleteRulesByName(rulesToDelete);
-                    foreach (var name in rulesToDelete) activityLogger.LogChange("Rule Auto-Deleted", name);
-                }
-                catch (COMException ex)
-                {
-                    activityLogger.LogException($"Auto-deleting rules for {appPath}", ex);
-                }
-            }
-        }
-
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
         {
             var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-            if (action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
-            {
-                foreach (var appPath in normalizedAppPaths)
-                {
-                    FindAndQueueDeleteForGeneralBlockRule(appPath);
-                }
-            }
-
+            var rulesToAdd = new List<AdvancedRuleViewModel>(normalizedAppPaths.Count * 2);
+            var rulesToRemove = new List<string>();
             foreach (var appPath in normalizedAppPaths)
             {
-                if (!File.Exists(appPath))
-                {
-                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent path: {appPath}");
-                    continue;
-                }
-
-                var rulesToRemove = new List<string>();
                 if (string.IsNullOrEmpty(wildcardSourcePath))
                 {
                     if (action.Contains("Inbound") || action.Contains("(All)"))
@@ -154,41 +80,85 @@ namespace MinimalFirewall
                 }
 
                 string appName = Path.GetFileNameWithoutExtension(appPath);
-                void createRule(string baseName, Directions dir, Actions act)
+                void createTcpAndUdpRules(string baseName, Directions dir, Actions act)
                 {
                     string description = string.IsNullOrEmpty(wildcardSourcePath) ?
-                        "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
-                    CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
+                    "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(CreateApplicationRule(baseName + " - TCP", appPath, dir, act, ProtocolTypes.TCP.Value, description)));
+                    rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(CreateApplicationRule(baseName + " - UDP", appPath, dir, act, ProtocolTypes.UDP.Value, description)));
                 }
 
-                ApplyRuleAction(appName, action, createRule);
-                if (rulesToRemove.Any())
+                ApplyRuleAction(appName, action, createTcpAndUdpRules);
+                activityLogger.LogChange("Rule Changed", action + " for " + appPath);
+            }
+
+            if (rulesToRemove.Count > 0)
+            {
+                try
                 {
                     firewallService.DeleteRulesByName(rulesToRemove);
+                    _dataService.RemoveRulesFromCache(rulesToRemove);
                 }
-
-                activityLogger.LogChange("Rule Changed", action + " for " + appPath);
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"ApplyApplicationRuleChange (Deleting old rules for {string.Join(",", appPaths)})", ex);
+                }
+            }
+            if (rulesToAdd.Count > 0)
+            {
+                _dataService.AddRulesToCache(rulesToAdd);
             }
         }
 
-        public void ApplyServiceRuleChange(string serviceName, string action, string appPath = "")
+        public void ApplyServiceRuleChange(string serviceName, string action)
         {
             if (string.IsNullOrEmpty(serviceName)) return;
-
-            var allServices = _dataService.GetCachedServicesWithExePaths();
-            if (!allServices.Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent service: {serviceName}");
-                return;
+                var existingRuleNames = firewallService.DeleteRulesByServiceName(serviceName);
+                _dataService.RemoveRulesFromCache(existingRuleNames);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"ApplyServiceRuleChange (Deleting old rules for {serviceName})", ex);
             }
 
-            var rulesToRemove = firewallService.DeleteRulesByServiceName(serviceName);
+            var serviceInfo = _dataService.GetCachedServicesWithExePaths()
+                .FirstOrDefault(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+            string? appPath = serviceInfo?.ExePath;
 
-            void createRule(string name, Directions dir, Actions act) => CreateServiceRule(name, serviceName, dir, act, ProtocolTypes.Any.Value, appPath);
-            ApplyRuleAction(serviceName, action, createRule);
-            if (rulesToRemove.Any())
+            var rulesToAdd = new List<AdvancedRuleViewModel>(2);
+            void createRuleForProtocol(string name, Directions dir, Actions act, short protocol)
             {
-                firewallService.DeleteRulesByName(rulesToRemove);
+                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                firewallRule.WithName(name)
+                            .ForService(serviceName)
+                            .WithDirection(dir)
+                            .WithAction(act)
+                            .WithProtocol(protocol)
+                            .WithGrouping(MFWConstants.MainRuleGroup)
+                            .IsEnabled();
+                if (!string.IsNullOrEmpty(appPath))
+                {
+                    firewallRule.ApplicationName = appPath;
+                }
+
+                firewallRule.Profiles = (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+                firewallRule.InterfaceTypes = "All";
+                firewallService.CreateRule(firewallRule);
+                rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(firewallRule));
+            }
+
+            void createTcpAndUdpRules(string baseName, Directions dir, Actions act)
+            {
+                createRuleForProtocol(baseName + " - TCP", dir, act, ProtocolTypes.TCP.Value);
+                createRuleForProtocol(baseName + " - UDP", dir, act, ProtocolTypes.UDP.Value);
+            }
+
+            ApplyRuleAction(serviceName, action, createTcpAndUdpRules);
+            if (rulesToAdd.Count > 0)
+            {
+                _dataService.AddRulesToCache(rulesToAdd);
             }
 
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
@@ -196,37 +166,28 @@ namespace MinimalFirewall
 
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)
         {
-            var validApps = new List<UwpApp>();
-            var cachedUwpApps = _dataService.LoadUwpAppsFromCache();
-            var cachedPfnSet = new HashSet<string>(cachedUwpApps.Select(a => a.PackageFamilyName), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var app in uwpApps)
+            var packageFamilyNames = uwpApps.Select(app => app.PackageFamilyName).ToList();
+            try
             {
-                if (cachedPfnSet.Contains(app.PackageFamilyName))
-                {
-                    validApps.Add(app);
-                }
-                else
-                {
-                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent UWP app: {app.Name} ({app.PackageFamilyName})");
-                }
+                var ruleNamesToDelete = firewallService.DeleteUwpRules(packageFamilyNames);
+                _dataService.RemoveRulesFromCache(ruleNamesToDelete);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"ApplyUwpRuleChange (Deleting old rules)", ex);
             }
 
-            if (validApps.Count == 0) return;
-
-            var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
-            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
-
-            foreach (var app in validApps)
+            var rulesToAdd = new List<AdvancedRuleViewModel>(uwpApps.Count);
+            foreach (var app in uwpApps)
             {
-                void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
+                void createRule(string name, Directions dir, Actions act) => rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(CreateUwpRule(name, app.PackageFamilyName, dir, act)));
                 ApplyRuleAction(app.Name, action, createRule);
                 activityLogger.LogChange("UWP Rule Changed", action + " for " + app.Name);
             }
 
-            if (rulesToRemove.Any())
+            if (rulesToAdd.Count > 0)
             {
-                firewallService.DeleteRulesByName(rulesToRemove);
+                _dataService.AddRulesToCache(rulesToAdd);
             }
         }
 
@@ -235,7 +196,8 @@ namespace MinimalFirewall
             if (appPaths.Count == 0) return;
             try
             {
-                firewallService.DeleteRulesByPath(appPaths);
+                var ruleNames = firewallService.DeleteRulesByPath(appPaths);
+                _dataService.RemoveRulesFromCache(ruleNames);
                 foreach (var path in appPaths) activityLogger.LogChange("Rule Deleted", path);
             }
             catch (COMException ex)
@@ -250,7 +212,8 @@ namespace MinimalFirewall
             try
             {
                 string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
-                firewallService.DeleteRulesByDescription(descriptionTag);
+                var ruleNames = firewallService.DeleteRulesByDescription(descriptionTag);
+                _dataService.RemoveRulesFromCache(ruleNames);
                 activityLogger.LogChange("Wildcard Rules Deleted", $"Deleted rules for folder {wildcard.FolderPath}");
             }
             catch (COMException ex)
@@ -264,7 +227,8 @@ namespace MinimalFirewall
             if (packageFamilyNames.Count == 0) return;
             try
             {
-                firewallService.DeleteUwpRules(packageFamilyNames);
+                var ruleNames = firewallService.DeleteUwpRules(packageFamilyNames);
+                _dataService.RemoveRulesFromCache(ruleNames);
                 foreach (var pfn in packageFamilyNames) activityLogger.LogChange("UWP Rule Deleted", pfn);
             }
             catch (COMException ex)
@@ -279,6 +243,7 @@ namespace MinimalFirewall
             try
             {
                 firewallService.DeleteRulesByName(ruleNames);
+                _dataService.RemoveRulesFromCache(ruleNames);
                 foreach (var name in ruleNames) activityLogger.LogChange("Advanced Rule Deleted", name);
             }
             catch (COMException ex)
@@ -289,10 +254,9 @@ namespace MinimalFirewall
 
         private void ManageCryptoServiceRule(bool enable)
         {
-            INetFwRule2? rule = null;
             try
             {
-                rule = firewallService.GetRuleByName(CryptoRuleName);
+                var rule = firewallService.GetAllRules().FirstOrDefault(r => r.Name == CryptoRuleName) as INetFwRule2;
                 if (enable)
                 {
                     if (rule == null)
@@ -329,17 +293,13 @@ namespace MinimalFirewall
             {
                 activityLogger.LogException($"ManageCryptoServiceRule (enable: {enable})", ex);
             }
-            finally
-            {
-                if (rule != null) Marshal.ReleaseComObject(rule);
-            }
         }
 
         public void ToggleLockdown()
         {
             var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
-            activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
+
             try
             {
                 AdminTaskService.SetAuditPolicy(newLockdownState);
@@ -385,59 +345,57 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (newLockdownState)
-            {
-                eventListenerService.Start();
-            }
-            else
-            {
-                eventListenerService.Stop();
-            }
-
             activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
             if (!newLockdownState)
             {
                 ReenableMfwRules();
-                activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
+                activityLogger.LogDebug("All MFW rules re-enabled by per-rule toggle.");
             }
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
-            activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
             TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
+
             if (trustPublisher && SignatureValidationService.GetPublisherInfo(pending.AppPath, out var publisherName) && publisherName != null)
             {
                 _whitelistService.Add(publisherName);
                 activityLogger.LogChange("Publisher Whitelisted", $"Publisher '{publisherName}' was added to the whitelist.");
             }
 
-            eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
             switch (decision)
             {
                 case "Allow":
-                case "Block":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
-                    string action = (decision == "Allow" ? "Allow" : "Block") + " (" + pending.Direction + ")";
+                    string allowAction = "Allow (" + pending.Direction + ")";
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
-                        var serviceNames = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var serviceName in serviceNames)
-                        {
-                            ApplyServiceRuleChange(serviceName, action, pending.AppPath);
-                        }
+                        var services = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var service in services) ApplyServiceRuleChange(service, allowAction);
                     }
-                    else if (!string.IsNullOrEmpty(pending.AppPath))
+                    else
                     {
-                        ApplyApplicationRuleChange([pending.AppPath], action);
+                        ApplyApplicationRuleChange([pending.AppPath], allowAction);
                     }
                     break;
                 case "TemporaryAllow":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
-                    CreateTemporaryAllowRule(pending.AppPath, pending.ServiceName, pending.Direction, duration);
+                    CreateTemporaryAllowRule(pending.AppPath, pending.Direction, duration);
                     break;
-
+                case "Block":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
+                    string blockAction = "Block (" + pending.Direction + ")";
+                    if (!string.IsNullOrEmpty(pending.ServiceName))
+                    {
+                        var services = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var service in services) ApplyServiceRuleChange(service, blockAction);
+                    }
+                    else
+                    {
+                        ApplyApplicationRuleChange([pending.AppPath], blockAction);
+                    }
+                    break;
                 case "Ignore":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
                     activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
@@ -447,86 +405,109 @@ namespace MinimalFirewall
 
         private void ReenableMfwRules()
         {
-            var allRules = firewallService.GetAllRules();
-            try
+            var mfwRules = firewallService.GetApplicationRules();
+            foreach (var rule in mfwRules)
             {
-                foreach (var rule in allRules)
+                try
                 {
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(rule.Grouping) &&
-                            (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                             rule.Grouping == "Minimal Firewall" ||
-                             rule.Grouping == "Minimal Firewall (Wildcard)"))
-                        {
-                            if (!rule.Enabled)
-                            {
-                                rule.Enabled = true;
-                            }
-                        }
-                    }
-                    catch (COMException ex)
-                    {
-                        activityLogger.LogException($"Enable rule '{rule.Name}'", ex);
-                    }
+                    if (!rule.Enabled) rule.Enabled = true;
                 }
-            }
-            finally
-            {
-                foreach (var rule in allRules)
+                catch (COMException ex)
                 {
-                    Marshal.ReleaseComObject(rule);
+                    activityLogger.LogException($"Enable rule '{rule.Name}'", ex);
                 }
             }
         }
 
-        private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)
+        private void CreateTemporaryAllowRule(string appPath, string direction, TimeSpan duration)
         {
-            if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection)) return;
-            string baseName = !string.IsNullOrEmpty(serviceName) ? serviceName.Split(',')[0].Trim() : Path.GetFileNameWithoutExtension(appPath);
-            string guid = Guid.NewGuid().ToString();
-            string description = "Temporarily allowed by Minimal Firewall.";
-            string ruleName = $"Temp Allow - {baseName} - {direction} - {guid}";
-
-            if (!string.IsNullOrEmpty(serviceName))
-            {
-                CreateServiceRule(ruleName, serviceName, parsedDirection, parsedAction, ProtocolTypes.Any.Value, appPath);
-            }
-            else
-            {
-                CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
-            }
-
+            string appName = Path.GetFileNameWithoutExtension(appPath);
+            string ruleNameTcp = $"Temp Allow - {appName} - TCP - {Guid.NewGuid()}";
+            string ruleNameUdp = $"Temp Allow - {appName} - UDP - {Guid.NewGuid()}";
+            string action = $"Allow ({direction})";
             DateTime expiry = DateTime.UtcNow.Add(duration);
-            _temporaryRuleManager.Add(ruleName, expiry);
-            activityLogger.LogChange("Temporary Rule Created", $"Allowed {baseName} ({appPath}) for {duration.TotalMinutes} minutes.");
-            var timer = new System.Threading.Timer(_ =>
+            string description = "Temporarily allowed by Minimal Firewall.";
+            var rulesToAdd = new List<AdvancedRuleViewModel>();
+            ApplyRuleAction(appName, action, (baseName, dir, act) =>
+            {
+                rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(CreateApplicationRule(ruleNameTcp, appPath, dir, act, ProtocolTypes.TCP.Value, description)));
+                rulesToAdd.Add(FirewallDataService.CreateAdvancedRuleViewModel(CreateApplicationRule(ruleNameUdp, appPath, dir, act, ProtocolTypes.UDP.Value, description)));
+            });
+            if (rulesToAdd.Count > 0)
+            {
+                _dataService.AddRulesToCache(rulesToAdd);
+            }
+
+            _temporaryRuleManager.Add(ruleNameTcp, expiry);
+            _temporaryRuleManager.Add(ruleNameUdp, expiry);
+            activityLogger.LogChange("Temporary Rule Created", $"Allowed {appPath} for {duration.TotalMinutes} minutes.");
+
+            var timerTcp = new System.Threading.Timer(_ =>
             {
                 try
                 {
-                    firewallService.DeleteRulesByName([ruleName]);
-                    _temporaryRuleManager.Remove(ruleName);
-                    if (_temporaryRuleTimers.TryRemove(ruleName, out var t))
+                    firewallService.DeleteRulesByName([ruleNameTcp]);
+                    _dataService.RemoveRulesFromCache([ruleNameTcp]);
+                    _temporaryRuleManager.Remove(ruleNameTcp);
+                    if (_temporaryRuleTimers.TryRemove(ruleNameTcp, out var timer))
                     {
-                        t.Dispose();
+                        timer.Dispose();
                     }
-                    activityLogger.LogDebug($"Temporary rule {ruleName} expired and was removed.");
+                    activityLogger.LogDebug($"Temporary rule {ruleNameTcp} expired and was removed.");
                 }
                 catch (COMException ex)
                 {
-                    activityLogger.LogException($"Deleting temporary rule {ruleName}", ex);
+                    activityLogger.LogException($"Deleting temporary rule {ruleNameTcp}", ex);
                 }
             }, null, duration, Timeout.InfiniteTimeSpan);
-            _temporaryRuleTimers[ruleName] = timer;
+            var timerUdp = new System.Threading.Timer(_ =>
+            {
+                try
+                {
+                    firewallService.DeleteRulesByName([ruleNameUdp]);
+                    _dataService.RemoveRulesFromCache([ruleNameUdp]);
+                    _temporaryRuleManager.Remove(ruleNameUdp);
+                    if (_temporaryRuleTimers.TryRemove(ruleNameUdp, out var timer))
+                    {
+                        timer.Dispose();
+                    }
+                    activityLogger.LogDebug($"Temporary rule {ruleNameUdp} expired and was removed.");
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"Deleting temporary rule {ruleNameUdp}", ex);
+                }
+            }, null, duration, Timeout.InfiniteTimeSpan);
+            _temporaryRuleTimers[ruleNameTcp] = timerTcp;
+            _temporaryRuleTimers[ruleNameUdp] = timerUdp;
         }
 
         public void AcceptForeignRule(FirewallRuleChange change)
         {
+            if (change.Rule?.Name is null) return;
+            var rule = firewallService.GetAllRules().FirstOrDefault(r => r.Name == change.Rule.Name);
+            if (rule != null)
+            {
+                try
+                {
+                    rule.Grouping = MFWConstants.MainRuleGroup;
+                    activityLogger.LogChange("Foreign Rule Accepted", rule.Name);
+                    sentryService.CreateBaseline();
+                }
+                catch (COMException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to accept foreign rule '{rule.Name}': {ex.Message}");
+                    activityLogger.LogException($"AcceptForeignRule for '{rule.Name}'", ex);
+                }
+            }
+        }
+
+        public void AcknowledgeForeignRule(FirewallRuleChange change)
+        {
             if (change.Rule?.Name is not null)
             {
                 foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
-                activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Accepting foreign rule '{change.Rule.Name}'");
+                sentryService.CreateBaseline();
             }
         }
 
@@ -534,70 +515,66 @@ namespace MinimalFirewall
         {
             if (change.Rule?.Name is not null)
             {
-                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{change.Rule.Name}'");
                 DeleteAdvancedRules([change.Rule.Name]);
-            }
-        }
-
-        public void SetGroupEnabledState(string groupName, bool isEnabled)
-        {
-            INetFwRules? comRules = null;
-            var rulesInGroup = new List<INetFwRule2>();
-            try
-            {
-                comRules = _firewallPolicy.Rules;
-                foreach (INetFwRule2 r in comRules)
-                {
-                    if (r != null && string.Equals(r.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        rulesInGroup.Add(r);
-                    }
-                    else
-                    {
-                        if (r != null) Marshal.ReleaseComObject(r);
-                    }
-                }
-
-                foreach (var rule in rulesInGroup)
-                {
-                    try
-                    {
-                        if (rule.Enabled != isEnabled)
-                        {
-                            rule.Enabled = isEnabled;
-                        }
-                    }
-                    catch (COMException ex)
-                    {
-                        activityLogger.LogException($"SetGroupEnabledState for rule '{rule.Name}'", ex);
-                    }
-                }
-                activityLogger.LogChange("Group State Changed", $"Group '{groupName}' {(isEnabled ? "Enabled" : "Disabled")}");
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"SetGroupEnabledState for group '{groupName}'", ex);
-            }
-            finally
-            {
-                foreach (var rule in rulesInGroup)
-                {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
-                }
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                sentryService.CreateBaseline();
             }
         }
 
         public void AcceptAllForeignRules(List<FirewallRuleChange> changes)
         {
             if (changes == null || changes.Count == 0) return;
+            var allRules = firewallService.GetAllRules().ToDictionary(r => r.Name);
+            foreach (var change in changes)
+            {
+                if (change.Rule?.Name != null && allRules.TryGetValue(change.Rule.Name, out var rule))
+                {
+                    try
+                    {
+                        rule.Grouping = MFWConstants.MainRuleGroup;
+                        activityLogger.LogChange("Foreign Rule Accepted", rule.Name);
+                    }
+                    catch (COMException ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ERROR] Failed to accept foreign rule '{rule.Name}': {ex.Message}");
+                        activityLogger.LogException($"AcceptAllForeignRules for '{rule.Name}'", ex);
+                    }
+                }
+            }
+            sentryService.CreateBaseline();
+        }
+
+        public void AcknowledgeAllForeignRules(List<FirewallRuleChange> changes)
+        {
+            if (changes == null || changes.Count == 0) return;
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
             if (ruleNames.Any())
             {
                 foreignRuleTracker.AcknowledgeRules(ruleNames);
-                activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
-                activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
+                sentryService.CreateBaseline();
             }
+        }
+
+        private AdvancedRuleViewModel CopyViewModel(AdvancedRuleViewModel source)
+        {
+            return new AdvancedRuleViewModel
+            {
+                Name = source.Name,
+                Status = source.Status,
+                IsEnabled = source.IsEnabled,
+                Direction = source.Direction,
+                LocalPorts = source.LocalPorts,
+                RemotePorts = source.RemotePorts,
+                Protocol = source.Protocol,
+                ProtocolName = source.ProtocolName,
+                ApplicationName = source.ApplicationName,
+                ServiceName = source.ServiceName,
+                LocalAddresses = source.LocalAddresses,
+                RemoteAddresses = source.RemoteAddresses,
+                Profiles = source.Profiles,
+                Description = source.Description,
+                Grouping = source.Grouping,
+                Type = source.Type
+            };
         }
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
@@ -605,16 +582,6 @@ namespace MinimalFirewall
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
-                if (!File.Exists(vm.ApplicationName))
-                {
-                    activityLogger.LogDebug($"[Validation] Aborted creating advanced rule due to non-existent path: {vm.ApplicationName}");
-                    return;
-                }
-            }
-
-            if (vm.Status == "Allow" && !string.IsNullOrWhiteSpace(vm.ApplicationName))
-            {
-                FindAndQueueDeleteForGeneralBlockRule(vm.ApplicationName);
             }
 
             bool hasProgramOrService = !string.IsNullOrWhiteSpace(vm.ApplicationName) || !string.IsNullOrWhiteSpace(vm.ServiceName);
@@ -633,7 +600,9 @@ namespace MinimalFirewall
             if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
             if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
 
-            var protocolsToCreate = new List<int>();
+            var rulesToAdd = new List<AdvancedRuleViewModel>();
+
+            var protocolsToCreate = new List<short>();
             if (hasProgramOrService && vm.Protocol == ProtocolTypes.Any.Value)
             {
                 protocolsToCreate.Add(ProtocolTypes.TCP.Value);
@@ -648,24 +617,10 @@ namespace MinimalFirewall
             {
                 foreach (var protocol in protocolsToCreate)
                 {
-                    var ruleVm = new AdvancedRuleViewModel
-                    {
-                        Name = vm.Name,
-                        Status = vm.Status,
-                        IsEnabled = vm.IsEnabled,
-                        Description = vm.Description,
-                        Grouping = vm.Grouping,
-                        ApplicationName = vm.ApplicationName,
-                        ServiceName = vm.ServiceName,
-                        LocalPorts = vm.LocalPorts,
-                        RemotePorts = vm.RemotePorts,
-                        LocalAddresses = vm.LocalAddresses,
-                        RemoteAddresses = vm.RemoteAddresses,
-                        Profiles = vm.Profiles,
-                        Type = vm.Type,
-                        Direction = direction,
-                        Protocol = (short)protocol
-                    };
+                    var ruleVm = CopyViewModel(vm);
+                    ruleVm.Direction = direction;
+                    ruleVm.Protocol = protocol;
+
                     string nameSuffix = "";
                     if (directionsToCreate.Count > 1)
                     {
@@ -673,39 +628,39 @@ namespace MinimalFirewall
                     }
                     if (protocolsToCreate.Count > 1)
                     {
-                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
-                            " - TCP" : " - UDP";
+                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ? " - TCP" : " - UDP";
                     }
                     ruleVm.Name = vm.Name + nameSuffix;
-                    CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
+
+                    rulesToAdd.Add(CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes));
                 }
+            }
+
+            if (rulesToAdd.Count > 0)
+            {
+                _dataService.AddRulesToCache(rulesToAdd);
             }
         }
 
-        private void CreateSingleAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
+        private AdvancedRuleViewModel CreateSingleAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
             firewallRule.Name = vm.Name;
             firewallRule.Description = vm.Description;
             firewallRule.Enabled = vm.IsEnabled;
             firewallRule.Grouping = vm.Grouping;
-            firewallRule.Action = vm.Status == "Allow" ?
-                NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            firewallRule.Action = vm.Status == "Allow" ? NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
             firewallRule.Protocol = vm.Protocol;
-
-            if (!string.IsNullOrWhiteSpace(vm.ServiceName))
-            {
-                firewallRule.serviceName = vm.ServiceName;
-            }
 
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 firewallRule.ApplicationName = vm.ApplicationName;
             }
-            else
+
+            if (!string.IsNullOrWhiteSpace(vm.ServiceName))
             {
-                firewallRule.ApplicationName = null;
+                firewallRule.serviceName = vm.ServiceName;
             }
 
             if (vm.Protocol != ProtocolTypes.TCP.Value && vm.Protocol != ProtocolTypes.UDP.Value)
@@ -715,13 +670,12 @@ namespace MinimalFirewall
             }
             else
             {
-                firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ?
-                    vm.LocalPorts : "*";
-                firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
+                firewallRule.LocalPorts = vm.LocalPorts.Any() ? string.Join(",", vm.LocalPorts.Select(p => p.ToString())) : "*";
+                firewallRule.RemotePorts = vm.RemotePorts.Any() ? string.Join(",", vm.RemotePorts.Select(p => p.ToString())) : "*";
             }
 
-            firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
-            firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
+            firewallRule.LocalAddresses = vm.LocalAddresses.Any() ? string.Join(",", vm.LocalAddresses.Select(a => a.ToString())) : "*";
+            firewallRule.RemoteAddresses = vm.RemoteAddresses.Any() ? string.Join(",", vm.RemoteAddresses.Select(a => a.ToString())) : "*";
 
             NET_FW_PROFILE_TYPE2_ profiles = 0;
             if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
@@ -729,6 +683,7 @@ namespace MinimalFirewall
             if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
             if (profiles == 0) profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
             firewallRule.Profiles = (int)profiles;
+
             firewallRule.InterfaceTypes = interfaceTypes;
             if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
             {
@@ -740,36 +695,39 @@ namespace MinimalFirewall
 
             firewallService.CreateRule(firewallRule);
             activityLogger.LogChange("Advanced Rule Created", vm.Name);
-            activityLogger.LogDebug($"Created Advanced Rule: '{vm.Name}'");
+            return FirewallDataService.CreateAdvancedRuleViewModel(firewallRule);
         }
 
-        public static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
+        private static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
         {
             parsedAction = Actions.Allow;
-            parsedDirection = 0;
+            parsedDirection = Directions.Outgoing;
+
             if (string.IsNullOrEmpty(action)) return false;
 
             parsedAction = action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) ? Actions.Allow : Actions.Block;
             if (action.Contains("(All)"))
             {
-                parsedDirection = Directions.Incoming |
-                    Directions.Outgoing;
+                parsedDirection = Directions.Incoming | Directions.Outgoing;
+            }
+            else if (action.Contains("Inbound"))
+            {
+                parsedDirection = Directions.Incoming;
+            }
+            else if (action.Contains("Outbound"))
+            {
+                parsedDirection = Directions.Outgoing;
             }
             else
             {
-                if (action.Contains("Inbound") || action.Contains("Incoming"))
+                if (action.Contains("In", StringComparison.OrdinalIgnoreCase))
                 {
-                    parsedDirection |= Directions.Incoming;
+                    parsedDirection = Directions.Incoming;
                 }
-                if (action.Contains("Outbound") || action.Contains("Outgoing"))
+                else
                 {
-                    parsedDirection |= Directions.Outgoing;
+                    parsedDirection = Directions.Outgoing;
                 }
-            }
-
-            if (parsedDirection == 0)
-            {
-                parsedDirection = Directions.Outgoing;
             }
 
             return true;
@@ -782,8 +740,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            string actionStr = parsedAction == Actions.Allow ?
-                "" : "Block ";
+            string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
             string inName = $"{appName} - {actionStr}In";
             string outName = $"{appName} - {actionStr}Out";
             if (parsedDirection.HasFlag(Directions.Incoming))
@@ -796,64 +753,51 @@ namespace MinimalFirewall
             }
         }
 
-        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, int protocol, string description = "")
+        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, short protocol, string description = "")
         {
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            firewallRule.Name = name;
-            firewallRule.ApplicationName = appPath;
-            firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-            firewallRule.Action = (NET_FW_ACTION_)action;
-            firewallRule.Enabled = true;
-            firewallRule.Protocol = protocol;
+            firewallRule.WithName(name)
+                        .ForApplication(appPath)
+                        .WithDirection(direction)
+                        .WithAction(action)
+                        .WithProtocol(protocol)
+                        .WithDescription(description)
+                        .IsEnabled();
+            firewallRule.Profiles = (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+            firewallRule.InterfaceTypes = "All";
+
             if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
             {
-                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
-                firewallRule.Description = description;
+                firewallRule.WithGrouping(MFWConstants.WildcardRuleGroup);
             }
             else
             {
-                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+                firewallRule.WithGrouping(MFWConstants.MainRuleGroup);
             }
             return firewallRule;
         }
 
-        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
+        private INetFwRule2 CreateApplicationRule(string name, string appPath, Directions direction, Actions action, short protocol, string description)
         {
-            activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
             var firewallRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
             firewallService.CreateRule(firewallRule);
+            return firewallRule;
         }
 
-        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string appPath = "")
+        private INetFwRule2 CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action)
         {
-            activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with program '{appPath}'");
             var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            firewallRule.Name = name;
-            firewallRule.serviceName = serviceName;
-            if (!string.IsNullOrEmpty(appPath))
-            {
-                firewallRule.ApplicationName = appPath;
-            }
-            firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-            firewallRule.Action = (NET_FW_ACTION_)action;
-            firewallRule.Protocol = protocol;
-            firewallRule.Grouping = MFWConstants.MainRuleGroup;
-            firewallRule.Enabled = true;
+            firewallRule.WithName(name)
+                        .WithDescription(MFWConstants.UwpDescriptionPrefix + packageFamilyName)
+                        .WithDirection(direction)
+                        .WithAction(action)
+                        .WithProtocol(ProtocolTypes.Any.Value)
+                        .WithGrouping(MFWConstants.MainRuleGroup)
+                        .IsEnabled();
+            firewallRule.Profiles = (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+            firewallRule.InterfaceTypes = "All";
             firewallService.CreateRule(firewallRule);
-        }
-
-        private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
-        {
-            activityLogger.LogDebug($"Creating UWP Rule: '{name}' for PFN '{packageFamilyName}'");
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            firewallRule.Name = name;
-            firewallRule.Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName;
-            firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-            firewallRule.Action = (NET_FW_ACTION_)action;
-            firewallRule.Protocol = protocol;
-            firewallRule.Grouping = MFWConstants.MainRuleGroup;
-            firewallRule.Enabled = true;
-            firewallService.CreateRule(firewallRule);
+            return firewallRule;
         }
 
         public async Task DeleteGroupAsync(string groupName)
@@ -862,8 +806,8 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    activityLogger.LogDebug($"Deleting all rules in group: {groupName}");
-                    firewallService.DeleteRulesByGroup(groupName);
+                    var ruleNames = firewallService.DeleteRulesByGroup(groupName);
+                    _dataService.RemoveRulesFromCache(ruleNames);
                 }
                 catch (COMException ex)
                 {
@@ -871,228 +815,68 @@ namespace MinimalFirewall
                 }
             });
         }
+    }
 
-        public void DeleteAllMfwRules()
+    public partial class FirewallActionsService
+    {
+        public Task ApplyApplicationRuleChangeAsync(List<string> appPaths, string action, string? wildcardSourcePath = null)
         {
-            try
-            {
-                firewallService.DeleteAllMfwRules();
-                _wildcardRuleService.ClearRules();
-                activityLogger.LogChange("Bulk Delete", "All Minimal Firewall rules deleted by user.");
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException("DeleteAllMfwRules", ex);
-            }
+            return Task.Run(() => ApplyApplicationRuleChange(appPaths, action, wildcardSourcePath));
         }
 
-        public void UpdateWildcardRule(WildcardRule oldRule, WildcardRule newRule)
+        public Task ApplyServiceRuleChangeAsync(string serviceName, string action)
         {
-            _wildcardRuleService.UpdateRule(oldRule, newRule);
-            DeleteRulesForWildcard(oldRule);
-            activityLogger.LogChange("Wildcard Rule Updated", newRule.FolderPath);
+            return Task.Run(() => ApplyServiceRuleChange(serviceName, action));
         }
 
-        public void RemoveWildcardRule(WildcardRule rule)
+        public Task ApplyUwpRuleChangeAsync(List<UwpApp> uwpApps, string action)
         {
-            _wildcardRuleService.RemoveRule(rule);
-            DeleteRulesForWildcard(rule);
-            activityLogger.LogChange("Wildcard Rule Removed", rule.FolderPath);
+            return Task.Run(() => ApplyUwpRuleChange(uwpApps, action));
         }
 
-        public void RemoveWildcardDefinitionOnly(WildcardRule rule)
+        public Task DeleteApplicationRulesAsync(List<string> appPaths)
         {
-            _wildcardRuleService.RemoveRule(rule);
-            activityLogger.LogChange("Wildcard Definition Removed", rule.FolderPath);
+            return Task.Run(() => DeleteApplicationRules(appPaths));
         }
 
-        public void ApplyWildcardMatch(string appPath, WildcardRule rule)
+        public Task DeleteUwpRulesAsync(List<string> packageFamilyNames)
         {
-            if (!ParseActionString(rule.Action, out Actions parsedAction, out Directions parsedDirection))
-            {
-                return;
-            }
-
-            var appName = Path.GetFileNameWithoutExtension(appPath);
-
-            void createRule(string baseName, Directions dir, Actions act)
-            {
-                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-                firewallRule.Name = baseName;
-                firewallRule.ApplicationName = appPath;
-                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)dir;
-                firewallRule.Action = (NET_FW_ACTION_)act;
-                firewallRule.Enabled = true;
-                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
-                firewallRule.Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]";
-                firewallRule.Protocol = rule.Protocol;
-                firewallRule.LocalPorts = rule.LocalPorts;
-                firewallRule.RemotePorts = rule.RemotePorts;
-                firewallRule.RemoteAddresses = rule.RemoteAddresses;
-                firewallService.CreateRule(firewallRule);
-            }
-
-            ApplyRuleAction(appName, rule.Action, createRule);
-            activityLogger.LogChange("Wildcard Rule Applied", rule.Action + " for " + appPath);
+            return Task.Run(() => DeleteUwpRules(packageFamilyNames));
         }
 
-        public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
+        public Task DeleteAdvancedRulesAsync(List<string> ruleNames)
         {
-            var orphanedRuleNames = new List<string>();
-            var mfwRules = new List<INetFwRule2>();
-            var allRules = firewallService.GetAllRules();
-
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (IsMfwRule(rule))
-                    {
-                        mfwRules.Add(rule);
-                    }
-                    else
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
-                }
-
-                int total = mfwRules.Count;
-                if (total == 0)
-                {
-                    progress?.Report(100);
-                    return orphanedRuleNames;
-                }
-
-                int processed = 0;
-                await Task.Run(() =>
-                {
-                    foreach (var rule in mfwRules)
-                    {
-                        if (token.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        string appPath = rule.ApplicationName;
-
-                        if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
-                        {
-                            string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
-                            if (!File.Exists(expandedPath))
-                            {
-                                orphanedRuleNames.Add(rule.Name);
-                                activityLogger.LogDebug($"Found orphaned rule '{rule.Name}' for path: {expandedPath}");
-                            }
-                        }
-
-                        processed++;
-                        progress?.Report((processed * 100) / total);
-                    }
-                }, token);
-
-                if (token.IsCancellationRequested)
-                {
-                    return new List<string>();
-                }
-
-                if (orphanedRuleNames.Any())
-                {
-                    activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
-                    try
-                    {
-                        firewallService.DeleteRulesByName(orphanedRuleNames);
-                        activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
-                    }
-                    catch (COMException ex)
-                    {
-                        activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
-                    }
-                }
-                else
-                {
-                    activityLogger.LogDebug("No orphaned rules found.");
-                }
-            }
-            finally
-            {
-                foreach (var rule in mfwRules)
-                {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
-                }
-            }
-
-            return orphanedRuleNames;
+            return Task.Run(() => DeleteAdvancedRules(ruleNames));
         }
 
-        public async Task<string> ExportAllMfwRulesAsync()
+        public Task ProcessPendingConnectionAsync(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
-            var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
-            var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules)
-                .Select(r =>
-                {
-                    r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
-                    return r;
-                }).ToList();
-
-            var wildcardRules = _wildcardRuleService.GetRules()
-                .Select(r =>
-                {
-                    r.FolderPath = PathResolver.ConvertToEnvironmentPath(r.FolderPath);
-                    return r;
-                }).ToList();
-
-            var container = new ExportContainer
-            {
-                ExportDate = DateTime.UtcNow,
-                AdvancedRules = portableAdvancedRules,
-                WildcardRules = wildcardRules
-            };
-
-            return JsonSerializer.Serialize(container, ExportContainerJsonContext.Default.ExportContainer);
+            return Task.Run(() => ProcessPendingConnection(pending, decision, duration, trustPublisher));
         }
 
-        public async Task ImportRulesAsync(string jsonContent, bool replace)
+        public Task AcceptForeignRuleAsync(FirewallRuleChange change)
         {
-            if (BackgroundTaskService == null)
-            {
-                activityLogger.LogDebug("[Import] BackgroundTaskService is not available.");
-                return;
-            }
+            return Task.Run(() => AcceptForeignRule(change));
+        }
 
-            try
-            {
-                var container = JsonSerializer.Deserialize(jsonContent, ExportContainerJsonContext.Default.ExportContainer);
-                if (container == null)
-                {
-                    activityLogger.LogDebug("[Import] Failed to deserialize JSON content.");
-                    return;
-                }
+        public Task AcknowledgeForeignRuleAsync(FirewallRuleChange change)
+        {
+            return Task.Run(() => AcknowledgeForeignRule(change));
+        }
 
-                if (replace)
-                {
-                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
-                    await Task.Delay(1000);
-                }
+        public Task DeleteForeignRuleAsync(FirewallRuleChange change)
+        {
+            return Task.Run(() => DeleteForeignRule(change));
+        }
 
-                foreach (var ruleVm in container.AdvancedRules)
-                {
-                    ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
-                    var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
-                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
-                }
+        public Task AcceptAllForeignRulesAsync(List<FirewallRuleChange> changes)
+        {
+            return Task.Run(() => AcceptAllForeignRules(changes));
+        }
 
-                foreach (var wildcardRule in container.WildcardRules)
-                {
-                    wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
-                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
-                }
-
-                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules.Count} advanced rules and {container.WildcardRules.Count} wildcard rules. Replace: {replace}");
-            }
-            catch (JsonException ex)
-            {
-                activityLogger.LogException("ImportRules", ex);
-            }
+        public Task AcknowledgeAllForeignRulesAsync(List<FirewallRuleChange> changes)
+        {
+            return Task.Run(() => AcknowledgeAllForeignRules(changes));
         }
     }
 }

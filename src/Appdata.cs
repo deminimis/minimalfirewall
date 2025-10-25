@@ -1,41 +1,19 @@
 ﻿// File: AppData.cs
-using System.Diagnostics;
+using System;
 using System.IO;
 
 namespace MinimalFirewall
 {
-    internal static class ConfigPathManager
+    internal static class AppData
     {
-        private static readonly string _exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-        private static readonly string _appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MinimalFirewall");
-        private static bool _useAppDataStorage = false;
+        private static readonly string _folderPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "MinimalFirewall");
 
-        public static void Initialize(AppSettings settings)
+        public static string GetPath(string fileName)
         {
-            _useAppDataStorage = settings.UseAppDataStorage;
-            if (_useAppDataStorage)
-            {
-                try
-                {
-                    Directory.CreateDirectory(_appDataDirectory);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[ERROR] Could not create AppData directory: {ex.Message}");
-                    _useAppDataStorage = false;
-                }
-            }
-        }
-
-        public static string GetConfigPath(string fileName)
-        {
-            string basePath = _useAppDataStorage ? _appDataDirectory : _exeDirectory;
-            return Path.Combine(basePath, fileName);
-        }
-
-        public static string GetSettingsPath()
-        {
-            return Path.Combine(_exeDirectory, "settings.json");
+            Directory.CreateDirectory(_folderPath);
+            return Path.Combine(_folderPath, fileName);
         }
     }
 }

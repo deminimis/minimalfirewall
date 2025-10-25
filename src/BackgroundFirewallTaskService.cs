@@ -40,7 +40,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    await Task.Run(async () =>
+                    await Task.Run(() =>
                     {
                         switch (task.TaskType)
                         {
@@ -63,7 +63,7 @@ namespace MinimalFirewall
                                 if (task.Payload is DeleteRulesPayload p6) _actionsService.DeleteAdvancedRules(p6.RuleIdentifiers);
                                 break;
                             case FirewallTaskType.DeleteGroup:
-                                if (task.Payload is string p7) await _actionsService.DeleteGroupAsync(p7);
+                                if (task.Payload is string p7) _actionsService.DeleteGroupAsync(p7).Wait();
                                 break;
                             case FirewallTaskType.DeleteWildcardRules:
                                 if (task.Payload is DeleteWildcardRulePayload p8) _actionsService.DeleteRulesForWildcard(p8.Wildcard);
@@ -74,35 +74,23 @@ namespace MinimalFirewall
                             case FirewallTaskType.AcceptForeignRule:
                                 if (task.Payload is ForeignRuleChangePayload p10) _actionsService.AcceptForeignRule(p10.Change);
                                 break;
+                            case FirewallTaskType.AcknowledgeForeignRule:
+                                if (task.Payload is ForeignRuleChangePayload p11) _actionsService.AcknowledgeForeignRule(p11.Change);
+                                break;
                             case FirewallTaskType.DeleteForeignRule:
                                 if (task.Payload is ForeignRuleChangePayload p12) _actionsService.DeleteForeignRule(p12.Change);
                                 break;
                             case FirewallTaskType.AcceptAllForeignRules:
                                 if (task.Payload is AllForeignRuleChangesPayload p13) _actionsService.AcceptAllForeignRules(p13.Changes);
                                 break;
+                            case FirewallTaskType.AcknowledgeAllForeignRules:
+                                if (task.Payload is AllForeignRuleChangesPayload p14) _actionsService.AcknowledgeAllForeignRules(p14.Changes);
+                                break;
                             case FirewallTaskType.CreateAdvancedRule:
                                 if (task.Payload is CreateAdvancedRulePayload p15) _actionsService.CreateAdvancedRule(p15.ViewModel, p15.InterfaceTypes, p15.IcmpTypesAndCodes);
                                 break;
                             case FirewallTaskType.AddWildcardRule:
                                 if (task.Payload is WildcardRule p16) _wildcardRuleService.AddRule(p16);
-                                break;
-                            case FirewallTaskType.SetGroupEnabledState:
-                                if (task.Payload is SetGroupEnabledStatePayload p17) _actionsService.SetGroupEnabledState(p17.GroupName, p17.IsEnabled);
-                                break;
-                            case FirewallTaskType.UpdateWildcardRule:
-                                if (task.Payload is UpdateWildcardRulePayload p18) _actionsService.UpdateWildcardRule(p18.OldRule, p18.NewRule);
-                                break;
-                            case FirewallTaskType.RemoveWildcardRule:
-                                if (task.Payload is DeleteWildcardRulePayload p19) _actionsService.RemoveWildcardRule(p19.Wildcard);
-                                break;
-                            case FirewallTaskType.RemoveWildcardDefinitionOnly:
-                                if (task.Payload is DeleteWildcardRulePayload p20) _actionsService.RemoveWildcardDefinitionOnly(p20.Wildcard);
-                                break;
-                            case FirewallTaskType.DeleteAllMfwRules:
-                                _actionsService.DeleteAllMfwRules();
-                                break;
-                            case FirewallTaskType.ImportRules:
-                                if (task.Payload is ImportRulesPayload p21) await _actionsService.ImportRulesAsync(p21.JsonContent, p21.Replace);
                                 break;
                         }
                     }, _cancellationTokenSource.Token);
