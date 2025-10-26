@@ -4,6 +4,8 @@ using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
 using System.Collections.Concurrent;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
 
 namespace MinimalFirewall
 {
@@ -15,16 +17,16 @@ namespace MinimalFirewall
         private readonly AppSettings _appSettings;
         private readonly PublisherWhitelistService _whitelistService;
         private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
-        private readonly ConcurrentDictionary<string, DateTime> _recentlyNotifiedApps = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, System.Threading.Timer> _snoozeTimers = [];
+        private readonly ConcurrentDictionary<string, bool> _pendingNotifications = new(StringComparer.OrdinalIgnoreCase);
         private EventLogWatcher? _eventWatcher;
         private readonly Action<string> _logAction;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
 
         public FirewallActionsService? ActionsService { get; set; }
 
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
 
-        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService)
+        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService, BackgroundFirewallTaskService backgroundTaskService)
         {
             _dataService = dataService;
             _wildcardRuleService = wildcardRuleService;
@@ -32,6 +34,7 @@ namespace MinimalFirewall
             _logAction = logAction;
             _appSettings = appSettings;
             _whitelistService = whitelistService;
+            _backgroundTaskService = backgroundTaskService;
         }
 
         public void Start()
@@ -63,10 +66,13 @@ namespace MinimalFirewall
 
         public void Stop()
         {
-            if (_eventWatcher != null && _eventWatcher.Enabled)
+            if (_eventWatcher != null)
             {
                 _eventWatcher.Enabled = false;
-                _logAction("[EventListener] Event watcher disabled.");
+                _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
+                _eventWatcher.Dispose();
+                _eventWatcher = null;
+                _logAction("[EventListener] Event watcher stopped and disposed.");
             }
         }
 
@@ -77,83 +83,99 @@ namespace MinimalFirewall
                 return;
             }
 
-            Task.Run(() =>
-            {
-                using (var eventRecord = e.EventRecord)
-                {
-                    OnFirewallBlockEvent(eventRecord);
-                }
-            });
-        }
-
-        private void OnFirewallBlockEvent(EventRecord eventRecord)
-        {
             try
             {
-                if (ActionsService == null) return;
-                _logAction("[EventListener] Firing OnFirewallBlockEvent.");
-                string xmlContent = eventRecord.ToXml();
+                string xmlContent = e.EventRecord.ToXml();
+                Task.Run(() => OnFirewallBlockEvent(xmlContent));
+            }
+            catch (EventLogException)
+            {
 
+            }
+        }
+
+        private void OnFirewallBlockEvent(string xmlContent)
+        {
+            string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
+            string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
+            string directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+            string remoteAddressForClear = GetValueFromXml(xmlContent, "RemoteAddress");
+            string remotePortForClear = GetValueFromXml(xmlContent, "RemotePort");
+            string protocolForClear = GetValueFromXml(xmlContent, "Protocol");
+
+            try
+            {
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
+                string protocol = GetValueFromXml(xmlContent, "Protocol");
+                string remotePort = GetValueFromXml(xmlContent, "RemotePort");
+                string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
+                string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                string filterId = GetValueFromXml(xmlContent, "FilterId");
+                string layerId = GetValueFromXml(xmlContent, "LayerId");
+
+                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}', Direction: '{eventDirection}', Protocol: {protocol}, Remote: {remoteAddress}:{remotePort}, FilterId: {filterId}, LayerId: {layerId}");
+
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
-                if (appPath.Equals("System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(appPath))
+                if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logAction($"[EventListener] Event for '{rawAppPath}' process ignored.");
+                    _logAction($"[EventListener] Ignoring event for System or empty path: '{appPath}'");
+                    return;
+                }
+                appPath = PathResolver.NormalizePath(appPath);
+                _logAction($"[EventListener] Normalized path: '{appPath}', Direction: '{eventDirection}'");
+
+                string notificationKey = $"{appPath}|{eventDirection}|{remoteAddress}|{remotePort}|{protocol}";
+                if (!_pendingNotifications.TryAdd(notificationKey, true))
+                {
+                    _logAction($"[EventListener] Notification already pending for '{notificationKey}'. Ignoring duplicate event.");
                     return;
                 }
 
-                appPath = PathResolver.NormalizePath(appPath);
-                _logAction($"[EventListener] Event Path: {appPath} (Raw: {rawAppPath})");
                 if (!ShouldProcessEvent(appPath))
                 {
-                    _logAction("[EventListener] Event SKIPPED by ShouldProcessEvent filter.");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
                     return;
                 }
 
-                string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                string serviceName = SystemDiscoveryService.GetServicesByPID(GetValueFromXml(xmlContent, "ProcessID"));
-
-                var matchingWildcard = _wildcardRuleService.Match(appPath);
-                if (matchingWildcard != null)
+                string serviceName = string.Empty;
+                if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logAction($"[EventListener] Matched wildcard rule for {appPath}. Action: {matchingWildcard.Action}");
-                    if (matchingWildcard.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+                    string processId = GetValueFromXml(xmlContent, "ProcessID");
+                    if (!string.IsNullOrEmpty(processId) && processId != "0")
                     {
-                        _logAction($"[EventListener] Proactively creating 'Allow' rule for {appPath} based on wildcard.");
-                        ActionsService.ApplyApplicationRuleChange([appPath], matchingWildcard.Action, matchingWildcard.FolderPath);
-                        return;
+                        serviceName = SystemDiscoveryService.GetServicesByPID(processId);
+                        _logAction($"[EventListener] svchost.exe detected. PID: {processId}, Resolved Service(s): '{serviceName}'");
+                    }
+                }
+
+                MfwRuleStatus existingRuleStatus = _dataService.CheckMfwRuleStatus(appPath, serviceName, eventDirection);
+                _logAction($"[EventListener] CheckMfwRuleStatus result for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}') is: {existingRuleStatus}");
+
+                if (existingRuleStatus == MfwRuleStatus.MfwBlock)
+                {
+                    _logAction($"[EventListener] An MFW Block rule already exists. Ignoring event.");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+                else if (existingRuleStatus == MfwRuleStatus.MfwAllow)
+                {
+                    _logAction($"[EventListener ANOMALY] An MFW Allow rule exists, but a block event was received. Proceeding to notify user.");
+                }
+
+                var matchingRule = _wildcardRuleService.Match(appPath);
+                if (matchingRule != null)
+                {
+                    _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
+                    if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
+                    {
+                        ActionsService.ApplyWildcardMatch(appPath, matchingRule);
+                        _logAction($"[EventListener] Applying Allow action from matched wildcard rule.");
                     }
                     else
                     {
-                        _logAction($"[EventListener] App {appPath} is covered by a 'Block' wildcard. Suppressing notification.");
-                        return;
+                        _logAction($"[EventListener] Matched wildcard rule action is '{matchingRule.Action}'. Ignoring block event.");
                     }
-                }
-
-                if (string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(appPath))
-                {
-                    var allServices = _dataService.GetCachedServicesWithExePaths();
-                    var possibleServices = allServices
-                        .Where(s => PathResolver.NormalizePath(s.ExePath).Equals(appPath, StringComparison.OrdinalIgnoreCase))
-                        .Select(s => s.ServiceName)
-                        .ToList();
-                    if (possibleServices.Any())
-                    {
-                        serviceName = string.Join(", ", possibleServices);
-                    }
-                }
-
-                if (_dataService.DoesAnyRuleExist(appPath, serviceName, eventDirection))
-                {
-                    _logAction("[EventListener] Event SKIPPED: A rule already exists.");
-                    return;
-                }
-
-                if (SignatureValidationService.GetPublisherInfo(appPath, out var publisherName) && publisherName != null && _whitelistService.IsTrusted(publisherName))
-                {
-                    _logAction($"[EventListener] Auto-allowing whitelisted publisher application: {appPath} from {publisherName}");
-                    string allowAction = $"Allow ({eventDirection})";
-                    ActionsService.ApplyApplicationRuleChange([appPath], allowAction);
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
                     return;
                 }
 
@@ -161,74 +183,115 @@ namespace MinimalFirewall
                 {
                     if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
                     {
-                        _logAction($"[EventListener] Auto-allowing system-trusted application: {appPath} from {trustedPublisherName}");
+                        _logAction($"[EventListener] Auto-allowing trusted application '{appPath}' by publisher '{trustedPublisherName}'.");
                         string allowAction = $"Allow ({eventDirection})";
-                        ActionsService.ApplyApplicationRuleChange([appPath], allowAction);
+
+                        if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
+                        {
+                            var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                        }
+                        else
+                        {
+                            _logAction($"[EventListener ERROR] Cannot auto-allow. BackgroundTaskService is null or appPath is invalid.");
+                        }
+
+                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
                         return;
                     }
-                }
-
-                if (_recentlyNotifiedApps.TryGetValue(appPath, out DateTime lastNotificationTime))
-                {
-                    if ((DateTime.UtcNow - lastNotificationTime).TotalSeconds < 60)
+                    else
                     {
-                        _logAction($"[EventListener] Event DEBOUNCED for {appPath}. Last notification was too recent.");
-                        return;
+                        _logAction($"[EventListener] App '{appPath}' not trusted or signature check failed. Not auto-allowing.");
                     }
                 }
 
-                _recentlyNotifiedApps[appPath] = DateTime.UtcNow;
-                _logAction($"[EventListener] Event PASSED all filters. Firing PendingConnectionDetected for {appPath}.");
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
                     Direction = eventDirection,
-                    ServiceName = serviceName
+                    ServiceName = serviceName,
+                    Protocol = protocol,
+                    RemotePort = remotePort,
+                    RemoteAddress = remoteAddress,
+                    FilterId = filterId,
+                    LayerId = layerId
                 };
+                _logAction($"[EventListener] Queuing pending connection for user decision: '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}', FilterId: {filterId})");
                 PendingConnectionDetected?.Invoke(pendingVm);
+
             }
             catch (Exception ex)
             {
                 _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex}");
+                ClearPendingNotification(appPathForClear, directionForClear, remoteAddressForClear, remotePortForClear, protocolForClear);
+            }
+        }
+
+        public void ClearPendingNotification(string appPath, string direction, string remoteAddress, string remotePort, string protocol)
+        {
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            string key = $"{appPath}|{direction}|{remoteAddress}|{remotePort}|{protocol}";
+            if (_pendingNotifications.TryRemove(key, out _))
+            {
+                _logAction($"[EventListener] Cleared specific pending notification flag for '{key}'.");
+            }
+        }
+
+        public void ClearPendingNotification(string appPath, string direction)
+        {
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            string keyPrefix = $"{appPath}|{direction}|";
+
+            var matchingKeys = _pendingNotifications.Keys.Where(k => k.StartsWith(keyPrefix)).ToList();
+            foreach (var k in matchingKeys)
+            {
+                if (_pendingNotifications.TryRemove(k, out _))
+                {
+                    _logAction($"[EventListener] Cleared pending notification flag for '{k}' (fallback match).");
+                }
             }
         }
 
         public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
             _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
+            _logAction($"[EventListener] Snoozing notifications for '{appPath}' for {duration}.");
         }
 
         public void ClearAllSnoozes()
         {
             _snoozedApps.Clear();
-            foreach (var timer in _snoozeTimers.Values)
-            {
-                timer.Dispose();
-            }
-            _snoozeTimers.Clear();
+            _logAction($"[EventListener] Cleared all snoozes.");
         }
 
         private bool ShouldProcessEvent(string appPath)
         {
             if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
+                _logAction($"[EventListener] ShouldProcessEvent=false (System or empty path)");
                 return false;
             }
 
             if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
             {
+                _logAction($"[EventListener] Event for '{appPath}' is snoozed. Ignoring.");
                 return false;
             }
 
-            return _isLockdownEnabled();
+            bool lockdown = _isLockdownEnabled();
+            if (!lockdown)
+            {
+                _logAction($"[EventListener] ShouldProcessEvent=false (Lockdown not enabled)");
+            }
+            return lockdown;
         }
 
         private static string ParseDirection(string rawDirection)
         {
             return rawDirection switch
             {
-                "%%14592" => "Inbound",
-                "%%14593" => "Outbound",
+                "%%14592" => "Incoming",
+                "%%14593" => "Outgoing",
                 _ => rawDirection,
             };
         }
@@ -238,34 +301,42 @@ namespace MinimalFirewall
             try
             {
                 using var stringReader = new StringReader(xml);
-                using var xmlReader = XmlReader.Create(stringReader);
-                while (xmlReader.ReadToFollowing("Data"))
+                using var xmlReader = XmlReader.Create(stringReader, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+                while (xmlReader.Read())
                 {
-                    if (xmlReader.GetAttribute("Name") == elementName)
+                    if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "Data")
                     {
-                        return xmlReader.ReadElementContentAsString();
+                        if (xmlReader.GetAttribute("Name") == elementName)
+                        {
+                            if (xmlReader.IsEmptyElement)
+                            {
+                                return string.Empty;
+                            }
+                            xmlReader.Read();
+                            if (xmlReader.NodeType == XmlNodeType.Text)
+                            {
+                                return xmlReader.Value;
+                            }
+                            return string.Empty;
+                        }
                     }
                 }
             }
             catch (XmlException ex)
             {
-                Debug.WriteLine($"[XML PARSE ERROR] Failed to parse event XML for element '{elementName}': {ex.Message}");
+                Debug.WriteLine($"[XML PARSE ERROR] Failed to parse event XML for element '{elementName}': {ex.Message}\nXML: {xml}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UNEXPECTED XML PARSE ERROR] for element '{elementName}': {ex.Message}\nXML: {xml}");
             }
             return string.Empty;
         }
 
         public void Dispose()
         {
-            if (_eventWatcher != null)
-            {
-                _eventWatcher.Enabled = false;
-                _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
-                _eventWatcher.Dispose();
-            }
-            foreach (var timer in _snoozeTimers.Values)
-            {
-                timer.Dispose();
-            }
+            Stop();
             GC.SuppressFinalize(this);
         }
     }

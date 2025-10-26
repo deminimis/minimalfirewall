@@ -17,8 +17,9 @@ namespace MinimalFirewall
             {
                 var wmiQuery = new ObjectQuery("SELECT Name, DisplayName, PathName FROM Win32_Service WHERE PathName IS NOT NULL");
                 using var searcher = new ManagementObjectSearcher(wmiQuery);
-                foreach (ManagementObject service in searcher.Get().Cast<ManagementObject>())
+                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
                 {
+                    using var service = (ManagementObject)serviceBaseObject; // Explicit disposal
                     string rawPath = service["PathName"]?.ToString() ?? string.Empty;
                     if (string.IsNullOrEmpty(rawPath)) continue;
 
@@ -55,14 +56,19 @@ namespace MinimalFirewall
         public static string GetServicesByPID(string processId)
         {
             if (string.IsNullOrEmpty(processId) || processId == "0") return string.Empty;
+            var serviceNames = new List<string?>();
             try
             {
                 var query = new ObjectQuery($"SELECT Name FROM Win32_Service WHERE ProcessId = {processId}");
                 using var searcher = new ManagementObjectSearcher(query);
-                var serviceNames = searcher.Get().Cast<ManagementObject>()
-                                           .Select(s => s["Name"]?.ToString())
-                                           .Where(n => !string.IsNullOrEmpty(n));
-                return string.Join(", ", serviceNames);
+                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
+                {
+                    using (var service = (ManagementObject)serviceBaseObject) // Explicit disposal
+                    {
+                        serviceNames.Add(service["Name"]?.ToString());
+                    }
+                }
+                return string.Join(", ", serviceNames.Where(n => !string.IsNullOrEmpty(n)));
             }
             catch (Exception ex) when (ex is ManagementException or System.Runtime.InteropServices.COMException)
             {
@@ -71,22 +77,28 @@ namespace MinimalFirewall
             }
         }
 
-        public static List<string> GetExecutablesInFolder(string directoryPath, string? exeName = null)
+        public static List<string> GetFilesInFolder(string directoryPath, List<string> searchPatterns)
         {
             var files = new List<string>();
-            string searchPattern = string.IsNullOrWhiteSpace(exeName) ? "*.exe" : exeName;
-            GetExecutablesInFolderRecursive(directoryPath, searchPattern, files);
+            if (searchPatterns == null || searchPatterns.Count == 0)
+            {
+                return files;
+            }
+            GetFilesInFolderRecursive(directoryPath, searchPatterns, files);
             return files;
         }
 
-        private static void GetExecutablesInFolderRecursive(string directoryPath, string searchPattern, List<string> files)
+        private static void GetFilesInFolderRecursive(string directoryPath, List<string> searchPatterns, List<string> files)
         {
             try
             {
-                files.AddRange(Directory.GetFiles(directoryPath, searchPattern));
+                foreach (string pattern in searchPatterns)
+                {
+                    files.AddRange(Directory.GetFiles(directoryPath, pattern));
+                }
                 foreach (var directory in Directory.GetDirectories(directoryPath))
                 {
-                    GetExecutablesInFolderRecursive(directory, searchPattern, files);
+                    GetFilesInFolderRecursive(directory, searchPatterns, files);
                 }
             }
             catch (UnauthorizedAccessException) { }
