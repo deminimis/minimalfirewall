@@ -14,6 +14,9 @@ Unlike most other Firewall programs, Minimal Firewall acts as a frontend, avoidi
 <br>
 </br>
 
+#### Prerequisites
+If you don't have .net 8 installed, you can download the desktop runtime from Microsoft [here](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.9`
+
 ## User Guide
 
 The program is designed to be intuitive. For a concise user guide, see the [wiki](https://github.com/deminimis/minimalfirewall/wiki/Minimal-Firewall-User-Guide).
