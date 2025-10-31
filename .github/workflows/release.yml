@@ -11,6 +11,6 @@ jobs:
         uses: michidk/winget-updater@v1
         with:
           komac-token: ${{ secrets.KOMAC_TOKEN }}
-          identifier: "deminimis.minimalfirewall"
+          identifier: "Deminimis.MinimalFirewall"
           repo: "deminimis/minimalfirewall"
           URL: "https://github.com/deminimis/minimalfirewall/releases/download/v{VERSION}/Minimal.Firewall.exe"
