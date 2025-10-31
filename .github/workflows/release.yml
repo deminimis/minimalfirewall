@@ -1,0 +1,16 @@
+name: Update WinGet Package
+
+on: workflow_dispatch
+
+jobs:
+  update:
+    name: Update Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Package
+        uses: michidk/winget-updater@v1
+        with:
+          komac-token: ${{ secrets.KOMAC_TOKEN }}
+          identifier: "deminimis.minimalfirewall"
+          repo: "deminimis/minimalfirewall"
+          URL: "https://github.com/deminimis/minimalfirewall/releases/download/v{VERSION}/Minimal.Firewall.exe"
