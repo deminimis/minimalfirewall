@@ -1,5 +1,4 @@
-﻿// File: FirewallRuleService.cs
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -7,39 +6,84 @@ namespace MinimalFirewall
 {
     public class FirewallRuleService
     {
-        private readonly INetFwPolicy2 _firewallPolicy;
+        private const int E_ACCESSDENIED = unchecked((int)0x80070005);
+        private const int HRESULT_FROM_WIN32_ERROR_FILE_NOT_FOUND = unchecked((int)0x80070002);
+        private const int HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS = unchecked((int)0x800700B7);
 
-        public FirewallRuleService(INetFwPolicy2 firewallPolicy)
+        public FirewallRuleService()
         {
-            _firewallPolicy = firewallPolicy;
         }
 
-        public List<INetFwRule2> GetApplicationRules()
+        private INetFwPolicy2 GetLocalPolicy()
         {
-            if (_firewallPolicy == null) return [];
-
-            var appRules = new List<INetFwRule2>();
-            foreach (INetFwRule2 rule in _firewallPolicy.Rules)
+            Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+            if (policyType == null)
             {
-                if (rule != null && !string.IsNullOrEmpty(rule.Grouping) &&
-                   (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                    rule.Grouping == "Minimal Firewall" ||
-                    rule.Grouping == "Minimal Firewall (Wildcard)"))
-                {
-                    appRules.Add(rule);
-                }
+                throw new InvalidOperationException("Firewall policy type could not be retrieved.");
             }
-            return appRules;
+            return (INetFwPolicy2)Activator.CreateInstance(policyType)!;
         }
+
 
         public List<INetFwRule2> GetAllRules()
         {
-            if (_firewallPolicy == null) return [];
-            return new List<INetFwRule2>(_firewallPolicy.Rules.Cast<INetFwRule2>().Where(r => r != null));
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return [];
+            var rulesList = new List<INetFwRule2>();
+            var comRules = firewallPolicy.Rules;
+            try
+            {
+                foreach (INetFwRule2 rule in comRules)
+                {
+                    rulesList.Add(rule);
+                }
+                return rulesList;
+            }
+            catch (COMException ex)
+            {
+                Debug.WriteLine($"[ERROR] GetAllRules: Failed to retrieve firewall rules. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                foreach (var rule in rulesList)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                return [];
+            }
+            finally
+            {
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+        }
+
+
+        public INetFwRule2?
+        GetRuleByName(string name)
+        {
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy == null) return null;
+            try
+            {
+                return firewallPolicy.Rules.Item(name) as INetFwRule2;
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
+            catch (COMException ex)
+            {
+                Debug.WriteLine($"[ERROR] GetRuleByName ('{name}'): COM error. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                return null;
+            }
+            finally
+            {
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
         }
 
         public void SetDefaultOutboundAction(NET_FW_ACTION_ action)
         {
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy == null) return;
             foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
             {
                 NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
@@ -49,187 +93,506 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    _firewallPolicy.set_DefaultOutboundAction(profile, action);
+                    firewallPolicy.set_DefaultOutboundAction(profile, action);
                 }
                 catch (COMException ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Failed to set outbound action for {profile}: {ex.HResult:X8} {ex.Message}");
-                }
-            }
-        }
-
-        public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
-        {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(appPath)) return [];
-
-            string normalizedAppPath = PathResolver.NormalizePath(appPath);
-            return _firewallPolicy.Rules.Cast<INetFwRule>()
-                .Where(r => r != null &&
-                            !string.IsNullOrEmpty(r.ApplicationName) &&
-                            string.Equals(PathResolver.NormalizePath(r.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
-                            r.Direction == direction)
-                 .Select(r => r.Name)
-                .ToList();
-        }
-
-        public NET_FW_ACTION_ GetDefaultOutboundAction()
-        {
-            if (_firewallPolicy == null) return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
-
-            try
-            {
-                var currentProfileTypes = (NET_FW_PROFILE_TYPE2_)_firewallPolicy.CurrentProfileTypes;
-                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0)
-                {
-                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC];
-                }
-                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0)
-                {
-                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE];
-                }
-                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0)
-                {
-                    return _firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN];
-                }
-            }
-            catch (COMException ex)
-            {
-                Debug.WriteLine($"Error getting default outbound action: {ex.Message}");
-            }
-
-            return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
-        }
-
-        public List<string> DeleteRulesByPath(List<string> appPaths)
-        {
-            if (_firewallPolicy == null || appPaths.Count == 0) return [];
-
-            var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
-            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
-                .Where(r => r != null && !string.IsNullOrEmpty(r.ApplicationName) && pathSet.Contains(PathResolver.NormalizePath(r.ApplicationName)))
-                .Select(r => r.Name)
-                .ToList();
-
-            foreach (var ruleName in rulesToRemove)
-            {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
-            }
-            return rulesToRemove;
-        }
-
-        public void DeleteRuleByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
-        {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(appPath)) return;
-
-            string normalizedAppPath = PathResolver.NormalizePath(appPath);
-            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
-                .Where(r => r != null &&
-                            !string.IsNullOrEmpty(r.ApplicationName) &&
-                            string.Equals(PathResolver.NormalizePath(r.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
-                            r.Direction == direction)
-                 .Select(r => r.Name)
-                .ToList();
-
-            foreach (var ruleName in rulesToRemove)
-            {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
-            }
-        }
-
-        public List<string> DeleteRulesByServiceName(string serviceName)
-        {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(serviceName)) return [];
-
-            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule2>()
-                .Where(r => r != null && string.Equals(r.serviceName, serviceName, StringComparison.OrdinalIgnoreCase))
-                .Select(r => r.Name)
-                .ToList();
-
-            foreach (var ruleName in rulesToRemove)
-            {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
-            }
-            return rulesToRemove;
-        }
-
-        public List<string> DeleteUwpRules(List<string> packageFamilyNames)
-        {
-            if (_firewallPolicy == null || packageFamilyNames.Count == 0) return [];
-
-            var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
-            var rulesToRemove = new List<string>();
-
-            foreach (INetFwRule2 rule in _firewallPolicy.Rules)
-            {
-                if (rule != null && rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
-                {
-                    string pfnInRule = rule.Description[MFWConstants.UwpDescriptionPrefix.Length..];
-                    if (pfnSet.Contains(pfnInRule))
+                    Debug.WriteLine($"[ERROR] SetDefaultOutboundAction ({profile}): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                    if (ex.HResult == E_ACCESSDENIED)
                     {
-                        rulesToRemove.Add(rule.Name);
+                        Debug.WriteLine("[ERROR] SetDefaultOutboundAction: Access Denied. Ensure the application is running with administrator privileges.");
                     }
                 }
             }
+            if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+        }
 
-            foreach (var ruleName in rulesToRemove)
+
+        public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        {
+            var rules = GetRulesByPathAndDirection(appPath, direction);
+            var names = rules.Select(r => r.Name).ToList();
+            foreach (var rule in rules)
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                Marshal.ReleaseComObject(rule);
             }
+            return names;
+        }
+
+        public List<INetFwRule2> GetRulesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        {
+            if (string.IsNullOrEmpty(appPath)) return [];
+            string normalizedAppPath = PathResolver.NormalizePath(appPath);
+            var matchingRules = new List<INetFwRule2>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null &&
+                        !string.IsNullOrEmpty(rule.ApplicationName) &&
+                         string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+                         rule.Direction == direction)
+                    {
+                        matchingRules.Add(rule);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+            return matchingRules;
+        }
+
+
+        public NET_FW_ACTION_ GetDefaultOutboundAction()
+        {
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy == null) return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+            try
+            {
+                var currentProfileTypes = (NET_FW_PROFILE_TYPE2_)firewallPolicy.CurrentProfileTypes;
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0)
+                {
+                    return firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC];
+                }
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0)
+                {
+                    return firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE];
+                }
+                if ((currentProfileTypes & NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0)
+                {
+                    return firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN];
+                }
+                Debug.WriteLine("[WARN] GetDefaultOutboundAction: No specific profile type identified as active. Falling back to Public.");
+                return firewallPolicy.DefaultOutboundAction[NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC];
+            }
+            catch (COMException ex)
+            {
+                Debug.WriteLine($"[ERROR] GetDefaultOutboundAction: Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+            }
+            finally
+            {
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+        }
+
+
+        public List<string> DeleteRulesByPath(List<string> appPaths)
+        {
+            if (appPaths.Count == 0) return [];
+
+            var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null && !string.IsNullOrEmpty(rule.ApplicationName) && pathSet.Contains(PathResolver.NormalizePath(rule.ApplicationName)))
+                    {
+                        rulesToRemove.Add(rule.Name);
+                        rulesToKeepForRelease.Add(rule);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            DeleteRulesByName(rulesToRemove);
+            return rulesToRemove;
+        }
+
+
+        public List<string> DeleteRulesByServiceName(string serviceName)
+        {
+            if (string.IsNullOrEmpty(serviceName)) return [];
+
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule is INetFwRule2 rule2 && rule2 != null && string.Equals(rule2.serviceName, serviceName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rulesToRemove.Add(rule2.Name);
+                        rulesToKeepForRelease.Add(rule2);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            DeleteRulesByName(rulesToRemove);
+            return rulesToRemove;
+        }
+
+        public List<string> DeleteConflictingServiceRules(string serviceName, NET_FW_ACTION_ newAction, NET_FW_RULE_DIRECTION_ newDirection)
+        {
+            if (string.IsNullOrEmpty(serviceName)) return [];
+
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
+
+            NET_FW_ACTION_ conflictingAction = (newAction == NET_FW_ACTION_.NET_FW_ACTION_ALLOW) ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule is INetFwRule2 rule2 && rule2 != null &&
+                        string.Equals(rule2.serviceName, serviceName, StringComparison.OrdinalIgnoreCase) &&
+                        (rule2.Direction == newDirection || rule2.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_MAX) &&
+                        rule2.Action == conflictingAction)
+                    {
+                        rulesToRemove.Add(rule2.Name);
+                        rulesToKeepForRelease.Add(rule2);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            return rulesToRemove;
+        }
+
+
+        public List<string> DeleteUwpRules(List<string> packageFamilyNames)
+        {
+            if (packageFamilyNames.Count == 0) return [];
+
+            var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
+
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null && rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
+                    {
+                        string pfnInRule = rule.Description[MFWConstants.UwpDescriptionPrefix.Length..];
+                        if (pfnSet.Contains(pfnInRule))
+                        {
+                            rulesToRemove.Add(rule.Name);
+                            rulesToKeepForRelease.Add(rule);
+                        }
+                        else
+                        {
+                            rulesToRelease.Add(rule);
+                        }
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
         }
 
         public void DeleteRulesByName(List<string> ruleNames)
         {
-            if (_firewallPolicy == null || ruleNames.Count == 0) return;
+            if (ruleNames.Count == 0) return;
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return;
 
-            foreach (var name in ruleNames)
+            var rulesCollection = firewallPolicy.Rules;
+            try
             {
-                try { _firewallPolicy.Rules.Remove(name); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{name}': {ex.Message}"); }
+                foreach (var name in ruleNames)
+                {
+                    try
+                    {
+                        rulesCollection.Remove(name);
+                        Debug.WriteLine($"[INFO] DeleteRulesByName: Successfully requested removal of rule '{name}'.");
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        Debug.WriteLine($"[WARN] DeleteRulesByName: Rule '{name}' not found for removal.");
+                    }
+                    catch (COMException ex)
+                    {
+                        Debug.WriteLine($"[ERROR] DeleteRulesByName ('{name}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                        if (ex.HResult == E_ACCESSDENIED)
+                        {
+                            Debug.WriteLine($"[ERROR] DeleteRulesByName ('{name}'): Access Denied.");
+                        }
+                        else if (ex.HResult == HRESULT_FROM_WIN32_ERROR_FILE_NOT_FOUND)
+                        {
+                            Debug.WriteLine($"[WARN] DeleteRulesByName: Rule '{name}' not found (reported via COMException HResult).");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[ERROR] DeleteRulesByName ('{name}'): Unexpected error during removal. Type: {ex.GetType().Name}. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
         }
+
 
         public void CreateRule(INetFwRule2 rule)
         {
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            INetFwRules? rulesCollection = null;
             try
             {
-                _firewallPolicy?.Rules.Add(rule);
+                if (firewallPolicy?.Rules == null)
+                {
+                    Debug.WriteLine("[ERROR] CreateRule: Firewall policy or rules collection is null.");
+                    return;
+                }
+                rulesCollection = firewallPolicy.Rules;
+                rulesCollection.Add(rule);
+                Debug.WriteLine($"[INFO] CreateRule: Successfully requested addition of rule '{rule.Name}'.");
             }
             catch (COMException ex)
             {
-                MessageBox.Show("Failed to create rule. The firewall API rejected the input.\n\nError: " + ex.Message, "Rule Creation Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                if (ex.HResult == E_ACCESSDENIED)
+                {
+                    Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Access Denied. Ensure administrator privileges.");
+                    MessageBox.Show($"Access Denied: Could not create rule '{rule?.Name}'. Ensure the application is run as Administrator.", "Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else if (ex.HResult == HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS)
+                {
+                    Debug.WriteLine($"[WARN] CreateRule: Rule '{rule?.Name}' already exists.");
+                }
+                else
+                {
+                    MessageBox.Show($"Failed to create firewall rule '{rule?.Name}'.\n\nError: {ex.Message}\n(HResult: 0x{ex.HResult:X8})", "Rule Creation Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Invalid argument. Message: {ex.Message}");
+                MessageBox.Show($"Failed to create rule '{rule?.Name}'. One or more rule properties might be invalid.\n\nError: {ex.Message}", "Invalid Rule Parameter", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Unexpected error. Type: {ex.GetType().Name}. Message: {ex.Message}");
+                MessageBox.Show($"An unexpected error occurred while creating rule '{rule?.Name}'.\n\nError: {ex.Message}", "Rule Creation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (rule != null) Marshal.ReleaseComObject(rule);
+                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
         }
 
+
         public List<string> DeleteRulesByDescription(string description)
         {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(description)) return [];
+            if (string.IsNullOrEmpty(description)) return [];
 
-            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
-                .Where(r => r != null && string.Equals(r.Description, description, StringComparison.OrdinalIgnoreCase))
-                .Select(r => r.Name)
-                .ToList();
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
 
-            foreach (var ruleName in rulesToRemove)
+            try
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                foreach (var rule in allRules)
+                {
+                    if (rule != null && string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rulesToRemove.Add(rule.Name);
+                        rulesToKeepForRelease.Add(rule);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
             }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
         }
 
         public List<string> DeleteRulesByGroup(string groupName)
         {
-            if (_firewallPolicy == null || string.IsNullOrEmpty(groupName)) return [];
+            if (string.IsNullOrEmpty(groupName)) return [];
 
-            var rulesToRemove = _firewallPolicy.Rules.Cast<INetFwRule>()
-                .Where(r => r != null && string.Equals(r.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
-                .Select(r => r.Name)
-                .ToList();
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
 
-            foreach (var ruleName in rulesToRemove)
+            try
             {
-                try { _firewallPolicy.Rules.Remove(ruleName); } catch (Exception ex) when (ex is COMException or FileNotFoundException) { Debug.WriteLine($"[ERROR] Failed to remove rule '{ruleName}': {ex.Message}"); }
+                foreach (var rule in allRules)
+                {
+                    if (rule != null && string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rulesToRemove.Add(rule.Name);
+                        rulesToKeepForRelease.Add(rule);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
             }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
         }
+
+
+        public void DeleteAllMfwRules()
+        {
+            var rulesToRemove = new List<string>();
+            var allRules = GetAllRules();
+            var rulesToRelease = new List<INetFwRule2>();
+            var rulesToKeepForRelease = new List<INetFwRule2>();
+
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null && !string.IsNullOrEmpty(rule.Grouping) &&
+                        (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                         rule.Grouping == MFWConstants.MainRuleGroup ||
+                         rule.Grouping == MFWConstants.WildcardRuleGroup))
+                    {
+                        rulesToRemove.Add(rule.Name);
+                        rulesToKeepForRelease.Add(rule);
+                    }
+                    else if (rule != null)
+                    {
+                        rulesToRelease.Add(rule);
+                    }
+                }
+                Debug.WriteLine($"[INFO] DeleteAllMfwRules: Identified {rulesToRemove.Count} MFW rules for deletion.");
+            }
+            finally
+            {
+                foreach (var rule in rulesToRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                foreach (var rule in rulesToKeepForRelease)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            if (rulesToRemove.Any())
+            {
+                DeleteRulesByName(rulesToRemove);
+                Debug.WriteLine($"[INFO] DeleteAllMfwRules: Requested deletion of {rulesToRemove.Count} MFW rules.");
+            }
+            else
+            {
+                Debug.WriteLine("[INFO] DeleteAllMfwRules: No MFW rules found to delete.");
+            }
+        }
+
     }
 }

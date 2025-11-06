@@ -1,45 +1,29 @@
-﻿// File: FirewallGroups.cs
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 namespace MinimalFirewall.Groups
 {
     public class FirewallGroup : INotifyPropertyChanged
     {
-        private readonly INetFwPolicy2 _firewallPolicy;
-        private bool _isEnabled;
-
         public string Name { get; }
         public int RuleCount { get; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        public FirewallGroup(string name, INetFwPolicy2 firewallPolicy)
+        public FirewallGroup(string name, List<INetFwRule2> groupRules)
         {
             Name = name;
-            _firewallPolicy = firewallPolicy;
-            var rules = _firewallPolicy.Rules.Cast<INetFwRule2>().Where(r => r != null && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase)).ToList();
-            RuleCount = rules.Count;
-            _isEnabled = rules.Count > 0 && rules.All(r => r.Enabled);
+            RuleCount = groupRules.Count;
+            IsEnabled = groupRules.Count > 0 && groupRules.All(r => r.Enabled);
         }
 
-        public bool IsEnabled
+        public bool IsEnabled { get; private set; }
+
+        public void SetEnabledState(bool isEnabled)
         {
-            get
+            if (IsEnabled != isEnabled)
             {
-                var rules = _firewallPolicy.Rules.Cast<INetFwRule2>().Where(r => r != null && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase)).ToList();
-                if (rules.Count == 0) return false;
-                return rules.All(r => r.Enabled);
-            }
-            set
-            {
-                foreach (INetFwRule2 r in _firewallPolicy.Rules)
-                {
-                    if (r != null && !string.IsNullOrEmpty(r.Grouping) && string.Equals(r.Grouping, Name, System.StringComparison.OrdinalIgnoreCase))
-                    {
-                        r.Enabled = value;
-                    }
-                }
-                _isEnabled = value;
+                IsEnabled = isEnabled;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
             }
         }
@@ -47,26 +31,73 @@ namespace MinimalFirewall.Groups
 
     public class FirewallGroupManager
     {
-        private readonly INetFwPolicy2 _policy;
-        public FirewallGroupManager(INetFwPolicy2 policy) => _policy = policy;
+        public FirewallGroupManager() { }
+
+        private INetFwPolicy2 GetFirewallPolicy()
+        {
+            try
+            {
+                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                if (policyType == null)
+                {
+                    throw new InvalidOperationException("Firewall policy type could not be retrieved.");
+                }
+                return (INetFwPolicy2)Activator.CreateInstance(policyType)!;
+            }
+            catch (COMException ex)
+            {
+                throw new InvalidOperationException("Failed to create firewall policy instance.", ex);
+            }
+        }
 
         public List<FirewallGroup> GetAllGroups()
         {
-            var mfwRules = _policy.Rules.Cast<INetFwRule2>()
-                .Where(r => r?.Grouping is { Length: > 0 } && r.Grouping.EndsWith(MFWConstants.MfwRuleSuffix));
-            var groups = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
-            foreach (INetFwRule2 rule in mfwRules)
+            var groupsData = new Dictionary<string, List<INetFwRule2>>(System.StringComparer.OrdinalIgnoreCase);
+            INetFwPolicy2? policy = null;
+            INetFwRules? comRules = null;
+            try
             {
-                groups[rule.Grouping] = groups.TryGetValue(rule.Grouping, out var c) ?
-                    c + 1 : 1;
+                policy = GetFirewallPolicy();
+                comRules = policy.Rules;
+                foreach (INetFwRule2 rule in comRules)
+                {
+                    if (rule?.Grouping is { Length: > 0 } && rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
+                    {
+                        if (!groupsData.TryGetValue(rule.Grouping, out var ruleList))
+                        {
+                            ruleList = new List<INetFwRule2>();
+                            groupsData[rule.Grouping] = ruleList;
+                        }
+                        ruleList.Add(rule);
+                    }
+                    else
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+            }
+            finally
+            {
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (policy != null) Marshal.ReleaseComObject(policy);
             }
 
-            var list = new List<FirewallGroup>(groups.Count);
-            foreach (var kv in groups)
+            var list = new List<FirewallGroup>(groupsData.Count);
+            foreach (var group in groupsData)
             {
-                list.Add(new FirewallGroup(kv.Key, _policy));
+                list.Add(new FirewallGroup(group.Key, group.Value));
             }
+
+            foreach (var ruleList in groupsData.Values)
+            {
+                foreach (var rule in ruleList)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+
             return list.OrderBy(g => g.Name).ToList();
         }
     }
 }
+

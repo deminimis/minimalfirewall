@@ -1,5 +1,4 @@
-﻿// File: RuleWizardForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.IO;
 using NetFwTypeLib;
@@ -19,7 +18,6 @@ namespace MinimalFirewall
         private readonly FirewallActionsService _actionsService;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
-        private readonly INetFwPolicy2 _firewallPolicy;
         private readonly DarkModeCS dm;
         private readonly AppSettings _appSettings;
 
@@ -32,7 +30,7 @@ namespace MinimalFirewall
         private Directions _wizardDirection = Directions.Outgoing;
         private string _wizardServiceName = "";
         private string _wizardRemoteIP = "";
-        public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, INetFwPolicy2 firewallPolicy, AppSettings appSettings)
+        public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
@@ -42,7 +40,6 @@ namespace MinimalFirewall
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;
             _backgroundTaskService = backgroundTaskService;
-            _firewallPolicy = firewallPolicy;
             _appSettings = appSettings;
 
             GoToStep(WizardStep.Selection);
@@ -268,7 +265,7 @@ namespace MinimalFirewall
 
         private void advancedRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, _appSettings);
+            using var dialog = new CreateAdvancedRuleForm(_actionsService, _appSettings);
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
                 if (dialog.RuleVm != null)

@@ -1,5 +1,4 @@
-﻿// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SettingsControl.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class SettingsControl
     {
@@ -10,6 +9,7 @@ namespace MinimalFirewall
             if (disposing && (components != null))
             {
                 components.Dispose();
+                exportDiagnosticButton?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -43,11 +43,12 @@ namespace MinimalFirewall
             this.startOnStartupSwitch = new System.Windows.Forms.CheckBox();
             this.closeToTraySwitch = new System.Windows.Forms.CheckBox();
             this.mainSettingsPanel = new System.Windows.Forms.Panel();
+            this.exportDiagnosticButton = new System.Windows.Forms.Button();
+            this.useAppDataSwitch = new System.Windows.Forms.CheckBox();
             this.importReplaceButton = new System.Windows.Forms.Button();
             this.importMergeButton = new System.Windows.Forms.Button();
             this.exportRulesButton = new System.Windows.Forms.Button();
             this.cleanUpOrphanedRulesButton = new System.Windows.Forms.Button();
-            this.useAppDataSwitch = new System.Windows.Forms.CheckBox();
             this.coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.coffeePictureBox)).BeginInit();
             this.mainSettingsPanel.SuspendLayout();
@@ -340,6 +341,7 @@ namespace MinimalFirewall
             // mainSettingsPanel
             // 
             this.mainSettingsPanel.AutoScroll = true;
+            this.mainSettingsPanel.Controls.Add(this.exportDiagnosticButton);
             this.mainSettingsPanel.Controls.Add(this.useAppDataSwitch);
             this.mainSettingsPanel.Controls.Add(this.importReplaceButton);
             this.mainSettingsPanel.Controls.Add(this.importMergeButton);
@@ -372,6 +374,31 @@ namespace MinimalFirewall
             this.mainSettingsPanel.Name = "mainSettingsPanel";
             this.mainSettingsPanel.Size = new System.Drawing.Size(1015, 925);
             this.mainSettingsPanel.TabIndex = 27;
+            // 
+            // exportDiagnosticButton
+            // 
+            this.exportDiagnosticButton.FlatAppearance.BorderSize = 0;
+            this.exportDiagnosticButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.exportDiagnosticButton.Location = new System.Drawing.Point(29, 840);
+            this.exportDiagnosticButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.exportDiagnosticButton.Name = "exportDiagnosticButton";
+            this.exportDiagnosticButton.Size = new System.Drawing.Size(240, 37);
+            this.exportDiagnosticButton.TabIndex = 32;
+            this.exportDiagnosticButton.Text = "Export Diagnostic Package...";
+            this.exportDiagnosticButton.UseVisualStyleBackColor = true;
+            this.exportDiagnosticButton.Click += new System.EventHandler(this.exportDiagnosticButton_Click);
+            // 
+            // useAppDataSwitch
+            // 
+            this.useAppDataSwitch.AutoSize = true;
+            this.useAppDataSwitch.Location = new System.Drawing.Point(350, 247);
+            this.useAppDataSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.useAppDataSwitch.Name = "useAppDataSwitch";
+            this.useAppDataSwitch.Size = new System.Drawing.Size(247, 24);
+            this.useAppDataSwitch.TabIndex = 31;
+            this.useAppDataSwitch.Text = "Store config files in %AppData%";
+            this.useAppDataSwitch.UseVisualStyleBackColor = true;
+            this.useAppDataSwitch.CheckedChanged += new System.EventHandler(this.useAppDataSwitch_CheckedChanged);
             // 
             // importReplaceButton
             // 
@@ -425,18 +452,6 @@ namespace MinimalFirewall
             this.cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
             this.cleanUpOrphanedRulesButton.Click += new System.EventHandler(this.cleanUpOrphanedRulesButton_Click);
             // 
-            // useAppDataSwitch
-            // 
-            this.useAppDataSwitch.AutoSize = true;
-            this.useAppDataSwitch.Location = new System.Drawing.Point(350, 247);
-            this.useAppDataSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.useAppDataSwitch.Name = "useAppDataSwitch";
-            this.useAppDataSwitch.Size = new System.Drawing.Size(247, 24);
-            this.useAppDataSwitch.TabIndex = 31;
-            this.useAppDataSwitch.Text = "Store config files in %AppData%";
-            this.useAppDataSwitch.UseVisualStyleBackColor = true;
-            this.useAppDataSwitch.CheckedChanged += new System.EventHandler(this.useAppDataSwitch_CheckedChanged);
-            // 
             // SettingsControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -484,5 +499,8 @@ namespace MinimalFirewall
         private Button importMergeButton;
         private Button exportRulesButton;
         private CheckBox useAppDataSwitch;
+        private Button exportDiagnosticButton;
+        private Button allowWindowsUpdateButton;
     }
 }
+

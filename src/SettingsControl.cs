@@ -1,5 +1,4 @@
-﻿// File: SettingsControl.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using Firewall.Traffic.ViewModels;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -8,6 +7,12 @@ using System;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Drawing;
+using System.IO.Compression;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
+using MinimalFirewall.TypedObjects;
+
 
 namespace MinimalFirewall
 {
@@ -76,6 +81,10 @@ namespace MinimalFirewall
             importMergeButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             importReplaceButton.FlatAppearance.BorderSize = 1;
             importReplaceButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            exportDiagnosticButton.FlatAppearance.BorderSize = 1;
+            exportDiagnosticButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+
+
 
             if (_dm.IsDarkMode)
             {
@@ -88,6 +97,7 @@ namespace MinimalFirewall
                 exportRulesButton.ForeColor = Color.White;
                 importMergeButton.ForeColor = Color.White;
                 importReplaceButton.ForeColor = Color.White;
+                exportDiagnosticButton.ForeColor = Color.White;
             }
             else
             {
@@ -100,6 +110,7 @@ namespace MinimalFirewall
                 exportRulesButton.ForeColor = SystemColors.ControlText;
                 importMergeButton.ForeColor = SystemColors.ControlText;
                 importReplaceButton.ForeColor = SystemColors.ControlText;
+                exportDiagnosticButton.ForeColor = SystemColors.ControlText;
             }
         }
 
@@ -134,7 +145,16 @@ namespace MinimalFirewall
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
-            _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
+
+
+            bool appDataSettingChanged = _appSettings.UseAppDataStorage != useAppDataSwitch.Checked;
+            if (appDataSettingChanged)
+            {
+
+                CopyConfigFiles(useAppDataSwitch.Checked);
+                _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
+            }
+
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
 
@@ -396,11 +416,187 @@ namespace MinimalFirewall
 
         private void useAppDataSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            if (_appSettings.UseAppDataStorage != useAppDataSwitch.Checked)
+            bool settingChanged = _appSettings.UseAppDataStorage != useAppDataSwitch.Checked;
+
+            if (settingChanged)
             {
-                Messenger.MessageBox("You must restart the application for the configuration location change to take full effect.", "Restart Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
+                CopyConfigFiles(_appSettings.UseAppDataStorage);
+                Messenger.MessageBox("You must restart the application for the configuration location change to take full effect.", "Restart Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+
+
+        private void CopyConfigFiles(bool useAppData)
+        {
+            string sourceDir = useAppData ? ConfigPathManager.GetExeDirectory() : ConfigPathManager.GetAppDataDirectory();
+            string destDir = useAppData ? ConfigPathManager.GetAppDataDirectory() : ConfigPathManager.GetExeDirectory();
+            _activityLogger.LogDebug($"[Config Move] Copying files from {sourceDir} to {destDir}");
+
+            try
+            {
+                if (useAppData && !Directory.Exists(destDir))
+                {
+                    Directory.CreateDirectory(destDir);
+                    _activityLogger.LogDebug($"[Config Move] Created destination directory: {destDir}");
+                }
+
+                foreach (string fileName in ConfigPathManager.GetManagedConfigFileNames())
+                {
+                    string sourcePath = Path.Combine(sourceDir, fileName);
+                    string destPath = Path.Combine(destDir, fileName);
+
+                    if (File.Exists(sourcePath))
+                    {
+                        try
+                        {
+                            File.Copy(sourcePath, destPath, true);
+                            _activityLogger.LogDebug($"[Config Move] Copied '{fileName}' to {destDir}");
+                        }
+                        catch (IOException ioEx)
+                        {
+                            _activityLogger.LogException($"CopyConfigFiles-Copy-{fileName}", ioEx);
+                            MessageBox.Show($"Could not copy '{fileName}' to the new location. It might be in use.\nPlease restart the application.\nError: {ioEx.Message}",
+                                            "File Copy Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                        catch (UnauthorizedAccessException uaEx)
+                        {
+                            _activityLogger.LogException($"CopyConfigFiles-Access-{fileName}", uaEx);
+                            MessageBox.Show($"Could not copy '{fileName}' due to permissions.\nPlease restart the application.\nError: {uaEx.Message}",
+                                            "File Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+                    else
+                    {
+                        _activityLogger.LogDebug($"[Config Move] Source file not found, skipping: {sourcePath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("CopyConfigFiles-General", ex);
+                MessageBox.Show($"An unexpected error occurred while preparing config file locations:\n{ex.Message}",
+                                "Config Location Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task<string> ReadLastNLinesAsync(string filePath, int n)
+        {
+            if (!File.Exists(filePath))
+            {
+                return $"{Path.GetFileName(filePath)} not found.";
+            }
+
+            try
+            {
+                var lines = await File.ReadAllLinesAsync(filePath);
+                var lastNLines = lines.Skip(Math.Max(0, lines.Length - n));
+                return string.Join(Environment.NewLine, lastNLines);
+            }
+            catch (Exception ex)
+            {
+                return $"Error reading {Path.GetFileName(filePath)}: {ex.Message}";
+            }
+        }
+        private async void exportDiagnosticButton_Click(object sender, EventArgs e)
+        {
+            using var saveDialog = new SaveFileDialog
+            {
+                Filter = "Zip files (*.zip)|*.zip",
+                Title = "Export Diagnostic Package",
+                FileName = $"mfw_diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.zip"
+            };
+
+            if (saveDialog.ShowDialog() == DialogResult.OK)
+            {
+                string zipPath = saveDialog.FileName;
+                var statusForm = new StatusForm("Gathering diagnostic data...", _appSettings);
+                statusForm.Show(this.FindForm());
+                Application.DoEvents();
+
+                try
+                {
+
+                    if (File.Exists(zipPath)) File.Delete(zipPath);
+                    using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+                    {
+
+                        statusForm.UpdateStatus("Adding configuration files...");
+                        var configFiles = new List<string>
+                        {
+                            "settings.json",
+                            "wildcard_rules.json",
+                            "trusted_publishers.json",
+                            "foreign_rules_baseline.json",
+                            "temporary_rules.json",
+                            "uwp_apps.json"
+                        };
+
+                        foreach (var fileName in configFiles)
+                        {
+                            string filePath = (fileName == "settings.json")
+                                ? ConfigPathManager.GetSettingsPath()
+                                : ConfigPathManager.GetConfigPath(fileName);
+
+                            if (File.Exists(filePath))
+                            {
+                                archive.CreateEntryFromFile(filePath, fileName);
+                            }
+                        }
+                        statusForm.UpdateProgress(20);
+
+
+                        statusForm.UpdateStatus("Adding debug log...");
+                        string debugLogPath = ConfigPathManager.GetConfigPath("debug_log.txt");
+                        string logContent = await ReadLastNLinesAsync(debugLogPath, 1500);
+                        var logEntry = archive.CreateEntry("debug_log_last500.txt");
+                        using (var writer = new StreamWriter(logEntry.Open()))
+                        {
+                            await writer.WriteAsync(logContent);
+                        }
+                        statusForm.UpdateProgress(40);
+
+
+                        statusForm.UpdateStatus("Exporting current rules...");
+                        string rulesJson = await _actionsService.ExportAllMfwRulesAsync();
+                        var rulesEntry = archive.CreateEntry("current_mfw_rules.json");
+                        using (var writer = new StreamWriter(rulesEntry.Open()))
+                        {
+                            await writer.WriteAsync(rulesJson);
+                        }
+                        statusForm.UpdateProgress(60);
+
+
+                        statusForm.UpdateStatus("Gathering system info...");
+                        var sysInfo = new StringBuilder();
+                        sysInfo.AppendLine($"OS Version: {Environment.OSVersion}");
+                        sysInfo.AppendLine($".NET Runtime: {RuntimeInformation.FrameworkDescription}");
+                        sysInfo.AppendLine($"App Version: {Assembly.GetExecutingAssembly().GetName()?.Version}");
+                        sysInfo.AppendLine($"Timestamp: {DateTime.Now}");
+
+
+                        var sysInfoEntry = archive.CreateEntry("system_info.txt");
+                        using (var writer = new StreamWriter(sysInfoEntry.Open()))
+                        {
+                            await writer.WriteAsync(sysInfo.ToString());
+                        }
+                        statusForm.UpdateProgress(80);
+                    }
+
+                    statusForm.UpdateStatus("Finalizing package...");
+                    statusForm.UpdateProgress(100);
+                    statusForm.Close();
+                    Messenger.MessageBox($"Diagnostic package exported successfully to:\n{zipPath}", "Export Complete", MessageBoxButtons.OK, MsgIcon.Success);
+                }
+                catch (Exception ex)
+                {
+                    statusForm?.Close();
+                    _activityLogger.LogException("ExportDiagnosticPackage", ex);
+                    Messenger.MessageBox($"An error occurred while exporting diagnostics:\n{ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }
 }
+

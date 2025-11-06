@@ -1,5 +1,4 @@
-﻿// File: DashboardControl.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using System;
 using System.Collections.Specialized;
 using System.Windows.Forms;
@@ -16,7 +15,6 @@ namespace MinimalFirewall
         private IconService _iconService = null!;
         private WildcardRuleService _wildcardRuleService = null!;
         private FirewallActionsService _actionsService = null!;
-        private NetFwTypeLib.INetFwPolicy2 _firewallPolicy = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource;
 
@@ -26,14 +24,13 @@ namespace MinimalFirewall
             this.DoubleBuffered = true;
         }
 
-        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, NetFwTypeLib.INetFwPolicy2 firewallPolicy, BackgroundFirewallTaskService backgroundTaskService)
+        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, BackgroundFirewallTaskService backgroundTaskService)
         {
             _viewModel = viewModel;
             _appSettings = appSettings;
             _iconService = iconService;
             _wildcardRuleService = wildcardRuleService;
             _actionsService = actionsService;
-            _firewallPolicy = firewallPolicy;
             _backgroundTaskService = backgroundTaskService;
 
             dashboardDataGridView.AutoGenerateColumns = false;
@@ -41,7 +38,6 @@ namespace MinimalFirewall
             dashboardDataGridView.DataSource = _bindingSource;
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
-
             LoadDashboardItems();
         }
 
@@ -188,6 +184,8 @@ namespace MinimalFirewall
             }
         }
 
+
+
         private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
@@ -234,7 +232,16 @@ namespace MinimalFirewall
                 {
                     var newRule = wildcardDialog.NewRule;
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
-                    _viewModel.PendingConnections.Remove(pending);
+
+                    string decision = newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow";
+                    var allowPayload = new ProcessPendingConnectionPayload
+                    {
+                        PendingConnection = pending,
+                        Decision = decision,
+                        Duration = default,
+                        TrustPublisher = false
+                    };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, allowPayload));
                 }
             }
         }
@@ -260,7 +267,7 @@ namespace MinimalFirewall
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
                 using var dialog = new
-                    CreateAdvancedRuleForm(_firewallPolicy, _actionsService, pending.AppPath!, pending.Direction!, _appSettings);
+                 CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
                 dialog.ShowDialog(this.FindForm());
             }
         }
@@ -290,5 +297,25 @@ namespace MinimalFirewall
                 Clipboard.SetText(details.ToString());
             }
         }
+        private void showBlockingRuleInfoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dashboardDataGridView.SelectedRows.Count > 0 &&
+                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
+            {
+                string filterId = string.IsNullOrEmpty(pending.FilterId) ? "N/A" : pending.FilterId;
+                string layerId = string.IsNullOrEmpty(pending.LayerId) ? "N/A" : pending.LayerId;
+
+                string message = $"Application: {pending.FileName}\n" +
+                                 $"Direction: {pending.Direction}\n" +
+                                 $"Remote: {pending.RemoteAddress}:{pending.RemotePort}\n\n" +
+                                 $"Blocking Filter ID: {filterId}\n" +
+                                 $"Blocking Layer ID: {layerId}\n\n" +
+                                 "You can use these IDs to search within the advanced 'Windows Defender Firewall' console (wf.msc) or with PowerShell's Get-NetFirewallRule / Get-NetFirewallFilter commands to find the specific rule/filter.";
+
+                DarkModeForms.Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
+            }
+        }
+
     }
 }
+
