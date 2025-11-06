@@ -1,5 +1,4 @@
-﻿// File: FirewallEventListenerService.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -113,7 +112,10 @@ namespace MinimalFirewall
                 string filterId = GetValueFromXml(xmlContent, "FilterId");
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
 
-                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}', Direction: '{eventDirection}', Protocol: {protocol}, Remote: {remoteAddress}:{remotePort}, FilterId: {filterId}, LayerId: {layerId}");
+                string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
+                string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
+
+                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}', Service: '{serviceName}', Direction: '{eventDirection}', Protocol: {protocol}, Remote: {remoteAddress}:{remotePort}, FilterId: {filterId}, LayerId: {layerId}");
 
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
                 if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
@@ -137,15 +139,30 @@ namespace MinimalFirewall
                     return;
                 }
 
-                string serviceName = string.Empty;
                 if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    string processId = GetValueFromXml(xmlContent, "ProcessID");
-                    if (!string.IsNullOrEmpty(processId) && processId != "0")
+                    if (string.IsNullOrEmpty(serviceName))
                     {
-                        serviceName = SystemDiscoveryService.GetServicesByPID(processId);
-                        _logAction($"[EventListener] svchost.exe detected. PID: {processId}, Resolved Service(s): '{serviceName}'");
+                        string processId = GetValueFromXml(xmlContent, "ProcessID");
+                        if (!string.IsNullOrEmpty(processId) && processId != "0")
+                        {
+                            serviceName = SystemDiscoveryService.GetServicesByPID(processId);
+                            _logAction($"[EventListener] svchost.exe detected. XML ServiceName was empty. PID: {processId}, Resolved Service(s): '{serviceName}'");
+                        }
                     }
+                    else
+                    {
+                        _logAction($"[EventListener] svchost.exe detected. ServiceName from XML: '{serviceName}'");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(serviceName) &&
+                    (serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
+                     serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase)))
+                {
+                    _logAction($"[EventListener] Ignoring event for '{serviceName}' service (managed by system).");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
                 }
 
                 MfwRuleStatus existingRuleStatus = _dataService.CheckMfwRuleStatus(appPath, serviceName, eventDirection);
@@ -159,7 +176,18 @@ namespace MinimalFirewall
                 }
                 else if (existingRuleStatus == MfwRuleStatus.MfwAllow)
                 {
-                    _logAction($"[EventListener ANOMALY] An MFW Allow rule exists, but a block event was received. Proceeding to notify user.");
+                    if (filterId == "0")
+                    {
+                        _logAction($"[EventListener] Race condition detected: An MFW Allow rule exists, but a block event (FilterId 0) was received. Invalidating cache and snoozing to allow network to stabilize.");
+                        _dataService.InvalidateMfwRuleCache();
+                        SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
+                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                        return;
+                    }
+
+                    _logAction($"[EventListener] An MFW Allow rule exists for this connection. Ignoring block event (FilterId: {filterId}).");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
                 }
 
                 var matchingRule = _wildcardRuleService.Match(appPath);
@@ -168,7 +196,7 @@ namespace MinimalFirewall
                     _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
                     if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
                     {
-                        ActionsService.ApplyWildcardMatch(appPath, matchingRule);
+                        ActionsService.ApplyWildcardMatch(appPath, serviceName, matchingRule);
                         _logAction($"[EventListener] Applying Allow action from matched wildcard rule.");
                     }
                     else

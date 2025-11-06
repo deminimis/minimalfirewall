@@ -1,5 +1,4 @@
-﻿// File: RulesControl.cs
-using NetFwTypeLib;
+﻿using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
 using System.Data;
 using System.ComponentModel;
@@ -20,7 +19,6 @@ namespace MinimalFirewall
     {
         private MainViewModel _mainViewModel = null!;
         private FirewallActionsService _actionsService = null!;
-        private INetFwPolicy2 _firewallPolicy = null!;
         private WildcardRuleService _wildcardRuleService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private IconService _iconService = null!;
@@ -40,7 +38,6 @@ namespace MinimalFirewall
         public void Initialize(
             MainViewModel mainViewModel,
             FirewallActionsService actionsService,
-            INetFwPolicy2 firewallPolicy,
             WildcardRuleService wildcardRuleService,
             BackgroundFirewallTaskService backgroundTaskService,
             IconService iconService,
@@ -50,7 +47,6 @@ namespace MinimalFirewall
         {
             _mainViewModel = mainViewModel;
             _actionsService = actionsService;
-            _firewallPolicy = firewallPolicy;
             _wildcardRuleService = wildcardRuleService;
             _backgroundTaskService = backgroundTaskService;
             _iconService = iconService;
@@ -199,7 +195,7 @@ namespace MinimalFirewall
                     return;
                 }
 
-                using var dialog = new CreateAdvancedRuleForm(_firewallPolicy, _actionsService, originalRule, _appSettings);
+                using var dialog = new CreateAdvancedRuleForm(_actionsService, originalRule, _appSettings);
                 if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
                     if (dialog.RuleVm != null)
@@ -246,7 +242,7 @@ namespace MinimalFirewall
 
         private void CreateRuleButton_Click(object sender, EventArgs e)
         {
-            using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _firewallPolicy, _appSettings);
+            using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _appSettings);
             if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
             {
             }
@@ -458,3 +454,4 @@ namespace MinimalFirewall
         }
     }
 }
+
