@@ -12,6 +12,7 @@ Unlike most other Firewall programs, Minimal Firewall acts as a frontend, avoidi
 
 ### 💾 Download the latest version [here](https://github.com/deminimis/minimalfirewall/releases)
 <br>
+or install with **Winget** (_may be a version behind while it waits to be approved)_: `winget install Deminimis.MinimalFirewall` 
 </br>
 
 #### Prerequisites
