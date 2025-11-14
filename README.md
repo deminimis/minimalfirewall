@@ -139,6 +139,34 @@ For dark theme, Minimal Firewall uses a modified version of [Dark-Mode-Forms](ht
 
 Contributions are welcome! Please submit an issue, a discussion, or a pull request. Feel free to drop a question or discussion in the discussions tab. 
 
+
+## Build Instructions
+
+#### Prerequisites
+* Visual Studio Community 2022
+  * When installing Visual Studio, make sure you select the ".NET desktop development" workload (which includes Windows Forms).
+
+#### Step 1: Set Up Your Project Folder
+
+1. Create a new, empty folder for your project.
+2. Place all contents of /src in it. 
+
+#### Step 2: Install Dependencies
+1. Double-click the MinimalFirewall-WindowsStore.sln file to open the project in Visual Studio. If this is giving you errors, you can delete this and the csproj.user file and just open the .csproj instead.
+2. Once the project is open, right-click on the "Solution 'MinimalFirewall-WindowsStore'" in the Solution Explorer and select "Restore NuGet Packages".
+  * If that doesn't work, go to Tools > NuGet Package Manager > Manage NuGet Packages for Solution.... Install the following two packages:
+    * Microsoft.Extensions.Caching.Memory
+    * System.Management
+
+#### Step 3: Check the COM Reference
+1. In Solution Explorer, expand the MinimalFirewall-NET8 project, then expand Dependencies > COM. You should see NetFwTypeLib. If it has a yellow warning icon, right-click it and select "Remove". Then, right-click on Dependencies and select Add COM Reference....In the list, find and check the box for "NetFwTypeLib". 
+
+#### Step 4: Build
+1. Set configuration manager to x64, and build. 
+
+
+
+
 ### Thanks to
 @shewolf56
 @Hanatarou
