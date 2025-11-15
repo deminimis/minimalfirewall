@@ -467,18 +467,12 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!TryGetSelectedAppContext(out string? appPath))
+            if (!TryGetSelectedAppContext(out string? appPath) || string.IsNullOrEmpty(appPath))
             {
                 DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            bool pathExists = File.Exists(appPath) || Directory.Exists(appPath);
-            if (!pathExists)
-            {
-                DarkModeForms.Messenger.MessageBox("The file or folder path for this item could not be found.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
             try
             {
                 Process.Start("explorer.exe", $"/select, \"{appPath}\"");
@@ -1144,7 +1138,7 @@ namespace MinimalFirewall
                 {
                     if (requiresCacheInvalidation)
                     {
-                        _dataService.InvalidateMfwRuleCache();
+                        _dataService.InvalidateRuleCache();
                         _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task: {task.TaskType}");
                     }
                     QueueCountChanged?.Invoke(_taskQueue.Count);
@@ -3973,12 +3967,13 @@ namespace DarkModeForms
 // File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/DashboardControl.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
+using MinimalFirewall.TypedObjects;
 using System;
 using System.Collections.Specialized;
-using System.Windows.Forms;
-using System.Linq;
-using MinimalFirewall.TypedObjects;
+using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
@@ -4250,10 +4245,16 @@ namespace MinimalFirewall
         {
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
-                !string.IsNullOrEmpty(pending.AppPath) &&
-                System.IO.File.Exists(pending.AppPath))
+                !string.IsNullOrEmpty(pending.AppPath))
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
+                try
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
+                }
+                catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
+                {
+                    DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -6410,6 +6411,7 @@ namespace MinimalFirewall
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
         private const string AggregatedRulesCacheKey = "AggregatedRulesList";
+
         public FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
         {
             _firewallRuleService = firewallRuleService;
@@ -6423,9 +6425,10 @@ namespace MinimalFirewall
             _localCache.Remove(AggregatedRulesCacheKey);
         }
 
-        public void InvalidateMfwRuleCache()
+        public void InvalidateRuleCache()
         {
             _localCache.Remove(MfwRulesCacheKey);
+            _localCache.Remove(AggregatedRulesCacheKey);
         }
 
         public List<ServiceViewModel> GetCachedServicesWithExePaths()
@@ -6447,6 +6450,46 @@ namespace MinimalFirewall
             return _uwpService.LoadUwpAppsFromCache();
         }
 
+        private Task<List<AdvancedRuleViewModel>> FetchAllMfwRulesAsync(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                var allRules = _firewallRuleService.GetAllRules();
+                try
+                {
+                    var mfwRules = allRules
+                        .Where(rule =>
+                            !string.IsNullOrEmpty(rule.Grouping) &&
+                            (rule.Grouping == MFWConstants.MainRuleGroup || rule.Grouping == MFWConstants.WildcardRuleGroup || rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
+                        )
+                        .Select(CreateAdvancedRuleViewModel)
+                        .ToList();
+
+                    if (token.IsCancellationRequested)
+                    {
+                        return new List<AdvancedRuleViewModel>();
+                    }
+                    return mfwRules;
+                }
+                finally
+                {
+                    foreach (var rule in allRules)
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+            }, token);
+        }
+
+        public Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
+        {
+            return _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
+            {
+                entry.SlidingExpiration = TimeSpan.FromMinutes(10);
+                return await FetchAllMfwRulesAsync(token);
+            }) ?? Task.FromResult(new List<AdvancedRuleViewModel>());
+        }
+
         public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             if (_localCache.TryGetValue(AggregatedRulesCacheKey, out List<AggregatedRuleViewModel>? cachedRules) && cachedRules != null)
@@ -6455,21 +6498,23 @@ namespace MinimalFirewall
                 return cachedRules;
             }
 
+            var allMfwRules = await GetMfwRulesAsync(token);
+            if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+
             var aggregatedRules = await Task.Run(() =>
             {
-                var allRules = _firewallRuleService.GetAllRules();
                 try
                 {
-                    var enabledRules = allRules.Where(r => r.Enabled && !string.IsNullOrEmpty(r.Grouping)).ToList();
-                    int totalRules = enabledRules.Count;
+                    int totalRules = allMfwRules.Count;
                     if (totalRules == 0)
                     {
                         progress?.Report(100);
                         return new List<AggregatedRuleViewModel>();
                     }
 
-                    var groupedByGroupingAndProtocol = enabledRules
-                        .GroupBy(r => $"{r.Grouping}|{r.ApplicationName}|{r.serviceName}|{r.Protocol}")
+                    var groupedByGroupingAndProtocol = allMfwRules
+                        .Where(r => r.IsEnabled)
+                        .GroupBy(r => $"{r.Grouping}|{r.ApplicationName}|{r.ServiceName}|{r.Protocol}")
                         .ToList();
 
                     var aggRules = new List<AggregatedRuleViewModel>();
@@ -6489,10 +6534,7 @@ namespace MinimalFirewall
                 }
                 finally
                 {
-                    foreach (var rule in allRules)
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
+
                 }
             }, token);
 
@@ -6504,7 +6546,7 @@ namespace MinimalFirewall
             return aggregatedRules;
         }
 
-        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<INetFwRule2> group)
+        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<AdvancedRuleViewModel> group)
         {
             var firstRule = group.First();
 
@@ -6518,21 +6560,21 @@ namespace MinimalFirewall
             {
                 Name = commonName,
                 ApplicationName = firstRule.ApplicationName ?? string.Empty,
-                ServiceName = firstRule.serviceName ?? string.Empty,
+                ServiceName = firstRule.ServiceName ?? string.Empty,
                 Protocol = firstRule.Protocol,
                 ProtocolName = GetProtocolName(firstRule.Protocol),
                 Type = DetermineRuleType(firstRule),
-                UnderlyingRules = group.Select(CreateAdvancedRuleViewModel).ToList(),
-                IsEnabled = group.All(r => r.Enabled),
-                Profiles = GetProfileString(firstRule.Profiles),
+                UnderlyingRules = group.Select(r => r).ToList(),
+                IsEnabled = group.All(r => r.IsEnabled),
+                Profiles = firstRule.Profiles,
                 Grouping = firstRule.Grouping ?? "",
                 Description = firstRule.Description ?? ""
             };
 
-            bool hasInAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
-            bool hasInBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-            bool hasOutBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+            bool hasInAllow = group.Any(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));
+            bool hasOutAllow = group.Any(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Outgoing));
+            bool hasInBlock = group.Any(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Incoming));
+            bool hasOutBlock = group.Any(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Outgoing));
 
             aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "N/A");
             if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
@@ -6554,7 +6596,7 @@ namespace MinimalFirewall
             return aggRule;
         }
 
-        private string GetCommonName(List<INetFwRule2> group)
+        private string GetCommonName(List<AdvancedRuleViewModel> group)
         {
             if (group.Count == 0) return string.Empty;
             if (group.Count == 1) return group[0].Name ?? string.Empty;
@@ -6586,7 +6628,7 @@ namespace MinimalFirewall
         }
 
 
-        private RuleType DetermineRuleType(INetFwRule2 rule)
+        private RuleType DetermineRuleType(AdvancedRuleViewModel rule)
         {
             if ((rule.Description != null && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal)) ||
                  (rule.ApplicationName != null && rule.ApplicationName.StartsWith("@", StringComparison.Ordinal)) ||
@@ -6595,7 +6637,7 @@ namespace MinimalFirewall
                 return RuleType.UWP;
             }
 
-            if (!string.IsNullOrEmpty(rule.serviceName) && rule.serviceName != "*")
+            if (!string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*")
                 return RuleType.Service;
 
             if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*")
@@ -6609,39 +6651,7 @@ namespace MinimalFirewall
             return RuleType.Advanced;
         }
 
-
-        private List<AdvancedRuleViewModel> GetMfwRulesFromCache()
-        {
-            if (_localCache.TryGetValue(MfwRulesCacheKey, out List<AdvancedRuleViewModel>? cachedRules) && cachedRules != null)
-            {
-                return cachedRules;
-            }
-
-            var allRules = _firewallRuleService.GetAllRules();
-            try
-            {
-                var newCachedRules = allRules
-                    .Where(rule =>
-                        !string.IsNullOrEmpty(rule.Grouping) &&
-                        (rule.Grouping == MFWConstants.MainRuleGroup || rule.Grouping == MFWConstants.WildcardRuleGroup || rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
-                    )
-                     .Select(CreateAdvancedRuleViewModel)
-                    .ToList();
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.FromMinutes(10));
-                _localCache.Set(MfwRulesCacheKey, newCachedRules, cacheEntryOptions);
-                return newCachedRules;
-            }
-            finally
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
-                }
-            }
-        }
-
-        public MfwRuleStatus CheckMfwRuleStatus(string appPath, string serviceName, string direction)
+        public async Task<MfwRuleStatus> CheckMfwRuleStatusAsync(string appPath, string serviceName, string direction)
         {
             if (!Enum.TryParse<Directions>(direction, true, out var dirEnum))
             {
@@ -6653,12 +6663,11 @@ namespace MinimalFirewall
                  ? null
                 : new HashSet<string>(serviceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
 
-            var mfwRules = GetMfwRulesFromCache();
-
+            var mfwRules = await GetMfwRulesAsync(CancellationToken.None);
 
             if (mfwRules == null)
             {
-                Debug.WriteLine("[ERROR] CheckMfwRuleStatus: GetMfwRulesFromCache() returned null unexpectedly.");
+                Debug.WriteLine("[ERROR] CheckMfwRuleStatus: GetMfwRulesAsync() returned null unexpectedly.");
                 return MfwRuleStatus.None;
             }
 
@@ -6729,8 +6738,7 @@ namespace MinimalFirewall
         public void ClearCaches()
         {
             _localCache.Remove(ServicesCacheKey);
-            _localCache.Remove(MfwRulesCacheKey);
-            _localCache.Remove(AggregatedRulesCacheKey);
+            InvalidateRuleCache();
         }
 
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
@@ -6758,7 +6766,6 @@ namespace MinimalFirewall
             };
         }
 
-
         private static string GetProtocolName(int protocolValue)
         {
             return protocolValue switch
@@ -6785,11 +6792,11 @@ namespace MinimalFirewall
     }
 }
 
-
 --------------------------------------------------------------------------------
 // File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallEventListenerService.cs
 --------------------------------------------------------------------------------
-﻿using System.Diagnostics;
+﻿// File: FirewallEventListenerService.cs
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -6876,7 +6883,7 @@ namespace MinimalFirewall
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
-                Task.Run(() => OnFirewallBlockEvent(xmlContent));
+                Task.Run(async () => await OnFirewallBlockEvent(xmlContent));
             }
             catch (EventLogException)
             {
@@ -6884,7 +6891,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void OnFirewallBlockEvent(string xmlContent)
+        private async Task OnFirewallBlockEvent(string xmlContent)
         {
             string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
             string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
@@ -6956,7 +6963,7 @@ namespace MinimalFirewall
                     return;
                 }
 
-                MfwRuleStatus existingRuleStatus = _dataService.CheckMfwRuleStatus(appPath, serviceName, eventDirection);
+                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, eventDirection);
                 _logAction($"[EventListener] CheckMfwRuleStatus result for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}') is: {existingRuleStatus}");
 
                 if (existingRuleStatus == MfwRuleStatus.MfwBlock)
@@ -6970,7 +6977,7 @@ namespace MinimalFirewall
                     if (filterId == "0")
                     {
                         _logAction($"[EventListener] Race condition detected: An MFW Allow rule exists, but a block event (FilterId 0) was received. Invalidating cache and snoozing to allow network to stabilize.");
-                        _dataService.InvalidateMfwRuleCache();
+                        _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
                         ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
                         return;
@@ -7160,7 +7167,6 @@ namespace MinimalFirewall
         }
     }
 }
-
 
 --------------------------------------------------------------------------------
 // File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallGroups.cs
@@ -9662,10 +9668,6 @@ namespace MinimalFirewall
         public void OnTabDeselected()
         {
             _viewModel.StopMonitoring();
-            _sortableList.Clear();
-            _bindingSource.DataSource = null;
-            liveConnectionsDataGridView.DataSource = null;
-            liveConnectionsDataGridView.Refresh();
             UpdateEnabledState();
         }
 
@@ -9817,7 +9819,7 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath))
+            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath))
             {
                 try
                 {
@@ -11882,7 +11884,7 @@ namespace MinimalFirewall
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
         public void ClearRulesCache()
         {
-            _dataService.ClearCaches();
+            _dataService.InvalidateRuleCache();
         }
 
         public void ClearRulesData()
@@ -18324,9 +18326,10 @@ namespace MinimalFirewall
             {
                 var wmiQuery = new ObjectQuery("SELECT Name, DisplayName, PathName FROM Win32_Service WHERE PathName IS NOT NULL");
                 using var searcher = new ManagementObjectSearcher(wmiQuery);
-                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
+                using var results = searcher.Get();
+                foreach (ManagementBaseObject serviceBaseObject in results)
                 {
-                    using var service = (ManagementObject)serviceBaseObject; // Explicit disposal
+                    using var service = (ManagementObject)serviceBaseObject;
                     string rawPath = service["PathName"]?.ToString() ?? string.Empty;
                     if (string.IsNullOrEmpty(rawPath)) continue;
 
@@ -18362,15 +18365,20 @@ namespace MinimalFirewall
 
         public static string GetServicesByPID(string processId)
         {
-            if (string.IsNullOrEmpty(processId) || processId == "0") return string.Empty;
+            if (string.IsNullOrEmpty(processId) || processId == "0" || !uint.TryParse(processId, out _))
+            {
+                return string.Empty;
+            }
+
             var serviceNames = new List<string?>();
             try
             {
                 var query = new ObjectQuery($"SELECT Name FROM Win32_Service WHERE ProcessId = {processId}");
                 using var searcher = new ManagementObjectSearcher(query);
-                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
+                using var results = searcher.Get();
+                foreach (ManagementBaseObject serviceBaseObject in results)
                 {
-                    using (var service = (ManagementObject)serviceBaseObject) // Explicit disposal
+                    using (var service = (ManagementObject)serviceBaseObject)
                     {
                         serviceNames.Add(service["Name"]?.ToString());
                     }
@@ -20583,6 +20591,7 @@ namespace MinimalFirewall
     {
         private readonly string _configPath;
         private List<WildcardRule> _rules = [];
+        private readonly object _rulesLock = new object();
 
         public WildcardRuleService()
         {
@@ -20592,15 +20601,21 @@ namespace MinimalFirewall
 
         public List<WildcardRule> GetRules()
         {
-            return _rules;
+            lock (_rulesLock)
+            {
+                return new List<WildcardRule>(_rules);
+            }
         }
 
         public void AddRule(WildcardRule rule)
         {
-            if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
+            lock (_rulesLock)
             {
-                _rules.Add(rule);
-                SaveRules();
+                if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _rules.Add(rule);
+                    SaveRules();
+                }
             }
         }
 
@@ -20612,26 +20627,32 @@ namespace MinimalFirewall
 
         public void RemoveRule(WildcardRule rule)
         {
-            var ruleToRemove = _rules.FirstOrDefault(r =>
-                r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
-                r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase) &&
-                r.Action.Equals(rule.Action, StringComparison.OrdinalIgnoreCase) &&
-                r.Protocol == rule.Protocol &&
-                r.LocalPorts.Equals(rule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
-                r.RemotePorts.Equals(rule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
-                r.RemoteAddresses.Equals(rule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
-
-            if (ruleToRemove != null)
+            lock (_rulesLock)
             {
-                _rules.Remove(ruleToRemove);
-                SaveRules();
+                var ruleToRemove = _rules.FirstOrDefault(r =>
+                    r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                    r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase) &&
+                    r.Action.Equals(rule.Action, StringComparison.OrdinalIgnoreCase) &&
+                    r.Protocol == rule.Protocol &&
+                    r.LocalPorts.Equals(rule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemotePorts.Equals(rule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemoteAddresses.Equals(rule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
+
+                if (ruleToRemove != null)
+                {
+                    _rules.Remove(ruleToRemove);
+                    SaveRules();
+                }
             }
         }
 
         public void ClearRules()
         {
-            _rules.Clear();
-            SaveRules();
+            lock (_rulesLock)
+            {
+                _rules.Clear();
+                SaveRules();
+            }
         }
 
         private void LoadRules()
@@ -20641,17 +20662,27 @@ namespace MinimalFirewall
                 if (File.Exists(_configPath))
                 {
                     string json = File.ReadAllText(_configPath);
-                    _rules = JsonSerializer.Deserialize(json, WildcardRuleJsonContext.Default.ListWildcardRule) ?? [];
+                    var loadedRules = JsonSerializer.Deserialize(json, WildcardRuleJsonContext.Default.ListWildcardRule);
+                    lock (_rulesLock)
+                    {
+                        _rules = loadedRules ?? [];
+                    }
                 }
                 else
                 {
-                    _rules = [];
+                    lock (_rulesLock)
+                    {
+                        _rules = [];
+                    }
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 Debug.WriteLine("[ERROR] Failed to load wildcard rules: " + ex.Message);
-                _rules = [];
+                lock (_rulesLock)
+                {
+                    _rules = [];
+                }
             }
         }
 
@@ -20678,7 +20709,13 @@ namespace MinimalFirewall
             string normalizedPath = PathResolver.NormalizePath(path);
             string fileName = Path.GetFileName(normalizedPath);
 
-            foreach (var rule in _rules)
+            List<WildcardRule> rulesSnapshot;
+            lock (_rulesLock)
+            {
+                rulesSnapshot = new List<WildcardRule>(_rules);
+            }
+
+            foreach (var rule in rulesSnapshot)
             {
                 string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
 

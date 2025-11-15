@@ -73,7 +73,7 @@ namespace MinimalFirewall
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
         public void ClearRulesCache()
         {
-            _dataService.ClearCaches();
+            _dataService.InvalidateRuleCache();
         }
 
         public void ClearRulesData()

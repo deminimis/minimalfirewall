@@ -1,10 +1,11 @@
 ﻿using DarkModeForms;
+using MinimalFirewall.TypedObjects;
 using System;
 using System.Collections.Specialized;
-using System.Windows.Forms;
-using System.Linq;
-using MinimalFirewall.TypedObjects;
+using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
@@ -276,10 +277,26 @@ namespace MinimalFirewall
         {
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
-                !string.IsNullOrEmpty(pending.AppPath) &&
-                System.IO.File.Exists(pending.AppPath))
+                !string.IsNullOrEmpty(pending.AppPath))
             {
-                System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
+                if (!File.Exists(pending.AppPath) && !Directory.Exists(pending.AppPath))
+                {
+                    DarkModeForms.Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                try
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
+                }
+                catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
+                {
+                    DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

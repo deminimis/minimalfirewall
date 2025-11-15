@@ -9,6 +9,7 @@ namespace MinimalFirewall
     {
         private readonly string _configPath;
         private List<WildcardRule> _rules = [];
+        private readonly object _rulesLock = new object();
 
         public WildcardRuleService()
         {
@@ -18,15 +19,21 @@ namespace MinimalFirewall
 
         public List<WildcardRule> GetRules()
         {
-            return _rules;
+            lock (_rulesLock)
+            {
+                return new List<WildcardRule>(_rules);
+            }
         }
 
         public void AddRule(WildcardRule rule)
         {
-            if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
+            lock (_rulesLock)
             {
-                _rules.Add(rule);
-                SaveRules();
+                if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _rules.Add(rule);
+                    SaveRules();
+                }
             }
         }
 
@@ -38,26 +45,32 @@ namespace MinimalFirewall
 
         public void RemoveRule(WildcardRule rule)
         {
-            var ruleToRemove = _rules.FirstOrDefault(r =>
-                r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
-                r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase) &&
-                r.Action.Equals(rule.Action, StringComparison.OrdinalIgnoreCase) &&
-                r.Protocol == rule.Protocol &&
-                r.LocalPorts.Equals(rule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
-                r.RemotePorts.Equals(rule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
-                r.RemoteAddresses.Equals(rule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
-
-            if (ruleToRemove != null)
+            lock (_rulesLock)
             {
-                _rules.Remove(ruleToRemove);
-                SaveRules();
+                var ruleToRemove = _rules.FirstOrDefault(r =>
+                    r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                    r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase) &&
+                    r.Action.Equals(rule.Action, StringComparison.OrdinalIgnoreCase) &&
+                    r.Protocol == rule.Protocol &&
+                    r.LocalPorts.Equals(rule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemotePorts.Equals(rule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemoteAddresses.Equals(rule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
+
+                if (ruleToRemove != null)
+                {
+                    _rules.Remove(ruleToRemove);
+                    SaveRules();
+                }
             }
         }
 
         public void ClearRules()
         {
-            _rules.Clear();
-            SaveRules();
+            lock (_rulesLock)
+            {
+                _rules.Clear();
+                SaveRules();
+            }
         }
 
         private void LoadRules()
@@ -67,17 +80,27 @@ namespace MinimalFirewall
                 if (File.Exists(_configPath))
                 {
                     string json = File.ReadAllText(_configPath);
-                    _rules = JsonSerializer.Deserialize(json, WildcardRuleJsonContext.Default.ListWildcardRule) ?? [];
+                    var loadedRules = JsonSerializer.Deserialize(json, WildcardRuleJsonContext.Default.ListWildcardRule);
+                    lock (_rulesLock)
+                    {
+                        _rules = loadedRules ?? [];
+                    }
                 }
                 else
                 {
-                    _rules = [];
+                    lock (_rulesLock)
+                    {
+                        _rules = [];
+                    }
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 Debug.WriteLine("[ERROR] Failed to load wildcard rules: " + ex.Message);
-                _rules = [];
+                lock (_rulesLock)
+                {
+                    _rules = [];
+                }
             }
         }
 
@@ -104,7 +127,13 @@ namespace MinimalFirewall
             string normalizedPath = PathResolver.NormalizePath(path);
             string fileName = Path.GetFileName(normalizedPath);
 
-            foreach (var rule in _rules)
+            List<WildcardRule> rulesSnapshot;
+            lock (_rulesLock)
+            {
+                rulesSnapshot = new List<WildcardRule>(_rules);
+            }
+
+            foreach (var rule in rulesSnapshot)
             {
                 string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
 

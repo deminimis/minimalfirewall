@@ -253,8 +253,14 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath))
+            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath))
             {
+                if (!File.Exists(connection.ProcessPath) && !Directory.Exists(connection.ProcessPath))
+                {
+                    DarkModeForms.Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 try
                 {
                     Process.Start("explorer.exe", $"/select, \"{connection.ProcessPath}\"");
