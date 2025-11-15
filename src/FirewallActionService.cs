@@ -520,7 +520,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void ReenableMfwRules()
+        public void ReenableMfwRules()
         {
             var allRules = firewallService.GetAllRules();
             try
@@ -530,7 +530,7 @@ namespace MinimalFirewall
                     try
                     {
                         if (!string.IsNullOrEmpty(rule.Grouping) &&
-                            (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                             (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
                                rule.Grouping == "Minimal Firewall" ||
                                rule.Grouping == "Minimal Firewall (Wildcard)"))
                         {

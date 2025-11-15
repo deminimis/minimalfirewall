@@ -217,6 +217,9 @@ namespace MinimalFirewall
             }
 
             UpdateTrayStatus();
+
+            await Task.Run(() => _actionsService.ReenableMfwRules());
+
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _activityLogger.LogDebug("Application Started: " + versionInfo);
             settingsControl1.LoadSettingsToUI();

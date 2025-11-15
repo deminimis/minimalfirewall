@@ -8,10 +8,12 @@ namespace MinimalFirewall
         private readonly PublisherWhitelistService _whitelistService;
         private readonly DarkModeCS dm;
 
-        public ManagePublishersForm(PublisherWhitelistService whitelistService)
+        public ManagePublishersForm(PublisherWhitelistService whitelistService, AppSettings appSettings)
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
             _whitelistService = whitelistService;
             LoadPublishers();
         }

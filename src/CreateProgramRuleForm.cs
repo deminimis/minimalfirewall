@@ -26,7 +26,7 @@ namespace MinimalFirewall
             string direction = allowRadio.Checked ? allowDirectionCombo.Text : blockDirectionCombo.Text;
             string finalAction = $"{action} ({direction})";
 
-            _actionsService.ApplyApplicationRuleChange([.. _filePaths], finalAction);
+            _actionsService.ApplyApplicationRuleChange(new List<string>(_filePaths), finalAction);
             DialogResult = DialogResult.OK;
         }
 

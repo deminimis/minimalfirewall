@@ -34,6 +34,9 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn dashServiceColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dashDirectionColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dashPathColumn;
+        private System.Windows.Forms.ToolStripMenuItem showBlockingRuleInfoToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
+
 
         protected override void Dispose(bool disposing)
         {
@@ -72,6 +75,8 @@ namespace MinimalFirewall
             this.createAdvancedRuleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.openFileLocationToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
+            this.showBlockingRuleInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dashboardDataGridView = new System.Windows.Forms.DataGridView();
@@ -86,9 +91,9 @@ namespace MinimalFirewall
             this.dashboardContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dashboardDataGridView)).BeginInit();
             this.SuspendLayout();
-            // 
+            //
             // dashboardContextMenu
-            // 
+            //
             this.dashboardContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.dashboardContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tempAllowToolStripMenuItem,
@@ -103,14 +108,16 @@ namespace MinimalFirewall
             this.createAdvancedRuleToolStripMenuItem,
             this.toolStripSeparator7,
             this.openFileLocationToolStripMenuItem1,
+            this.toolStripSeparator8,
+            this.showBlockingRuleInfoToolStripMenuItem,
             this.toolStripSeparator6,
             this.copyDetailsToolStripMenuItem});
             this.dashboardContextMenu.Name = "dashboardContextMenu";
             this.dashboardContextMenu.Size = new System.Drawing.Size(228, 290);
             this.dashboardContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.ContextMenu_Opening);
-            // 
+            //
             // tempAllowToolStripMenuItem
-            // 
+            //
             this.tempAllowToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.allow2MinutesToolStripMenuItem,
             this.allow5MinutesToolStripMenuItem,
@@ -121,138 +128,150 @@ namespace MinimalFirewall
             this.tempAllowToolStripMenuItem.Name = "tempAllowToolStripMenuItem";
             this.tempAllowToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.tempAllowToolStripMenuItem.Text = "Allow Temporarily";
-            // 
+            //
             // allow2MinutesToolStripMenuItem
-            // 
+            //
             this.allow2MinutesToolStripMenuItem.Name = "allow2MinutesToolStripMenuItem";
             this.allow2MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow2MinutesToolStripMenuItem.Tag = "2";
             this.allow2MinutesToolStripMenuItem.Text = "2 minutes";
             this.allow2MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // allow5MinutesToolStripMenuItem
-            // 
+            //
             this.allow5MinutesToolStripMenuItem.Name = "allow5MinutesToolStripMenuItem";
             this.allow5MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow5MinutesToolStripMenuItem.Tag = "5";
             this.allow5MinutesToolStripMenuItem.Text = "5 minutes";
             this.allow5MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // allow15MinutesToolStripMenuItem
-            // 
+            //
             this.allow15MinutesToolStripMenuItem.Name = "allow15MinutesToolStripMenuItem";
             this.allow15MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow15MinutesToolStripMenuItem.Tag = "15";
             this.allow15MinutesToolStripMenuItem.Text = "15 minutes";
             this.allow15MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // allow1HourToolStripMenuItem
-            // 
+            //
             this.allow1HourToolStripMenuItem.Name = "allow1HourToolStripMenuItem";
             this.allow1HourToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow1HourToolStripMenuItem.Tag = "60";
             this.allow1HourToolStripMenuItem.Text = "1 hour";
             this.allow1HourToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // allow3HoursToolStripMenuItem
-            // 
+            //
             this.allow3HoursToolStripMenuItem.Name = "allow3HoursToolStripMenuItem";
             this.allow3HoursToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow3HoursToolStripMenuItem.Tag = "180";
             this.allow3HoursToolStripMenuItem.Text = "3 hours";
             this.allow3HoursToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // allow8HoursToolStripMenuItem
-            // 
+            //
             this.allow8HoursToolStripMenuItem.Name = "allow8HoursToolStripMenuItem";
             this.allow8HoursToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow8HoursToolStripMenuItem.Tag = "480";
             this.allow8HoursToolStripMenuItem.Text = "8 hours";
             this.allow8HoursToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
-            // 
+            //
             // toolStripSeparator3
-            // 
+            //
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(224, 6);
-            // 
+            //
             // permanentAllowToolStripMenuItem
-            // 
+            //
             this.permanentAllowToolStripMenuItem.Name = "permanentAllowToolStripMenuItem";
             this.permanentAllowToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.permanentAllowToolStripMenuItem.Text = "Allow";
             this.permanentAllowToolStripMenuItem.Click += new System.EventHandler(this.PermanentAllowToolStripMenuItem_Click);
-            // 
+            //
             // allowAndTrustPublisherToolStripMenuItem
-            // 
+            //
             this.allowAndTrustPublisherToolStripMenuItem.Name = "allowAndTrustPublisherToolStripMenuItem";
             this.allowAndTrustPublisherToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.allowAndTrustPublisherToolStripMenuItem.Text = "Allow and Trust Publisher";
             this.allowAndTrustPublisherToolStripMenuItem.Click += new System.EventHandler(this.AllowAndTrustPublisherToolStripMenuItem_Click);
-            // 
+            //
             // permanentBlockToolStripMenuItem
-            // 
+            //
             this.permanentBlockToolStripMenuItem.Name = "permanentBlockToolStripMenuItem";
             this.permanentBlockToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.permanentBlockToolStripMenuItem.Text = "Block";
             this.permanentBlockToolStripMenuItem.Click += new System.EventHandler(this.PermanentBlockToolStripMenuItem_Click);
-            // 
+            //
             // ignoreToolStripMenuItem
-            // 
+            //
             this.ignoreToolStripMenuItem.Name = "ignoreToolStripMenuItem";
             this.ignoreToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.ignoreToolStripMenuItem.Text = "Ignore";
             this.ignoreToolStripMenuItem.Click += new System.EventHandler(this.IgnoreToolStripMenuItem_Click);
-            // 
+            //
             // toolStripSeparator4
-            // 
+            //
             this.toolStripSeparator4.Name = "toolStripSeparator4";
             this.toolStripSeparator4.Size = new System.Drawing.Size(224, 6);
-            // 
+            //
             // createWildcardRuleToolStripMenuItem
-            // 
+            //
             this.createWildcardRuleToolStripMenuItem.Name = "createWildcardRuleToolStripMenuItem";
             this.createWildcardRuleToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.createWildcardRuleToolStripMenuItem.Text = "Create Wildcard Rule...";
             this.createWildcardRuleToolStripMenuItem.Click += new System.EventHandler(this.createWildcardRuleToolStripMenuItem_Click);
-            // 
+            //
             // toolStripSeparator5
-            // 
+            //
             this.toolStripSeparator5.Name = "toolStripSeparator5";
             this.toolStripSeparator5.Size = new System.Drawing.Size(224, 6);
-            // 
+            //
             // createAdvancedRuleToolStripMenuItem
-            // 
+            //
             this.createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
             this.createAdvancedRuleToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
             this.createAdvancedRuleToolStripMenuItem.Click += new System.EventHandler(this.createAdvancedRuleToolStripMenuItem_Click);
-            // 
+            //
             // toolStripSeparator7
-            // 
+            //
             this.toolStripSeparator7.Name = "toolStripSeparator7";
             this.toolStripSeparator7.Size = new System.Drawing.Size(224, 6);
-            // 
+            //
             // openFileLocationToolStripMenuItem1
-            // 
+            //
             this.openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
             this.openFileLocationToolStripMenuItem1.Size = new System.Drawing.Size(227, 24);
             this.openFileLocationToolStripMenuItem1.Text = "Open File Location";
             this.openFileLocationToolStripMenuItem1.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem1_Click);
-            // 
+            //
+            // toolStripSeparator8
+            //
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(224, 6);
+            //
+            // showBlockingRuleInfoToolStripMenuItem
+            //
+            this.showBlockingRuleInfoToolStripMenuItem.Name = "showBlockingRuleInfoToolStripMenuItem";
+            this.showBlockingRuleInfoToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.showBlockingRuleInfoToolStripMenuItem.Text = "Show Blocking Rule Info";
+            this.showBlockingRuleInfoToolStripMenuItem.Click += new System.EventHandler(this.showBlockingRuleInfoToolStripMenuItem_Click);
+            //
             // toolStripSeparator6
-            // 
+            //
             this.toolStripSeparator6.Name = "toolStripSeparator6";
             this.toolStripSeparator6.Size = new System.Drawing.Size(224, 6);
-            // 
+            //
             // copyDetailsToolStripMenuItem
-            // 
+            //
             this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
             this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
-            // 
+            //
             // dashboardDataGridView
-            // 
+            //
             this.dashboardDataGridView.AllowUserToAddRows = false;
             this.dashboardDataGridView.AllowUserToDeleteRows = false;
             this.dashboardDataGridView.AllowUserToResizeRows = false;
@@ -297,9 +316,9 @@ namespace MinimalFirewall
             this.dashboardDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseEnter);
             this.dashboardDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseLeave);
             this.dashboardDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.dashboardDataGridView_RowPostPaint);
-            // 
+            //
             // dashIconColumn
-            // 
+            //
             this.dashIconColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.dashIconColumn.DataPropertyName = "AppPath";
             this.dashIconColumn.FillWeight = 10F;
@@ -310,9 +329,9 @@ namespace MinimalFirewall
             this.dashIconColumn.ReadOnly = true;
             this.dashIconColumn.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dashIconColumn.Width = 32;
-            // 
+            //
             // allowButtonColumn
-            // 
+            //
             this.allowButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
@@ -326,9 +345,9 @@ namespace MinimalFirewall
             this.allowButtonColumn.Text = "Allow";
             this.allowButtonColumn.UseColumnTextForButtonValue = true;
             this.allowButtonColumn.Width = 70;
-            // 
+            //
             // blockButtonColumn
-            // 
+            //
             this.blockButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
@@ -342,9 +361,9 @@ namespace MinimalFirewall
             this.blockButtonColumn.Text = "Block";
             this.blockButtonColumn.UseColumnTextForButtonValue = true;
             this.blockButtonColumn.Width = 70;
-            // 
+            //
             // ignoreButtonColumn
-            // 
+            //
             this.ignoreButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
@@ -358,33 +377,33 @@ namespace MinimalFirewall
             this.ignoreButtonColumn.Text = "Ignore";
             this.ignoreButtonColumn.UseColumnTextForButtonValue = true;
             this.ignoreButtonColumn.Width = 70;
-            // 
+            //
             // dashAppColumn
-            // 
+            //
             this.dashAppColumn.DataPropertyName = "FileName";
             this.dashAppColumn.FillWeight = 30F;
             this.dashAppColumn.HeaderText = "Application";
             this.dashAppColumn.Name = "dashAppColumn";
             this.dashAppColumn.ReadOnly = true;
-            // 
+            //
             // dashServiceColumn
-            // 
+            //
             this.dashServiceColumn.DataPropertyName = "ServiceName";
             this.dashServiceColumn.FillWeight = 30F;
             this.dashServiceColumn.HeaderText = "Service";
             this.dashServiceColumn.Name = "dashServiceColumn";
             this.dashServiceColumn.ReadOnly = true;
-            // 
+            //
             // dashDirectionColumn
-            // 
+            //
             this.dashDirectionColumn.DataPropertyName = "Direction";
             this.dashDirectionColumn.FillWeight = 20F;
             this.dashDirectionColumn.HeaderText = "Direction";
             this.dashDirectionColumn.Name = "dashDirectionColumn";
             this.dashDirectionColumn.ReadOnly = true;
-            // 
+            //
             // dashPathColumn
-            // 
+            //
             this.dashPathColumn.DataPropertyName = "AppPath";
             dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             this.dashPathColumn.DefaultCellStyle = dataGridViewCellStyle5;
@@ -392,9 +411,9 @@ namespace MinimalFirewall
             this.dashPathColumn.HeaderText = "Path";
             this.dashPathColumn.Name = "dashPathColumn";
             this.dashPathColumn.ReadOnly = true;
-            // 
+            //
             // DashboardControl
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.dashboardDataGridView);

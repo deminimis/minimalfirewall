@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Linq;
+using MinimalFirewall;
+using MinimalFirewall.TypedObjects;
 
 namespace Firewall.Traffic
 {
@@ -18,6 +20,7 @@ namespace Firewall.Traffic
     {
         private const int AF_INET = 2;
         private const int AF_INET6 = 23;
+        private const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
         private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, int ulAf, int TableClass, uint Reserved);
@@ -29,19 +32,48 @@ namespace Firewall.Traffic
             return connections;
         }
 
+        public static string GetStateString(uint state)
+        {
+            return state switch
+            {
+                1 => "Closed",
+                2 => "Listen",
+                3 => "Syn-Sent",
+                4 => "Syn-Rcvd",
+                5 => "Established",
+                6 => "Fin-Wait-1",
+                7 => "Fin-Wait-2",
+                8 => "Close-Wait",
+                9 => "Closing",
+                10 => "Last-Ack",
+                11 => "Time-Wait",
+                12 => "Delete-Tcb",
+                _ => "Unknown",
+            };
+        }
+
         private static List<TcpTrafficRow> GetConnectionsForFamily(int family)
         {
             IntPtr pTcpTable = IntPtr.Zero;
             int pdwSize = 0;
-            _ = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+            uint retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+
+            if (retVal != 0 && retVal != ERROR_INSUFFICIENT_BUFFER)
+            {
+                int error = Marshal.GetLastWin32Error();
+                Debug.WriteLine($"[ERROR] GetExtendedTcpTable failed on initial call with error code: {retVal}, Win32 Error: {error}");
+                return [];
+            }
+
             pTcpTable = Marshal.AllocHGlobal(pdwSize);
             try
             {
-                if (GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0) == 0)
+                retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+                if (retVal == 0)
                 {
                     int rowCount = Marshal.ReadInt32(pTcpTable);
                     var connections = new List<TcpTrafficRow>(rowCount);
-                    IntPtr rowPtr = pTcpTable + 4;
+                    IntPtr rowPtr = pTcpTable + Marshal.SizeOf<int>();
 
                     for (int i = 0; i < rowCount; i++)
                     {
@@ -49,21 +81,29 @@ namespace Firewall.Traffic
                         {
                             var rowStructure = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
                             connections.Add(new TcpTrafficRow(rowStructure));
-                            rowPtr += Marshal.SizeOf(typeof(MIB_TCPROW_OWNER_PID));
+                            rowPtr += Marshal.SizeOf<MIB_TCPROW_OWNER_PID>();
                         }
                         else
                         {
                             var rowStructure = Marshal.PtrToStructure<MIB_TCP6ROW_OWNER_PID>(rowPtr);
                             connections.Add(new TcpTrafficRow(rowStructure));
-                            rowPtr += Marshal.SizeOf(typeof(MIB_TCP6ROW_OWNER_PID));
+                            rowPtr += Marshal.SizeOf<MIB_TCP6ROW_OWNER_PID>();
                         }
                     }
                     return connections;
                 }
+                else
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    Debug.WriteLine($"[ERROR] GetExtendedTcpTable failed on second call with error code: {retVal}, Win32 Error: {error}");
+                }
             }
             finally
             {
-                Marshal.FreeHGlobal(pTcpTable);
+                if (pTcpTable != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pTcpTable);
+                }
             }
             return [];
         }
@@ -74,24 +114,30 @@ namespace Firewall.Traffic
             public readonly IPEndPoint LocalEndPoint;
             public readonly IPEndPoint RemoteEndPoint;
             public readonly int ProcessId;
+            public readonly uint State;
+
             public TcpTrafficRow(MIB_TCPROW_OWNER_PID row)
             {
                 LocalEndPoint = new IPEndPoint(row.localAddr, (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
                 RemoteEndPoint = new IPEndPoint(row.remoteAddr, (ushort)IPAddress.NetworkToHostOrder((short)row.remotePort));
                 ProcessId = row.owningPid;
+                State = row.state;
             }
+
             public TcpTrafficRow(MIB_TCP6ROW_OWNER_PID row)
             {
                 LocalEndPoint = new IPEndPoint(new IPAddress(row.localAddr, row.localScopeId), (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
                 RemoteEndPoint = new IPEndPoint(new IPAddress(row.remoteAddr, row.remoteScopeId), (ushort)IPAddress.NetworkToHostOrder((short)row.remotePort));
                 ProcessId = row.owningPid;
+                State = row.state;
             }
 
             public bool Equals(TcpTrafficRow other)
             {
                 return LocalEndPoint.Equals(other.LocalEndPoint) &&
                        RemoteEndPoint.Equals(other.RemoteEndPoint) &&
-                       ProcessId == other.ProcessId;
+                       ProcessId == other.ProcessId &&
+                       State == other.State;
             }
 
             public override bool Equals(object? obj)
@@ -101,12 +147,20 @@ namespace Firewall.Traffic
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId);
+                return HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State);
             }
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct MIB_TCPROW_OWNER_PID { public uint state; public uint localAddr; public uint localPort; public uint remoteAddr; public uint remotePort; public int owningPid; }
+        public struct MIB_TCPROW_OWNER_PID
+        {
+            public uint state;
+            public uint localAddr;
+            public uint localPort;
+            public uint remoteAddr;
+            public uint remotePort;
+            public int owningPid;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         public struct MIB_TCP6ROW_OWNER_PID
@@ -130,42 +184,31 @@ namespace Firewall.Traffic.ViewModels
 {
     public class TcpConnectionViewModel : INotifyPropertyChanged
     {
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
         public TcpTrafficTracker.TcpTrafficRow Connection { get; }
-        public string ProcessName { get; private set; } = "Loading...";
-        public string ProcessPath { get; private set; } = string.Empty;
+        public string ProcessName { get; private set; }
+        public string ProcessPath { get; private set; }
+        public string ServiceName { get; private set; }
+
+        public string DisplayName => string.IsNullOrEmpty(ServiceName) ? ProcessName : $"{ProcessName} ({ServiceName})";
+        public string LocalAddress => Connection.LocalEndPoint.Address.ToString();
+        public int LocalPort => Connection.LocalEndPoint.Port;
         public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
+        public string State => TcpTrafficTracker.GetStateString(Connection.State);
+
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
-        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection)
+        public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path, string ServiceName) processInfo, BackgroundFirewallTaskService backgroundTaskService)
         {
             Connection = connection;
+            ProcessName = processInfo.Name;
+            ProcessPath = processInfo.Path;
+            ServiceName = processInfo.ServiceName;
+            _backgroundTaskService = backgroundTaskService;
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
             BlockRemoteIpCommand = new RelayCommand(BlockIp, () => true);
-            LoadProcessInfo();
-        }
-
-        private void LoadProcessInfo()
-        {
-            try
-            {
-                var p = Process.GetProcessById(Connection.ProcessId);
-                ProcessName = p.ProcessName;
-                try
-                {
-                    if (p.MainModule != null)
-                    {
-                        ProcessPath = p.MainModule.FileName;
-                    }
-                }
-                catch (Win32Exception)
-                {
-                    ProcessPath = string.Empty;
-                }
-            }
-            catch { ProcessName = "System"; }
-            OnPropertyChanged(nameof(ProcessName));
         }
 
         private void KillProcess()
@@ -182,86 +225,66 @@ namespace Firewall.Traffic.ViewModels
         }
 
         private bool CanKillProcess() => !ProcessName.Equals("System", StringComparison.OrdinalIgnoreCase);
+
         private void BlockIp()
         {
+            if (_backgroundTaskService == null) return;
+
+            var rule = new AdvancedRuleViewModel
+            {
+                Name = $"Block Remote IP - {RemoteAddress}",
+                Description = $"Blocked remote IP {RemoteAddress} initiated from '{DisplayName}' via Live Connections.", // Updated description
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Status = "Block",
+                Direction = Directions.Incoming | Directions.Outgoing,
+                Protocol = (int)MinimalFirewall.TypedObjects.ProtocolTypes.Any.Value,
+                LocalPorts = "*",
+                RemotePorts = "*",
+                LocalAddresses = "*",
+                RemoteAddresses = RemoteAddress,
+                Profiles = "All",
+                Type = RuleType.Advanced,
+                InterfaceTypes = "All",
+                IcmpTypesAndCodes = "*"
+            };
+
+            var payload = new CreateAdvancedRulePayload { ViewModel = rule, InterfaceTypes = rule.InterfaceTypes, IcmpTypesAndCodes = rule.IcmpTypesAndCodes };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+
+            MessageBox.Show($"Firewall rule queued to block all traffic to/from {RemoteAddress}.", "Rule Queued", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
         private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class TrafficMonitorViewModel
     {
-        private System.Threading.Timer? _timer;
-        private bool _isRefreshing = false;
-        private readonly SynchronizationContext? _syncContext;
-        public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = [];
-        public TrafficMonitorViewModel()
-        {
-            _syncContext = SynchronizationContext.Current;
-        }
-
-        public void StartMonitoring()
-        {
-            if (_timer != null) return;
-            _timer = new System.Threading.Timer(RefreshConnections, null, 0, 2000);
-        }
+        public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = new ObservableCollection<TcpConnectionViewModel>();
 
         public void StopMonitoring()
         {
-            _timer?.Dispose();
-            _timer = null;
             ActiveConnections.Clear();
-        }
-
-        private async void RefreshConnections(object? state)
-        {
-            if (_isRefreshing) return;
-            _isRefreshing = true;
-
-            try
-            {
-                var latestConnections = await Task.Run(() => TcpTrafficTracker.GetConnections());
-                _syncContext?.Post(_ =>
-                {
-                    var latestViewModelMap = latestConnections
-                        .Distinct()
-                        .Select(c => new TcpConnectionViewModel(c))
-                        .ToDictionary(vm => vm.Connection);
-
-                    var existingConnections = ActiveConnections.Select(vm => vm.Connection).ToHashSet();
-
-                    var itemsToRemove = ActiveConnections
-                        .Where(vm => !latestViewModelMap.ContainsKey(vm.Connection))
-                        .ToList();
-
-                    foreach (var item in itemsToRemove)
-                    {
-                        ActiveConnections.Remove(item);
-                    }
-
-                    foreach (var kvp in latestViewModelMap)
-                    {
-                        if (!existingConnections.Contains(kvp.Key))
-                        {
-                            ActiveConnections.Add(kvp.Value);
-                        }
-                    }
-                }, null);
-            }
-            finally
-            {
-                _isRefreshing = false;
-            }
         }
     }
 
-    public class RelayCommand(Action execute, Func<bool> canExecute) : ICommand
+    public class RelayCommand : ICommand
     {
+        private readonly Action _execute;
+        private readonly Func<bool> _canExecute;
+
         public event EventHandler? CanExecuteChanged;
-        public bool CanExecute(object? p) => canExecute();
-        public void Execute(object? p) => execute();
+
+        public RelayCommand(Action execute, Func<bool> canExecute)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute ?? throw new ArgumentNullException(nameof(canExecute));
+        }
+
+        public bool CanExecute(object? parameter) => _canExecute();
+        public void Execute(object? parameter) => _execute();
+
         public void RaiseCanExecuteChanged()
         {
             CanExecuteChanged?.Invoke(this, EventArgs.Empty);
