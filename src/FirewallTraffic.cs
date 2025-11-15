@@ -1,5 +1,4 @@
-﻿// File: FirewallTraffic.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -18,12 +17,12 @@ namespace Firewall.Traffic
 {
     public static partial class TcpTrafficTracker
     {
-        private const int AF_INET = 2;
-        private const int AF_INET6 = 23;
+        private const uint AF_INET = 2;
+        private const uint AF_INET6 = 23;
         private const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
-        private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, int ulAf, int TableClass, uint Reserved);
+        private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, uint ulAf, int TableClass, uint Reserved);
         public static List<TcpTrafficRow> GetConnections()
         {
             var connections = new List<TcpTrafficRow>();
@@ -52,10 +51,10 @@ namespace Firewall.Traffic
             };
         }
 
-        private static List<TcpTrafficRow> GetConnectionsForFamily(int family)
+        private static List<TcpTrafficRow> GetConnectionsForFamily(uint family)
         {
             IntPtr pTcpTable = IntPtr.Zero;
-            int pdwSize = 0;
+            uint pdwSize = 0;
             uint retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
 
             if (retVal != 0 && retVal != ERROR_INSUFFICIENT_BUFFER)
@@ -65,7 +64,7 @@ namespace Firewall.Traffic
                 return [];
             }
 
-            pTcpTable = Marshal.AllocHGlobal(pdwSize);
+            pTcpTable = Marshal.AllocHGlobal((int)pdwSize);
             try
             {
                 retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
@@ -113,7 +112,7 @@ namespace Firewall.Traffic
         {
             public readonly IPEndPoint LocalEndPoint;
             public readonly IPEndPoint RemoteEndPoint;
-            public readonly int ProcessId;
+            public readonly uint ProcessId;
             public readonly uint State;
 
             public TcpTrafficRow(MIB_TCPROW_OWNER_PID row)
@@ -159,7 +158,7 @@ namespace Firewall.Traffic
             public uint localPort;
             public uint remoteAddr;
             public uint remotePort;
-            public int owningPid;
+            public uint owningPid;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -174,7 +173,7 @@ namespace Firewall.Traffic
             public uint remoteScopeId;
             public uint remotePort;
             public uint state;
-            public int owningPid;
+            public uint owningPid;
         }
         #endregion
     }
@@ -215,7 +214,7 @@ namespace Firewall.Traffic.ViewModels
         {
             try
             {
-                var process = Process.GetProcessById(Connection.ProcessId);
+                var process = Process.GetProcessById((int)Connection.ProcessId);
                 process.Kill();
             }
             catch (Exception ex)
@@ -233,7 +232,7 @@ namespace Firewall.Traffic.ViewModels
             var rule = new AdvancedRuleViewModel
             {
                 Name = $"Block Remote IP - {RemoteAddress}",
-                Description = $"Blocked remote IP {RemoteAddress} initiated from '{DisplayName}' via Live Connections.", // Updated description
+                Description = $"Blocked remote IP {RemoteAddress} initiated from '{DisplayName}' via Live Connections.",
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Block",

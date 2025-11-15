@@ -3,6 +3,8 @@
     partial class LiveConnectionsControl
     {
         private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.Panel disabledPanel;
+        private System.Windows.Forms.Label disabledLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -36,8 +38,11 @@
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.disabledPanel = new System.Windows.Forms.Panel();
+            this.disabledLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.liveConnectionsDataGridView)).BeginInit();
             this.liveConnectionsContextMenu.SuspendLayout();
+            this.disabledPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // liveConnectionsDataGridView
@@ -218,15 +223,38 @@
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
             this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
             // 
+            // disabledPanel
+            // 
+            this.disabledPanel.Controls.Add(this.disabledLabel);
+            this.disabledPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.disabledPanel.Location = new System.Drawing.Point(0, 0);
+            this.disabledPanel.Name = "disabledPanel";
+            this.disabledPanel.Size = new System.Drawing.Size(800, 600);
+            this.disabledPanel.TabIndex = 1;
+            this.disabledPanel.Visible = false;
+            // 
+            // disabledLabel
+            // 
+            this.disabledLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.disabledLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.disabledLabel.Location = new System.Drawing.Point(0, 0);
+            this.disabledLabel.Name = "disabledLabel";
+            this.disabledLabel.Size = new System.Drawing.Size(800, 600);
+            this.disabledLabel.TabIndex = 0;
+            this.disabledLabel.Text = "Live connection monitoring is disabled.\r\n\r\nYou can enable it in the Settings tab.";
+            this.disabledLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // LiveConnectionsControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.disabledPanel);
             this.Controls.Add(this.liveConnectionsDataGridView);
             this.Name = "LiveConnectionsControl";
             this.Size = new System.Drawing.Size(800, 600);
             ((System.ComponentModel.ISupportInitialize)(this.liveConnectionsDataGridView)).EndInit();
             this.liveConnectionsContextMenu.ResumeLayout(false);
+            this.disabledPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -252,4 +280,3 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn connPathColumn;
     }
 }
-
