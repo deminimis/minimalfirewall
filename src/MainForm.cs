@@ -139,6 +139,7 @@ namespace MinimalFirewall
             settingsControl1.IconVisibilityChanged += UpdateIconColumnVisibility;
             settingsControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(true);
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
+            settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
 
             SetupTrayIcon();
 
@@ -715,6 +716,15 @@ namespace MinimalFirewall
             }
         }
 
+        private async void OnTrafficMonitorSettingChanged()
+        {
+            liveConnectionsControl1.UpdateEnabledState();
+            if (_appSettings.IsTrafficMonitorEnabled && mainTabControl.SelectedTab == liveConnectionsTabPage)
+            {
+                await LoadLiveConnectionsAsync();
+            }
+        }
+
         public async Task PrepareForTrayAsync()
         {
             _scanCts?.Cancel();
@@ -899,6 +909,13 @@ namespace MinimalFirewall
 
         private async Task LoadLiveConnectionsAsync(StatusForm? statusFormInstance = null)
         {
+            if (!_appSettings.IsTrafficMonitorEnabled)
+            {
+                _mainViewModel.TrafficMonitorViewModel.StopMonitoring();
+                liveConnectionsControl1.UpdateLiveConnectionsView();
+                return;
+            }
+
             if (_isRefreshingData) return;
             _scanCts?.Cancel();
             _scanCts = new CancellationTokenSource();
@@ -977,6 +994,7 @@ namespace MinimalFirewall
                         await groupsControl1.OnTabSelectedAsync();
                         break;
                     case "liveConnectionsTabPage":
+                        liveConnectionsControl1.UpdateEnabledState();
                         await LoadLiveConnectionsAsync();
                         break;
                 }
@@ -1202,4 +1220,3 @@ namespace MinimalFirewall
         #endregion
     }
 }
-

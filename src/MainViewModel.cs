@@ -94,7 +94,7 @@ namespace MinimalFirewall
             var vms = await Task.Run(() =>
             {
                 var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
-                var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
+                var processInfoCache = new Dictionary<uint, (string Name, string Path, string ServiceName)>();
                 var viewModels = new List<TcpConnectionViewModel>();
                 int total = connections.Count > 0 ? connections.Count : 1;
                 int current = 0;
@@ -110,7 +110,7 @@ namespace MinimalFirewall
                     {
                         try
                         {
-                            using (var p = Process.GetProcessById(conn.ProcessId))
+                            using (var p = Process.GetProcessById((int)conn.ProcessId))
                             {
                                 string name = p.ProcessName;
                                 string path = string.Empty;
@@ -129,7 +129,6 @@ namespace MinimalFirewall
                         catch { info = ("System", string.Empty, string.Empty); }
                         processInfoCache[conn.ProcessId] = info;
                     }
-                    // Pass the _backgroundTaskService when creating the ViewModel
                     viewModels.Add(new TcpConnectionViewModel(conn, info, _backgroundTaskService));
                     current++;
                     progress?.Report((current * 100) / total);

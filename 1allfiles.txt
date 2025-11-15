@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/AdaptiveUI.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/AdaptiveUI.cs
 --------------------------------------------------------------------------------
 ﻿// File: AdaptiveUI.cs
 using System.ComponentModel;
@@ -71,14 +71,14 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/App.config
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/App.config
 --------------------------------------------------------------------------------
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <configuration>
 </configuration>
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/app.manifest
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/app.manifest
 --------------------------------------------------------------------------------
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
@@ -112,7 +112,7 @@ namespace MinimalFirewall
 </assembly>
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/Appdata.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/Appdata.cs
 --------------------------------------------------------------------------------
 ﻿// File: Appdata.cs
 using System.Diagnostics;
@@ -172,7 +172,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/AppSettings.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/AppSettings.cs
 --------------------------------------------------------------------------------
 ﻿// File: AppSettings.cs
 using System.ComponentModel;
@@ -297,7 +297,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/AuditControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/AuditControl.cs
 --------------------------------------------------------------------------------
 ﻿// File: AuditControl.cs
 using MinimalFirewall.TypedObjects;
@@ -651,7 +651,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/AuditControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/AuditControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: AuditControl.Designer.cs
 namespace MinimalFirewall
@@ -995,7 +995,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/BackgroundFirewallTaskService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/BackgroundFirewallTaskService.cs
 --------------------------------------------------------------------------------
 ﻿using System;
 using System.Collections.Concurrent;
@@ -1171,7 +1171,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/BrowseServicesForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/BrowseServicesForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: BrowseServicesForm.cs
 using DarkModeForms;
@@ -1247,7 +1247,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/BrowseServicesForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/BrowseServicesForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿namespace MinimalFirewall
 {
@@ -1366,7 +1366,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateAdvancedRuleForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/CreateAdvancedRuleForm.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
 using MinimalFirewall.TypedObjects;
@@ -1783,7 +1783,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateAdvancedRuleForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/CreateAdvancedRuleForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File:CreateAdvancedRuleForm.Designer.cs
 namespace MinimalFirewall
@@ -2550,7 +2550,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateProgramRuleForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/CreateProgramRuleForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: CreateProgramRuleForm.cs
 using DarkModeForms;
@@ -2592,7 +2592,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/CreateProgramRuleForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/CreateProgramRuleForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: CreateProgramRuleForm.Designer.cs
 namespace MinimalFirewall
@@ -2733,7 +2733,1244 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/DashboardControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/DarkModeCS.cs
+--------------------------------------------------------------------------------
+﻿// File: DarkModeCS.cs
+using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+
+namespace DarkModeForms
+{
+    public class DarkModeCS : IDisposable
+    {
+        private class NotificationInfo
+        {
+            public int Count
+            { get; set; }
+        }
+        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
+        public void SetNotificationCount(Control control, int count)
+        {
+            if (count > 0)
+            {
+                if (_notificationInfo.TryGetValue(control, out var info))
+                {
+                    info.Count = count;
+                }
+                else
+                {
+                    _notificationInfo.Add(control, new NotificationInfo { Count = count });
+                }
+            }
+            else
+            {
+                if (_notificationInfo.TryGetValue(control, out _))
+                {
+                    _notificationInfo.Remove(control);
+                }
+            }
+
+            if (control is TabPage tabPage && tabPage.Parent is TabControl parentTab)
+            {
+                parentTab.Invalidate();
+            }
+        }
+
+        private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
+        {
+            using (Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold))
+            {
+                SizeF textSize = g.MeasureString(text, notifFont);
+                int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
+                int x, y;
+                switch (alignment)
+                {
+                    case TabAlignment.Left:
+                    case TabAlignment.Right:
+                        x = tabRect.Left + 5;
+                        y = tabRect.Bottom - diameter - 5;
+                        break;
+                    default:
+                        x = tabRect.Right - diameter - 3;
+                        y = tabRect.Top + 3;
+                        break;
+                }
+
+
+                Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                using (var path = new GraphicsPath())
+                {
+                    path.AddEllipse(bubbleRect);
+                    PointF point1 = PointF.Empty, point2 = PointF.Empty, point3 = PointF.Empty;
+                    switch (alignment)
+                    {
+                        case TabAlignment.Left:
+                            point1 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.2f);
+                            point2 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.4f);
+                            point3 = new PointF(bubbleRect.Right + 6, bubbleRect.Top - 4);
+                            break;
+                        case TabAlignment.Right:
+                            point1 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.2f);
+                            point2 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.4f);
+                            point3 = new PointF(bubbleRect.Left - 6, bubbleRect.Top - 4);
+                            break;
+                        default:
+                            point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
+                            point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
+                            point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
+                            break;
+                    }
+
+                    path.AddPolygon(new[] { point1, point2, point3 });
+                    using (SolidBrush redBrush = new SolidBrush(Color.Red))
+                    {
+                        g.FillPath(redBrush, path);
+                    }
+                }
+
+                using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+                {
+                    using (StringFormat sf = new StringFormat
+                    {
+
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    })
+                    {
+                        g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
+                    }
+                }
+            }
+        }
+
+
+        public struct DWMCOLORIZATIONcolors
+        {
+            public uint ColorizationColor,
+              ColorizationAfterglow,
+              ColorizationColorBalance,
+              ColorizationAfterglowBalance,
+              ColorizationBlurBalance,
+              ColorizationGlassReflectionIntensity,
+              ColorizationOpaqueBlend;
+        }
+
+        [Flags]
+        public enum DWMWINDOWATTRIBUTE : uint
+        {
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+        }
+
+        [DllImport("user32.dll")]
+        private static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
+        private const int WM_SETREDRAW = 0x000B;
+
+        [DllImport("DwmApi")]
+        public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
+        [DllImport("dwmapi.dll", EntryPoint = "#127")]
+        public static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+        [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static extern IntPtr CreateRoundRectRgn
+        (
+          int nLeftRect,
+          int nTopRect,
+          int nRightRect,
+          int nBottomRect,
+          int nWidthEllipse,
+          int nHeightEllipse
+        );
+        [DllImport("user32.dll", ExactSpelling = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+        private const uint GW_CHILD = 5;
+
+        private static readonly ControlStatusStorage controlStatusStorage = new();
+        private ControlEventHandler? ownerFormControlAdded;
+        private ControlEventHandler? controlControlAdded;
+        private bool _IsDarkMode;
+
+        public enum DisplayMode
+        {
+            SystemDefault,
+            ClearMode,
+            DarkMode
+        }
+
+        public DisplayMode ColorMode
+        { get; set; } = DisplayMode.SystemDefault;
+        public bool IsDarkMode => _IsDarkMode;
+        public bool ColorizeIcons { get; set; } = true;
+        public bool RoundedPanels { get; set; } = false;
+        public Form OwnerForm
+        { get; set; }
+        public ComponentCollection? Components
+        { get; set; }
+        public OSThemeColors OScolors
+        { get; set; }
+
+        public DarkModeCS(Form _Form, bool _ColorizeIcons = true, bool _RoundedPanels = false)
+        {
+            OwnerForm = _Form;
+            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.SetValue(OwnerForm, true, null);
+            Components = null;
+            ColorizeIcons = _ColorizeIcons;
+            RoundedPanels = _RoundedPanels;
+            OScolors = GetSystemColors(isDarkMode() ? 0 : 1);
+            OwnerForm.HandleCreated += (sender, e) => ApplyTitleBarTheme();
+        }
+
+        private static void SuspendDrawing(Control parent)
+        {
+            SendMessage(parent.Handle, WM_SETREDRAW, false, 0);
+        }
+
+        private static void ResumeDrawing(Control parent)
+        {
+            SendMessage(parent.Handle, WM_SETREDRAW, true, 0);
+            parent.Refresh();
+        }
+
+        private void ApplyTitleBarTheme()
+        {
+            if (OwnerForm.Handle != IntPtr.Zero)
+            {
+                bool useDark = (ColorMode == DisplayMode.DarkMode) ||
+                    (ColorMode == DisplayMode.SystemDefault && isDarkMode());
+                int[] DarkModeOn = useDark ? [0x01] : [0x00];
+                DwmSetWindowAttribute(OwnerForm.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
+            }
+        }
+
+        public bool isDarkMode()
+        {
+            return GetWindowsColorMode() <= 0;
+        }
+
+        public void ApplyTheme(bool pIsDarkMode = true)
+        {
+            try
+            {
+                _IsDarkMode = pIsDarkMode;
+                OScolors = GetSystemColors(pIsDarkMode ? 0 : 1);
+
+                SuspendDrawing(OwnerForm);
+                OwnerForm.SuspendLayout();
+
+                ApplyTitleBarTheme();
+                OwnerForm.BackColor = OScolors.Background;
+                OwnerForm.ForeColor = OScolors.TextInactive;
+                if (OwnerForm.Controls != null)
+                {
+                    foreach (Control _control in OwnerForm.Controls)
+                    {
+                        ThemeControl(_control);
+                    }
+
+                    ownerFormControlAdded = (sender, e) =>
+                    {
+                        if (e.Control != null)
+                        {
+                            ThemeControl(e.Control!);
+                        }
+                    };
+                    OwnerForm.ControlAdded -= ownerFormControlAdded;
+                    OwnerForm.ControlAdded += ownerFormControlAdded;
+                }
+
+                if (Components != null)
+                {
+                    foreach (var item in Components.OfType<ContextMenuStrip>())
+                        ThemeControl(item);
+                }
+                OwnerForm.ResumeLayout(true);
+                ResumeDrawing(OwnerForm);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
+        public void ApplyTheme(DisplayMode pColorMode)
+        {
+            if (ColorMode == pColorMode) return;
+            ColorMode = pColorMode;
+            _IsDarkMode = isDarkMode();
+            if (ColorMode != DisplayMode.SystemDefault)
+            {
+                _IsDarkMode = ColorMode == DisplayMode.DarkMode;
+            }
+
+            ApplyTheme(_IsDarkMode);
+        }
+
+        private void ListView_DrawColumnHeader(object? sender, DrawListViewColumnHeaderEventArgs e)
+        {
+            if (sender is not ListView listView) return;
+            if (IsDarkMode)
+            {
+                using (var backBrush = new SolidBrush(OScolors.Surface))
+                {
+                    e.Graphics.FillRectangle(backBrush, e.Bounds);
+                }
+                TextRenderer.DrawText(e.Graphics, e.Header!.Text, e.Font, e.Bounds, OScolors.TextActive, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+            }
+            else
+            {
+                e.DrawDefault = true;
+            }
+        }
+
+        public void ThemeControl(Control control)
+        {
+            var info = controlStatusStorage.GetControlStatusInfo(control);
+            if (info != null)
+            {
+                if (info.IsExcluded) return;
+                if (info.LastThemeAppliedIsDark == IsDarkMode) return;
+                info.LastThemeAppliedIsDark = IsDarkMode;
+            }
+            else
+            {
+                controlStatusStorage.RegisterProcessedControl(control, IsDarkMode);
+            }
+            control.SuspendLayout();
+            BorderStyle BStyle = (IsDarkMode ? BorderStyle.FixedSingle : BorderStyle.Fixed3D);
+            controlControlAdded = (sender, e) =>
+            {
+                if (e.Control != null)
+                {
+                    ThemeControl(e.Control);
+                }
+            };
+            control.ControlAdded -= controlControlAdded;
+            control.ControlAdded += controlControlAdded;
+            string Mode = IsDarkMode ? "DarkMode_Explorer" : "ClearMode_Explorer";
+            SetWindowTheme(control.Handle, Mode, null);
+
+            control.GetType().GetProperty("BackColor")?.SetValue(control, OScolors.Control);
+            control.GetType().GetProperty("ForeColor")?.SetValue(control, OScolors.TextActive);
+            if (control is Label lbl && control.Parent != null)
+            {
+                control.BackColor = control.Parent.BackColor;
+                control.GetType().GetProperty("BorderStyle")?.SetValue(control, BorderStyle.None);
+                lbl.Paint -= Label_Paint;
+                lbl.Paint += Label_Paint;
+            }
+            else if (control is LinkLabel linkLabel && linkLabel.Parent != null)
+            {
+                linkLabel.BackColor = linkLabel.Parent.BackColor;
+                linkLabel.LinkColor = OScolors.AccentLight;
+                linkLabel.VisitedLinkColor = OScolors.Primary;
+            }
+            else if (control is TextBox)
+            {
+                control.GetType().GetProperty("BorderStyle")?.SetValue(control, BStyle);
+            }
+            else if (control is NumericUpDown)
+            {
+                Mode = IsDarkMode ?
+                    "DarkMode_ItemsView" : "ClearMode_ItemsView";
+                SetWindowTheme(control.Handle, Mode, null);
+            }
+            else if (control is Button button)
+            {
+                button.FlatStyle = IsDarkMode ?
+                    FlatStyle.Flat : FlatStyle.Standard;
+                button.FlatAppearance.CheckedBackColor = OScolors.Accent;
+                button.BackColor = OScolors.Control;
+                button.FlatAppearance.BorderColor = (button.FindForm()?.AcceptButton == button) ? OScolors.Accent : OScolors.Control;
+                button.FlatAppearance.MouseOverBackColor = OScolors.ControlLight;
+            }
+            else if (control is ComboBox comboBox)
+            {
+                if (comboBox.DropDownStyle != ComboBoxStyle.DropDownList)
+                {
+                    comboBox.SelectionStart = comboBox.Text.Length;
+                }
+                control.BeginInvoke(new Action(() =>
+                {
+                    if (control is ComboBox invokedComboBox && !invokedComboBox.DropDownStyle.Equals(ComboBoxStyle.DropDownList))
+                        invokedComboBox.SelectionLength = 0;
+
+                }));
+
+                if (!control.Enabled && IsDarkMode)
+                {
+                    comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+                }
+
+                Mode = IsDarkMode ?
+                    "DarkMode_CFD" : "ClearMode_CFD";
+                SetWindowTheme(control.Handle, Mode, null);
+            }
+            else if (control is TabPage tabPage)
+            {
+                tabPage.BackColor = OScolors.Surface;
+            }
+            else if (control is Panel panel && panel.Parent != null)
+            {
+                panel.BackColor = panel.Parent.BackColor;
+                panel.BorderStyle = BorderStyle.None;
+                if (panel.Parent is not TabControl && panel.Parent is not TableLayoutPanel)
+                {
+                    if (RoundedPanels)
+                    {
+                        SetRoundBorders(panel, 6, OScolors.SurfaceDark, 1);
+                    }
+                }
+            }
+            else if (control is GroupBox groupBox && groupBox.Parent != null)
+            {
+                groupBox.BackColor = groupBox.Parent.BackColor;
+                groupBox.ForeColor = OScolors.TextActive;
+                groupBox.Paint -= GroupBox_Paint;
+                groupBox.Paint += GroupBox_Paint;
+            }
+            else if (control is TableLayoutPanel tablePanel && tablePanel.Parent != null)
+            {
+                tablePanel.BackColor = tablePanel.Parent.BackColor;
+                tablePanel.ForeColor = OScolors.TextInactive;
+            }
+            else if (control is TabControl tab && tab.Parent != null)
+            {
+                tab.Appearance = TabAppearance.Normal;
+                tab.DrawMode = TabDrawMode.OwnerDrawFixed;
+                tab.DrawItem -= Tab_DrawItem;
+                tab.DrawItem += Tab_DrawItem;
+            }
+            else if (control is PictureBox pictureBox && pictureBox.Parent != null)
+            {
+                pictureBox.BackColor = pictureBox.Parent.BackColor;
+                if (OScolors != null)
+                {
+                    pictureBox.ForeColor = OScolors.TextActive;
+                }
+                pictureBox.BorderStyle = BorderStyle.None;
+            }
+            else if (control is CheckBox checkBox && checkBox.Parent != null)
+            {
+                checkBox.BackColor = checkBox.Parent.BackColor;
+                checkBox.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
+                checkBox.Paint -= CheckBox_Paint;
+                checkBox.Paint += CheckBox_Paint;
+            }
+            else if (control is RadioButton radioButton && radioButton.Parent != null)
+            {
+                radioButton.BackColor = radioButton.Parent.BackColor;
+                radioButton.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
+                radioButton.Paint -= RadioButton_Paint;
+                radioButton.Paint += RadioButton_Paint;
+            }
+            else if (control is MenuStrip menuStrip)
+            {
+                menuStrip.RenderMode = ToolStripRenderMode.Professional;
+                menuStrip.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons)
+                {
+                    MyColors = OScolors
+                };
+            }
+            else if (control is ToolStrip toolStrip)
+            {
+                toolStrip.RenderMode = ToolStripRenderMode.Professional;
+                toolStrip.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons) { MyColors = OScolors };
+            }
+            else if (control is ToolStripPanel toolStripPanel && toolStripPanel.Parent != null)
+            {
+                toolStripPanel.BackColor = toolStripPanel.Parent.BackColor;
+            }
+            else if (control is ToolStripDropDown dropDown)
+            {
+                dropDown.Opening -= Tsdd_Opening;
+                dropDown.Opening += Tsdd_Opening;
+            }
+            else if (control is ContextMenuStrip contextMenu)
+            {
+                contextMenu.RenderMode = ToolStripRenderMode.Professional;
+                contextMenu.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons) { MyColors = OScolors };
+                contextMenu.Opening -= Tsdd_Opening;
+                contextMenu.Opening += Tsdd_Opening;
+            }
+            else if (control is MdiClient mdiClient)
+            {
+                mdiClient.BackColor = OScolors.Surface;
+            }
+            else if (control is PropertyGrid pGrid)
+            {
+                pGrid.BackColor = OScolors.Control;
+                pGrid.ViewBackColor = OScolors.Control;
+                pGrid.LineColor = OScolors.Surface;
+                pGrid.ViewForeColor = OScolors.TextActive;
+                pGrid.ViewBorderColor = OScolors.ControlDark;
+                pGrid.CategoryForeColor = OScolors.TextActive;
+                pGrid.CategorySplitterColor = OScolors.ControlLight;
+            }
+            else if (control is ListView lView)
+            {
+                lView.OwnerDraw = true;
+
+                lView.DrawColumnHeader -= ListView_DrawColumnHeader;
+                lView.DrawColumnHeader += ListView_DrawColumnHeader;
+
+                if (!lView.OwnerDraw)
+                {
+                    Mode = IsDarkMode ?
+                        "DarkMode_Explorer" : "ClearMode_Explorer";
+                    SetWindowTheme(control.Handle, Mode, null);
+                }
+            }
+            else if (control is TreeView)
+            {
+                control.GetType().GetProperty("BorderStyle")?.SetValue(control, BorderStyle.None);
+            }
+            else if (control is DataGridView grid)
+            {
+                grid.EnableHeadersVisualStyles = false;
+                grid.BorderStyle = BorderStyle.FixedSingle;
+                grid.BackgroundColor = OScolors.Control;
+                grid.GridColor = OScolors.Control;
+
+                grid.Paint -= DataGridView_Paint;
+                grid.Paint += DataGridView_Paint;
+
+                grid.DefaultCellStyle.BackColor = OScolors.Surface;
+                grid.DefaultCellStyle.ForeColor = OScolors.TextActive;
+                grid.ColumnHeadersDefaultCellStyle.BackColor = OScolors.Surface;
+                grid.ColumnHeadersDefaultCellStyle.ForeColor = OScolors.TextActive;
+                grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = OScolors.Surface;
+                grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+                grid.RowHeadersDefaultCellStyle.BackColor = OScolors.Surface;
+                grid.RowHeadersDefaultCellStyle.ForeColor = OScolors.TextActive;
+                grid.RowHeadersDefaultCellStyle.SelectionBackColor = OScolors.Surface;
+                grid.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            }
+            else if (control is RichTextBox richText && richText.Parent != null)
+            {
+                richText.BackColor = richText.Parent.BackColor;
+                richText.BorderStyle = BorderStyle.None;
+            }
+            else if (control is FlowLayoutPanel flowLayout && flowLayout.Parent != null)
+            {
+                flowLayout.BackColor = flowLayout.Parent.BackColor;
+            }
+
+            if (control.ContextMenuStrip != null)
+                ThemeControl(control.ContextMenuStrip);
+            foreach (Control childControl in control.Controls)
+            {
+                ThemeControl(childControl);
+            }
+            control.ResumeLayout(false);
+        }
+
+        private void Label_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not Label lbl || !(!lbl.Enabled && IsDarkMode && lbl.Parent != null)) return;
+            e.Graphics.Clear(lbl.Parent.BackColor);
+            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+            using Brush B = new SolidBrush(lbl.ForeColor);
+            MethodInfo? mi = lbl.GetType().GetMethod("CreateStringFormat", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (mi?.Invoke(lbl, []) is StringFormat sf)
+            {
+                e.Graphics.DrawString(lbl.Text ?? "", lbl.Font, B, new PointF(1, 0), sf);
+            }
+        }
+
+        private void GroupBox_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not GroupBox gBox || !(!gBox.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(gBox.ForeColor);
+            e.Graphics.DrawString(gBox.Text, gBox.Font, B, new PointF(6, 0));
+        }
+
+        private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
+        {
+            if (sender is not TabControl tab || tab.Parent == null) return;
+            using (SolidBrush headerBrush = new SolidBrush(tab.Parent.BackColor))
+            {
+                e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
+            }
+            for (int i = 0; i < tab.TabPages.Count; i++)
+            {
+                TabPage tabPage = tab.TabPages[i];
+                if (tabPage.Tag == null)
+                {
+                    tabPage.BackColor = OScolors.Surface;
+                    tabPage.BorderStyle = BorderStyle.FixedSingle;
+                    foreach (Control child in tabPage.Controls)
+                    {
+                        ThemeControl(child);
+                    }
+                    tabPage.ControlAdded += (_s, _e) => { if (_e.Control != null) ThemeControl(_e.Control); };
+                    tabPage.Tag = "themed";
+                }
+                Rectangle tabRect = tab.GetTabRect(i);
+                bool isSelected = tab.SelectedIndex == i;
+                if (isSelected)
+                {
+                    using (SolidBrush tabBackColor = new SolidBrush(OScolors.Surface))
+                    {
+                        e.Graphics.FillRectangle(tabBackColor, tabRect);
+                    }
+                }
+                Image?
+                icon = null;
+                if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
+                {
+                    icon = tab.ImageList.Images[tabPage.ImageIndex];
+                }
+                Rectangle textBounds;
+                TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
+                Color textColor = isSelected ? OScolors.TextActive : OScolors.TextInactive;
+
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+                if (tab.Alignment == TabAlignment.Left || tab.Alignment == TabAlignment.Right)
+                {
+                    if (icon != null)
+                    {
+                        int iconHeight = tab.ImageList.ImageSize.Height;
+                        int iconWidth = tab.ImageList.ImageSize.Width;
+                        int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
+                        int iconY = tabRect.Y + 15;
+                        Image imageToDraw = icon;
+                        bool shouldDispose = false;
+                        if (IsDarkMode && tabPage.ImageKey != "locked.png")
+                        {
+                            imageToDraw = RecolorImage(icon, Color.White);
+                            shouldDispose = true;
+                        }
+                        e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
+                        if (shouldDispose)
+                        {
+                            imageToDraw.Dispose();
+                        }
+                        textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
+                        textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
+                    }
+                    else
+                    {
+                        textBounds = tabRect;
+                    }
+                }
+                else
+                {
+                    textBounds = tabRect;
+                }
+                TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
+                if (_notificationInfo.TryGetValue(tabPage, out var info) && info.Count > 0)
+                {
+                    DrawNotificationBubble(e.Graphics, tabRect, info.Count.ToString(), tab.Alignment);
+                }
+            }
+        }
+
+        private void CheckBox_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not CheckBox chkBox || !(!chkBox.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(chkBox.ForeColor);
+            e.Graphics.DrawString(chkBox.Text, chkBox.Font, B, new PointF(16, 0));
+        }
+
+        private void RadioButton_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not RadioButton rdoBtn || !(!rdoBtn.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(rdoBtn.ForeColor);
+            e.Graphics.DrawString(rdoBtn.Text, rdoBtn.Font, B, new PointF(16, 0));
+        }
+
+        private void DataGridView_Paint(object? sender, PaintEventArgs e)
+        {
+            if (sender is not DataGridView dgv) return;
+            PropertyInfo? hsp = typeof(DataGridView).GetProperty("HorizontalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
+            PropertyInfo? vsp = typeof(DataGridView).GetProperty("VerticalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (hsp?.GetValue(dgv) is HScrollBar hs && hs.Visible && vsp?.GetValue(dgv) is VScrollBar vs && vs.Visible)
+            {
+                using Brush brush = new SolidBrush(OScolors.SurfaceDark);
+                var w = vs.Size.Width;
+                var h = hs.Size.Height;
+                e.Graphics.FillRectangle(brush, dgv.ClientRectangle.X + dgv.ClientRectangle.Width - w - 1, dgv.ClientRectangle.Y + dgv.ClientRectangle.Height - h - 1, w, h);
+            }
+        }
+
+        public static void ExcludeFromProcessing(Control control)
+        {
+            controlStatusStorage.ExcludeFromProcessing(control);
+        }
+
+        public static int GetWindowsColorMode(bool GetSystemColorModeInstead = false)
+        {
+            try
+            {
+                return (int?)Registry.GetValue(
+                   @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                   GetSystemColorModeInstead ? "SystemUsesLightTheme" : "AppsUseLightTheme",
+                   -1) ??
+                    1;
+            }
+            catch
+            {
+                return 1;
+            }
+        }
+
+        public static Color GetWindowsAccentColor()
+        {
+            try
+            {
+                DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
+                DwmGetColorizationParameters(ref colors);
+
+                if (IsWindows10orGreater())
+                {
+                    var color = colors.ColorizationColor;
+                    var colorValue = long.Parse(color.ToString(), System.Globalization.NumberStyles.HexNumber);
+                    var transparency = (colorValue >> 24) & 0xFF;
+                    var red = (colorValue >> 16) & 0xFF;
+                    var green = (colorValue >> 8) & 0xFF;
+                    var blue = (colorValue >> 0) & 0xFF;
+                    return Color.FromArgb((int)transparency, (int)red, (int)green, (int)blue);
+                }
+                return Color.CadetBlue;
+            }
+            catch (Exception)
+            {
+                return Color.CadetBlue;
+            }
+        }
+
+        public static Color GetWindowsAccentOpaqueColor()
+        {
+            DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
+            DwmGetColorizationParameters(ref colors);
+            if (IsWindows10orGreater())
+            {
+                var color = colors.ColorizationColor;
+                var colorValue = long.Parse(color.ToString(), System.Globalization.NumberStyles.HexNumber);
+                var red = (colorValue >> 16) & 0xFF;
+                var green = (colorValue >> 8) & 0xFF;
+                var blue = (colorValue >> 0) & 0xFF;
+                return Color.FromArgb(255, (int)red, (int)green, (int)blue);
+            }
+            return Color.CadetBlue;
+        }
+
+        public static OSThemeColors GetSystemColors(int ColorMode = 0)
+        {
+            OSThemeColors _ret = new();
+            if (ColorMode <= 0)
+            {
+                _ret.Background = Color.FromArgb(32, 32, 32);
+                _ret.BackgroundDark = Color.FromArgb(18, 18, 18);
+                _ret.BackgroundLight = ControlPaint.Light(_ret.Background);
+                _ret.Surface = Color.FromArgb(43, 43, 43);
+                _ret.SurfaceLight = Color.FromArgb(50, 50, 50);
+                _ret.SurfaceDark = Color.FromArgb(29, 29, 29);
+                _ret.TextActive = Color.White;
+                _ret.TextInactive = Color.FromArgb(176, 176, 176);
+                _ret.TextInAccent = GetReadableColor(_ret.Accent);
+                _ret.Control = Color.FromArgb(55, 55, 55);
+                _ret.ControlDark = ControlPaint.Dark(_ret.Control);
+                _ret.ControlLight = Color.FromArgb(67, 67, 67);
+                _ret.Primary = Color.FromArgb(3, 218, 198);
+                _ret.Secondary = Color.MediumSlateBlue;
+            }
+
+            return _ret;
+        }
+
+        public static void SetRoundBorders(Control _Control, int Radius = 10, Color? borderColor = null, int borderSize = 2, bool underlinedStyle = false)
+        {
+            borderColor ??= Color.MediumSlateBlue;
+            if (_Control?.Parent != null)
+            {
+                _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
+                _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
+                _Control.Paint += (sender, e) =>
+                {
+                    Graphics graph = e.Graphics;
+                    if (Radius > 1 && _Control.Parent != null)
+                    {
+                        var rectBorderSmooth = _Control.ClientRectangle;
+                        var rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
+                        int smoothSize = borderSize > 0 ? borderSize : 1;
+                        using GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius);
+                        using GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize);
+                        using Pen penBorderSmooth = new(_Control.Parent.BackColor, smoothSize);
+                        using Pen penBorder = new((Color)borderColor, borderSize);
+
+                        _Control.Region = new Region(pathBorderSmooth);
+                        if (Radius > 15)
+                        {
+                            using GraphicsPath pathTxt = GetFigurePath(_Control.ClientRectangle, borderSize * 2);
+                            _Control.Region = new Region(pathTxt);
+                        }
+                        graph.SmoothingMode = SmoothingMode.AntiAlias;
+                        penBorder.Alignment = PenAlignment.Center;
+
+                        if (underlinedStyle)
+                        {
+                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
+                            graph.SmoothingMode = SmoothingMode.None;
+                            graph.DrawLine(penBorder, 0, _Control.Height - 1, _Control.Width, _Control.Height - 1);
+                        }
+                        else
+                        {
+                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
+                            graph.DrawPath(penBorder, pathBorder);
+                        }
+                    }
+                };
+            }
+        }
+
+        public static Image RecolorImage(Image sourceImage, Color newColor)
+        {
+            var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(newBitmap))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+                float r = newColor.R / 255f;
+                float g_ = newColor.G / 255f;
+                float b = newColor.B / 255f;
+                var colorMatrix = new ColorMatrix(
+                new float[][]
+                {
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 1, 0},
+                    new float[] {r, g_, b, 0, 1}
+                });
+                using (var attributes = new ImageAttributes())
+                {
+                    attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                    g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+                }
+            }
+            return newBitmap;
+        }
+
+        private void Tsdd_Opening(object? sender, CancelEventArgs e)
+        {
+            if (sender is ToolStripDropDown tsdd)
+            {
+                foreach (ToolStripMenuItem toolStripMenuItem in tsdd.Items.OfType<ToolStripMenuItem>())
+                {
+
+                    toolStripMenuItem.DropDownOpening -= Tsmi_DropDownOpening;
+                    toolStripMenuItem.DropDownOpening += Tsmi_DropDownOpening;
+                }
+            }
+        }
+
+        private void Tsmi_DropDownOpening(object? sender, EventArgs e)
+        {
+            if (sender is ToolStripMenuItem tsmi)
+            {
+                if (tsmi.DropDown != null && tsmi.DropDown.Items.Count > 0)
+
+                {
+                    ThemeControl(tsmi.DropDown);
+                }
+                tsmi.DropDownOpening -= Tsmi_DropDownOpening;
+            }
+        }
+
+        private static bool IsWindows10orGreater()
+        {
+            return WindowsVersion() >= 10;
+        }
+
+        private static int WindowsVersion()
+        {
+            try
+            {
+                using var reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+                string? productName = reg?.GetValue("ProductName")?.ToString();
+                if (!string.IsNullOrEmpty(productName))
+                {
+                    var parts = productName.Split(' ');
+                    if (parts.Length > 1 && int.TryParse(parts[1], out int result))
+                    {
+                        return result;
+                    }
+                }
+            }
+            catch { }
+
+            return Environment.OSVersion.Version.Major;
+        }
+
+        private static Color GetReadableColor(Color backgroundColor)
+        {
+            double normalizedR = backgroundColor.R / 255.0;
+            double normalizedG = backgroundColor.G / 255.0;
+            double normalizedB = backgroundColor.B / 255.0;
+            double luminance = 0.299 * normalizedR + 0.587 * normalizedG + 0.114 * normalizedB;
+            return luminance < 0.5 ?
+                Color.FromArgb(182, 180, 215) : Color.FromArgb(34, 34, 34);
+        }
+
+        private static GraphicsPath GetFigurePath(Rectangle rect, int radius)
+        {
+            GraphicsPath path = new();
+            float curveSize = radius * 2F;
+
+            path.StartFigure();
+            path.AddArc(rect.X, rect.Y, curveSize, curveSize, 180, 90);
+            path.AddArc(rect.Right - curveSize, rect.Y, curveSize, curveSize, 270, 90);
+            path.AddArc(rect.Right - curveSize, rect.Bottom - curveSize, curveSize, curveSize, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - curveSize, curveSize, curveSize, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        private bool disposedValue;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (OwnerForm != null && ownerFormControlAdded != null)
+
+                    {
+                        OwnerForm.ControlAdded -= ownerFormControlAdded;
+                    }
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+    }
+
+    public class OSThemeColors
+    {
+        public Color Background
+        { get; set; } = SystemColors.Control;
+        public Color BackgroundDark { get; set; } = SystemColors.ControlDark;
+        public Color BackgroundLight
+        { get; set; } = SystemColors.ControlLight;
+        public Color Surface { get; set; } = SystemColors.ControlLightLight;
+        public Color SurfaceDark
+        { get; set; } = SystemColors.ControlLight;
+        public Color SurfaceLight { get; set; } = Color.White;
+        public Color TextActive
+        { get; set; } = SystemColors.ControlText;
+        public Color TextInactive { get; set; } = SystemColors.GrayText;
+        public Color TextInAccent
+        { get; set; } = SystemColors.HighlightText;
+        public Color Control { get; set; } = SystemColors.ButtonFace;
+        public Color ControlDark
+        { get; set; } = SystemColors.ButtonShadow;
+        public Color ControlLight { get; set; } = SystemColors.ButtonHighlight;
+        public Color Accent
+        { get; set; } = DarkModeCS.GetWindowsAccentColor();
+        public Color AccentOpaque { get; set; } = DarkModeCS.GetWindowsAccentOpaqueColor();
+        public Color AccentDark => ControlPaint.Dark(Accent);
+        public Color AccentLight => ControlPaint.Light(Accent);
+        public Color Primary { get; set; } = SystemColors.Highlight;
+        public Color PrimaryDark => ControlPaint.Dark(Primary);
+        public Color PrimaryLight => ControlPaint.Light(Primary);
+        public Color Secondary { get; set; } = SystemColors.HotTrack;
+        public Color SecondaryDark => ControlPaint.Dark(Secondary);
+        public Color SecondaryLight => ControlPaint.Light(Secondary);
+    }
+
+    public class MyRenderer : ToolStripProfessionalRenderer
+    {
+        public bool ColorizeIcons
+        { get; set; } = true;
+        public OSThemeColors MyColors
+        { get; set; }
+
+        public MyRenderer(ProfessionalColorTable table, bool pColorizeIcons = true) : base(table)
+        {
+            ColorizeIcons = pColorizeIcons;
+            MyColors = new OSThemeColors();
+        }
+
+        protected override void OnRenderGrip(ToolStripGripRenderEventArgs e)
+        {
+            base.OnRenderGrip(e);
+        }
+
+        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+        {
+            if (e.ToolStrip is ToolStripDropDown)
+            {
+                using var p = new Pen(MyColors.ControlDark);
+                e.Graphics.DrawRectangle(p, 0, 0, e.AffectedBounds.Width - 1, e.AffectedBounds.Height - 1);
+            }
+            else
+            {
+                base.OnRenderToolStripBorder(e);
+            }
+        }
+
+        protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
+        {
+            if (e.ToolStrip != null)
+            {
+                e.ToolStrip!.BackColor = MyColors.Background;
+            }
+            base.OnRenderToolStripBackground(e);
+        }
+
+        protected override void OnRenderButtonBackground(ToolStripItemRenderEventArgs e)
+        {
+            if (e.Item is not ToolStripButton button) return;
+            Graphics g = e.Graphics;
+            Rectangle bounds = new(Point.Empty, e.Item.Size);
+
+            Color gradientBegin = MyColors.Background;
+            Color gradientEnd = MyColors.Background;
+            using Pen BordersPencil = new(MyColors.Background);
+
+            if (button.Pressed || button.Checked)
+            {
+                gradientBegin = MyColors.Control;
+                gradientEnd = MyColors.Control;
+            }
+            else if (button.Selected)
+            {
+                gradientBegin = MyColors.Accent;
+                gradientEnd = MyColors.Accent;
+            }
+
+            using (Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical))
+            {
+                g.FillRectangle(b, bounds);
+            }
+
+            g.DrawRectangle(BordersPencil, bounds);
+            g.DrawLine(BordersPencil, bounds.X, bounds.Y, bounds.Width - 1, bounds.Y);
+            g.DrawLine(BordersPencil, bounds.X, bounds.Y, bounds.X, bounds.Height - 1);
+        }
+
+        protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
+        {
+            Rectangle bounds = new(Point.Empty, e.Item.Size);
+            Color gradientBegin = MyColors.Background;
+            Color gradientEnd = MyColors.Background;
+
+            if (e.Item.Pressed)
+            {
+                gradientBegin = MyColors.Control;
+                gradientEnd = MyColors.Control;
+            }
+            else if (e.Item.Selected)
+            {
+                gradientBegin = MyColors.Accent;
+                gradientEnd = MyColors.Accent;
+            }
+
+            using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(b, bounds);
+        }
+
+        protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
+        {
+            Rectangle bounds = new(Point.Empty, e.Item.Size);
+            Color gradientBegin = MyColors.Background;
+            Color gradientEnd = MyColors.Background;
+
+            if (e.Item.Pressed)
+            {
+                gradientBegin = MyColors.Control;
+                gradientEnd = MyColors.Control;
+            }
+            else if (e.Item.Selected)
+            {
+                gradientBegin = MyColors.Accent;
+                gradientEnd = MyColors.Accent;
+            }
+
+            using (Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical))
+            {
+                e.Graphics.FillRectangle(b, bounds);
+            }
+
+            int Padding = 2;
+            Size cSize = new(8, 4);
+            using Pen ChevronPen = new(MyColors.TextInactive, 2);
+            Point P1 = new(bounds.Width - (cSize.Width + Padding), (bounds.Height / 2) - (cSize.Height / 2));
+            Point P2 = new(bounds.Width - Padding, (bounds.Height / 2) - (cSize.Height / 2));
+            Point P3 = new(bounds.Width - (cSize.Width / 2 + Padding), (bounds.Height / 2) + (cSize.Height / 2));
+
+            e.Graphics.DrawLine(ChevronPen, P1, P3);
+            e.Graphics.DrawLine(ChevronPen, P2, P3);
+        }
+
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            if (e.Item != null)
+            {
+                e.TextColor = e.Item.Enabled ?
+                    MyColors.TextActive : MyColors.TextInactive;
+            }
+            base.OnRenderItemText(e);
+        }
+
+        protected override void OnRenderItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            base.OnRenderItemBackground(e);
+            if (e.Item is ToolStripComboBox)
+            {
+                Rectangle rect = new(Point.Empty, e.Item.Size);
+                using Pen p = new(MyColors.ControlLight, 1);
+                e.Graphics.DrawRectangle(p, rect);
+            }
+        }
+
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            if (e.Item is not ToolStripMenuItem)
+            {
+                base.OnRenderMenuItemBackground(e);
+                return;
+            }
+
+            Rectangle bounds = new(Point.Empty, e.Item.Size);
+            Color gradientBegin = MyColors.Background;
+            Color gradientEnd = MyColors.Background;
+            bool DrawIt = false;
+            if (e.Item.Pressed)
+            {
+                gradientBegin = MyColors.Control;
+                gradientEnd = MyColors.Control;
+                DrawIt = true;
+            }
+            else if (e.Item.Selected)
+            {
+                gradientBegin = MyColors.Accent;
+                gradientEnd = MyColors.Accent;
+                DrawIt = true;
+            }
+
+            if (DrawIt)
+            {
+                using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
+                e.Graphics.FillRectangle(b, bounds);
+            }
+        }
+
+        protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e)
+        {
+            if (e.Image == null || e.Item == null)
+            {
+                base.OnRenderItemImage(e);
+                return;
+            }
+
+            if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
+            {
+                Color _ClearColor = e.Item.Enabled ?
+                    MyColors.TextActive : MyColors.SurfaceDark;
+                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
+                {
+                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    e.Graphics.CompositingQuality = CompositingQuality.AssumeLinear;
+                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                    e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
+                }
+                return;
+            }
+
+            if (ColorizeIcons)
+            {
+                Color _ClearColor = e.Item.Enabled ?
+                    MyColors.TextInactive : MyColors.SurfaceDark;
+                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
+                {
+                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                    e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
+                }
+            }
+            else
+            {
+                base.OnRenderItemImage(e);
+            }
+        }
+    }
+
+    public class CustomColorTable : ProfessionalColorTable
+    {
+        public OSThemeColors Colors
+        { get; set; }
+
+        public CustomColorTable(OSThemeColors _Colors)
+        {
+            Colors = _Colors;
+            UseSystemColors = false;
+        }
+
+        public override Color ImageMarginGradientBegin => Colors.Control;
+        public override Color ImageMarginGradientMiddle => Colors.Control;
+        public override Color ImageMarginGradientEnd => Colors.Control;
+    }
+
+    public class ControlStatusStorage
+    {
+        private readonly ConditionalWeakTable<Control, ControlStatusInfo> _controlsProcessed = new();
+        public void ExcludeFromProcessing(Control control)
+        {
+            _controlsProcessed.Remove(control);
+            _controlsProcessed.Add(control, new ControlStatusInfo() { IsExcluded = true });
+        }
+
+        public ControlStatusInfo?
+        GetControlStatusInfo(Control control)
+        {
+            _controlsProcessed.TryGetValue(control, out ControlStatusInfo? info);
+            return info;
+        }
+
+        public void RegisterProcessedControl(Control control, bool isDarkMode)
+        {
+            _controlsProcessed.Add(control,
+                new ControlStatusInfo() { IsExcluded = false, LastThemeAppliedIsDark = isDarkMode });
+        }
+    }
+
+    public class ControlStatusInfo
+    {
+        public bool IsExcluded
+        { get; set; }
+        public bool LastThemeAppliedIsDark
+        { get; set; }
+    }
+}
+
+--------------------------------------------------------------------------------
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/DashboardControl.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
 using System;
@@ -2969,7 +4206,16 @@ namespace MinimalFirewall
                 {
                     var newRule = wildcardDialog.NewRule;
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
-                    _viewModel.PendingConnections.Remove(pending);
+
+                    string decision = newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow";
+                    var allowPayload = new ProcessPendingConnectionPayload
+                    {
+                        PendingConnection = pending,
+                        Decision = decision,
+                        Duration = default,
+                        TrustPublisher = false
+                    };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, allowPayload));
                 }
             }
         }
@@ -3050,7 +4296,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/DashboardControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/DashboardControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: DashboardControl.Designer.cs
 namespace MinimalFirewall
@@ -3483,7 +4729,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/DataModels.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/DataModels.cs
 --------------------------------------------------------------------------------
 ﻿using System.IO;
 using System.ComponentModel;
@@ -3755,7 +5001,7 @@ namespace MinimalFirewall
  
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallActionService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallActionService.cs
 --------------------------------------------------------------------------------
 ﻿using NetFwTypeLib;
 using System.Data;
@@ -4279,7 +5525,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void ReenableMfwRules()
+        public void ReenableMfwRules()
         {
             var allRules = firewallService.GetAllRules();
             try
@@ -4289,7 +5535,7 @@ namespace MinimalFirewall
                     try
                     {
                         if (!string.IsNullOrEmpty(rule.Grouping) &&
-                            (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                             (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
                                rule.Grouping == "Minimal Firewall" ||
                                rule.Grouping == "Minimal Firewall (Wildcard)"))
                         {
@@ -4800,9 +6046,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            var appName = string.IsNullOrEmpty(serviceName) ? Path.GetFileNameWithoutExtension(appPath) : serviceName;
-
-            void createRule(string baseName, Directions dir, Actions act, int protocol)
+            void createRule(string baseName, Directions dir, Actions act, int protocol, string? serviceNameToUse)
             {
                 if (!ValidationUtility.ValidatePortString(rule.LocalPorts, out string localPortError))
                 {
@@ -4827,9 +6071,9 @@ namespace MinimalFirewall
                 {
                     firewallRule.Name = baseName;
 
-                    if (!string.IsNullOrEmpty(serviceName))
+                    if (!string.IsNullOrEmpty(serviceNameToUse))
                     {
-                        firewallRule.serviceName = serviceName;
+                        firewallRule.serviceName = serviceNameToUse;
                         firewallRule.ApplicationName = appPath;
                     }
                     else
@@ -4850,7 +6094,6 @@ namespace MinimalFirewall
                         valueWithError = rule.LocalPorts;
                         if (protocol != 6 && protocol != 17) valueWithError = "*";
                         else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-
                         activityLogger.LogDebug($"[ApplyWildcardMatch] Setting LocalPorts to: '{valueWithError}' for rule '{baseName}'");
                         firewallRule.LocalPorts = valueWithError;
                     }
@@ -4873,7 +6116,6 @@ namespace MinimalFirewall
                         valueWithError = rule.RemotePorts;
                         if (protocol != 6 && protocol != 17) valueWithError = "*";
                         else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-
                         activityLogger.LogDebug($"[ApplyWildcardMatch] Setting RemotePorts to: '{valueWithError}' for rule '{baseName}'");
                         firewallRule.RemotePorts = valueWithError;
                     }
@@ -4918,7 +6160,6 @@ namespace MinimalFirewall
                 {
                     activityLogger.LogException($"ApplyWildcardMatch-CreateRuleCOM-{baseName}", comEx);
                 }
-
                 catch (Exception ex)
                 {
                     activityLogger.LogException($"ApplyWildcardMatch-CreateRuleGeneral-{baseName}", ex);
@@ -4929,28 +6170,51 @@ namespace MinimalFirewall
                 }
             }
 
-            if (!string.IsNullOrEmpty(serviceName) && rule.Protocol == ProtocolTypes.Any.Value)
+            var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+            bool isSvcHost = Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase);
+            string appNameBase = Path.GetFileNameWithoutExtension(appPath);
+
+            List<string?> servicesToCreateRulesFor;
+
+            if (serviceNames.Length > 0)
             {
-                string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-
-                var protocolsToCreate = new List<int> { 6, 17 };
-
-                foreach (var protocol in protocolsToCreate)
-                {
-                    string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
-                    if (parsedDirection.HasFlag(Directions.Incoming))
-                    {
-                        createRule($"{appName} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol);
-                    }
-                    if (parsedDirection.HasFlag(Directions.Outgoing))
-                    {
-                        createRule($"{appName} - {actionStr}Out{protocolSuffix}", Directions.Outgoing, parsedAction, protocol);
-                    }
-                }
+                servicesToCreateRulesFor = new List<string?>(serviceNames);
+            }
+            else if (isSvcHost)
+            {
+                servicesToCreateRulesFor = ["*"];
             }
             else
             {
-                ApplyRuleAction(appName, rule.Action, (name, dir, act) => createRule(name, dir, act, rule.Protocol));
+                servicesToCreateRulesFor = [null]; 
+            }
+
+            foreach (var sName in servicesToCreateRulesFor)
+            {
+                string ruleNameBase = string.IsNullOrEmpty(sName) ? appNameBase : (sName == "*" ? appNameBase : sName);
+
+                if (rule.Protocol == ProtocolTypes.Any.Value)
+                {
+                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+                    var protocolsToCreate = new List<int> { 6, 17 };
+
+                    foreach (var protocol in protocolsToCreate)
+                    {
+                        string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                        if (parsedDirection.HasFlag(Directions.Incoming))
+                        {
+                            createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);
+                        }
+                        if (parsedDirection.HasFlag(Directions.Outgoing))
+                        {
+                            createRule($"{ruleNameBase} - {actionStr}Out{protocolSuffix}", Directions.Outgoing, parsedAction, protocol, sName);
+                        }
+                    }
+                }
+                else
+                {
+                    ApplyRuleAction(ruleNameBase, rule.Action, (name, dir, act) => createRule(name, dir, act, rule.Protocol, sName));
+                }
             }
 
             activityLogger.LogChange("Wildcard Rule Applied", rule.Action + " for " + appPath);
@@ -5120,7 +6384,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallDataService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallDataService.cs
 --------------------------------------------------------------------------------
 ﻿using NetFwTypeLib;
 using System.IO;
@@ -5523,7 +6787,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallEventListenerService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallEventListenerService.cs
 --------------------------------------------------------------------------------
 ﻿using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
@@ -5899,7 +7163,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallGroups.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallGroups.cs
 --------------------------------------------------------------------------------
 ﻿using NetFwTypeLib;
 using System.ComponentModel;
@@ -6007,7 +7271,7 @@ namespace MinimalFirewall.Groups
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallRuleBuilderExtensions.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallRuleBuilderExtensions.cs
 --------------------------------------------------------------------------------
 ﻿// FirewallRuleBuilderExtensions.cs
 using MinimalFirewall.TypedObjects;
@@ -6086,7 +7350,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallRuleService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallRuleService.cs
 --------------------------------------------------------------------------------
 ﻿using NetFwTypeLib;
 using System.Diagnostics;
@@ -6689,7 +7953,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallSentryService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallSentryService.cs
 --------------------------------------------------------------------------------
 ﻿// File: FirewallSentryService.cs
 using System.Management;
@@ -6812,10 +8076,9 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FirewallTraffic.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FirewallTraffic.cs
 --------------------------------------------------------------------------------
-﻿// File: FirewallTraffic.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -6834,12 +8097,12 @@ namespace Firewall.Traffic
 {
     public static partial class TcpTrafficTracker
     {
-        private const int AF_INET = 2;
-        private const int AF_INET6 = 23;
+        private const uint AF_INET = 2;
+        private const uint AF_INET6 = 23;
         private const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
-        private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref int pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, int ulAf, int TableClass, uint Reserved);
+        private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, uint ulAf, int TableClass, uint Reserved);
         public static List<TcpTrafficRow> GetConnections()
         {
             var connections = new List<TcpTrafficRow>();
@@ -6868,10 +8131,10 @@ namespace Firewall.Traffic
             };
         }
 
-        private static List<TcpTrafficRow> GetConnectionsForFamily(int family)
+        private static List<TcpTrafficRow> GetConnectionsForFamily(uint family)
         {
             IntPtr pTcpTable = IntPtr.Zero;
-            int pdwSize = 0;
+            uint pdwSize = 0;
             uint retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
 
             if (retVal != 0 && retVal != ERROR_INSUFFICIENT_BUFFER)
@@ -6881,7 +8144,7 @@ namespace Firewall.Traffic
                 return [];
             }
 
-            pTcpTable = Marshal.AllocHGlobal(pdwSize);
+            pTcpTable = Marshal.AllocHGlobal((int)pdwSize);
             try
             {
                 retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
@@ -6929,7 +8192,7 @@ namespace Firewall.Traffic
         {
             public readonly IPEndPoint LocalEndPoint;
             public readonly IPEndPoint RemoteEndPoint;
-            public readonly int ProcessId;
+            public readonly uint ProcessId;
             public readonly uint State;
 
             public TcpTrafficRow(MIB_TCPROW_OWNER_PID row)
@@ -6975,7 +8238,7 @@ namespace Firewall.Traffic
             public uint localPort;
             public uint remoteAddr;
             public uint remotePort;
-            public int owningPid;
+            public uint owningPid;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -6990,7 +8253,7 @@ namespace Firewall.Traffic
             public uint remoteScopeId;
             public uint remotePort;
             public uint state;
-            public int owningPid;
+            public uint owningPid;
         }
         #endregion
     }
@@ -7031,7 +8294,7 @@ namespace Firewall.Traffic.ViewModels
         {
             try
             {
-                var process = Process.GetProcessById(Connection.ProcessId);
+                var process = Process.GetProcessById((int)Connection.ProcessId);
                 process.Kill();
             }
             catch (Exception ex)
@@ -7049,7 +8312,7 @@ namespace Firewall.Traffic.ViewModels
             var rule = new AdvancedRuleViewModel
             {
                 Name = $"Block Remote IP - {RemoteAddress}",
-                Description = $"Blocked remote IP {RemoteAddress} initiated from '{DisplayName}' via Live Connections.", // Updated description
+                Description = $"Blocked remote IP {RemoteAddress} initiated from '{DisplayName}' via Live Connections.",
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Block",
@@ -7108,9 +8371,8 @@ namespace Firewall.Traffic.ViewModels
     }
 }
 
-
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FlatComboBox.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FlatComboBox.cs
 --------------------------------------------------------------------------------
 ﻿// File: FlatComboBox.cs
 using System;
@@ -7316,7 +8578,7 @@ namespace DarkModeForms
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FlatProgressBar.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FlatProgressBar.cs
 --------------------------------------------------------------------------------
 ﻿// File: FlatProgressBar.cs
 using System;
@@ -7552,7 +8814,7 @@ namespace DarkModeForms
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/FlatTabControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/FlatTabControl.cs
 --------------------------------------------------------------------------------
 ﻿// File: FlatTabControl.cs
 using System.ComponentModel;
@@ -7699,7 +8961,7 @@ namespace DarkModeForms
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/ForeignRuleTracker.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/ForeignRuleTracker.cs
 --------------------------------------------------------------------------------
 ﻿// File: ForeignRuleTracker.cs
 using System.IO;
@@ -7777,7 +9039,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/GroupsControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/GroupsControl.cs
 --------------------------------------------------------------------------------
 ﻿// File: GroupsControl.cs
 using DarkModeForms;
@@ -7967,7 +9229,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/GroupsControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/GroupsControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: GroupsControl.Designer.cs
 namespace MinimalFirewall
@@ -8090,7 +9352,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/IconService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/IconService.cs
 --------------------------------------------------------------------------------
 ﻿// File: IconService.cs
 using System;
@@ -8294,7 +9556,637 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MainForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/LiveConnectionsControl.cs
+--------------------------------------------------------------------------------
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Windows.Forms;
+using Firewall.Traffic.ViewModels;
+using System.Linq;
+using NetFwTypeLib;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Specialized;
+using System;
+
+namespace MinimalFirewall
+{
+    public partial class LiveConnectionsControl : UserControl
+    {
+        private TrafficMonitorViewModel _viewModel = null!;
+        private AppSettings _appSettings = null!;
+        private IconService _iconService = null!;
+        private BackgroundFirewallTaskService _backgroundTaskService = null!;
+        private FirewallActionsService _actionsService = null!;
+        private BindingSource _bindingSource;
+        private SortableBindingList<TcpConnectionViewModel> _sortableList;
+
+        public LiveConnectionsControl()
+        {
+            InitializeComponent();
+            this.DoubleBuffered = true;
+        }
+
+        public void Initialize(
+            TrafficMonitorViewModel viewModel,
+            AppSettings appSettings,
+            IconService iconService,
+            BackgroundFirewallTaskService backgroundTaskService,
+            FirewallActionsService actionsService)
+        {
+            _viewModel = viewModel;
+            _appSettings = appSettings;
+            _iconService = iconService;
+            _backgroundTaskService = backgroundTaskService;
+            _actionsService = actionsService;
+
+            liveConnectionsDataGridView.AutoGenerateColumns = false;
+            _sortableList = new SortableBindingList<TcpConnectionViewModel>(_viewModel.ActiveConnections);
+            _bindingSource = new BindingSource { DataSource = _sortableList };
+            liveConnectionsDataGridView.DataSource = _bindingSource;
+
+            _viewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
+
+            liveConnectionsDataGridView.ColumnHeaderMouseClick += liveConnectionsDataGridView_ColumnHeaderMouseClick;
+
+            UpdateEnabledState();
+        }
+
+        public void UpdateEnabledState()
+        {
+            bool isEnabled = _appSettings.IsTrafficMonitorEnabled;
+            liveConnectionsDataGridView.Visible = isEnabled;
+            disabledPanel.Visible = !isEnabled;
+        }
+
+        private void ActiveConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdateLiveConnectionsView(e)));
+            }
+            else
+            {
+                UpdateLiveConnectionsView(e);
+            }
+        }
+
+        public void UpdateLiveConnectionsView(NotifyCollectionChangedEventArgs e = null)
+        {
+            if (e != null)
+            {
+                if (e.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    _sortableList = new SortableBindingList<TcpConnectionViewModel>(_viewModel.ActiveConnections);
+                    _bindingSource.DataSource = _sortableList;
+                }
+                else
+                {
+                    _sortableList = new SortableBindingList<TcpConnectionViewModel>(_viewModel.ActiveConnections);
+                    _bindingSource.DataSource = _sortableList;
+                }
+            }
+            else
+            {
+                _sortableList = new SortableBindingList<TcpConnectionViewModel>(_viewModel.ActiveConnections);
+                _bindingSource.DataSource = _sortableList;
+            }
+
+            _bindingSource.ResetBindings(false);
+            ApplySorting();
+            liveConnectionsDataGridView.Refresh();
+            UpdateEnabledState();
+        }
+
+
+        public void OnTabDeselected()
+        {
+            _viewModel.StopMonitoring();
+            _sortableList.Clear();
+            _bindingSource.DataSource = null;
+            liveConnectionsDataGridView.DataSource = null;
+            liveConnectionsDataGridView.Refresh();
+            UpdateEnabledState();
+        }
+
+        public void UpdateIconColumnVisibility()
+        {
+            if (connIconColumn != null)
+            {
+                connIconColumn.Visible = _appSettings.ShowAppIcons;
+            }
+        }
+
+        private void ApplySorting()
+        {
+            int sortCol = _appSettings.LiveConnectionsSortColumn;
+            var sortOrder = (SortOrder)_appSettings.LiveConnectionsSortOrder;
+
+            if (sortCol > -1 && sortOrder != SortOrder.None && sortCol < liveConnectionsDataGridView.Columns.Count)
+            {
+                var column = liveConnectionsDataGridView.Columns[sortCol];
+                var direction = sortOrder == SortOrder.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+                _sortableList.Sort(column.DataPropertyName, direction);
+                liveConnectionsDataGridView.Sort(column, direction);
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var grid = (DataGridView)sender;
+
+            if (grid.Rows[e.RowIndex].DataBoundItem is not TcpConnectionViewModel conn) return;
+
+            if (grid.Columns[e.ColumnIndex].Name == "connIconColumn")
+            {
+                if (_appSettings.ShowAppIcons && !string.IsNullOrEmpty(conn.ProcessPath))
+                {
+                    int iconIndex = _iconService.GetIconIndex(conn.ProcessPath);
+                    if (iconIndex != -1 && _iconService.ImageList != null)
+                    {
+                        e.Value = _iconService.ImageList.Images[iconIndex];
+                    }
+                }
+                return;
+            }
+
+            if (conn.State.Equals("Established", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204);
+                e.CellStyle.ForeColor = Color.Black;
+            }
+            else if (conn.State.Equals("Listen", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.BackColor = Color.FromArgb(255, 255, 204);
+                e.CellStyle.ForeColor = Color.Black;
+            }
+
+            if (grid.Rows[e.RowIndex].Selected)
+            {
+                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
+                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+            }
+            else
+            {
+                e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
+                e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                var clickedRow = grid.Rows[e.RowIndex];
+
+                if (!clickedRow.Selected)
+                {
+                    grid.ClearSelection();
+                    clickedRow.Selected = true;
+                }
+            }
+        }
+
+        private void liveConnectionsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.ColumnIndex < 0) return;
+
+            var newColumn = liveConnectionsDataGridView.Columns[e.ColumnIndex];
+            var sortOrder = liveConnectionsDataGridView.SortOrder;
+            string propertyName = newColumn.DataPropertyName;
+
+            if (string.IsNullOrEmpty(propertyName)) return;
+
+            _appSettings.LiveConnectionsSortColumn = e.ColumnIndex;
+            _appSettings.LiveConnectionsSortOrder = (int)sortOrder;
+
+            var direction = sortOrder == SortOrder.Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            _sortableList.Sort(propertyName, direction);
+            _bindingSource.ResetBindings(false);
+        }
+
+        private bool TryGetSelectedConnection(out TcpConnectionViewModel? connection)
+        {
+            connection = null;
+            if (liveConnectionsDataGridView.SelectedRows.Count == 0)
+            {
+                return false;
+            }
+
+            if (liveConnectionsDataGridView.SelectedRows[0].DataBoundItem is TcpConnectionViewModel conn)
+            {
+                connection = conn;
+                return true;
+            }
+            return false;
+        }
+
+        private void killProcessToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection) && connection.KillProcessCommand.CanExecute(null))
+            {
+                connection.KillProcessCommand.Execute(null);
+            }
+        }
+
+        private void blockRemoteIPToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection) && connection.BlockRemoteIpCommand.CanExecute(null))
+            {
+                connection.BlockRemoteIpCommand.Execute(null);
+            }
+        }
+
+        private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath))
+            {
+                using var dialog = new CreateAdvancedRuleForm(_actionsService, connection.ProcessPath, "", _appSettings);
+                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                {
+                    if (dialog.RuleVm != null)
+                    {
+                        var payload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                    }
+                }
+            }
+        }
+
+        private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection) && !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath))
+            {
+                try
+                {
+                    Process.Start("explorer.exe", $"/select, \"{connection.ProcessPath}\"");
+                }
+                catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
+                {
+                    DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                DarkModeForms.Messenger.MessageBox("The path for this item is not available or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection))
+            {
+                var details = new System.Text.StringBuilder();
+                details.AppendLine($"Type: Live Connection");
+                details.AppendLine($"Application: {connection.DisplayName}");
+                details.AppendLine($"Path: {connection.ProcessPath}");
+                details.AppendLine($"State: {connection.State}");
+                details.AppendLine($"Local: {connection.LocalAddress}:{connection.LocalPort}");
+                details.AppendLine($"Remote: {connection.RemoteAddress}:{connection.RemotePort}");
+                Clipboard.SetText(details.ToString());
+            }
+        }
+
+        private void liveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            if (!TryGetSelectedConnection(out var connection) || connection == null)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
+            blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
+            bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath);
+            openFileLocationToolStripMenuItem.Enabled = pathExists;
+            createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
+        }
+
+        private void liveConnectionsDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            var grid = (DataGridView)sender;
+            var row = grid.Rows[e.RowIndex];
+
+            if (row.Selected) return;
+
+            var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
+            if (e.RowIndex == mouseOverRow)
+            {
+                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                var grid = (DataGridView)sender;
+                grid.InvalidateRow(e.RowIndex);
+            }
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/LiveConnectionsControl.Designer.cs
+--------------------------------------------------------------------------------
+﻿namespace MinimalFirewall
+{
+    partial class LiveConnectionsControl
+    {
+        private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.Panel disabledPanel;
+        private System.Windows.Forms.Label disabledLabel;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Component Designer generated code
+
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            this.liveConnectionsDataGridView = new System.Windows.Forms.DataGridView();
+            this.connIconColumn = new System.Windows.Forms.DataGridViewImageColumn();
+            this.connNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connStateColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connLocalAddrColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connLocalPortColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connRemoteAddrColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connRemotePortColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.connPathColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.liveConnectionsContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.killProcessToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.blockRemoteIPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.createAdvancedRuleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.disabledPanel = new System.Windows.Forms.Panel();
+            this.disabledLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.liveConnectionsDataGridView)).BeginInit();
+            this.liveConnectionsContextMenu.SuspendLayout();
+            this.disabledPanel.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // liveConnectionsDataGridView
+            // 
+            this.liveConnectionsDataGridView.AllowUserToAddRows = false;
+            this.liveConnectionsDataGridView.AllowUserToDeleteRows = false;
+            this.liveConnectionsDataGridView.AllowUserToResizeRows = false;
+            this.liveConnectionsDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.liveConnectionsDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
+            this.liveConnectionsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.liveConnectionsDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
+            this.liveConnectionsDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.liveConnectionsDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            this.liveConnectionsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.liveConnectionsDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.connIconColumn,
+            this.connNameColumn,
+            this.connStateColumn,
+            this.connLocalAddrColumn,
+            this.connLocalPortColumn,
+            this.connRemoteAddrColumn,
+            this.connRemotePortColumn,
+            this.connPathColumn});
+            this.liveConnectionsDataGridView.ContextMenuStrip = this.liveConnectionsContextMenu;
+            this.liveConnectionsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.liveConnectionsDataGridView.EnableHeadersVisualStyles = false;
+            this.liveConnectionsDataGridView.GridColor = System.Drawing.SystemColors.Control;
+            this.liveConnectionsDataGridView.Location = new System.Drawing.Point(0, 0);
+            this.liveConnectionsDataGridView.MultiSelect = false;
+            this.liveConnectionsDataGridView.Name = "liveConnectionsDataGridView";
+            this.liveConnectionsDataGridView.ReadOnly = true;
+            this.liveConnectionsDataGridView.RowHeadersVisible = false;
+            this.liveConnectionsDataGridView.RowTemplate.Height = 28;
+            this.liveConnectionsDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.liveConnectionsDataGridView.ShowCellToolTips = true;
+            this.liveConnectionsDataGridView.Size = new System.Drawing.Size(800, 600);
+            this.liveConnectionsDataGridView.TabIndex = 0;
+            this.liveConnectionsDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.liveConnectionsDataGridView_CellFormatting);
+            this.liveConnectionsDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.liveConnectionsDataGridView_CellMouseDown);
+            this.liveConnectionsDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.liveConnectionsDataGridView_CellMouseEnter);
+            this.liveConnectionsDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.liveConnectionsDataGridView_CellMouseLeave);
+            this.liveConnectionsDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.liveConnectionsDataGridView_ColumnHeaderMouseClick);
+            this.liveConnectionsDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.liveConnectionsDataGridView_RowPostPaint);
+            // 
+            // connIconColumn
+            // 
+            this.connIconColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.connIconColumn.DataPropertyName = "ProcessPath";
+            this.connIconColumn.FillWeight = 10F;
+            this.connIconColumn.HeaderText = "";
+            this.connIconColumn.ImageLayout = System.Windows.Forms.DataGridViewImageCellLayout.Zoom;
+            this.connIconColumn.MinimumWidth = 32;
+            this.connIconColumn.Name = "connIconColumn";
+            this.connIconColumn.ReadOnly = true;
+            this.connIconColumn.Resizable = System.Windows.Forms.DataGridViewTriState.False;
+            this.connIconColumn.Width = 32;
+            // 
+            // connNameColumn
+            // 
+            this.connNameColumn.DataPropertyName = "DisplayName";
+            this.connNameColumn.FillWeight = 25F;
+            this.connNameColumn.HeaderText = "Application";
+            this.connNameColumn.Name = "connNameColumn";
+            this.connNameColumn.ReadOnly = true;
+            // 
+            // connStateColumn
+            // 
+            this.connStateColumn.DataPropertyName = "State";
+            this.connStateColumn.FillWeight = 15F;
+            this.connStateColumn.HeaderText = "State";
+            this.connStateColumn.Name = "connStateColumn";
+            this.connStateColumn.ReadOnly = true;
+            // 
+            // connLocalAddrColumn
+            // 
+            this.connLocalAddrColumn.DataPropertyName = "LocalAddress";
+            this.connLocalAddrColumn.FillWeight = 20F;
+            this.connLocalAddrColumn.HeaderText = "Local Address";
+            this.connLocalAddrColumn.Name = "connLocalAddrColumn";
+            this.connLocalAddrColumn.ReadOnly = true;
+            // 
+            // connLocalPortColumn
+            // 
+            this.connLocalPortColumn.DataPropertyName = "LocalPort";
+            this.connLocalPortColumn.FillWeight = 10F;
+            this.connLocalPortColumn.HeaderText = "Port";
+            this.connLocalPortColumn.Name = "connLocalPortColumn";
+            this.connLocalPortColumn.ReadOnly = true;
+            // 
+            // connRemoteAddrColumn
+            // 
+            this.connRemoteAddrColumn.DataPropertyName = "RemoteAddress";
+            this.connRemoteAddrColumn.FillWeight = 20F;
+            this.connRemoteAddrColumn.HeaderText = "Remote Address";
+            this.connRemoteAddrColumn.Name = "connRemoteAddrColumn";
+            this.connRemoteAddrColumn.ReadOnly = true;
+            // 
+            // connRemotePortColumn
+            // 
+            this.connRemotePortColumn.DataPropertyName = "RemotePort";
+            this.connRemotePortColumn.FillWeight = 10F;
+            this.connRemotePortColumn.HeaderText = "Port";
+            this.connRemotePortColumn.Name = "connRemotePortColumn";
+            this.connRemotePortColumn.ReadOnly = true;
+            // 
+            // connPathColumn
+            // 
+            this.connPathColumn.DataPropertyName = "ProcessPath";
+            this.connPathColumn.FillWeight = 30F;
+            this.connPathColumn.HeaderText = "Path";
+            this.connPathColumn.Name = "connPathColumn";
+            this.connPathColumn.ReadOnly = true;
+            // 
+            // liveConnectionsContextMenu
+            // 
+            this.liveConnectionsContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.liveConnectionsContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.killProcessToolStripMenuItem,
+            this.blockRemoteIPToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.createAdvancedRuleToolStripMenuItem,
+            this.toolStripSeparator2,
+            this.openFileLocationToolStripMenuItem,
+            this.copyDetailsToolStripMenuItem});
+            this.liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
+            this.liveConnectionsContextMenu.Size = new System.Drawing.Size(228, 142);
+            this.liveConnectionsContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.liveConnectionsContextMenu_Opening);
+            // 
+            // killProcessToolStripMenuItem
+            // 
+            this.killProcessToolStripMenuItem.Name = "killProcessToolStripMenuItem";
+            this.killProcessToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.killProcessToolStripMenuItem.Text = "Kill Process";
+            this.killProcessToolStripMenuItem.Click += new System.EventHandler(this.killProcessToolStripMenuItem_Click);
+            // 
+            // blockRemoteIPToolStripMenuItem
+            // 
+            this.blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
+            this.blockRemoteIPToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.blockRemoteIPToolStripMenuItem.Text = "Block Remote IP";
+            this.blockRemoteIPToolStripMenuItem.Click += new System.EventHandler(this.blockRemoteIPToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(224, 6);
+            // 
+            // createAdvancedRuleToolStripMenuItem
+            // 
+            this.createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
+            this.createAdvancedRuleToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
+            this.createAdvancedRuleToolStripMenuItem.Click += new System.EventHandler(this.createAdvancedRuleToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(224, 6);
+            // 
+            // openFileLocationToolStripMenuItem
+            // 
+            this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
+            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.openFileLocationToolStripMenuItem.Text = "Open File Location";
+            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem_Click);
+            // 
+            // copyDetailsToolStripMenuItem
+            // 
+            this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
+            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.copyDetailsToolStripMenuItem.Text = "Copy Details";
+            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            // 
+            // disabledPanel
+            // 
+            this.disabledPanel.Controls.Add(this.disabledLabel);
+            this.disabledPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.disabledPanel.Location = new System.Drawing.Point(0, 0);
+            this.disabledPanel.Name = "disabledPanel";
+            this.disabledPanel.Size = new System.Drawing.Size(800, 600);
+            this.disabledPanel.TabIndex = 1;
+            this.disabledPanel.Visible = false;
+            // 
+            // disabledLabel
+            // 
+            this.disabledLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.disabledLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.disabledLabel.Location = new System.Drawing.Point(0, 0);
+            this.disabledLabel.Name = "disabledLabel";
+            this.disabledLabel.Size = new System.Drawing.Size(800, 600);
+            this.disabledLabel.TabIndex = 0;
+            this.disabledLabel.Text = "Live connection monitoring is disabled.\r\n\r\nYou can enable it in the Settings tab.";
+            this.disabledLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // LiveConnectionsControl
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.disabledPanel);
+            this.Controls.Add(this.liveConnectionsDataGridView);
+            this.Name = "LiveConnectionsControl";
+            this.Size = new System.Drawing.Size(800, 600);
+            ((System.ComponentModel.ISupportInitialize)(this.liveConnectionsDataGridView)).EndInit();
+            this.liveConnectionsContextMenu.ResumeLayout(false);
+            this.disabledPanel.ResumeLayout(false);
+            this.ResumeLayout(false);
+
+        }
+
+        #endregion
+
+        private System.Windows.Forms.DataGridView liveConnectionsDataGridView;
+        private System.Windows.Forms.ContextMenuStrip liveConnectionsContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem killProcessToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem blockRemoteIPToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem createAdvancedRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
+        private System.Windows.Forms.DataGridViewImageColumn connIconColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connNameColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connStateColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connLocalAddrColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connLocalPortColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connRemoteAddrColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connRemotePortColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connPathColumn;
+    }
+}
+
+--------------------------------------------------------------------------------
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MainForm.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
 using NetFwTypeLib;
@@ -8437,6 +10329,7 @@ namespace MinimalFirewall
             settingsControl1.IconVisibilityChanged += UpdateIconColumnVisibility;
             settingsControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(true);
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
+            settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
 
             SetupTrayIcon();
 
@@ -8515,6 +10408,9 @@ namespace MinimalFirewall
             }
 
             UpdateTrayStatus();
+
+            await Task.Run(() => _actionsService.ReenableMfwRules());
+
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _activityLogger.LogDebug("Application Started: " + versionInfo);
             settingsControl1.LoadSettingsToUI();
@@ -8740,6 +10636,16 @@ namespace MinimalFirewall
                         {
                             var newRule = wildcardDialog.NewRule;
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
+
+                            string decision = newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow";
+                            var allowPayload = new ProcessPendingConnectionPayload
+                            {
+                                PendingConnection = pending,
+                                Decision = decision,
+                                Duration = default,
+                                TrustPublisher = false
+                            };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, allowPayload));
                         }
 
                         lock (_popupLock)
@@ -9000,6 +10906,15 @@ namespace MinimalFirewall
             }
         }
 
+        private async void OnTrafficMonitorSettingChanged()
+        {
+            liveConnectionsControl1.UpdateEnabledState();
+            if (_appSettings.IsTrafficMonitorEnabled && mainTabControl.SelectedTab == liveConnectionsTabPage)
+            {
+                await LoadLiveConnectionsAsync();
+            }
+        }
+
         public async Task PrepareForTrayAsync()
         {
             _scanCts?.Cancel();
@@ -9184,6 +11099,13 @@ namespace MinimalFirewall
 
         private async Task LoadLiveConnectionsAsync(StatusForm? statusFormInstance = null)
         {
+            if (!_appSettings.IsTrafficMonitorEnabled)
+            {
+                _mainViewModel.TrafficMonitorViewModel.StopMonitoring();
+                liveConnectionsControl1.UpdateLiveConnectionsView();
+                return;
+            }
+
             if (_isRefreshingData) return;
             _scanCts?.Cancel();
             _scanCts = new CancellationTokenSource();
@@ -9262,6 +11184,7 @@ namespace MinimalFirewall
                         await groupsControl1.OnTabSelectedAsync();
                         break;
                     case "liveConnectionsTabPage":
+                        liveConnectionsControl1.UpdateEnabledState();
                         await LoadLiveConnectionsAsync();
                         break;
                 }
@@ -9488,10 +11411,8 @@ namespace MinimalFirewall
     }
 }
 
-
-
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MainForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MainForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: MainForm.Designer.cs
 namespace MinimalFirewall
@@ -9884,7 +11805,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MainViewModel.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MainViewModel.cs
 --------------------------------------------------------------------------------
 ﻿// File: MainViewModel.cs
 using Firewall.Traffic.ViewModels;
@@ -9982,7 +11903,7 @@ namespace MinimalFirewall
             var vms = await Task.Run(() =>
             {
                 var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
-                var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
+                var processInfoCache = new Dictionary<uint, (string Name, string Path, string ServiceName)>();
                 var viewModels = new List<TcpConnectionViewModel>();
                 int total = connections.Count > 0 ? connections.Count : 1;
                 int current = 0;
@@ -9998,7 +11919,7 @@ namespace MinimalFirewall
                     {
                         try
                         {
-                            using (var p = Process.GetProcessById(conn.ProcessId))
+                            using (var p = Process.GetProcessById((int)conn.ProcessId))
                             {
                                 string name = p.ProcessName;
                                 string path = string.Empty;
@@ -10017,7 +11938,6 @@ namespace MinimalFirewall
                         catch { info = ("System", string.Empty, string.Empty); }
                         processInfoCache[conn.ProcessId] = info;
                     }
-                    // Pass the _backgroundTaskService when creating the ViewModel
                     viewModels.Add(new TcpConnectionViewModel(conn, info, _backgroundTaskService));
                     current++;
                     progress?.Report((current * 100) / total);
@@ -10460,7 +12380,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/ManagePublishersForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/ManagePublishersForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: ManagePublishersForm.cs
 using DarkModeForms;
@@ -10513,7 +12433,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/ManagePublishersForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/ManagePublishersForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: ManagePublishersForm.Designer.cs
 namespace MinimalFirewall
@@ -10596,7 +12516,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/Messenger.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/Messenger.cs
 --------------------------------------------------------------------------------
 ﻿// File: Messenger.cs
 using System;
@@ -11761,7 +13681,7 @@ namespace DarkModeForms
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MFWConstants.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MFWConstants.cs
 --------------------------------------------------------------------------------
 ﻿// MFWConstants.cs
 namespace MinimalFirewall
@@ -11777,7 +13697,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MinimalFirewall-NET8.csproj
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MinimalFirewall-NET8.csproj
 --------------------------------------------------------------------------------
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
@@ -11795,8 +13715,8 @@ namespace MinimalFirewall
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<AssemblyVersion>2.5.3.0</AssemblyVersion>
-		<FileVersion>2.5.3.0</FileVersion>
+		<AssemblyVersion>2.5.5.0</AssemblyVersion>
+		<FileVersion>2.5.5.0</FileVersion>
 		<Company>Deminimis</Company>
 		<Product>Minimal Firewall</Product>
 		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
@@ -11813,6 +13733,7 @@ namespace MinimalFirewall
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="1 ClubGPT - developer team in one GPT 🦾.md" />
 		<None Remove="1-adminnhelper-allfiles.txt" />
 		<None Remove="1-oldfiles4.8.txt" />
 		<None Remove="1allfiles.txt" />
@@ -11837,8 +13758,8 @@ namespace MinimalFirewall
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.9" />
-		<PackageReference Include="System.Management" Version="9.0.9" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
+		<PackageReference Include="System.Management" Version="10.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -11848,9 +13769,9 @@ namespace MinimalFirewall
 			<DependentUpon>Resources.resx</DependentUpon>
 		</Compile>
 		<Compile Update="Properties\Settings.Designer.cs">
-		  <DesignTimeSharedInput>True</DesignTimeSharedInput>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>Settings.settings</DependentUpon>
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
 		</Compile>
 	</ItemGroup>
 
@@ -11862,16 +13783,16 @@ namespace MinimalFirewall
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Properties\Settings.settings">
-	    <Generator>SettingsSingleFileGenerator</Generator>
-	    <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-	  </None>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
 	</ItemGroup>
 
 </Project>
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MinimalFirewall-NET8.csproj.user
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MinimalFirewall-NET8.csproj.user
 --------------------------------------------------------------------------------
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -11957,7 +13878,7 @@ namespace MinimalFirewall
 </Project>
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/MinimalFirewall-WindowsStore.sln
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/MinimalFirewall-WindowsStore.sln
 --------------------------------------------------------------------------------
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -11965,8 +13886,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.14.36511.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalFirewall-NET8", "MinimalFirewall-NET8.csproj", "{6326C497-403B-F991-2F6A-A5FBA67C364C}"
-EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "MinimalFirewall.Setup", "..\MinimalFirewall.Setup\MinimalFirewall.Setup.vdproj", "{49499E48-F248-F287-989D-5221D0A0562A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11984,10 +13903,6 @@ Global
 		{6326C497-403B-F991-2F6A-A5FBA67C364C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6326C497-403B-F991-2F6A-A5FBA67C364C}.Release|x64.ActiveCfg = Release|x64
 		{6326C497-403B-F991-2F6A-A5FBA67C364C}.Release|x64.Build.0 = Release|x64
-		{49499E48-F248-F287-989D-5221D0A0562A}.Debug|Any CPU.ActiveCfg = Debug
-		{49499E48-F248-F287-989D-5221D0A0562A}.Debug|x64.ActiveCfg = Debug
-		{49499E48-F248-F287-989D-5221D0A0562A}.Release|Any CPU.ActiveCfg = Release
-		{49499E48-F248-F287-989D-5221D0A0562A}.Release|x64.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -11999,7 +13914,7 @@ EndGlobal
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/NotifierForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/NotifierForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: NotifierForm.cs
 using DarkModeForms;
@@ -12129,7 +14044,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/NotifierForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/NotifierForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: NotifierForm.Designer.cs
 namespace MinimalFirewall
@@ -12295,7 +14210,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/ObservableViewModel.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/ObservableViewModel.cs
 --------------------------------------------------------------------------------
 ﻿// File: ObservableViewModel.cs
 using System.ComponentModel;
@@ -12324,7 +14239,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/Program.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/Program.cs
 --------------------------------------------------------------------------------
 ﻿// File: Program.cs
 using System.Globalization;
@@ -12362,7 +14277,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/PublisherWhitelistService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/PublisherWhitelistService.cs
 --------------------------------------------------------------------------------
 ﻿// File: PublisherWhitelistService.cs
 using System.Diagnostics;
@@ -12446,7 +14361,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/RulesControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/RulesControl.cs
 --------------------------------------------------------------------------------
 ﻿using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
@@ -12908,7 +14823,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/RulesControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/RulesControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: RulesControl.Designer.cs
 namespace MinimalFirewall
@@ -13448,7 +15363,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/RuleWizardForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/RuleWizardForm.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
 using MinimalFirewall.TypedObjects;
@@ -14157,7 +16072,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/RuleWizardForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/RuleWizardForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: RuleWizardForm.Designer.cs
 namespace MinimalFirewall
@@ -14933,7 +16848,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SettingsControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/SettingsControl.cs
 --------------------------------------------------------------------------------
 ﻿using DarkModeForms;
 using Firewall.Traffic.ViewModels;
@@ -14968,6 +16883,7 @@ namespace MinimalFirewall
         public event Action IconVisibilityChanged;
         public event Func<Task> DataRefreshRequested;
         public event Action AutoRefreshTimerChanged;
+        public event Action? TrafficMonitorSettingChanged;
         public SettingsControl()
         {
             InitializeComponent();
@@ -15155,6 +17071,7 @@ namespace MinimalFirewall
         private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
         {
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
+            TrafficMonitorSettingChanged?.Invoke();
         }
 
         private void ShowAppIconsSwitch_CheckedChanged(object sender, EventArgs e)
@@ -15540,7 +17457,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SettingsControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/SettingsControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿namespace MinimalFirewall
 {
@@ -16051,7 +17968,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SignatureValidationService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/SignatureValidationService.cs
 --------------------------------------------------------------------------------
 ﻿// File: SignatureValidationService.cs
 using System.Diagnostics;
@@ -16117,7 +18034,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SortableBindingList.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/SortableBindingList.cs
 --------------------------------------------------------------------------------
 ﻿// File: SortableBindingList.cs
 using System;
@@ -16187,7 +18104,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/StatusForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/StatusForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: StatusForm.cs
 using DarkModeForms;
@@ -16294,7 +18211,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/StatusForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/StatusForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: StatusForm.Designer.cs
 namespace MinimalFirewall
@@ -16386,7 +18303,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/SystemDiscoveryService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/SystemDiscoveryService.cs
 --------------------------------------------------------------------------------
 ﻿// File: SystemDiscoveryService.cs
 using DarkModeForms;
@@ -16501,7 +18418,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/TemporaryRuleManager.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/TemporaryRuleManager.cs
 --------------------------------------------------------------------------------
 ﻿// File: TemporaryRuleManager.cs
 using System.Collections.Concurrent;
@@ -16584,7 +18501,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/TypedObjects.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/TypedObjects.cs
 --------------------------------------------------------------------------------
 ﻿// File: TypedObjects.cs
 using System;
@@ -16905,7 +18822,7 @@ namespace MinimalFirewall.TypedObjects.Internal
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/UserActivityLogger.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/UserActivityLogger.cs
 --------------------------------------------------------------------------------
 ﻿// File: UserActivityLogger.cs
 using System.IO;
@@ -16991,7 +18908,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/Utilities.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/Utilities.cs
 --------------------------------------------------------------------------------
 ﻿// File: Utilities.cs
 using System.Diagnostics.CodeAnalysis;
@@ -17217,7 +19134,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/UtilityServices.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/UtilityServices.cs
 --------------------------------------------------------------------------------
 ﻿// File: UtilityServices.cs
 using DarkModeForms;
@@ -17522,7 +19439,7 @@ namespace MinimalFirewall
 
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/UwpService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/UwpService.cs
 --------------------------------------------------------------------------------
 ﻿// File: UwpService.cs
 using System;
@@ -17641,7 +19558,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/WildcardCreatorForm.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/WildcardCreatorForm.cs
 --------------------------------------------------------------------------------
 ﻿// File: WildcardCreatorForm.cs
 using System.IO;
@@ -17866,7 +19783,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/WildcardCreatorForm.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/WildcardCreatorForm.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: WildcardCreatorForm.Designer.cs
 namespace MinimalFirewall
@@ -18197,7 +20114,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/WildcardRulesControl.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/WildcardRulesControl.cs
 --------------------------------------------------------------------------------
 ﻿// File: WildcardRulesControl.cs
 using System;
@@ -18399,7 +20316,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/WildcardRulesControl.Designer.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/WildcardRulesControl.Designer.cs
 --------------------------------------------------------------------------------
 ﻿// File: WildcardRulesControl.Designer.cs
 namespace MinimalFirewall
@@ -18653,7 +20570,7 @@ namespace MinimalFirewall
 }
 
 --------------------------------------------------------------------------------
-// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-WindowsStore/WildCardRuleService.cs
+// File: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/MinimalFirewall-Git/src/WildCardRuleService.cs
 --------------------------------------------------------------------------------
 ﻿// File: WildcardRuleService.cs
 using System.Diagnostics;

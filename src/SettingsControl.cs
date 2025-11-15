@@ -31,6 +31,7 @@ namespace MinimalFirewall
         public event Action IconVisibilityChanged;
         public event Func<Task> DataRefreshRequested;
         public event Action AutoRefreshTimerChanged;
+        public event Action? TrafficMonitorSettingChanged;
         public SettingsControl()
         {
             InitializeComponent();
@@ -218,6 +219,7 @@ namespace MinimalFirewall
         private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
         {
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
+            TrafficMonitorSettingChanged?.Invoke();
         }
 
         private void ShowAppIconsSwitch_CheckedChanged(object sender, EventArgs e)

@@ -48,6 +48,15 @@ namespace MinimalFirewall
             _viewModel.ActiveConnections.CollectionChanged += ActiveConnections_CollectionChanged;
 
             liveConnectionsDataGridView.ColumnHeaderMouseClick += liveConnectionsDataGridView_ColumnHeaderMouseClick;
+
+            UpdateEnabledState();
+        }
+
+        public void UpdateEnabledState()
+        {
+            bool isEnabled = _appSettings.IsTrafficMonitorEnabled;
+            liveConnectionsDataGridView.Visible = isEnabled;
+            disabledPanel.Visible = !isEnabled;
         }
 
         private void ActiveConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -86,16 +95,14 @@ namespace MinimalFirewall
             _bindingSource.ResetBindings(false);
             ApplySorting();
             liveConnectionsDataGridView.Refresh();
+            UpdateEnabledState();
         }
 
 
         public void OnTabDeselected()
         {
             _viewModel.StopMonitoring();
-            _sortableList.Clear();
-            _bindingSource.DataSource = null;
-            liveConnectionsDataGridView.DataSource = null;
-            liveConnectionsDataGridView.Refresh();
+            UpdateEnabledState();
         }
 
         public void UpdateIconColumnVisibility()
@@ -327,4 +334,3 @@ namespace MinimalFirewall
         }
     }
 }
-
