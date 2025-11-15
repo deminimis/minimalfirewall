@@ -129,7 +129,8 @@ namespace MinimalFirewall
                         catch { info = ("System", string.Empty, string.Empty); }
                         processInfoCache[conn.ProcessId] = info;
                     }
-                    viewModels.Add(new TcpConnectionViewModel(conn, info));
+                    // Pass the _backgroundTaskService when creating the ViewModel
+                    viewModels.Add(new TcpConnectionViewModel(conn, info, _backgroundTaskService));
                     current++;
                     progress?.Report((current * 100) / total);
                 }

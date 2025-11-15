@@ -82,7 +82,7 @@ namespace MinimalFirewall
 
         private void deleteRuleButton_Click(object sender, EventArgs e)
         {
-            if (wildcardDataGridView.SelectedRows.Count == 0)
+            if (wildcardDataGridView.SelectedRows.Count == 0 || _backgroundTaskService == null || _bindingSource.DataSource == null)
             {
                 return;
             }
@@ -90,15 +90,44 @@ namespace MinimalFirewall
             var result = MessageBox.Show($"Are you sure you want to delete {wildcardDataGridView.SelectedRows.Count} rule definition(s)? This will also remove any firewall rules created by them.", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
             {
+                var rulesToRemoveFromBindingSource = new List<WildcardRule>();
                 foreach (DataGridViewRow row in wildcardDataGridView.SelectedRows)
                 {
                     if (row.DataBoundItem is WildcardRule ruleToDelete)
                     {
+                        rulesToRemoveFromBindingSource.Add(ruleToDelete);
                         var payload = new DeleteWildcardRulePayload { Wildcard = ruleToDelete };
                         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.RemoveWildcardRule, payload));
                     }
                 }
-                LoadRules();
+
+                if (_bindingSource.List is IList<WildcardRule> list) 
+                {
+                    foreach (var rule in rulesToRemoveFromBindingSource)
+                    {
+                        int indexToRemove = -1;
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            if (list[i].FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                                list[i].ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                indexToRemove = i;
+                                break;
+                            }
+                        }
+                        if (indexToRemove != -1)
+                        {
+                            _bindingSource.RemoveAt(indexToRemove);
+                        }
+                    }
+                }
+                else 
+                {
+                    LoadRules();
+                }
+
+                _bindingSource.ResetBindings(false); 
+                wildcardDataGridView.Refresh(); 
             }
         }
 

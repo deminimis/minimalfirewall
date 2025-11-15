@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
-
 namespace MinimalFirewall.TypedObjects
 {
     public enum Actions : byte
@@ -24,6 +23,7 @@ namespace MinimalFirewall.TypedObjects
     [Flags]
     public enum InterfaceTypes : byte
     {
+
         All = RemoteAccess | Wireless | Lan,
         RemoteAccess = 1,
         Wireless = 2,
@@ -39,8 +39,13 @@ namespace MinimalFirewall.TypedObjects
 
     public interface IFixedRange<TUnit>
     {
-        TUnit Begin { get; }
-        TUnit End { get; }
+        TUnit
+ Begin
+        { get; }
+        TUnit End
+        {
+            get;
+        }
     }
 
     [Serializable]
@@ -49,14 +54,25 @@ namespace MinimalFirewall.TypedObjects
         private readonly bool _isSinglePort;
         private readonly SpecificLocalPort? _specificLocalPort;
         public ushort Begin { get; }
-        public ushort End { get; }
+        public ushort End
+        {
+            get;
+        }
 
         public PortRange(ushort singlePort) : this(singlePort, singlePort) { }
 
         public PortRange(ushort first, ushort second)
         {
-            if (first > second) { Begin = second; End = first; }
-            else { Begin = first; End = second; }
+            if (first > second)
+            {
+                Begin = second;
+                End = first;
+            }
+            else
+            {
+                Begin = first;
+                End = second;
+            }
             _isSinglePort = (Begin == End);
             _specificLocalPort = null;
         }
@@ -114,8 +130,15 @@ namespace MinimalFirewall.TypedObjects
     [Serializable]
     public class IPAddressRange : IEnumerable<IPAddress>, IEquatable<IPAddressRange>, IFixedRange<IPAddress>
     {
-        public IPAddress Begin { get; set; }
-        public IPAddress End { get; set; }
+        public IPAddress Begin
+        {
+            get;
+            set;
+        }
+        public IPAddress End
+        {
+            get; set;
+        }
 
         public IPAddressRange(IPAddress singleAddress)
         {
@@ -191,7 +214,8 @@ namespace MinimalFirewall.TypedObjects
         public override int GetHashCode() => (Begin, End).GetHashCode();
         public override string ToString()
         {
-            return Begin.Equals(End) ? Begin.ToString() : $"{Begin}-{End}";
+            return Begin.Equals(End) ?
+ Begin.ToString() : $"{Begin}-{End}";
         }
 
         public IEnumerator<IPAddress> GetEnumerator()
@@ -215,6 +239,34 @@ namespace MinimalFirewall.TypedObjects
         {
             return new IPAddressRange(from, to);
         }
+    }
+
+    public struct ProtocolTypes : IEquatable<ProtocolTypes>
+    {
+        public static ProtocolTypes Any { get; } = new ProtocolTypes("Any", 256, false, false);
+        public static ProtocolTypes TCP { get; } = new ProtocolTypes("TCP", 6, true, false);
+        public static ProtocolTypes UDP { get; } = new ProtocolTypes("UDP", 17, true, false);
+        public static ProtocolTypes ICMPv4 { get; } = new ProtocolTypes("ICMPv4", 1, false, true);
+        public static ProtocolTypes ICMPv6 { get; } = new ProtocolTypes("ICMPv6", 58, false, true);
+        public static ProtocolTypes IGMP { get; } = new ProtocolTypes("IGMP", 2, false, false);
+
+        public string Name { get; }
+        public int Value { get; }
+        public bool SupportsPorts { get; }
+        public bool SupportsIcmp { get; }
+
+        private ProtocolTypes(string name, int value, bool supportsPorts, bool supportsIcmp)
+        {
+            Name = name;
+            Value = value;
+            SupportsPorts = supportsPorts;
+            SupportsIcmp = supportsIcmp;
+        }
+
+        public override string ToString() => Name;
+        public bool Equals(ProtocolTypes other) => this.Value == other.Value;
+        public override bool Equals(object? obj) => obj is ProtocolTypes other && Equals(other);
+        public override int GetHashCode() => Value.GetHashCode();
     }
 }
 
