@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿// File: FirewallEventListenerService.cs
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -85,7 +86,7 @@ namespace MinimalFirewall
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
-                Task.Run(() => OnFirewallBlockEvent(xmlContent));
+                Task.Run(async () => await OnFirewallBlockEvent(xmlContent));
             }
             catch (EventLogException)
             {
@@ -93,7 +94,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void OnFirewallBlockEvent(string xmlContent)
+        private async Task OnFirewallBlockEvent(string xmlContent)
         {
             string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
             string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
@@ -165,7 +166,7 @@ namespace MinimalFirewall
                     return;
                 }
 
-                MfwRuleStatus existingRuleStatus = _dataService.CheckMfwRuleStatus(appPath, serviceName, eventDirection);
+                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, eventDirection);
                 _logAction($"[EventListener] CheckMfwRuleStatus result for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}') is: {existingRuleStatus}");
 
                 if (existingRuleStatus == MfwRuleStatus.MfwBlock)
@@ -179,7 +180,7 @@ namespace MinimalFirewall
                     if (filterId == "0")
                     {
                         _logAction($"[EventListener] Race condition detected: An MFW Allow rule exists, but a block event (FilterId 0) was received. Invalidating cache and snoozing to allow network to stabilize.");
-                        _dataService.InvalidateMfwRuleCache();
+                        _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
                         ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
                         return;

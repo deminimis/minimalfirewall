@@ -166,18 +166,18 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!TryGetSelectedAppContext(out string? appPath))
+            if (!TryGetSelectedAppContext(out string? appPath) || string.IsNullOrEmpty(appPath))
             {
                 DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            bool pathExists = File.Exists(appPath) || Directory.Exists(appPath);
-            if (!pathExists)
+            if (!File.Exists(appPath) && !Directory.Exists(appPath))
             {
-                DarkModeForms.Messenger.MessageBox("The file or folder path for this item could not be found.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                DarkModeForms.Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+
             try
             {
                 Process.Start("explorer.exe", $"/select, \"{appPath}\"");

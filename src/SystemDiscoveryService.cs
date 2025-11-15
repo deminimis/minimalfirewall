@@ -17,9 +17,10 @@ namespace MinimalFirewall
             {
                 var wmiQuery = new ObjectQuery("SELECT Name, DisplayName, PathName FROM Win32_Service WHERE PathName IS NOT NULL");
                 using var searcher = new ManagementObjectSearcher(wmiQuery);
-                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
+                using var results = searcher.Get();
+                foreach (ManagementBaseObject serviceBaseObject in results)
                 {
-                    using var service = (ManagementObject)serviceBaseObject; // Explicit disposal
+                    using var service = (ManagementObject)serviceBaseObject;
                     string rawPath = service["PathName"]?.ToString() ?? string.Empty;
                     if (string.IsNullOrEmpty(rawPath)) continue;
 
@@ -55,15 +56,20 @@ namespace MinimalFirewall
 
         public static string GetServicesByPID(string processId)
         {
-            if (string.IsNullOrEmpty(processId) || processId == "0") return string.Empty;
+            if (string.IsNullOrEmpty(processId) || processId == "0" || !uint.TryParse(processId, out _))
+            {
+                return string.Empty;
+            }
+
             var serviceNames = new List<string?>();
             try
             {
                 var query = new ObjectQuery($"SELECT Name FROM Win32_Service WHERE ProcessId = {processId}");
                 using var searcher = new ManagementObjectSearcher(query);
-                foreach (ManagementBaseObject serviceBaseObject in searcher.Get())
+                using var results = searcher.Get();
+                foreach (ManagementBaseObject serviceBaseObject in results)
                 {
-                    using (var service = (ManagementObject)serviceBaseObject) // Explicit disposal
+                    using (var service = (ManagementObject)serviceBaseObject)
                     {
                         serviceNames.Add(service["Name"]?.ToString());
                     }

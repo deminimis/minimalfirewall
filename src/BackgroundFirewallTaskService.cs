@@ -145,7 +145,7 @@ namespace MinimalFirewall
                 {
                     if (requiresCacheInvalidation)
                     {
-                        _dataService.InvalidateMfwRuleCache();
+                        _dataService.InvalidateRuleCache();
                         _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task: {task.TaskType}");
                     }
                     QueueCountChanged?.Invoke(_taskQueue.Count);
