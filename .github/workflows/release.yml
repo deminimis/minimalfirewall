@@ -1,6 +1,8 @@
 name: Update WinGet Package
 
-on: workflow_dispatch
+on:
+  release:
+    types: [published] 
 
 jobs:
   update:
