@@ -1,5 +1,4 @@
-﻿// File: Appdata.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 
 namespace MinimalFirewall
@@ -8,7 +7,6 @@ namespace MinimalFirewall
     {
         private static readonly string _exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
         private static readonly string _appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MinimalFirewall");
-        private static bool _useAppDataStorage = false;
 
         private static readonly List<string> _managedConfigFiles = new List<string>
         {
@@ -21,32 +19,27 @@ namespace MinimalFirewall
             "trusted_publishers.json"
         };
 
-        public static void Initialize(AppSettings settings)
+        public static void EnsureStorageDirectoryExists()
         {
-            _useAppDataStorage = settings.UseAppDataStorage;
-            if (_useAppDataStorage)
+            try
             {
-                try
-                {
-                    Directory.CreateDirectory(_appDataDirectory);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[ERROR] Could not create AppData directory: {ex.Message}");
-                    _useAppDataStorage = false; 
-                }
+                Directory.CreateDirectory(_appDataDirectory);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ERROR] Could not create AppData directory: {ex.Message}");
             }
         }
 
         public static string GetConfigPath(string fileName)
         {
-            string basePath = _useAppDataStorage ? _appDataDirectory : _exeDirectory;
-            return Path.Combine(basePath, fileName);
+            return Path.Combine(_appDataDirectory, fileName);
         }
+
 
         public static string GetSettingsPath()
         {
-            return Path.Combine(_exeDirectory, "settings.json");
+            return Path.Combine(_appDataDirectory, "settings.json");
         }
 
         public static string GetExeDirectory() => _exeDirectory;

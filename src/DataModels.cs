@@ -21,6 +21,8 @@ namespace MinimalFirewall
     {
         public ChangeType Type { get; set; }
         public AdvancedRuleViewModel Rule { get; set; } = new();
+        public AdvancedRuleViewModel? OldRule { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.Now;
 
         public string Name => Rule.Name;
         public string Status => Rule.Status;
@@ -34,6 +36,7 @@ namespace MinimalFirewall
         public string Profiles => Rule.Profiles;
         public string Grouping => Rule.Grouping;
         public string Description => Rule.Description;
+        public string Publisher { get; set; } = string.Empty;
     }
 
     public class UnifiedRuleViewModel
@@ -97,7 +100,6 @@ namespace MinimalFirewall
         public bool HasSameSettings(AdvancedRuleViewModel? other)
         {
             if (other == null) return false;
-
             return
                 this.Name == other.Name &&
                 this.Description == other.Description &&
@@ -229,6 +231,7 @@ namespace MinimalFirewall
         ProcessPendingConnection,
         AcceptForeignRule,
         DeleteForeignRule,
+        DisableForeignRule,
         AcceptAllForeignRules,
         CreateAdvancedRule,
         AddWildcardRule,
@@ -237,7 +240,8 @@ namespace MinimalFirewall
         RemoveWildcardRule,
         RemoveWildcardDefinitionOnly,
         DeleteAllMfwRules,
-        ImportRules
+        ImportRules,
+        QuarantineForeignRule 
     }
 
     public class FirewallTask
@@ -265,4 +269,3 @@ namespace MinimalFirewall
     public class UpdateWildcardRulePayload { public WildcardRule OldRule { get; set; } = new(); public WildcardRule NewRule { get; set; } = new(); }
     public class ImportRulesPayload { public string JsonContent { get; set; } = string.Empty; public bool Replace { get; set; } }
 }
- 

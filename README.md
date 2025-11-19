@@ -24,7 +24,7 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
 
 ## Core Features
 
-- **Lockdown Mode:** The heart of Minimal Firewall. When enabled, it configures the Windows Firewall to block all outbound connections that don't have an explicit "Allow" rule. No program connects without your say-so.
+- **Lockdown Mode:** The heart of Minimal Firewall. When enabled, it configures the Windows Firewall to block all outbound connections that don't have an explicit "Allow" rule. 
     
 - **Real-Time Connection Alerts:** Get instant notifications when a blocked program attempts network access. Choose between interactive pop-ups for immediate action or silent, in-app alerts on the dashboard to review later.
     
@@ -33,24 +33,25 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
     - **Program Rules:** Allow or block applications with a single click.
         
     - **Advanced Rules:** Create detailed rules based on protocol (TCP/UDP/ICMP), local/remote ports, IP addresses, services, and network profiles (Domain, Private, Public).
+
+- **Quarantine Mode (Beta):** Located in the Audit tab, this optional security feature automatically disables any new firewall rules created by third-party applications. These rules remain disabled until you explicitly review and accept them.
         
-- **Firewall Auditing:** The Audit tab shows you a log of firewall rules that were created, modified, or deleted by other applications, giving you visibility into background changes.
+- **Firewall Auditing:** The Audit tab monitors for rules created, modified, or deleted by other applications. 
+    - **Visual Verification:** Changes are color-coded based on digital signatures (Green for trusted, Yellow for third-party, Red for unsigned/unknown).
+    - **Batch Management:** Select multiple entries to allow, disable, or delete rules in bulk.
+    - **Timeline:** See exactly when a rule was added to your system.
     
-- **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time, showing which process is connected to which remote address.
+- **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time with optimized polling, showing which process is connected to which remote address.
     
-- **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder.
+- **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder. Updates to the wildcard list are now reflected immediately.
 
 - **Rule Import & Export**: Save your entire rule configuration (including advanced and wildcard rules) to a single JSON file. This is perfect for backups or migrating your setup to a new computer. Paths are made portable using environment variables (%LOCALAPPDATA%, etc.) for easy sharing. You can choose to either add imported rules to your existing set or completely replace them.
 
-- **Trust Publishers/Digital Certificates:** This works similar to wildcard rules. You can automatically trust apps with digital certificates trusted by Windows. Or you can whitelist publishers yourself. 
-    
-- **UWP & Service Support:** Manage rules for modern Windows Store (UWP) apps and background system services, not just traditional desktop programs.
-
 - **Trust Publishers/Digital Certificates**: Automatically allow applications signed with a trusted digital certificate. You can also manage your own list of trusted publishers to automatically allow any software they create.
     
-- **Light & Dark Themes:** A clean, modern user interface that's easy on the eyes, day or night.
+- **Light & Dark Themes:** A clean, modern user interface that's easy on the eyes, day or night, with DPI scaling support for multi-monitor setups.
     
-- **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet, and stores all rules and logs locally on your machine.
+- **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet, and stores all rules and logs locally in your `%LocalAppData%` folder.
     
 - **Portable:** Minimal Firewall is a single executable that requires no installation. All rules are native to Windows Firewall, so no custom drivers or services are left behind.
     
@@ -89,11 +90,11 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 1. **Do I need to keep the app running?**
     
-    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
+    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule, or to utilize quarantine mode. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
   
 2. **How do I completely uninstall Minimal Firewall?**
 
-    - Because the application is portable, you can simply delete the executable file. To clean up the rules it has created, you have two options on the Settings tab: "Delete all Minimal Firewall rules": This will remove only the rules created by this application. "Revert Windows Firewall": This is a more drastic option that resets your entire Windows Firewall configuration to its factory default state, deleting all custom rules from any source.
+    - Because the application is portable, you can simply delete the executable file. To remove the configuration files, delete the `MinimalFirewall` folder located in `%LocalAppData%` (you can open this folder quickly via the Settings tab). To clean up the rules it has created, you have two options on the Settings tab: "Delete all Minimal Firewall rules" (removes only app-created rules) or "Revert Windows Firewall" (resets the entire firewall configuration to factory defaults).
   
 3. **Does this work with other antivirus or security software?**
 
@@ -125,11 +126,14 @@ Minimal Firewall is a **Windows Forms** application written in **C#** on the **.
     
 - **Connection Alerting:** It listens for Event ID `5157` ("The Windows Filtering Platform has blocked a connection") in the Windows Security event log. This is a native, efficient way to detect blocked connection attempts without a custom driver.
     
-- **Auditing:** It uses a `ManagementEventWatcher` (WMI) to monitor for real-time changes to the `MSFT_NetFirewallRule` class, allowing it to detect when other processes modify the firewall ruleset.
+- **Auditing:** It uses a `ManagementEventWatcher` (WMI) to monitor for real-time changes to the `MSFT_NetFirewallRule` class, allowing it to detect when other processes modify the firewall ruleset. It maintains a complete local cache to accurately track rule history and changes.
     
 - **Live Traffic:** The live connection monitor uses the `GetExtendedTcpTable` function from `iphlpapi.dll` to retrieve a list of active TCP connections and their associated Process IDs.
     
+- **Performance:** The UI utilizes double buffering for smooth data grid rendering and optimized polling for live connections to minimize CPU usage.
+    
 - **No Drivers:** It does not use any custom kernel drivers, relying entirely on documented Windows APIs for maximum stability and security.
+
 
 ## Special Thanks
 For dark theme, Minimal Firewall uses a modified version of [Dark-Mode-Forms](https://github.com/BlueMystical/Dark-Mode-Forms). 

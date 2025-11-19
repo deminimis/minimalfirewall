@@ -1,5 +1,4 @@
-﻿// File: AppSettings.cs
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -18,7 +17,6 @@ namespace MinimalFirewall
         private string _theme = "Dark";
         private bool _startOnSystemStartup;
         private bool _closeToTray = true;
-        private bool _useAppDataStorage = false;
         private int _autoRefreshIntervalMinutes = 10;
         private bool _isTrafficMonitorEnabled = false;
         private bool _showAppIcons = true;
@@ -37,13 +35,13 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
+        private bool _quarantineMode = false; 
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
         public string Theme { get => _theme; set => SetField(ref _theme, value); }
         public bool StartOnSystemStartup { get => _startOnSystemStartup; set => SetField(ref _startOnSystemStartup, value); }
         public bool CloseToTray { get => _closeToTray; set => SetField(ref _closeToTray, value); }
-        public bool UseAppDataStorage { get => _useAppDataStorage; set => SetField(ref _useAppDataStorage, value); }
         public int AutoRefreshIntervalMinutes { get => _autoRefreshIntervalMinutes; set => SetField(ref _autoRefreshIntervalMinutes, value); }
         public bool IsTrafficMonitorEnabled { get => _isTrafficMonitorEnabled; set => SetField(ref _isTrafficMonitorEnabled, value); }
         public bool ShowAppIcons { get => _showAppIcons; set => SetField(ref _showAppIcons, value); }
@@ -62,7 +60,7 @@ namespace MinimalFirewall
         public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
-
+        public bool QuarantineMode { get => _quarantineMode; set => SetField(ref _quarantineMode, value); }
         public Point WindowLocation { get; set; } = new Point(100, 100);
         public Size WindowSize { get; set; } = new Size(1280, 800);
         public int WindowState { get; set; } = (int)FormWindowState.Maximized;

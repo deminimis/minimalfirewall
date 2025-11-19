@@ -1,6 +1,10 @@
-﻿// File: FirewallSentryService.cs
-using System.Management;
+﻿using System.Management;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.IO;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MinimalFirewall
 {
@@ -9,6 +13,10 @@ namespace MinimalFirewall
         private readonly FirewallRuleService firewallService;
         private ManagementEventWatcher? _watcher;
         private bool _isStarted = false;
+
+
+        private Dictionary<string, AdvancedRuleViewModel> _ruleCache = new(StringComparer.OrdinalIgnoreCase);
+
         public event Action? RuleSetChanged;
         public FirewallSentryService(FirewallRuleService firewallService)
         {
@@ -17,11 +25,7 @@ namespace MinimalFirewall
 
         public void Start()
         {
-            if (_isStarted)
-            {
-                return;
-            }
-
+            if (_isStarted) return;
             try
             {
                 var scope = new ManagementScope(@"root\StandardCimv2");
@@ -41,11 +45,7 @@ namespace MinimalFirewall
 
         public void Stop()
         {
-            if (!_isStarted)
-            {
-                return;
-            }
-
+            if (!_isStarted) return;
             try
             {
                 _watcher?.Stop();
@@ -68,6 +68,9 @@ namespace MinimalFirewall
         {
             var changes = new List<FirewallRuleChange>();
             var allRules = firewallService.GetAllRules();
+
+            // Snapshot of rules currently in the system
+            var currentScan = new Dictionary<string, AdvancedRuleViewModel>(StringComparer.OrdinalIgnoreCase);
             try
             {
                 int totalRules = allRules.Count;
@@ -76,6 +79,7 @@ namespace MinimalFirewall
                     progress?.Report(100);
                     return changes;
                 }
+
                 int processedRules = 0;
                 foreach (var rule in allRules)
                 {
@@ -84,13 +88,69 @@ namespace MinimalFirewall
                     progress?.Report((processedRules * 100) / totalRules);
 
                     if (rule == null || string.IsNullOrEmpty(rule.Name)) continue;
-                    if (IsMfwRule(rule) || acknowledgedTracker.IsAcknowledged(rule.Name))
+                    if (IsMfwRule(rule)) continue;
+
+                    var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
+                    currentScan[ruleVm.Name] = ruleVm;
+
+                    bool isAcknowledged = acknowledgedTracker.IsAcknowledged(rule.Name);
+                    bool existsInCache = _ruleCache.TryGetValue(rule.Name, out var cachedRule);
+
+                    FirewallRuleChange? changeObj = null;
+
+                    // DETECTION LOGIC
+                    if (existsInCache)
                     {
-                        continue;
+                        if (!ruleVm.HasSameSettings(cachedRule))
+                        {
+                            changeObj = new FirewallRuleChange
+                            {
+                                Type = ChangeType.Modified,
+                                Rule = ruleVm,
+                                OldRule = cachedRule
+                            };
+                        }
+                        else
+                        {
+                            if (!isAcknowledged)
+                            {
+                                changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!isAcknowledged)
+                        {
+                            changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
+                        }
                     }
 
-                    changes.Add(new FirewallRuleChange { Type = ChangeType.New, Rule = FirewallDataService.CreateAdvancedRuleViewModel(rule) });
+                    if (changeObj != null)
+                    {
+                        EnrichWithPublisher(changeObj, rule.ApplicationName);
+                        changes.Add(changeObj);
+                    }
                 }
+
+                // Check fo r deletions
+                foreach (var kvp in _ruleCache)
+                {
+                    if (!currentScan.ContainsKey(kvp.Key))
+                    {
+                        if (!acknowledgedTracker.IsAcknowledged(kvp.Key))
+                        {
+                            changes.Add(new FirewallRuleChange
+                            {
+                                Type = ChangeType.Deleted,
+                                Rule = kvp.Value,
+                                OldRule = kvp.Value
+                            });
+                        }
+                    }
+                }
+
+                _ruleCache = currentScan;
             }
             finally
             {
@@ -100,6 +160,29 @@ namespace MinimalFirewall
                 }
             }
             return changes;
+        }
+
+        private void EnrichWithPublisher(FirewallRuleChange changeObj, string appPath)
+        {
+            if (string.Equals(appPath, "System", StringComparison.OrdinalIgnoreCase))
+            {
+                changeObj.Publisher = "Microsoft Corporation (System)";
+            }
+            else if (!string.IsNullOrEmpty(appPath))
+            {
+                try
+                {
+                    string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
+                    if (File.Exists(expandedPath))
+                    {
+                        if (SignatureValidationService.GetPublisherInfo(expandedPath, out string? publisher))
+                        {
+                            changeObj.Publisher = publisher ?? string.Empty;
+                        }
+                    }
+                }
+                catch { /* Ignore invalid paths/perms */ }
+            }
         }
 
         private static bool IsMfwRule(NetFwTypeLib.INetFwRule2 rule)

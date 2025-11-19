@@ -1,5 +1,4 @@
-﻿// File: AuditControl.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class AuditControl
     {
@@ -10,10 +9,19 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem acceptSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem disableSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.Panel topPanel;
+        private System.Windows.Forms.CheckBox quarantineCheckBox;
         private System.Windows.Forms.DataGridView systemChangesDataGridView;
+        private System.Windows.Forms.SplitContainer splitContainer;
+        private System.Windows.Forms.RichTextBox diffRichTextBox;
+        private System.Windows.Forms.Label diffLabel;
         private System.Windows.Forms.DataGridViewButtonColumn acceptButtonColumn;
         private System.Windows.Forms.DataGridViewButtonColumn deleteButtonColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn advPublisherColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advNameColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advStatusColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advProtocolColumn;
@@ -26,6 +34,8 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn advProfilesColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn advTimestampColumn;
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -44,14 +54,23 @@ namespace MinimalFirewall
             this.auditSearchTextBox = new System.Windows.Forms.TextBox();
             this.rebuildBaselineButton = new System.Windows.Forms.Button();
             this.auditContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.acceptAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.acceptSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.disableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.acceptAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.topPanel = new System.Windows.Forms.Panel();
+            this.quarantineCheckBox = new System.Windows.Forms.CheckBox();
+            this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.systemChangesDataGridView = new System.Windows.Forms.DataGridView();
+            this.diffLabel = new System.Windows.Forms.Label();
+            this.diffRichTextBox = new System.Windows.Forms.RichTextBox();
             this.acceptButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
             this.deleteButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.advPublisherColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advProtocolColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -64,8 +83,13 @@ namespace MinimalFirewall
             this.advProfilesColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.advTimestampColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.auditContextMenu.SuspendLayout();
             this.topPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
+            this.splitContainer.Panel1.SuspendLayout();
+            this.splitContainer.Panel2.SuspendLayout();
+            this.splitContainer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).BeginInit();
             this.SuspendLayout();
             // 
@@ -94,42 +118,73 @@ namespace MinimalFirewall
             // 
             this.auditContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.auditContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.acceptAllToolStripMenuItem,
-            this.copyDetailsToolStripMenuItem,
+            this.acceptSelectedToolStripMenuItem,
+            this.disableSelectedToolStripMenuItem,
+            this.deleteToolStripMenuItem,
             this.toolStripSeparator1,
+            this.acceptAllToolStripMenuItem,
+            this.toolStripSeparator2,
+            this.copyDetailsToolStripMenuItem,
             this.openFileLocationToolStripMenuItem});
             this.auditContextMenu.Name = "auditContextMenu";
-            this.auditContextMenu.Size = new System.Drawing.Size(207, 88);
+            this.auditContextMenu.Size = new System.Drawing.Size(211, 208);
             this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.auditContextMenu_Opening);
             // 
-            // acceptAllToolStripMenuItem
+            // acceptSelectedToolStripMenuItem
             // 
-            this.acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
-            this.acceptAllToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.acceptAllToolStripMenuItem.Text = "Accept All Changes";
-            this.acceptAllToolStripMenuItem.Click += new System.EventHandler(this.AcceptAllToolStripMenuItem_Click);
+            this.acceptSelectedToolStripMenuItem.Name = "acceptSelectedToolStripMenuItem";
+            this.acceptSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.acceptSelectedToolStripMenuItem.Text = "Allow Selected";
+            this.acceptSelectedToolStripMenuItem.Click += new System.EventHandler(this.acceptSelectedToolStripMenuItem_Click);
             // 
-            // copyDetailsToolStripMenuItem
+            // disableSelectedToolStripMenuItem
             // 
-            this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
-            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.copyDetailsToolStripMenuItem.Text = "Copy Details";
-            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            this.disableSelectedToolStripMenuItem.Name = "disableSelectedToolStripMenuItem";
+            this.disableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.disableSelectedToolStripMenuItem.Text = "Disable Selected";
+            this.disableSelectedToolStripMenuItem.Click += new System.EventHandler(this.disableSelectedToolStripMenuItem_Click);
+            // 
+            // deleteToolStripMenuItem
+            // 
+            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.deleteToolStripMenuItem.Text = "Delete Selected";
+            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(203, 6);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(207, 6);
+            // 
+            // acceptAllToolStripMenuItem
+            // 
+            this.acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
+            this.acceptAllToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.acceptAllToolStripMenuItem.Text = "Accept All Changes";
+            this.acceptAllToolStripMenuItem.Click += new System.EventHandler(this.AcceptAllToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(207, 6);
+            // 
+            // copyDetailsToolStripMenuItem
+            // 
+            this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
+            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.copyDetailsToolStripMenuItem.Text = "Copy Details";
+            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
             // 
             // openFileLocationToolStripMenuItem
             // 
             this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
-            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
+            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.openFileLocationToolStripMenuItem.Text = "Open File Location";
             this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem_Click);
             // 
             // topPanel
             // 
+            this.topPanel.Controls.Add(this.quarantineCheckBox);
             this.topPanel.Controls.Add(this.rebuildBaselineButton);
             this.topPanel.Controls.Add(this.auditSearchTextBox);
             this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -137,6 +192,39 @@ namespace MinimalFirewall
             this.topPanel.Name = "topPanel";
             this.topPanel.Size = new System.Drawing.Size(1000, 77);
             this.topPanel.TabIndex = 4;
+            // 
+            // quarantineCheckBox
+            // 
+            this.quarantineCheckBox.AutoSize = true;
+            this.quarantineCheckBox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.quarantineCheckBox.Location = new System.Drawing.Point(195, 29);
+            this.quarantineCheckBox.Name = "quarantineCheckBox";
+            this.quarantineCheckBox.Size = new System.Drawing.Size(196, 24);
+            this.quarantineCheckBox.TabIndex = 4;
+            this.quarantineCheckBox.Text = "Quarantine New Rules";
+            this.quarantineCheckBox.UseVisualStyleBackColor = true;
+            this.quarantineCheckBox.CheckedChanged += new System.EventHandler(this.quarantineCheckBox_CheckedChanged);
+            // 
+            // splitContainer
+            // 
+            this.splitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.splitContainer.Location = new System.Drawing.Point(0, 77);
+            this.splitContainer.Name = "splitContainer";
+            this.splitContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer.Panel1
+            // 
+            this.splitContainer.Panel1.Controls.Add(this.systemChangesDataGridView);
+            // 
+            // splitContainer.Panel2
+            // 
+            this.splitContainer.Panel2.Controls.Add(this.diffRichTextBox);
+            this.splitContainer.Panel2.Controls.Add(this.diffLabel);
+            this.splitContainer.Panel2MinSize = 100;
+            this.splitContainer.Size = new System.Drawing.Size(1000, 843);
+            this.splitContainer.SplitterDistance = 643;
+            this.splitContainer.TabIndex = 5;
             // 
             // systemChangesDataGridView
             // 
@@ -160,6 +248,8 @@ namespace MinimalFirewall
             this.systemChangesDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.acceptButtonColumn,
             this.deleteButtonColumn,
+            this.advTimestampColumn,
+            this.advPublisherColumn,
             this.advNameColumn,
             this.advStatusColumn,
             this.advProtocolColumn,
@@ -176,7 +266,7 @@ namespace MinimalFirewall
             this.systemChangesDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.systemChangesDataGridView.EnableHeadersVisualStyles = false;
             this.systemChangesDataGridView.GridColor = System.Drawing.SystemColors.Control;
-            this.systemChangesDataGridView.Location = new System.Drawing.Point(0, 77);
+            this.systemChangesDataGridView.Location = new System.Drawing.Point(0, 0);
             this.systemChangesDataGridView.MultiSelect = true;
             this.systemChangesDataGridView.Name = "systemChangesDataGridView";
             this.systemChangesDataGridView.ReadOnly = true;
@@ -184,8 +274,8 @@ namespace MinimalFirewall
             this.systemChangesDataGridView.RowTemplate.Height = 28;
             this.systemChangesDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.systemChangesDataGridView.ShowCellToolTips = true;
-            this.systemChangesDataGridView.Size = new System.Drawing.Size(1000, 843);
-            this.systemChangesDataGridView.TabIndex = 5;
+            this.systemChangesDataGridView.Size = new System.Drawing.Size(1000, 643);
+            this.systemChangesDataGridView.TabIndex = 0;
             this.systemChangesDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellContentClick);
             this.systemChangesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.systemChangesDataGridView_CellFormatting);
             this.systemChangesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.systemChangesDataGridView_CellMouseDown);
@@ -193,6 +283,31 @@ namespace MinimalFirewall
             this.systemChangesDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellMouseLeave);
             this.systemChangesDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.systemChangesDataGridView_ColumnHeaderMouseClick);
             this.systemChangesDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.systemChangesDataGridView_RowPostPaint);
+            this.systemChangesDataGridView.SelectionChanged += new System.EventHandler(this.systemChangesDataGridView_SelectionChanged);
+            // 
+            // diffLabel
+            // 
+            this.diffLabel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.diffLabel.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.diffLabel.Location = new System.Drawing.Point(0, 0);
+            this.diffLabel.Name = "diffLabel";
+            this.diffLabel.Padding = new System.Windows.Forms.Padding(5, 5, 0, 0);
+            this.diffLabel.Size = new System.Drawing.Size(1000, 25);
+            this.diffLabel.TabIndex = 1;
+            this.diffLabel.Text = "Change Details:";
+            // 
+            // diffRichTextBox
+            // 
+            this.diffRichTextBox.BackColor = System.Drawing.Color.White;
+            this.diffRichTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.diffRichTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.diffRichTextBox.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.diffRichTextBox.Location = new System.Drawing.Point(0, 25);
+            this.diffRichTextBox.Name = "diffRichTextBox";
+            this.diffRichTextBox.ReadOnly = true;
+            this.diffRichTextBox.Size = new System.Drawing.Size(1000, 171);
+            this.diffRichTextBox.TabIndex = 2;
+            this.diffRichTextBox.Text = "";
             // 
             // acceptButtonColumn
             // 
@@ -222,9 +337,25 @@ namespace MinimalFirewall
             this.deleteButtonColumn.MinimumWidth = 70;
             this.deleteButtonColumn.Name = "deleteButtonColumn";
             this.deleteButtonColumn.ReadOnly = true;
-            this.deleteButtonColumn.Text = "Delete";
+            this.deleteButtonColumn.Text = "Disable";
             this.deleteButtonColumn.UseColumnTextForButtonValue = true;
             this.deleteButtonColumn.Width = 70;
+            // 
+            // advPublisherColumn
+            // 
+            this.advPublisherColumn.DataPropertyName = "Publisher";
+            this.advPublisherColumn.FillWeight = 25F;
+            this.advPublisherColumn.HeaderText = "Verified Signer";
+            this.advPublisherColumn.Name = "advPublisherColumn";
+            this.advPublisherColumn.ReadOnly = true;
+            // 
+            // advTimestampColumn
+            // 
+            this.advTimestampColumn.DataPropertyName = "Timestamp";
+            this.advTimestampColumn.HeaderText = "Detected";
+            this.advTimestampColumn.Name = "advTimestampColumn";
+            this.advTimestampColumn.ReadOnly = true;
+            this.advTimestampColumn.FillWeight = 15F;
             // 
             // advNameColumn
             // 
@@ -326,13 +457,17 @@ namespace MinimalFirewall
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.systemChangesDataGridView);
+            this.Controls.Add(this.splitContainer);
             this.Controls.Add(this.topPanel);
             this.Name = "AuditControl";
             this.Size = new System.Drawing.Size(1000, 920);
             this.auditContextMenu.ResumeLayout(false);
             this.topPanel.ResumeLayout(false);
             this.topPanel.PerformLayout();
+            this.splitContainer.Panel1.ResumeLayout(false);
+            this.splitContainer.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
+            this.splitContainer.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).EndInit();
             this.ResumeLayout(false);
         }

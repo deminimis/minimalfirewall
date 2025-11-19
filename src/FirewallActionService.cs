@@ -85,7 +85,7 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (rule != null &&
-                         IsMfwRule(rule) &&
+                        IsMfwRule(rule) &&
                         rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
                         string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
                         rule.Protocol == 256 &&
@@ -155,7 +155,8 @@ namespace MinimalFirewall
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string baseName, Directions dir, Actions act)
                 {
-                    string description = string.IsNullOrEmpty(wildcardSourcePath) ? "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    string description = string.IsNullOrEmpty(wildcardSourcePath) ?
+                        "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
                     CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
                 }
 
@@ -172,7 +173,6 @@ namespace MinimalFirewall
         public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
         {
             if (string.IsNullOrEmpty(serviceName)) return;
-
             if (!ParseActionString(action, out Actions parsedAction, out Directions parsedDirection))
             {
                 return;
@@ -189,12 +189,11 @@ namespace MinimalFirewall
             }
 
             var protocolsToCreate = new List<int> { 6, 17 };
-
             foreach (var protocol in protocolsToCreate)
             {
-                string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                string protocolSuffix = (protocol == 6) ?
+                    " - TCP" : " - UDP";
                 string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-
                 if (parsedDirection.HasFlag(Directions.Incoming))
                 {
                     string inName = $"{serviceName} - {actionStr}In{protocolSuffix}";
@@ -221,7 +220,6 @@ namespace MinimalFirewall
             var validApps = new List<UwpApp>();
             var cachedUwpApps = _dataService.LoadUwpAppsFromCache();
             var cachedPfnSet = new HashSet<string>(cachedUwpApps.Select(a => a.PackageFamilyName), StringComparer.OrdinalIgnoreCase);
-
             foreach (var app in uwpApps)
             {
                 if (cachedPfnSet.Contains(app.PackageFamilyName))
@@ -235,10 +233,8 @@ namespace MinimalFirewall
             }
 
             if (validApps.Count == 0) return;
-
             var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
             var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
-
             foreach (var app in validApps)
             {
                 void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
@@ -329,7 +325,7 @@ namespace MinimalFirewall
                                .WithProtocol(ProtocolTypes.TCP.Value)
                                .WithRemotePorts("80,443")
                                .WithGrouping(MFWConstants.MainRuleGroup)
-                                .IsEnabled();
+                               .IsEnabled();
                         firewallService.CreateRule(newRule);
                         activityLogger.LogDebug("Created system rule for certificate checks.");
                     }
@@ -423,13 +419,12 @@ namespace MinimalFirewall
 
             ManageCryptoServiceRule(newLockdownState);
             ManageDhcpClientRule(newLockdownState);
-
             if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
             {
                 MessageBox.Show(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
                      "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
-                    "Potential Causes:\n" +
+                     "Potential Causes:\n" +
                     "1. A local or domain Group Policy is preventing this change.\n" +
                     "2. Other security software is blocking this action.\n\n" +
                     "The firewall's default policy will be set back to 'Allow' for safety.",
@@ -588,12 +583,11 @@ namespace MinimalFirewall
             if (!string.IsNullOrEmpty(serviceName))
             {
                 var protocolsToCreate = new List<int> { 6, 17 };
-
                 foreach (var protocol in protocolsToCreate)
                 {
-                    string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                    string protocolSuffix = (protocol == 6) ?
+                        " - TCP" : " - UDP";
                     string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-
                     if (parsedDirection.HasFlag(Directions.Incoming))
                     {
                         string ruleName = $"Temp Allow - {baseName} - In - {guid}{protocolSuffix}";
@@ -626,9 +620,33 @@ namespace MinimalFirewall
         {
             if (change.Rule?.Name is not null)
             {
+                firewallService.EnableRuleByName(change.Rule.Name);
+
                 foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
                 activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Accepting foreign rule '{change.Rule.Name}'");
+                activityLogger.LogDebug($"Sentry: Accepted and Enabled foreign rule '{change.Rule.Name}'");
+            }
+        }
+
+        public void DisableForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                firewallService.DisableRuleByName(change.Rule.Name);
+                foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                activityLogger.LogChange("Foreign Rule Disabled", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: Disabled and acknowledged foreign rule '{change.Rule.Name}'");
+            }
+        }
+
+        // Quarantine Logic 
+        public void QuarantineForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                firewallService.DisableRuleByName(change.Rule.Name);
+                activityLogger.LogChange("Foreign Rule Quarantined", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: Quarantined (Disabled) foreign rule '{change.Rule.Name}' without acknowledgement.");
             }
         }
 
@@ -734,7 +752,7 @@ namespace MinimalFirewall
             {
                 MessageBox.Show(
                      "When specifying a program or service, the protocol must be TCP, UDP, or Any.",
-                    "Invalid Rule", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                     "Invalid Rule", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -773,7 +791,9 @@ namespace MinimalFirewall
                         Profiles = vm.Profiles,
                         Type = vm.Type,
                         Direction = direction,
-                        Protocol = (short)protocol
+                        Protocol = protocol,
+                        InterfaceTypes = vm.InterfaceTypes,
+                        IcmpTypesAndCodes = vm.IcmpTypesAndCodes
                     };
                     string nameSuffix = "";
                     if (directionsToCreate.Count > 1)
@@ -783,7 +803,7 @@ namespace MinimalFirewall
                     if (protocolsToCreate.Count > 1)
                     {
                         nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
-                            " - TCP" : " - UDP";
+                        " - TCP" : " - UDP";
                     }
                     ruleVm.Name = vm.Name + nameSuffix;
                     CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
@@ -819,34 +839,33 @@ namespace MinimalFirewall
                     firewallRule.ApplicationName = null;
                 }
 
-                if (vm.Protocol != ProtocolTypes.TCP.Value && vm.Protocol != ProtocolTypes.UDP.Value)
-                {
-                    firewallRule.LocalPorts = "*";
-                    firewallRule.RemotePorts = "*";
-                }
-                else
+                if (vm.Protocol == ProtocolTypes.TCP.Value || vm.Protocol == ProtocolTypes.UDP.Value || vm.Protocol == ProtocolTypes.Any.Value)
                 {
                     firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ?
                         vm.LocalPorts : "*";
                     firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
                 }
 
-                firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
+                firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ?
+                    vm.LocalAddresses : "*";
                 firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
 
                 NET_FW_PROFILE_TYPE2_ profiles = 0;
                 if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
                 if (vm.Profiles.Contains("Private")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
                 if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
-                if (profiles == 0) profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+                if (profiles == 0 || vm.Profiles == "All") profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
                 firewallRule.Profiles = (int)profiles;
+
                 firewallRule.InterfaceTypes = interfaceTypes;
                 if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
                 {
-                    if (!string.IsNullOrWhiteSpace(icmpTypesAndCodes))
-                    {
-                        firewallRule.IcmpTypesAndCodes = icmpTypesAndCodes;
-                    }
+                    firewallRule.IcmpTypesAndCodes = !string.IsNullOrWhiteSpace(icmpTypesAndCodes) ?
+                        icmpTypesAndCodes : "*";
+                }
+                else
+                {
+                    firewallRule.IcmpTypesAndCodes = null;
                 }
 
                 firewallService.CreateRule(firewallRule);
@@ -921,6 +940,12 @@ namespace MinimalFirewall
             firewallRule.Action = (NET_FW_ACTION_)action;
             firewallRule.Enabled = true;
             firewallRule.Protocol = protocol;
+            if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
+            {
+                firewallRule.LocalPorts = "*";
+                firewallRule.RemotePorts = "*";
+            }
+
             if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
             {
                 firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
@@ -952,6 +977,12 @@ namespace MinimalFirewall
                 firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
                 firewallRule.Action = (NET_FW_ACTION_)action;
                 firewallRule.Protocol = protocol;
+                if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
+                {
+                    firewallRule.LocalPorts = "*";
+                    firewallRule.RemotePorts = "*";
+                }
+
                 firewallRule.Grouping = MFWConstants.MainRuleGroup;
                 firewallRule.Enabled = true;
                 firewallService.CreateRule(firewallRule);
@@ -973,6 +1004,12 @@ namespace MinimalFirewall
                 firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
                 firewallRule.Action = (NET_FW_ACTION_)action;
                 firewallRule.Protocol = protocol;
+                if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
+                {
+                    firewallRule.LocalPorts = "*";
+                    firewallRule.RemotePorts = "*";
+                }
+
                 firewallRule.Grouping = MFWConstants.MainRuleGroup;
                 firewallRule.Enabled = true;
                 firewallService.CreateRule(firewallRule);
@@ -1065,7 +1102,6 @@ namespace MinimalFirewall
                 try
                 {
                     firewallRule.Name = baseName;
-
                     if (!string.IsNullOrEmpty(serviceNameToUse))
                     {
                         firewallRule.serviceName = serviceNameToUse;
@@ -1083,20 +1119,21 @@ namespace MinimalFirewall
                     firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
                     firewallRule.Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]";
                     firewallRule.Protocol = protocol;
-
                     try
                     {
                         valueWithError = rule.LocalPorts;
                         if (protocol != 6 && protocol != 17) valueWithError = "*";
                         else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting LocalPorts to: '{valueWithError}' for rule '{baseName}'");
                         firewallRule.LocalPorts = valueWithError;
                     }
                     catch (ArgumentException portEx)
                     {
                         activityLogger.LogException($"ApplyWildcardMatch-SetLocalPorts-{baseName}", portEx);
                         activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting LocalPorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
-                        try { firewallRule.LocalPorts = "*"; }
+                        try
+                        {
+                            firewallRule.LocalPorts = "*";
+                        }
                         catch (Exception fbEx)
                         {
                             activityLogger.LogException($"ApplyWildcardMatch-FallbackLocalPorts-{baseName}", fbEx);
@@ -1105,20 +1142,21 @@ namespace MinimalFirewall
                     }
 
                     if (ruleCreationSkipped) return;
-
                     try
                     {
                         valueWithError = rule.RemotePorts;
                         if (protocol != 6 && protocol != 17) valueWithError = "*";
                         else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting RemotePorts to: '{valueWithError}' for rule '{baseName}'");
                         firewallRule.RemotePorts = valueWithError;
                     }
                     catch (ArgumentException portEx)
                     {
                         activityLogger.LogException($"ApplyWildcardMatch-SetRemotePorts-{baseName}", portEx);
                         activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemotePorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
-                        try { firewallRule.RemotePorts = "*"; }
+                        try
+                        {
+                            firewallRule.RemotePorts = "*";
+                        }
                         catch (Exception fbEx)
                         {
                             activityLogger.LogException($"ApplyWildcardMatch-FallbackRemotePorts-{baseName}", fbEx);
@@ -1127,18 +1165,19 @@ namespace MinimalFirewall
                     }
 
                     if (ruleCreationSkipped) return;
-
                     try
                     {
                         valueWithError = rule.RemoteAddresses;
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting RemoteAddresses to: '{valueWithError}' for rule '{baseName}'");
                         firewallRule.RemoteAddresses = valueWithError;
                     }
                     catch (ArgumentException addrEx)
                     {
                         activityLogger.LogException($"ApplyWildcardMatch-SetRemoteAddr-{baseName}", addrEx);
                         activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemoteAddresses to '*' for rule '{baseName}' due to error: {addrEx.Message}");
-                        try { firewallRule.RemoteAddresses = "*"; }
+                        try
+                        {
+                            firewallRule.RemoteAddresses = "*";
+                        }
                         catch (Exception fbEx)
                         {
                             activityLogger.LogException($"ApplyWildcardMatch-FallbackRemoteAddr-{baseName}", fbEx);
@@ -1147,7 +1186,6 @@ namespace MinimalFirewall
                     }
 
                     if (ruleCreationSkipped) return;
-
                     firewallService.CreateRule(firewallRule);
                     activityLogger.LogDebug($"[ApplyWildcardMatch] Successfully created rule '{baseName}' from wildcard match.");
                 }
@@ -1170,7 +1208,6 @@ namespace MinimalFirewall
             string appNameBase = Path.GetFileNameWithoutExtension(appPath);
 
             List<string?> servicesToCreateRulesFor;
-
             if (serviceNames.Length > 0)
             {
                 servicesToCreateRulesFor = new List<string?>(serviceNames);
@@ -1181,21 +1218,23 @@ namespace MinimalFirewall
             }
             else
             {
-                servicesToCreateRulesFor = [null]; 
+                servicesToCreateRulesFor = [null];
             }
 
             foreach (var sName in servicesToCreateRulesFor)
             {
-                string ruleNameBase = string.IsNullOrEmpty(sName) ? appNameBase : (sName == "*" ? appNameBase : sName);
+                string ruleNameBase = string.IsNullOrEmpty(sName) ?
+                    appNameBase : (sName == "*" ? appNameBase : sName);
 
                 if (rule.Protocol == ProtocolTypes.Any.Value)
                 {
-                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+                    string actionStr = parsedAction == Actions.Allow ?
+                        "" : "Block ";
                     var protocolsToCreate = new List<int> { 6, 17 };
-
                     foreach (var protocol in protocolsToCreate)
                     {
-                        string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                        string protocolSuffix = (protocol == 6) ?
+                            " - TCP" : " - UDP";
                         if (parsedDirection.HasFlag(Directions.Incoming))
                         {
                             createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);
@@ -1269,7 +1308,6 @@ namespace MinimalFirewall
                         progress?.Report((processed * 100) / total);
                     }
                 }, token);
-
                 if (token.IsCancellationRequested)
                 {
                     return new List<string>();
@@ -1287,10 +1325,6 @@ namespace MinimalFirewall
                     {
                         activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
                     }
-                }
-                else
-                {
-                    activityLogger.LogDebug("No orphaned rules found.");
                 }
             }
             finally
@@ -1313,21 +1347,18 @@ namespace MinimalFirewall
                     r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
                     return r;
                 }).ToList();
-
             var wildcardRules = _wildcardRuleService.GetRules()
                 .Select(r =>
                 {
                     r.FolderPath = PathResolver.ConvertToEnvironmentPath(r.FolderPath);
                     return r;
                 }).ToList();
-
             var container = new ExportContainer
             {
                 ExportDate = DateTime.UtcNow,
                 AdvancedRules = portableAdvancedRules,
                 WildcardRules = wildcardRules
             };
-
             return JsonSerializer.Serialize(container, ExportContainerJsonContext.Default.ExportContainer);
         }
 

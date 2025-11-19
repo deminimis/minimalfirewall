@@ -1,5 +1,4 @@
-﻿// File: GroupsControl.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using MinimalFirewall.Groups;
 using System.Windows.Forms;
 using System.Threading.Tasks;
@@ -13,15 +12,17 @@ namespace MinimalFirewall
 {
     public partial class GroupsControl : UserControl
     {
-        private FirewallGroupManager?
-        _groupManager;
+        private FirewallGroupManager? _groupManager;
         private BackgroundFirewallTaskService? _backgroundTaskService;
         private DarkModeCS? _dm;
+
         private BindingSource _bindingSource;
+
         public GroupsControl()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
+            _bindingSource = new BindingSource();
         }
 
         public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, DarkModeCS dm)
@@ -31,7 +32,6 @@ namespace MinimalFirewall
             _dm = dm;
 
             groupsDataGridView.AutoGenerateColumns = false;
-            _bindingSource = new BindingSource();
             groupsDataGridView.DataSource = _bindingSource;
         }
 
@@ -64,7 +64,6 @@ namespace MinimalFirewall
                     foreach (DataGridViewRow row in groupsDataGridView.SelectedRows)
                     {
                         if (row.DataBoundItem is FirewallGroup group)
-
                         {
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
                             rowsToDelete.Add(row);
@@ -84,7 +83,6 @@ namespace MinimalFirewall
             if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
             {
                 if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group && _backgroundTaskService != null)
-
                 {
                     bool newState = !group.IsEnabled;
                     group.SetEnabledState(newState);
@@ -114,24 +112,27 @@ namespace MinimalFirewall
         private void DrawToggleSwitch(Graphics g, Rectangle bounds, bool isChecked)
         {
             if (_dm == null) return;
+
             int switchWidth = (int)(50 * (g.DpiY / 96f));
             int switchHeight = (int)(25 * (g.DpiY / 96f));
             int thumbSize = (int)(21 * (g.DpiY / 96f));
-            int padding = (int)(10 * (g.DpiY / 96f));
+
             Rectangle switchRect = new Rectangle(
-                bounds.X + (bounds.Width - switchWidth) / 2, // Centered
+                bounds.X + (bounds.Width - switchWidth) / 2,
                 bounds.Y + (bounds.Height - switchHeight) / 2,
                 switchWidth,
                 switchHeight);
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             Color backColor = isChecked ? Color.FromArgb(0, 192, 0) : Color.FromArgb(200, 0, 0);
+
             using (var path = new System.Drawing.Drawing2D.GraphicsPath())
             {
                 path.AddArc(switchRect.X, switchRect.Y, switchRect.Height, switchRect.Height, 90, 180);
                 path.AddArc(switchRect.Right - switchRect.Height, switchRect.Y, switchRect.Height, switchRect.Height, 270, 180);
                 path.CloseFigure();
-                g.FillPath(new SolidBrush(backColor), path);
+                using var brush = new SolidBrush(backColor);
+                g.FillPath(brush, path);
             }
 
             int thumbX = isChecked ?
@@ -141,31 +142,36 @@ namespace MinimalFirewall
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
                 thumbSize,
                 thumbSize);
-            using (var thumbBrush = new SolidBrush(_dm.OScolors.TextActive))
-            {
-                g.FillEllipse(thumbBrush, thumbRect);
-            }
+
+            using var thumbBrush = new SolidBrush(_dm.OScolors.TextActive);
+            g.FillEllipse(thumbBrush, thumbRect);
         }
 
         private void groupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
+            if (e.ColumnIndex < 0) return;
+
             var column = groupsDataGridView.Columns[e.ColumnIndex];
             string propertyName = column.DataPropertyName;
 
             if (string.IsNullOrEmpty(propertyName)) return;
 
-            var sortDirection = ListSortDirection.Ascending;
-            if (groupsDataGridView.SortedColumn?.Name == column.Name && groupsDataGridView.SortOrder == SortOrder.Ascending)
+            var direction = ListSortDirection.Ascending;
+            if (column.HeaderCell.SortGlyphDirection == SortOrder.Ascending)
             {
-                sortDirection = ListSortDirection.Descending;
+                direction = ListSortDirection.Descending;
             }
 
             if (_bindingSource.DataSource is SortableBindingList<FirewallGroup> list)
             {
-                list.Sort(propertyName, sortDirection);
+                list.Sort(propertyName, direction);
             }
 
-            groupsDataGridView.Sort(column, sortDirection);
+            foreach (DataGridViewColumn col in groupsDataGridView.Columns)
+            {
+                col.HeaderCell.SortGlyphDirection = SortOrder.None;
+            }
+            column.HeaderCell.SortGlyphDirection = direction == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending;
         }
 
         private void groupsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)

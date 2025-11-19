@@ -8,28 +8,22 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System;
 
 namespace MinimalFirewall
 {
     public enum MfwRuleStatus { None, MfwAllow, MfwBlock }
 
-    public class FirewallDataService
+    public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
     {
-        private readonly FirewallRuleService _firewallRuleService;
-        private readonly WildcardRuleService _wildcardRuleService;
-        private readonly UwpService _uwpService;
-        private readonly MemoryCache _localCache;
+        private readonly FirewallRuleService _firewallRuleService = firewallRuleService;
+        private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
+        private readonly UwpService _uwpService = uwpService;
+        private readonly MemoryCache _localCache = new(new MemoryCacheOptions());
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
         private const string AggregatedRulesCacheKey = "AggregatedRulesList";
-
-        public FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
-        {
-            _firewallRuleService = firewallRuleService;
-            _wildcardRuleService = wildcardRuleService;
-            _uwpService = uwpService;
-            _localCache = new MemoryCache(new MemoryCacheOptions());
-        }
+        private static readonly char[] _separators = [',', ' '];
 
         public void ClearAggregatedRulesCache()
         {
@@ -51,7 +45,7 @@ namespace MinimalFirewall
 
             services = SystemDiscoveryService.GetServicesWithExePaths();
             var cacheOptions = new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                 .SetSlidingExpiration(TimeSpan.FromMinutes(10));
             _localCache.Set(ServicesCacheKey, services, cacheOptions);
             return services;
         }
@@ -78,7 +72,7 @@ namespace MinimalFirewall
 
                     if (token.IsCancellationRequested)
                     {
-                        return new List<AdvancedRuleViewModel>();
+                        return [];
                     }
                     return mfwRules;
                 }
@@ -92,13 +86,15 @@ namespace MinimalFirewall
             }, token);
         }
 
-        public Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
+        public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
         {
-            return _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
+            var result = await _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
             {
                 entry.SlidingExpiration = TimeSpan.FromMinutes(10);
                 return await FetchAllMfwRulesAsync(token);
-            }) ?? Task.FromResult(new List<AdvancedRuleViewModel>());
+            });
+
+            return result ?? [];
         }
 
         public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
@@ -110,7 +106,7 @@ namespace MinimalFirewall
             }
 
             var allMfwRules = await GetMfwRulesAsync(token);
-            if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+            if (token.IsCancellationRequested) return [];
 
             var aggregatedRules = await Task.Run(() =>
             {
@@ -133,7 +129,7 @@ namespace MinimalFirewall
 
                     foreach (var group in groupedByGroupingAndProtocol)
                     {
-                        if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+                        if (token.IsCancellationRequested) return [];
                         var groupList = group.ToList();
                         aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
                         processedCount += groupList.Count;
@@ -149,7 +145,7 @@ namespace MinimalFirewall
                 }
             }, token);
 
-            if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+            if (token.IsCancellationRequested) return [];
 
             var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
             _localCache.Set(AggregatedRulesCacheKey, aggregatedRules, cacheEntryOptions);
@@ -157,12 +153,12 @@ namespace MinimalFirewall
             return aggregatedRules;
         }
 
-        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<AdvancedRuleViewModel> group)
+        private static AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<AdvancedRuleViewModel> group)
         {
-            var firstRule = group.First();
+            var firstRule = group[0];
 
             var commonName = GetCommonName(group);
-            if (string.IsNullOrEmpty(commonName) || commonName.StartsWith("@"))
+            if (string.IsNullOrEmpty(commonName) || commonName.StartsWith('@'))
             {
                 commonName = firstRule.Grouping ?? string.Empty;
             }
@@ -175,17 +171,17 @@ namespace MinimalFirewall
                 Protocol = firstRule.Protocol,
                 ProtocolName = GetProtocolName(firstRule.Protocol),
                 Type = DetermineRuleType(firstRule),
-                UnderlyingRules = group.Select(r => r).ToList(),
-                IsEnabled = group.All(r => r.IsEnabled),
+                UnderlyingRules = [.. group],
+                IsEnabled = group.TrueForAll(r => r.IsEnabled),
                 Profiles = firstRule.Profiles,
                 Grouping = firstRule.Grouping ?? "",
                 Description = firstRule.Description ?? ""
             };
 
-            bool hasInAllow = group.Any(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));
-            bool hasOutAllow = group.Any(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Outgoing));
-            bool hasInBlock = group.Any(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Incoming));
-            bool hasOutBlock = group.Any(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Outgoing));
+            bool hasInAllow = group.Exists(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));
+            bool hasOutAllow = group.Exists(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Outgoing));
+            bool hasInBlock = group.Exists(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Incoming));
+            bool hasOutBlock = group.Exists(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Outgoing));
 
             aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "N/A");
             if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
@@ -194,20 +190,20 @@ namespace MinimalFirewall
             if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
 
             var localPorts = group.Select(r => r.LocalPorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.LocalPorts = localPorts.Any() ? string.Join(", ", localPorts) : "*";
+            aggRule.LocalPorts = localPorts.Count > 0 ? string.Join(", ", localPorts) : "*";
             var remotePorts = group.Select(r => r.RemotePorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.RemotePorts = remotePorts.Any() ? string.Join(", ", remotePorts) : "*";
+            aggRule.RemotePorts = remotePorts.Count > 0 ? string.Join(", ", remotePorts) : "*";
 
             var localAddresses = group.Select(r => r.LocalAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.LocalAddresses = localAddresses.Any() ? string.Join(", ", localAddresses) : "*";
+            aggRule.LocalAddresses = localAddresses.Count > 0 ? string.Join(", ", localAddresses) : "*";
 
             var remoteAddresses = group.Select(r => r.RemoteAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.RemoteAddresses = remoteAddresses.Any() ? string.Join(", ", remoteAddresses) : "*";
+            aggRule.RemoteAddresses = remoteAddresses.Count > 0 ? string.Join(", ", remoteAddresses) : "*";
 
             return aggRule;
         }
 
-        private string GetCommonName(List<AdvancedRuleViewModel> group)
+        private static string GetCommonName(List<AdvancedRuleViewModel> group)
         {
             if (group.Count == 0) return string.Empty;
             if (group.Count == 1) return group[0].Name ?? string.Empty;
@@ -229,21 +225,21 @@ namespace MinimalFirewall
                 }
             }
 
-            string commonPrefix = first.Substring(0, commonPrefixLength).Trim();
-            if (commonPrefix.EndsWith("-") || commonPrefix.EndsWith("("))
+            string commonPrefix = first[..commonPrefixLength].Trim();
+            if (commonPrefix.EndsWith('-') || commonPrefix.EndsWith('('))
             {
-                commonPrefix = commonPrefix.Substring(0, commonPrefix.Length - 1).Trim();
+                commonPrefix = commonPrefix[..^1].Trim();
             }
 
             return string.IsNullOrEmpty(commonPrefix) ? (group[0].Grouping ?? string.Empty) : commonPrefix;
         }
 
 
-        private RuleType DetermineRuleType(AdvancedRuleViewModel rule)
+        private static RuleType DetermineRuleType(AdvancedRuleViewModel rule)
         {
             if ((rule.Description != null && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal)) ||
-                 (rule.ApplicationName != null && rule.ApplicationName.StartsWith("@", StringComparison.Ordinal)) ||
-                (rule.Name != null && rule.Name.StartsWith("@", StringComparison.Ordinal)))
+                 (rule.ApplicationName != null && rule.ApplicationName.StartsWith('@')) ||
+                (rule.Name != null && rule.Name.StartsWith('@')))
             {
                 return RuleType.UWP;
             }
@@ -272,7 +268,7 @@ namespace MinimalFirewall
             string normalizedAppPath = string.IsNullOrEmpty(appPath) ? string.Empty : PathResolver.NormalizePath(appPath);
             var serviceNamesSet = string.IsNullOrEmpty(serviceName)
                  ? null
-                : new HashSet<string>(serviceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
+                : new HashSet<string>(serviceName.Split(_separators, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
 
             var mfwRules = await GetMfwRulesAsync(CancellationToken.None);
 
@@ -352,6 +348,7 @@ namespace MinimalFirewall
             InvalidateRuleCache();
         }
 
+
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
         {
             var appName = rule.ApplicationName ?? string.Empty;
@@ -368,7 +365,8 @@ namespace MinimalFirewall
                 Protocol = (int)rule.Protocol,
                 ProtocolName = GetProtocolName(rule.Protocol),
                 ServiceName = (string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*") ? string.Empty : rule.serviceName,
-                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ? "*" : rule.LocalAddresses,
+                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ?
+"*" : rule.LocalAddresses,
                 RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
                 Profiles = GetProfileString(rule.Profiles),
                 Grouping = rule.Grouping ?? string.Empty,
@@ -391,10 +389,11 @@ namespace MinimalFirewall
             };
         }
 
+
         private static string GetProfileString(int profiles)
         {
             if (profiles == (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL) return "All";
-            var profileNames = new List<string>(3);
+            List<string> profileNames = [];
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0) profileNames.Add("Domain");
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0) profileNames.Add("Private");
             if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0) profileNames.Add("Public");

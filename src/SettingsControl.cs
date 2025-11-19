@@ -58,6 +58,7 @@ namespace MinimalFirewall
             _dm = dm;
 
             versionLabel.Text = version;
+            loggingSwitch.CheckedChanged += new System.EventHandler(this.loggingSwitch_CheckedChanged);
             coffeePictureBox.Image = _appImageList.Images["coffee.png"];
         }
 
@@ -72,6 +73,8 @@ namespace MinimalFirewall
             managePublishersButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             openFirewallButton.FlatAppearance.BorderSize = 1;
             openFirewallButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+            openAppDataButton.FlatAppearance.BorderSize = 1;
+            openAppDataButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             checkForUpdatesButton.FlatAppearance.BorderSize = 1;
             checkForUpdatesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 1;
@@ -93,6 +96,7 @@ namespace MinimalFirewall
                 revertFirewallButton.ForeColor = Color.White;
                 managePublishersButton.ForeColor = Color.White;
                 openFirewallButton.ForeColor = Color.White;
+                openAppDataButton.ForeColor = Color.White;
                 checkForUpdatesButton.ForeColor = Color.White;
                 cleanUpOrphanedRulesButton.ForeColor = Color.White;
                 exportRulesButton.ForeColor = Color.White;
@@ -106,6 +110,7 @@ namespace MinimalFirewall
                 revertFirewallButton.ForeColor = SystemColors.ControlText;
                 managePublishersButton.ForeColor = SystemColors.ControlText;
                 openFirewallButton.ForeColor = SystemColors.ControlText;
+                openAppDataButton.ForeColor = SystemColors.ControlText;
                 checkForUpdatesButton.ForeColor = SystemColors.ControlText;
                 cleanUpOrphanedRulesButton.ForeColor = SystemColors.ControlText;
                 exportRulesButton.ForeColor = SystemColors.ControlText;
@@ -122,7 +127,6 @@ namespace MinimalFirewall
             darkModeSwitch.Checked = _appSettings.Theme == "Dark";
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;
-            useAppDataSwitch.Checked = _appSettings.UseAppDataStorage;
             autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
             trafficMonitorSwitch.Checked = _appSettings.IsTrafficMonitorEnabled;
             showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
@@ -146,16 +150,6 @@ namespace MinimalFirewall
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
-
-
-            bool appDataSettingChanged = _appSettings.UseAppDataStorage != useAppDataSwitch.Checked;
-            if (appDataSettingChanged)
-            {
-
-                CopyConfigFiles(useAppDataSwitch.Checked);
-                _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
-            }
-
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
 
@@ -216,6 +210,15 @@ namespace MinimalFirewall
             }
         }
 
+        private void loggingSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.IsLoggingEnabled = loggingSwitch.Checked;
+                _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
+            }
+        }
+
         private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
         {
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
@@ -248,6 +251,20 @@ namespace MinimalFirewall
             catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
             {
                 Messenger.MessageBox($"Could not open Windows Firewall console.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void openAppDataButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string appDataPath = ConfigPathManager.GetAppDataDirectory();
+                Directory.CreateDirectory(appDataPath);
+                Process.Start("explorer.exe", appDataPath);
+            }
+            catch (Exception ex)
+            {
+                Messenger.MessageBox($"Could not open AppData folder.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -416,73 +433,6 @@ namespace MinimalFirewall
             }
         }
 
-        private void useAppDataSwitch_CheckedChanged(object sender, EventArgs e)
-        {
-            bool settingChanged = _appSettings.UseAppDataStorage != useAppDataSwitch.Checked;
-
-            if (settingChanged)
-            {
-                _appSettings.UseAppDataStorage = useAppDataSwitch.Checked;
-                CopyConfigFiles(_appSettings.UseAppDataStorage);
-                Messenger.MessageBox("You must restart the application for the configuration location change to take full effect.", "Restart Required", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-
-
-        private void CopyConfigFiles(bool useAppData)
-        {
-            string sourceDir = useAppData ? ConfigPathManager.GetExeDirectory() : ConfigPathManager.GetAppDataDirectory();
-            string destDir = useAppData ? ConfigPathManager.GetAppDataDirectory() : ConfigPathManager.GetExeDirectory();
-            _activityLogger.LogDebug($"[Config Move] Copying files from {sourceDir} to {destDir}");
-
-            try
-            {
-                if (useAppData && !Directory.Exists(destDir))
-                {
-                    Directory.CreateDirectory(destDir);
-                    _activityLogger.LogDebug($"[Config Move] Created destination directory: {destDir}");
-                }
-
-                foreach (string fileName in ConfigPathManager.GetManagedConfigFileNames())
-                {
-                    string sourcePath = Path.Combine(sourceDir, fileName);
-                    string destPath = Path.Combine(destDir, fileName);
-
-                    if (File.Exists(sourcePath))
-                    {
-                        try
-                        {
-                            File.Copy(sourcePath, destPath, true);
-                            _activityLogger.LogDebug($"[Config Move] Copied '{fileName}' to {destDir}");
-                        }
-                        catch (IOException ioEx)
-                        {
-                            _activityLogger.LogException($"CopyConfigFiles-Copy-{fileName}", ioEx);
-                            MessageBox.Show($"Could not copy '{fileName}' to the new location. It might be in use.\nPlease restart the application.\nError: {ioEx.Message}",
-                                            "File Copy Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
-                        catch (UnauthorizedAccessException uaEx)
-                        {
-                            _activityLogger.LogException($"CopyConfigFiles-Access-{fileName}", uaEx);
-                            MessageBox.Show($"Could not copy '{fileName}' due to permissions.\nPlease restart the application.\nError: {uaEx.Message}",
-                                            "File Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
-                    }
-                    else
-                    {
-                        _activityLogger.LogDebug($"[Config Move] Source file not found, skipping: {sourcePath}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _activityLogger.LogException("CopyConfigFiles-General", ex);
-                MessageBox.Show($"An unexpected error occurred while preparing config file locations:\n{ex.Message}",
-                                "Config Location Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         private async Task<string> ReadLastNLinesAsync(string filePath, int n)
         {
             if (!File.Exists(filePath))
@@ -537,9 +487,7 @@ namespace MinimalFirewall
 
                         foreach (var fileName in configFiles)
                         {
-                            string filePath = (fileName == "settings.json")
-                                ? ConfigPathManager.GetSettingsPath()
-                                : ConfigPathManager.GetConfigPath(fileName);
+                            string filePath = ConfigPathManager.GetConfigPath(fileName);
 
                             if (File.Exists(filePath))
                             {
@@ -552,7 +500,7 @@ namespace MinimalFirewall
                         statusForm.UpdateStatus("Adding debug log...");
                         string debugLogPath = ConfigPathManager.GetConfigPath("debug_log.txt");
                         string logContent = await ReadLastNLinesAsync(debugLogPath, 1500);
-                        var logEntry = archive.CreateEntry("debug_log_last500.txt");
+                        var logEntry = archive.CreateEntry("debug_log_last1500.txt");
                         using (var writer = new StreamWriter(logEntry.Open()))
                         {
                             await writer.WriteAsync(logContent);
@@ -601,4 +549,3 @@ namespace MinimalFirewall
         }
     }
 }
-
