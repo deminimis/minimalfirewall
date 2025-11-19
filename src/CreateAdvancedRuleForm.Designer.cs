@@ -1,5 +1,4 @@
-﻿// File:CreateAdvancedRuleForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class CreateAdvancedRuleForm
     {
@@ -56,6 +55,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.Label programPathNoteLabel;
         private System.Windows.Forms.Button browseServiceButton;
         private System.Windows.Forms.ErrorProvider errorProvider1;
+        private System.Windows.Forms.Label labelIcmpExample;
 
         protected override void Dispose(bool disposing)
         {
@@ -72,6 +72,7 @@ namespace MinimalFirewall
         {
             this.components = new System.ComponentModel.Container();
             this.labelName = new System.Windows.Forms.Label();
+            this.labelIcmpExample = new System.Windows.Forms.Label();
             this.ruleNameTextBox = new System.Windows.Forms.TextBox();
             this.labelDescription = new System.Windows.Forms.Label();
             this.descriptionTextBox = new System.Windows.Forms.TextBox();
@@ -442,8 +443,8 @@ namespace MinimalFirewall
             // 
             this.icmpGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
             this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
+            this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
             this.icmpGroupBox.Location = new System.Drawing.Point(15, 423);
             this.icmpGroupBox.Name = "icmpGroupBox";
             this.icmpGroupBox.Size = new System.Drawing.Size(757, 90);
@@ -468,9 +469,36 @@ namespace MinimalFirewall
             this.labelIcmpInfo.AutoSize = true;
             this.labelIcmpInfo.Location = new System.Drawing.Point(15, 25);
             this.labelIcmpInfo.Name = "labelIcmpInfo";
-            this.labelIcmpInfo.Size = new System.Drawing.Size(125, 20);
+            this.labelIcmpInfo.Size = new System.Drawing.Size(89, 20);
             this.labelIcmpInfo.TabIndex = 0;
-            this.labelIcmpInfo.Text = "Type:Code (e.g. 8:0)";
+            this.labelIcmpInfo.Text = "Type:Code";
+            // 
+            // labelIcmpExample
+            // 
+            this.labelIcmpExample.AutoSize = true;
+            this.labelIcmpExample.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.labelIcmpExample.Location = new System.Drawing.Point(107, 52);
+            this.labelIcmpExample.Name = "labelIcmpExample";
+            this.labelIcmpExample.Size = new System.Drawing.Size(180, 20);
+            this.labelIcmpExample.TabIndex = 2;
+            this.labelIcmpExample.Text = "(e.g., 8:0, 3:*, 5, or *)";
+            // 
+            // icmpGroupBox
+            // 
+            this.icmpGroupBox.Controls.Clear(); 
+            this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
+            this.icmpGroupBox.Controls.Add(this.labelIcmpExample);
+            this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
+
+            var labelIcmpExample = new System.Windows.Forms.Label();
+            labelIcmpExample.AutoSize = true;
+            labelIcmpExample.ForeColor = System.Drawing.SystemColors.GrayText;
+            labelIcmpExample.Location = new System.Drawing.Point(107, 52);
+            labelIcmpExample.Name = "labelIcmpExample";
+            labelIcmpExample.Size = new System.Drawing.Size(180, 20);
+            labelIcmpExample.TabIndex = 2;
+            labelIcmpExample.Text = "(e.g., 8:0, 3:*, 5, or *)";
+            this.icmpGroupBox.Controls.Add(labelIcmpExample);
             // 
             // scopeGroupBox
             // 

@@ -1,5 +1,4 @@
-﻿// File: FirewallEventListenerService.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -116,16 +115,12 @@ namespace MinimalFirewall
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
 
-                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}', Service: '{serviceName}', Direction: '{eventDirection}', Protocol: {protocol}, Remote: {remoteAddress}:{remotePort}, FilterId: {filterId}, LayerId: {layerId}");
-
                 string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
                 if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logAction($"[EventListener] Ignoring event for System or empty path: '{appPath}'");
                     return;
                 }
                 appPath = PathResolver.NormalizePath(appPath);
-                _logAction($"[EventListener] Normalized path: '{appPath}', Direction: '{eventDirection}'");
 
                 string notificationKey = $"{appPath}|{eventDirection}|{remoteAddress}|{remotePort}|{protocol}";
                 if (!_pendingNotifications.TryAdd(notificationKey, true))
@@ -260,10 +255,7 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
             string key = $"{appPath}|{direction}|{remoteAddress}|{remotePort}|{protocol}";
-            if (_pendingNotifications.TryRemove(key, out _))
-            {
-                _logAction($"[EventListener] Cleared specific pending notification flag for '{key}'.");
-            }
+            _pendingNotifications.TryRemove(key, out _);
         }
 
         public void ClearPendingNotification(string appPath, string direction)
@@ -274,10 +266,7 @@ namespace MinimalFirewall
             var matchingKeys = _pendingNotifications.Keys.Where(k => k.StartsWith(keyPrefix)).ToList();
             foreach (var k in matchingKeys)
             {
-                if (_pendingNotifications.TryRemove(k, out _))
-                {
-                    _logAction($"[EventListener] Cleared pending notification flag for '{k}' (fallback match).");
-                }
+                _pendingNotifications.TryRemove(k, out _);
             }
         }
 
@@ -297,7 +286,6 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
-                _logAction($"[EventListener] ShouldProcessEvent=false (System or empty path)");
                 return false;
             }
 

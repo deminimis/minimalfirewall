@@ -1,5 +1,4 @@
-﻿// File: RuleWizardForm.Designer.cs
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class RuleWizardForm
     {
@@ -109,7 +108,7 @@ namespace MinimalFirewall
             // 
             // restrictAppButton
             // 
-            this.restrictAppButton.Location = new System.Drawing.Point(50, 284);
+            this.restrictAppButton.Location = new System.Drawing.Point(50, 248);
             this.restrictAppButton.Name = "restrictAppButton";
             this.restrictAppButton.Size = new System.Drawing.Size(434, 28);
             this.restrictAppButton.TabIndex = 7;
@@ -119,7 +118,7 @@ namespace MinimalFirewall
             // 
             // blockDeviceButton
             // 
-            this.blockDeviceButton.Location = new System.Drawing.Point(50, 246);
+            this.blockDeviceButton.Location = new System.Drawing.Point(50, 214);
             this.blockDeviceButton.Name = "blockDeviceButton";
             this.blockDeviceButton.Size = new System.Drawing.Size(434, 28);
             this.blockDeviceButton.TabIndex = 6;
@@ -129,7 +128,7 @@ namespace MinimalFirewall
             // 
             // allowFileShareButton
             // 
-            this.allowFileShareButton.Location = new System.Drawing.Point(50, 208);
+            this.allowFileShareButton.Location = new System.Drawing.Point(50, 180);
             this.allowFileShareButton.Name = "allowFileShareButton";
             this.allowFileShareButton.Size = new System.Drawing.Size(434, 28);
             this.allowFileShareButton.TabIndex = 5;
@@ -139,7 +138,7 @@ namespace MinimalFirewall
             // 
             // blockServiceButton
             // 
-            this.blockServiceButton.Location = new System.Drawing.Point(50, 170);
+            this.blockServiceButton.Location = new System.Drawing.Point(50, 146);
             this.blockServiceButton.Name = "blockServiceButton";
             this.blockServiceButton.Size = new System.Drawing.Size(434, 28);
             this.blockServiceButton.TabIndex = 4;
@@ -149,7 +148,7 @@ namespace MinimalFirewall
             // 
             // advancedRuleButton
             // 
-            this.advancedRuleButton.Location = new System.Drawing.Point(50, 322);
+            this.advancedRuleButton.Location = new System.Drawing.Point(50, 282);
             this.advancedRuleButton.Name = "advancedRuleButton";
             this.advancedRuleButton.Size = new System.Drawing.Size(434, 28);
             this.advancedRuleButton.TabIndex = 3;
@@ -159,7 +158,7 @@ namespace MinimalFirewall
             // 
             // wildcardRuleButton
             // 
-            this.wildcardRuleButton.Location = new System.Drawing.Point(50, 132);
+            this.wildcardRuleButton.Location = new System.Drawing.Point(50, 112);
             this.wildcardRuleButton.Name = "wildcardRuleButton";
             this.wildcardRuleButton.Size = new System.Drawing.Size(434, 28);
             this.wildcardRuleButton.TabIndex = 2;
@@ -169,7 +168,7 @@ namespace MinimalFirewall
             // 
             // portRuleButton
             // 
-            this.portRuleButton.Location = new System.Drawing.Point(50, 94);
+            this.portRuleButton.Location = new System.Drawing.Point(50, 78);
             this.portRuleButton.Name = "portRuleButton";
             this.portRuleButton.Size = new System.Drawing.Size(434, 28);
             this.portRuleButton.TabIndex = 1;
@@ -179,7 +178,7 @@ namespace MinimalFirewall
             // 
             // programRuleButton
             // 
-            this.programRuleButton.Location = new System.Drawing.Point(50, 18);
+            this.programRuleButton.Location = new System.Drawing.Point(50, 10);
             this.programRuleButton.Name = "programRuleButton";
             this.programRuleButton.Size = new System.Drawing.Size(434, 28);
             this.programRuleButton.TabIndex = 0;
@@ -189,7 +188,7 @@ namespace MinimalFirewall
             // 
             // batchProgramRuleButton
             // 
-            this.batchProgramRuleButton.Location = new System.Drawing.Point(50, 56);
+            this.batchProgramRuleButton.Location = new System.Drawing.Point(50, 44);
             this.batchProgramRuleButton.Name = "batchProgramRuleButton";
             this.batchProgramRuleButton.Size = new System.Drawing.Size(434, 28);
             this.batchProgramRuleButton.TabIndex = 8;

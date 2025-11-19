@@ -1,5 +1,4 @@
-﻿// File: MainViewModel.cs
-using Firewall.Traffic.ViewModels;
+﻿using Firewall.Traffic.ViewModels;
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,18 +26,22 @@ namespace MinimalFirewall
         private readonly AppSettings _appSettings;
         private readonly UserActivityLogger _activityLogger;
         private readonly FirewallActionsService _actionsService;
-        private System.Threading.Timer? _sentryRefreshDebounceTimer;
+        private readonly FirewallSnapshotService _snapshotService;
+        private readonly Dictionary<uint, (string Name, string Path, string ServiceName)> _processCache = [];
+
+        private readonly System.Threading.Timer? _sentryRefreshDebounceTimer;
 
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
-        public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = new();
+        public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
         public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
         public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
-        public int UnseenSystemChangesCount => SystemChanges.Count;
+        public int UnseenSystemChangesCount => SystemChanges.Count(c => c.Rule.IsEnabled);
         public event Action? RulesListUpdated;
         public event Action? SystemChangesUpdated;
         public event Action<PendingConnectionViewModel>? PopupRequired;
         public event Action<PendingConnectionViewModel>? DashboardActionProcessed;
+
         public MainViewModel(
             FirewallRuleService firewallRuleService,
             WildcardRuleService wildcardRuleService,
@@ -64,13 +67,15 @@ namespace MinimalFirewall
             _activityLogger = activityLogger;
             _actionsService = actionsService;
 
-            _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
+            _snapshotService = new FirewallSnapshotService();
 
+            _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+
         public void ClearRulesCache()
         {
             _dataService.InvalidateRuleCache();
@@ -93,56 +98,92 @@ namespace MinimalFirewall
         {
             var vms = await Task.Run(() =>
             {
+                progress?.Report(0);
+
                 var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
-                var processInfoCache = new Dictionary<uint, (string Name, string Path, string ServiceName)>();
-                var viewModels = new List<TcpConnectionViewModel>();
-                int total = connections.Count > 0 ? connections.Count : 1;
-                int current = 0;
+
+                if (token.IsCancellationRequested) return new List<TcpConnectionViewModel>();
+
+                progress?.Report(20);
+
+                var currentPids = connections.Select(c => c.ProcessId).Distinct().ToHashSet();
+
+                // Cleanup old cache entries
+                foreach (var cachedPid in _processCache.Keys.ToList())
+                {
+                    if (!currentPids.Contains(cachedPid))
+                    {
+                        _processCache.Remove(cachedPid);
+                    }
+                }
+
+                // Find new PIDs
+                var pidsToResolve = currentPids.Where(pid => !_processCache.ContainsKey(pid)).ToList();
+                int totalToResolve = pidsToResolve.Count > 0 ? pidsToResolve.Count : 1;
+                int resolvedCount = 0;
+
+                // Resolve new PIDs
+                foreach (var pid in pidsToResolve)
+                {
+                    if (token.IsCancellationRequested) break;
+
+                    (string Name, string Path, string ServiceName) info;
+                    try
+                    {
+                        using var p = Process.GetProcessById((int)pid);
+                        string name = p.ProcessName;
+                        string path = string.Empty;
+                        string serviceName = string.Empty;
+
+                        try
+                        {
+                            if (p.MainModule != null) path = p.MainModule.FileName;
+                        }
+                        catch (Win32Exception) { path = "N/A (Access Denied)"; }
+                        catch { }
+
+                        if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                        {
+                            serviceName = SystemDiscoveryService.GetServicesByPID(pid.ToString());
+                        }
+                        info = (name, path, serviceName);
+                    }
+                    catch (ArgumentException)
+                    {
+                        info = ("(Exited)", string.Empty, string.Empty);
+                    }
+                    catch
+                    {
+                        info = (pid == 4 ? "System" : "Unknown", string.Empty, string.Empty);
+                    }
+
+                    _processCache[pid] = info;
+
+                    resolvedCount++;
+                    int currentProgress = 20 + (resolvedCount * 60 / totalToResolve);
+                    progress?.Report(currentProgress);
+                }
+
+                // Build ViewModels
+                var viewModels = new List<TcpConnectionViewModel>(connections.Count);
 
                 foreach (var conn in connections)
                 {
-                    if (token.IsCancellationRequested)
+                    if (!_processCache.TryGetValue(conn.ProcessId, out var info))
                     {
-                        break;
+                        info = ($"PID: {conn.ProcessId}", string.Empty, string.Empty);
                     }
 
-                    if (!processInfoCache.TryGetValue(conn.ProcessId, out var info))
-                    {
-                        try
-                        {
-                            using (var p = Process.GetProcessById((int)conn.ProcessId))
-                            {
-                                string name = p.ProcessName;
-                                string path = string.Empty;
-                                string serviceName = string.Empty;
-                                try { if (p.MainModule != null) path = p.MainModule.FileName; }
-                                catch (Win32Exception) { path = "N/A (Access Denied)"; }
-
-                                if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    serviceName = SystemDiscoveryService.GetServicesByPID(conn.ProcessId.ToString());
-                                }
-                                info = (name, path, serviceName);
-                            }
-                        }
-                        catch (ArgumentException) { info = ("(Exited)", string.Empty, string.Empty); }
-                        catch { info = ("System", string.Empty, string.Empty); }
-                        processInfoCache[conn.ProcessId] = info;
-                    }
                     viewModels.Add(new TcpConnectionViewModel(conn, info, _backgroundTaskService));
-                    current++;
-                    progress?.Report((current * 100) / total);
                 }
+
+                progress?.Report(100);
                 return viewModels;
             }, token);
 
             if (token.IsCancellationRequested) return;
 
-            TrafficMonitorViewModel.ActiveConnections.Clear();
-            foreach (var vm in vms)
-            {
-                TrafficMonitorViewModel.ActiveConnections.Add(vm);
-            }
+            TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>(vms);
         }
 
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
@@ -170,7 +211,7 @@ namespace MinimalFirewall
             RulesListUpdated?.Invoke();
         }
 
-        private Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
+        private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
         {
             return columnIndex switch
             {
@@ -234,8 +275,10 @@ namespace MinimalFirewall
                 {
                     Name = pending.FileName,
                     ApplicationName = pending.AppPath,
-                    InboundStatus = parsedDirection == Directions.Incoming ? parsedAction.ToString() : "N/A",
-                    OutboundStatus = parsedDirection == Directions.Outgoing ? parsedAction.ToString() : "N/A",
+                    InboundStatus = parsedDirection == Directions.Incoming ?
+                    parsedAction.ToString() : "N/A",
+                    OutboundStatus = parsedDirection == Directions.Outgoing ?
+                    parsedAction.ToString() : "N/A",
                     Type = RuleType.Program,
                     IsEnabled = true,
                     Grouping = MFWConstants.MainRuleGroup,
@@ -262,6 +305,33 @@ namespace MinimalFirewall
             var newChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker, progress, token), token);
             if (token.IsCancellationRequested) return;
 
+            var knownState = _snapshotService.LoadSnapshot();
+            bool isFirstInitialization = knownState.Count == 0 && !_snapshotService.SnapshotExists();
+
+            if (_appSettings.QuarantineMode)
+            {
+                foreach (var change in newChanges)
+                {
+                    bool isFresh = !knownState.Contains(change.Name);
+
+                    if (change.Type == ChangeType.New && change.Rule.IsEnabled && isFresh && !isFirstInitialization)
+                    {
+                        var payload = new ForeignRuleChangePayload { Change = change };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload));
+
+                        change.Rule.IsEnabled = false;
+                        change.Rule.Status = "Blocked (Pending Review)";
+                    }
+                    else if (change.Type == ChangeType.New && !change.Rule.IsEnabled)
+                    {
+                        change.Rule.Status = "Blocked (Pending Review)";
+                    }
+                }
+            }
+
+            var currentRuleNames = newChanges.Select(c => c.Name).ToList();
+            _snapshotService.SaveSnapshot(currentRuleNames);
+
             SystemChanges.Clear();
             SystemChanges.AddRange(newChanges);
             SystemChangesUpdated?.Invoke();
@@ -270,6 +340,7 @@ namespace MinimalFirewall
         public async Task RebuildBaselineAsync()
         {
             _foreignRuleTracker.Clear();
+            _snapshotService.DeleteSnapshot();
             await ScanForSystemChangesAsync(CancellationToken.None);
         }
 
@@ -290,6 +361,17 @@ namespace MinimalFirewall
             {
                 var payload = new ForeignRuleChangePayload { Change = change };
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteForeignRule, payload));
+                SystemChanges.Remove(change);
+                SystemChangesUpdated?.Invoke();
+            }
+        }
+
+        public void DisableForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload));
                 SystemChanges.Remove(change);
                 SystemChangesUpdated?.Invoke();
             }
@@ -357,7 +439,7 @@ namespace MinimalFirewall
                 _wildcardRuleService.RemoveRule(wildcardRule);
             }
 
-            if (standardRuleNamesToDelete.Any())
+            if (standardRuleNamesToDelete.Count > 0)
             {
                 var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload));
@@ -376,8 +458,10 @@ namespace MinimalFirewall
                 Description = advancedRule.Description,
                 Grouping = advancedRule.Grouping,
                 IsEnabled = advancedRule.IsEnabled,
-                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ? advancedRule.Status : "N/A",
-                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ? advancedRule.Status : "N/A",
+                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ?
+                advancedRule.Status : "N/A",
+                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ?
+                advancedRule.Status : "N/A",
                 ProtocolName = advancedRule.ProtocolName,
                 LocalPorts = advancedRule.LocalPorts,
                 RemotePorts = advancedRule.RemotePorts,
@@ -385,7 +469,7 @@ namespace MinimalFirewall
                 RemoteAddresses = advancedRule.RemoteAddresses,
                 Profiles = advancedRule.Profiles,
                 Type = advancedRule.Type,
-                UnderlyingRules = new List<AdvancedRuleViewModel> { advancedRule }
+                UnderlyingRules = [advancedRule]
             };
         }
 
@@ -403,8 +487,10 @@ namespace MinimalFirewall
                 Description = vm.Description,
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
+                vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
+                vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
@@ -425,8 +511,10 @@ namespace MinimalFirewall
             {
                 Name = Path.GetFileName(appPath),
                 ApplicationName = appPath,
-                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ? parsedAction.ToString() : "N/A",
-                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ? parsedAction.ToString() : "N/A",
+                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ?
+                parsedAction.ToString() : "N/A",
+                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ?
+                parsedAction.ToString() : "N/A",
                 Type = RuleType.Program,
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
@@ -437,11 +525,12 @@ namespace MinimalFirewall
                 LocalAddresses = "Any",
                 RemoteAddresses = "Any",
                 Description = "N/A",
-                ServiceName = "N/A"
+                ServiceName =
+                "N/A"
             };
             AllAggregatedRules.Add(newAggregatedRule);
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
-            var payload = new ApplyApplicationRulePayload { AppPaths = { appPath }, Action = action };
+            var payload = new ApplyApplicationRulePayload { AppPaths = [appPath], Action = action };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
         }
 
@@ -487,8 +576,10 @@ namespace MinimalFirewall
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Allow",
-                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ? Directions.Incoming : Directions.Outgoing,
-                Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
+                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ?
+                Directions.Incoming : Directions.Outgoing,
+                Protocol = int.TryParse(pending.Protocol, out int proto) ?
+                proto : 256,
                 ApplicationName = pending.AppPath,
                 RemotePorts = pending.RemotePort,
                 RemoteAddresses = pending.RemoteAddress,
@@ -506,8 +597,10 @@ namespace MinimalFirewall
                 Description = vm.Description,
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
+                vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
+                vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
@@ -515,13 +608,14 @@ namespace MinimalFirewall
                 RemoteAddresses = vm.RemoteAddresses,
                 Profiles = vm.Profiles,
                 Type = vm.Type,
-                UnderlyingRules = new List<AdvancedRuleViewModel> { vm }
+                UnderlyingRules = [vm]
             };
             AllAggregatedRules.Add(newAggregatedRule);
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
 
             DashboardActionProcessed?.Invoke(pending);
         }
+
         public async Task CleanUpOrphanedRulesAsync()
         {
             using var statusForm = new StatusForm("Scanning for orphaned rules...", _appSettings);
@@ -535,7 +629,6 @@ namespace MinimalFirewall
                     cts.Cancel();
                 }
             };
-
             try
             {
                 var deletedRules = await _actionsService.CleanUpOrphanedRulesAsync(cts.Token, progress);

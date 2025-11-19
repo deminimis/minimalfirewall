@@ -1,5 +1,4 @@
-﻿// File: UtilityServices.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -137,8 +136,6 @@ namespace MinimalFirewall
                     string errors = errorBuilder.ToString();
 
                     Debug.WriteLine($"[AdminTask] Exit Code: {process.ExitCode}");
-                    if (!string.IsNullOrWhiteSpace(output))
-                        Debug.WriteLine($"[AdminTask] Standard Output:\n{output}");
                     if (!string.IsNullOrWhiteSpace(errors))
                         Messenger.MessageBox($"An error occurred during an administrative task:\n\n{errors}", "Admin Task Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
@@ -148,7 +145,6 @@ namespace MinimalFirewall
                     if (!process.HasExited) process.Kill();
                     Messenger.MessageBox("An administrative task timed out and may not have completed successfully.", "Execution Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                Debug.WriteLine($"[AdminTask] Execution finished for: {fileName}");
             }
             catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or ObjectDisposedException or InvalidOperationException)
             {
@@ -241,10 +237,6 @@ namespace MinimalFirewall
                 {
                     Debug.WriteLine($"[Startup] Mismatch detected. Stored: '{normalizedStoredPath}', Current: '{normalizedCurrentPath}'. Correcting task.");
                     SetStartup(true);
-                }
-                else
-                {
-                    Debug.WriteLine($"[Startup] Startup task path is correct.");
                 }
             }
             catch (Exception ex)

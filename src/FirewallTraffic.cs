@@ -258,14 +258,29 @@ namespace Firewall.Traffic.ViewModels
         private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    public class TrafficMonitorViewModel
+    public class TrafficMonitorViewModel : INotifyPropertyChanged
     {
-        public ObservableCollection<TcpConnectionViewModel> ActiveConnections { get; } = new ObservableCollection<TcpConnectionViewModel>();
+        private ObservableCollection<TcpConnectionViewModel> _activeConnections = new ObservableCollection<TcpConnectionViewModel>();
+        public ObservableCollection<TcpConnectionViewModel> ActiveConnections
+        {
+            get => _activeConnections;
+            set
+            {
+                if (_activeConnections != value)
+                {
+                    _activeConnections = value;
+                    OnPropertyChanged(nameof(ActiveConnections));
+                }
+            }
+        }
 
         public void StopMonitoring()
         {
             ActiveConnections.Clear();
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class RelayCommand : ICommand

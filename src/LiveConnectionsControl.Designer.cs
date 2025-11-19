@@ -91,7 +91,6 @@
             this.liveConnectionsDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.liveConnectionsDataGridView_CellMouseDown);
             this.liveConnectionsDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.liveConnectionsDataGridView_CellMouseEnter);
             this.liveConnectionsDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.liveConnectionsDataGridView_CellMouseLeave);
-            this.liveConnectionsDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.liveConnectionsDataGridView_ColumnHeaderMouseClick);
             this.liveConnectionsDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.liveConnectionsDataGridView_RowPostPaint);
             // 
             // connIconColumn
@@ -256,7 +255,6 @@
             this.liveConnectionsContextMenu.ResumeLayout(false);
             this.disabledPanel.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
 
         #endregion

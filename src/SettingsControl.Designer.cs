@@ -33,6 +33,7 @@
             this.versionLabel = new System.Windows.Forms.Label();
             this.checkForUpdatesButton = new System.Windows.Forms.Button();
             this.openFirewallButton = new System.Windows.Forms.Button();
+            this.openAppDataButton = new System.Windows.Forms.Button();
             this.forumLink = new System.Windows.Forms.LinkLabel();
             this.reportProblemLink = new System.Windows.Forms.LinkLabel();
             this.helpLink = new System.Windows.Forms.LinkLabel();
@@ -44,7 +45,6 @@
             this.closeToTraySwitch = new System.Windows.Forms.CheckBox();
             this.mainSettingsPanel = new System.Windows.Forms.Panel();
             this.exportDiagnosticButton = new System.Windows.Forms.Button();
-            this.useAppDataSwitch = new System.Windows.Forms.CheckBox();
             this.importReplaceButton = new System.Windows.Forms.Button();
             this.importMergeButton = new System.Windows.Forms.Button();
             this.exportRulesButton = new System.Windows.Forms.Button();
@@ -232,6 +232,19 @@
             this.openFirewallButton.Text = "Open Windows Firewall";
             this.openFirewallButton.Click += new System.EventHandler(this.OpenFirewallButton_Click);
             // 
+            // openAppDataButton
+            // 
+            this.openAppDataButton.FlatAppearance.BorderSize = 0;
+            this.openAppDataButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.openAppDataButton.Location = new System.Drawing.Point(223, 420);
+            this.openAppDataButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.openAppDataButton.Name = "openAppDataButton";
+            this.openAppDataButton.Size = new System.Drawing.Size(183, 37);
+            this.openAppDataButton.TabIndex = 32;
+            this.openAppDataButton.Text = "Open Config Folder";
+            this.openAppDataButton.UseVisualStyleBackColor = true;
+            this.openAppDataButton.Click += new System.EventHandler(this.openAppDataButton_Click);
+            // 
             // forumLink
             // 
             this.forumLink.AutoSize = true;
@@ -342,7 +355,6 @@
             // 
             this.mainSettingsPanel.AutoScroll = true;
             this.mainSettingsPanel.Controls.Add(this.exportDiagnosticButton);
-            this.mainSettingsPanel.Controls.Add(this.useAppDataSwitch);
             this.mainSettingsPanel.Controls.Add(this.importReplaceButton);
             this.mainSettingsPanel.Controls.Add(this.importMergeButton);
             this.mainSettingsPanel.Controls.Add(this.exportRulesButton);
@@ -360,6 +372,7 @@
             this.mainSettingsPanel.Controls.Add(this.versionLabel);
             this.mainSettingsPanel.Controls.Add(this.checkForUpdatesButton);
             this.mainSettingsPanel.Controls.Add(this.openFirewallButton);
+            this.mainSettingsPanel.Controls.Add(this.openAppDataButton);
             this.mainSettingsPanel.Controls.Add(this.forumLink);
             this.mainSettingsPanel.Controls.Add(this.reportProblemLink);
             this.mainSettingsPanel.Controls.Add(this.helpLink);
@@ -387,18 +400,6 @@
             this.exportDiagnosticButton.Text = "Export Diagnostic Package...";
             this.exportDiagnosticButton.UseVisualStyleBackColor = true;
             this.exportDiagnosticButton.Click += new System.EventHandler(this.exportDiagnosticButton_Click);
-            // 
-            // useAppDataSwitch
-            // 
-            this.useAppDataSwitch.AutoSize = true;
-            this.useAppDataSwitch.Location = new System.Drawing.Point(350, 247);
-            this.useAppDataSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.useAppDataSwitch.Name = "useAppDataSwitch";
-            this.useAppDataSwitch.Size = new System.Drawing.Size(247, 24);
-            this.useAppDataSwitch.TabIndex = 31;
-            this.useAppDataSwitch.Text = "Store config files in %AppData%";
-            this.useAppDataSwitch.UseVisualStyleBackColor = true;
-            this.useAppDataSwitch.CheckedChanged += new System.EventHandler(this.useAppDataSwitch_CheckedChanged);
             // 
             // importReplaceButton
             // 
@@ -484,6 +485,7 @@
         private System.Windows.Forms.Label versionLabel;
         private System.Windows.Forms.Button checkForUpdatesButton;
         private System.Windows.Forms.Button openFirewallButton;
+        private System.Windows.Forms.Button openAppDataButton;
         private System.Windows.Forms.LinkLabel forumLink;
         private System.Windows.Forms.LinkLabel reportProblemLink;
         private System.Windows.Forms.LinkLabel helpLink;
@@ -498,9 +500,7 @@
         private Button importReplaceButton;
         private Button importMergeButton;
         private Button exportRulesButton;
-        private CheckBox useAppDataSwitch;
         private Button exportDiagnosticButton;
         private Button allowWindowsUpdateButton;
     }
 }
-
