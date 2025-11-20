@@ -36,7 +36,6 @@ namespace MinimalFirewall
         private readonly BlockingCollection<FirewallTask> _taskQueue = new();
         private readonly Task _worker;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
-
         // Dependencies
         private readonly FirewallActionsService _actionsService;
         private readonly UserActivityLogger _activityLogger;
@@ -46,6 +45,7 @@ namespace MinimalFirewall
         private readonly Dictionary<FirewallTaskType, IFirewallTaskHandler> _handlers;
 
         public event Action<int>? QueueCountChanged;
+        public event Action<string>? StatusChanged; 
         public event Action? WildcardRulesChanged;
 
         public BackgroundFirewallTaskService(
@@ -77,8 +77,8 @@ namespace MinimalFirewall
         {
             foreach (var task in _taskQueue.GetConsumingEnumerable(_cancellationTokenSource.Token))
             {
+                StatusChanged?.Invoke(task.Description);
                 TaskResult result = TaskResult.None;
-
                 try
                 {
                     if (_handlers.TryGetValue(task.TaskType, out var handler))
@@ -108,7 +108,6 @@ namespace MinimalFirewall
                 }
                 finally
                 {
-                    // Perform updates based on what the handler returned
                     if (result.RequiresCacheInvalidation)
                     {
                         _dataService.InvalidateRuleCache();
@@ -122,6 +121,20 @@ namespace MinimalFirewall
 
                     QueueCountChanged?.Invoke(_taskQueue.Count);
                 }
+
+                if (_taskQueue.Count == 0)
+                {
+                    try
+                    {
+                        await Task.Delay(1500, _cancellationTokenSource.Token);
+                    }
+                    catch (OperationCanceledException) { break; }
+
+                    if (_taskQueue.Count == 0)
+                    {
+                        StatusChanged?.Invoke("Ready");
+                    }
+                }
             }
         }
 
@@ -129,74 +142,56 @@ namespace MinimalFirewall
         private Dictionary<FirewallTaskType, IFirewallTaskHandler> RegisterHandlers()
         {
             var map = new Dictionary<FirewallTaskType, IFirewallTaskHandler>();
-
             // Standard Rule Handlers 
             map[FirewallTaskType.ApplyApplicationRule] = new ActionHandler<ApplyApplicationRulePayload>(
                 p => _actionsService.ApplyApplicationRuleChange(p.AppPaths, p.Action, p.WildcardSourcePath), TaskResult.CacheOnly);
-
             map[FirewallTaskType.ApplyServiceRule] = new ActionHandler<ApplyServiceRulePayload>(
                 p => _actionsService.ApplyServiceRuleChange(p.ServiceName, p.Action, p.AppPath), TaskResult.CacheOnly);
-
             map[FirewallTaskType.ApplyUwpRule] = new ActionHandler<ApplyUwpRulePayload>(
                 p => _actionsService.ApplyUwpRuleChange(p.UwpApps, p.Action), TaskResult.CacheOnly);
-
             map[FirewallTaskType.CreateAdvancedRule] = new ActionHandler<CreateAdvancedRulePayload>(
                 p => _actionsService.CreateAdvancedRule(p.ViewModel, p.InterfaceTypes, p.IcmpTypesAndCodes), TaskResult.CacheOnly);
-
             map[FirewallTaskType.DeleteApplicationRules] = new ActionHandler<DeleteRulesPayload>(
                 p => _actionsService.DeleteApplicationRules(p.RuleIdentifiers), TaskResult.CacheOnly);
-
             map[FirewallTaskType.DeleteUwpRules] = new ActionHandler<DeleteRulesPayload>(
                 p => _actionsService.DeleteUwpRules(p.RuleIdentifiers), TaskResult.CacheOnly);
-
             map[FirewallTaskType.DeleteAdvancedRules] = new ActionHandler<DeleteRulesPayload>(
                 p => _actionsService.DeleteAdvancedRules(p.RuleIdentifiers), TaskResult.CacheOnly);
-
             map[FirewallTaskType.ProcessPendingConnection] = new ActionHandler<ProcessPendingConnectionPayload>(
                p => _actionsService.ProcessPendingConnection(p.PendingConnection, p.Decision, p.Duration, p.TrustPublisher), TaskResult.CacheOnly);
-
             map[FirewallTaskType.DeleteForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
                 p => _actionsService.DeleteForeignRule(p.Change), TaskResult.CacheOnly);
 
             map[FirewallTaskType.DisableForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
-                p => _actionsService.DisableForeignRule(p.Change), TaskResult.CacheOnly);
+                p => _actionsService.DisableForeignRule(p.Change, p.Acknowledge), TaskResult.CacheOnly);
+
+            map[FirewallTaskType.EnableForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
+                p => _actionsService.EnableForeignRule(p.Change, p.Acknowledge), TaskResult.CacheOnly);
 
             map[FirewallTaskType.QuarantineForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
                p => _actionsService.QuarantineForeignRule(p.Change), TaskResult.CacheOnly);
-
             map[FirewallTaskType.SetGroupEnabledState] = new ActionHandler<SetGroupEnabledStatePayload>(
                p => _actionsService.SetGroupEnabledState(p.GroupName, p.IsEnabled), TaskResult.CacheOnly);
-
             map[FirewallTaskType.DeleteGroup] = new AsyncActionHandler<string>(
                 async p => await _actionsService.DeleteGroupAsync(p), TaskResult.CacheOnly);
-
             map[FirewallTaskType.AcceptForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
                 p => _actionsService.AcceptForeignRule(p.Change), TaskResult.None);
-
             map[FirewallTaskType.AcceptAllForeignRules] = new ActionHandler<AllForeignRuleChangesPayload>(
                 p => _actionsService.AcceptAllForeignRules(p.Changes), TaskResult.None);
-
             map[FirewallTaskType.AddWildcardRule] = new ActionHandler<WildcardRule>(
                 p => _wildcardRuleService.AddRule(p), TaskResult.WildcardOnly);
-
             map[FirewallTaskType.UpdateWildcardRule] = new ActionHandler<UpdateWildcardRulePayload>(
                 p => _actionsService.UpdateWildcardRule(p.OldRule, p.NewRule), new TaskResult(true, true));
-
             map[FirewallTaskType.RemoveWildcardRule] = new ActionHandler<DeleteWildcardRulePayload>(
                 p => _actionsService.RemoveWildcardRule(p.Wildcard), new TaskResult(true, true));
-
             map[FirewallTaskType.DeleteWildcardRules] = new ActionHandler<DeleteWildcardRulePayload>(
                 p => _actionsService.DeleteRulesForWildcard(p.Wildcard), TaskResult.CacheOnly);
-
             map[FirewallTaskType.RemoveWildcardDefinitionOnly] = new ActionHandler<DeleteWildcardRulePayload>(
                 p => _actionsService.RemoveWildcardDefinitionOnly(p.Wildcard), TaskResult.WildcardOnly);
-
             map[FirewallTaskType.DeleteAllMfwRules] = new ActionHandler<object>(
                 _ => _actionsService.DeleteAllMfwRules(), TaskResult.CacheOnly);
-
             map[FirewallTaskType.ImportRules] = new AsyncActionHandler<ImportRulesPayload>(
                 async p => await _actionsService.ImportRulesAsync(p.JsonContent, p.Replace), TaskResult.CacheOnly);
-
             return map;
         }
 

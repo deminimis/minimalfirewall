@@ -424,7 +424,7 @@ namespace MinimalFirewall
                 MessageBox.Show(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
                      "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
-                     "Potential Causes:\n" +
+                    "Potential Causes:\n" +
                     "1. A local or domain Group Policy is preventing this change.\n" +
                     "2. Other security software is blocking this action.\n\n" +
                     "The firewall's default policy will be set back to 'Allow' for safety.",
@@ -621,21 +621,37 @@ namespace MinimalFirewall
             if (change.Rule?.Name is not null)
             {
                 firewallService.EnableRuleByName(change.Rule.Name);
-
                 foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
                 activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
                 activityLogger.LogDebug($"Sentry: Accepted and Enabled foreign rule '{change.Rule.Name}'");
             }
         }
 
-        public void DisableForeignRule(FirewallRuleChange change)
+        public void EnableForeignRule(FirewallRuleChange change, bool acknowledge = true)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                firewallService.EnableRuleByName(change.Rule.Name);
+                if (acknowledge)
+                {
+                    foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                }
+                activityLogger.LogChange("Foreign Rule Enabled", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: Enabled foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
+            }
+        }
+
+        public void DisableForeignRule(FirewallRuleChange change, bool acknowledge = true)
         {
             if (change.Rule?.Name is not null)
             {
                 firewallService.DisableRuleByName(change.Rule.Name);
-                foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                if (acknowledge)
+                {
+                    foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                }
                 activityLogger.LogChange("Foreign Rule Disabled", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Disabled and acknowledged foreign rule '{change.Rule.Name}'");
+                activityLogger.LogDebug($"Sentry: Disabled foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
             }
         }
 
@@ -842,12 +858,12 @@ namespace MinimalFirewall
                 if (vm.Protocol == ProtocolTypes.TCP.Value || vm.Protocol == ProtocolTypes.UDP.Value || vm.Protocol == ProtocolTypes.Any.Value)
                 {
                     firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ?
-                        vm.LocalPorts : "*";
+                    vm.LocalPorts : "*";
                     firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
                 }
 
                 firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ?
-                    vm.LocalAddresses : "*";
+                vm.LocalAddresses : "*";
                 firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
 
                 NET_FW_PROFILE_TYPE2_ profiles = 0;
@@ -861,7 +877,7 @@ namespace MinimalFirewall
                 if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
                 {
                     firewallRule.IcmpTypesAndCodes = !string.IsNullOrWhiteSpace(icmpTypesAndCodes) ?
-                        icmpTypesAndCodes : "*";
+                    icmpTypesAndCodes : "*";
                 }
                 else
                 {
@@ -888,7 +904,7 @@ namespace MinimalFirewall
             if (action.Contains("(All)"))
             {
                 parsedDirection = Directions.Incoming |
-                    Directions.Outgoing;
+                Directions.Outgoing;
             }
             else
             {
@@ -918,7 +934,7 @@ namespace MinimalFirewall
             }
 
             string actionStr = parsedAction == Actions.Allow ?
-                "" : "Block ";
+            "" : "Block ";
             string inName = $"{appName} - {actionStr}In";
             string outName = $"{appName} - {actionStr}Out";
             if (parsedDirection.HasFlag(Directions.Incoming))
@@ -1224,17 +1240,17 @@ namespace MinimalFirewall
             foreach (var sName in servicesToCreateRulesFor)
             {
                 string ruleNameBase = string.IsNullOrEmpty(sName) ?
-                    appNameBase : (sName == "*" ? appNameBase : sName);
+                appNameBase : (sName == "*" ? appNameBase : sName);
 
                 if (rule.Protocol == ProtocolTypes.Any.Value)
                 {
                     string actionStr = parsedAction == Actions.Allow ?
-                        "" : "Block ";
+                    "" : "Block ";
                     var protocolsToCreate = new List<int> { 6, 17 };
                     foreach (var protocol in protocolsToCreate)
                     {
                         string protocolSuffix = (protocol == 6) ?
-                            " - TCP" : " - UDP";
+                        " - TCP" : " - UDP";
                         if (parsedDirection.HasFlag(Directions.Incoming))
                         {
                             createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);

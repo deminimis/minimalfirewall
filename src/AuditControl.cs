@@ -9,7 +9,6 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO;
-
 namespace MinimalFirewall
 {
     public partial class AuditControl : UserControl
@@ -22,7 +21,6 @@ namespace MinimalFirewall
         private FirewallSentryService _firewallSentryService = null!;
         private DarkModeCS _dm = null!;
         private BindingSource _bindingSource = null!;
-
         public AuditControl()
         {
             InitializeComponent();
@@ -46,8 +44,11 @@ namespace MinimalFirewall
             _bindingSource = new BindingSource();
             systemChangesDataGridView.DataSource = _bindingSource;
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
+            _viewModel.StatusTextChanged += OnStatusTextChanged; 
             auditSearchTextBox.Text = _appSettings.AuditSearchText;
             quarantineCheckBox.Checked = _appSettings.QuarantineMode;
+
+            toolTip1.SetToolTip(rebuildBaselineButton, "Unarchives all hidden rules, making them visible again in this list.");
         }
 
         private void OnSystemChangesUpdated()
@@ -60,6 +61,16 @@ namespace MinimalFirewall
             ApplySearchFilter();
         }
 
+        private void OnStatusTextChanged(string text)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(() => OnStatusTextChanged(text));
+                return;
+            }
+            statusLabel.Text = text;
+        }
+
         public void ApplyThemeFixes()
         {
             if (_dm == null) return;
@@ -70,11 +81,15 @@ namespace MinimalFirewall
             {
                 rebuildBaselineButton.ForeColor = Color.White;
                 quarantineCheckBox.ForeColor = Color.White;
+                statusStrip1.BackColor = _dm.OScolors.Surface;
+                statusLabel.ForeColor = _dm.OScolors.TextActive;
             }
             else
             {
                 rebuildBaselineButton.ForeColor = SystemColors.ControlText;
                 quarantineCheckBox.ForeColor = SystemColors.ControlText;
+                statusStrip1.BackColor = SystemColors.Control;
+                statusLabel.ForeColor = SystemColors.ControlText;
             }
         }
 
@@ -88,13 +103,11 @@ namespace MinimalFirewall
                                                       c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                                                       c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                                                       c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase));
-
             var bindableList = new SortableBindingList<FirewallRuleChange>([.. filteredChanges]);
 
             int sortColIndex = _appSettings.AuditSortColumn;
             ListSortDirection sortDirection = _appSettings.AuditSortOrder == 0 ?
                 ListSortDirection.Ascending : ListSortDirection.Descending;
-
             if (sortColIndex >= 0 && sortColIndex < systemChangesDataGridView.Columns.Count)
             {
                 var column = systemChangesDataGridView.Columns[sortColIndex];
@@ -117,16 +130,6 @@ namespace MinimalFirewall
             _bindingSource.DataSource = bindableList;
             _bindingSource.ResetBindings(false);
             systemChangesDataGridView.Refresh();
-        }
-
-        private void AcceptAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (_viewModel.SystemChanges.Count == 0) return;
-            var result = DarkModeForms.Messenger.MessageBox($"Are you sure you want to accept all {_viewModel.SystemChanges.Count} detected changes? They will be hidden from this list.", "Confirm Accept All", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (result == DialogResult.Yes)
-            {
-                _viewModel.AcceptAllForeignRules();
-            }
         }
 
         private async void rebuildBaselineButton_Click(object sender, EventArgs e)
@@ -156,7 +159,8 @@ namespace MinimalFirewall
             int newSortOrder = 0;
             if (_appSettings.AuditSortColumn == e.ColumnIndex)
             {
-                newSortOrder = _appSettings.AuditSortOrder == 0 ? 1 : 0;
+                newSortOrder = _appSettings.AuditSortOrder == 0 ?
+                1 : 0;
             }
 
             _appSettings.AuditSortColumn = e.ColumnIndex;
@@ -188,15 +192,34 @@ namespace MinimalFirewall
             {
                 openFileLocationToolStripMenuItem.Enabled = false;
                 deleteToolStripMenuItem.Enabled = false;
-                acceptSelectedToolStripMenuItem.Enabled = false;
+                archiveSelectedToolStripMenuItem.Enabled = false;
+                enableSelectedToolStripMenuItem.Enabled = false;
                 disableSelectedToolStripMenuItem.Enabled = false;
                 return;
             }
 
-            bool multiple = systemChangesDataGridView.SelectedRows.Count > 0;
-            deleteToolStripMenuItem.Enabled = multiple;
-            acceptSelectedToolStripMenuItem.Enabled = multiple;
-            disableSelectedToolStripMenuItem.Enabled = multiple;
+            bool hasEnabledItems = false;
+            bool hasDisabledItems = false;
+
+            foreach (DataGridViewRow row in systemChangesDataGridView.SelectedRows)
+            {
+                if (row.DataBoundItem is FirewallRuleChange change && change.Rule != null)
+                {
+                    if (change.Rule.IsEnabled)
+                        hasEnabledItems = true;
+                    else
+                        hasDisabledItems = true;
+                }
+            }
+
+            deleteToolStripMenuItem.Enabled = true;
+            archiveSelectedToolStripMenuItem.Enabled = true;
+
+            enableSelectedToolStripMenuItem.Visible = hasDisabledItems;
+            enableSelectedToolStripMenuItem.Enabled = hasDisabledItems;
+
+            disableSelectedToolStripMenuItem.Visible = hasEnabledItems;
+            disableSelectedToolStripMenuItem.Enabled = hasEnabledItems;
 
             if (!TryGetSelectedAppContext(out string? appPath))
             {
@@ -207,7 +230,7 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || Directory.Exists(appPath));
         }
 
-        private void acceptSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        private void archiveSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count == 0) return;
             var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
@@ -220,19 +243,38 @@ namespace MinimalFirewall
             }
         }
 
+        private void enableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
+            var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
+                .Where(r => r.DataBoundItem is FirewallRuleChange)
+                .ToList();
+
+            foreach (var row in rows)
+            {
+                if (row.DataBoundItem is FirewallRuleChange change)
+                {
+                    _viewModel.EnableForeignRule(change);
+                    systemChangesDataGridView.InvalidateRow(row.Index); 
+                }
+            }
+        }
+
         private void disableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count == 0) return;
-            var result = DarkModeForms.Messenger.MessageBox($"Are you sure you want to disable {systemChangesDataGridView.SelectedRows.Count} selected rule(s)?\nThis will keep the rules in the firewall but turn them off.", "Confirm Disable", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (result != DialogResult.Yes) return;
 
             var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
-                .Select(r => r.DataBoundItem as FirewallRuleChange)
-                .Where(c => c != null)
+                .Where(r => r.DataBoundItem is FirewallRuleChange)
                 .ToList();
-            foreach (var change in rows)
+
+            foreach (var row in rows)
             {
-                _viewModel.DisableForeignRule(change!);
+                if (row.DataBoundItem is FirewallRuleChange change)
+                {
+                    _viewModel.DisableForeignRule(change);
+                    systemChangesDataGridView.InvalidateRow(row.Index); 
+                }
             }
         }
 
@@ -315,28 +357,6 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-            var grid = (DataGridView)sender;
-            var column = grid.Columns[e.ColumnIndex];
-
-            if (grid.Rows[e.RowIndex].DataBoundItem is FirewallRuleChange change)
-            {
-                if (column is DataGridViewButtonColumn)
-                {
-                    if (column.Name == "acceptButtonColumn")
-                    {
-                        _viewModel.AcceptForeignRule(change);
-                    }
-                    else if (column.Name == "deleteButtonColumn")
-                    {
-                        _viewModel.DisableForeignRule(change);
-                    }
-                }
-            }
-        }
-
         private void systemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -353,7 +373,6 @@ namespace MinimalFirewall
                 rowBackColor = Color.FromArgb(220, 255, 220);
             else
                 rowBackColor = Color.FromArgb(255, 255, 220);
-
             if (change.Rule is { IsEnabled: false })
             {
                 foreColor = Color.DimGray;
@@ -368,17 +387,6 @@ namespace MinimalFirewall
             {
                 e.Value = dt.ToString("G");
                 e.FormattingApplied = true;
-            }
-
-            if (column.Name == "acceptButtonColumn")
-            {
-                e.CellStyle!.BackColor = Color.FromArgb(108, 117, 125);
-                e.CellStyle.ForeColor = Color.White;
-            }
-            else if (column.Name == "deleteButtonColumn")
-            {
-                e.CellStyle!.BackColor = Color.FromArgb(52, 58, 64);
-                e.CellStyle.ForeColor = Color.White;
             }
             else
             {

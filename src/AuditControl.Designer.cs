@@ -5,13 +5,13 @@
         private System.Windows.Forms.TextBox auditSearchTextBox;
         private System.Windows.Forms.Button rebuildBaselineButton;
         private System.Windows.Forms.ContextMenuStrip auditContextMenu;
-        private System.Windows.Forms.ToolStripMenuItem acceptAllToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem acceptSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem archiveSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem enableSelectedToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem disableSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.Panel topPanel;
         private System.Windows.Forms.CheckBox quarantineCheckBox;
@@ -19,8 +19,8 @@
         private System.Windows.Forms.SplitContainer splitContainer;
         private System.Windows.Forms.RichTextBox diffRichTextBox;
         private System.Windows.Forms.Label diffLabel;
-        private System.Windows.Forms.DataGridViewButtonColumn acceptButtonColumn;
-        private System.Windows.Forms.DataGridViewButtonColumn deleteButtonColumn;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel statusLabel;
         private System.Windows.Forms.DataGridViewTextBoxColumn advPublisherColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advNameColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advStatusColumn;
@@ -35,6 +35,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advTimestampColumn;
+        private System.Windows.Forms.ToolTip toolTip1;
 
         protected override void Dispose(bool disposing)
         {
@@ -49,16 +50,14 @@
         {
             this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.auditSearchTextBox = new System.Windows.Forms.TextBox();
             this.rebuildBaselineButton = new System.Windows.Forms.Button();
             this.auditContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.acceptSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.archiveSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.enableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.disableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.acceptAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -68,8 +67,8 @@
             this.systemChangesDataGridView = new System.Windows.Forms.DataGridView();
             this.diffLabel = new System.Windows.Forms.Label();
             this.diffRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.acceptButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
-            this.deleteButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.advPublisherColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -84,6 +83,7 @@
             this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advTimestampColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.auditContextMenu.SuspendLayout();
             this.topPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
@@ -91,6 +91,7 @@
             this.splitContainer.Panel2.SuspendLayout();
             this.splitContainer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).BeginInit();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // auditSearchTextBox
@@ -118,11 +119,11 @@
             // 
             this.auditContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.auditContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.acceptSelectedToolStripMenuItem,
+            this.archiveSelectedToolStripMenuItem,
+            this.enableSelectedToolStripMenuItem,
             this.disableSelectedToolStripMenuItem,
-            this.deleteToolStripMenuItem,
             this.toolStripSeparator1,
-            this.acceptAllToolStripMenuItem,
+            this.deleteToolStripMenuItem,
             this.toolStripSeparator2,
             this.copyDetailsToolStripMenuItem,
             this.openFileLocationToolStripMenuItem});
@@ -130,12 +131,19 @@
             this.auditContextMenu.Size = new System.Drawing.Size(211, 208);
             this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.auditContextMenu_Opening);
             // 
-            // acceptSelectedToolStripMenuItem
+            // archiveSelectedToolStripMenuItem
             // 
-            this.acceptSelectedToolStripMenuItem.Name = "acceptSelectedToolStripMenuItem";
-            this.acceptSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.acceptSelectedToolStripMenuItem.Text = "Allow Selected";
-            this.acceptSelectedToolStripMenuItem.Click += new System.EventHandler(this.acceptSelectedToolStripMenuItem_Click);
+            this.archiveSelectedToolStripMenuItem.Name = "archiveSelectedToolStripMenuItem";
+            this.archiveSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.archiveSelectedToolStripMenuItem.Text = "Archive (Hide)";
+            this.archiveSelectedToolStripMenuItem.Click += new System.EventHandler(this.archiveSelectedToolStripMenuItem_Click);
+            // 
+            // enableSelectedToolStripMenuItem
+            // 
+            this.enableSelectedToolStripMenuItem.Name = "enableSelectedToolStripMenuItem";
+            this.enableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.enableSelectedToolStripMenuItem.Text = "Enable Selected";
+            this.enableSelectedToolStripMenuItem.Click += new System.EventHandler(this.enableSelectedToolStripMenuItem_Click);
             // 
             // disableSelectedToolStripMenuItem
             // 
@@ -144,24 +152,17 @@
             this.disableSelectedToolStripMenuItem.Text = "Disable Selected";
             this.disableSelectedToolStripMenuItem.Click += new System.EventHandler(this.disableSelectedToolStripMenuItem_Click);
             // 
-            // deleteToolStripMenuItem
-            // 
-            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.deleteToolStripMenuItem.Text = "Delete Selected";
-            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
-            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(207, 6);
             // 
-            // acceptAllToolStripMenuItem
+            // deleteToolStripMenuItem
             // 
-            this.acceptAllToolStripMenuItem.Name = "acceptAllToolStripMenuItem";
-            this.acceptAllToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.acceptAllToolStripMenuItem.Text = "Accept All Changes";
-            this.acceptAllToolStripMenuItem.Click += new System.EventHandler(this.AcceptAllToolStripMenuItem_Click);
+            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
+            this.deleteToolStripMenuItem.Text = "Delete Rule";
+            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
@@ -246,10 +247,7 @@
             this.systemChangesDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.systemChangesDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.systemChangesDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.acceptButtonColumn,
-            this.deleteButtonColumn,
             this.advTimestampColumn,
-            this.advPublisherColumn,
             this.advNameColumn,
             this.advStatusColumn,
             this.advProtocolColumn,
@@ -261,7 +259,8 @@
             this.advServiceColumn,
             this.advProfilesColumn,
             this.advGroupingColumn,
-            this.advDescColumn});
+            this.advDescColumn,
+            this.advPublisherColumn});
             this.systemChangesDataGridView.ContextMenuStrip = this.auditContextMenu;
             this.systemChangesDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.systemChangesDataGridView.EnableHeadersVisualStyles = false;
@@ -276,7 +275,6 @@
             this.systemChangesDataGridView.ShowCellToolTips = true;
             this.systemChangesDataGridView.Size = new System.Drawing.Size(1000, 643);
             this.systemChangesDataGridView.TabIndex = 0;
-            this.systemChangesDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellContentClick);
             this.systemChangesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.systemChangesDataGridView_CellFormatting);
             this.systemChangesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.systemChangesDataGridView_CellMouseDown);
             this.systemChangesDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellMouseEnter);
@@ -309,37 +307,21 @@
             this.diffRichTextBox.TabIndex = 2;
             this.diffRichTextBox.Text = "";
             // 
-            // acceptButtonColumn
+            // statusStrip1
             // 
-            this.acceptButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.acceptButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
-            this.acceptButtonColumn.FillWeight = 15F;
-            this.acceptButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.acceptButtonColumn.HeaderText = "Action";
-            this.acceptButtonColumn.MinimumWidth = 70;
-            this.acceptButtonColumn.Name = "acceptButtonColumn";
-            this.acceptButtonColumn.ReadOnly = true;
-            this.acceptButtonColumn.Text = "Accept";
-            this.acceptButtonColumn.UseColumnTextForButtonValue = true;
-            this.acceptButtonColumn.Width = 70;
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.statusLabel});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 898);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(1000, 22);
+            this.statusStrip1.TabIndex = 6;
+            this.statusStrip1.Text = "statusStrip1";
             // 
-            // deleteButtonColumn
+            // statusLabel
             // 
-            this.deleteButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.deleteButtonColumn.DefaultCellStyle = dataGridViewCellStyle3;
-            this.deleteButtonColumn.FillWeight = 15F;
-            this.deleteButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.deleteButtonColumn.HeaderText = "";
-            this.deleteButtonColumn.MinimumWidth = 70;
-            this.deleteButtonColumn.Name = "deleteButtonColumn";
-            this.deleteButtonColumn.ReadOnly = true;
-            this.deleteButtonColumn.Text = "Disable";
-            this.deleteButtonColumn.UseColumnTextForButtonValue = true;
-            this.deleteButtonColumn.Width = 70;
+            this.statusLabel.Name = "statusLabel";
+            this.statusLabel.Size = new System.Drawing.Size(39, 17);
+            this.statusLabel.Text = "Ready";
             // 
             // advPublisherColumn
             // 
@@ -457,6 +439,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.splitContainer);
             this.Controls.Add(this.topPanel);
             this.Name = "AuditControl";
@@ -469,7 +452,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
             this.splitContainer.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).EndInit();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
         }
     }
 }

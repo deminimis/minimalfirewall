@@ -230,6 +230,7 @@ namespace MinimalFirewall
         DeleteWildcardRules,
         ProcessPendingConnection,
         AcceptForeignRule,
+        EnableForeignRule,
         DeleteForeignRule,
         DisableForeignRule,
         AcceptAllForeignRules,
@@ -241,18 +242,20 @@ namespace MinimalFirewall
         RemoveWildcardDefinitionOnly,
         DeleteAllMfwRules,
         ImportRules,
-        QuarantineForeignRule 
+        QuarantineForeignRule
     }
 
     public class FirewallTask
     {
         public FirewallTaskType TaskType { get; set; }
         public object Payload { get; set; }
+        public string Description { get; set; } 
 
-        public FirewallTask(FirewallTaskType taskType, object payload)
+        public FirewallTask(FirewallTaskType taskType, object payload, string description = "Processing...")
         {
             TaskType = taskType;
             Payload = payload;
+            Description = description;
         }
     }
 
@@ -262,7 +265,11 @@ namespace MinimalFirewall
     public class DeleteRulesPayload { public List<string> RuleIdentifiers { get; set; } = []; }
     public class DeleteWildcardRulePayload { public WildcardRule Wildcard { get; set; } = new(); }
     public class ProcessPendingConnectionPayload { public PendingConnectionViewModel PendingConnection { get; set; } = new(); public string Decision { get; set; } = ""; public TimeSpan Duration { get; set; } = default; public bool TrustPublisher { get; set; } = false; }
-    public class ForeignRuleChangePayload { public FirewallRuleChange Change { get; set; } = new(); }
+    public class ForeignRuleChangePayload
+    {
+        public FirewallRuleChange Change { get; set; } = new();
+        public bool Acknowledge { get; set; } = true;
+    }
     public class AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; set; } = []; }
     public class CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; set; } = new(); public string InterfaceTypes { get; set; } = ""; public string IcmpTypesAndCodes { get; set; } = ""; }
     public class SetGroupEnabledStatePayload { public string GroupName { get; set; } = string.Empty; public bool IsEnabled { get; set; } }
