@@ -30,17 +30,18 @@ namespace MinimalFirewall
         private readonly Dictionary<uint, (string Name, string Path, string ServiceName)> _processCache = [];
 
         private readonly System.Threading.Timer? _sentryRefreshDebounceTimer;
-
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
         public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
         public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
         public int UnseenSystemChangesCount => SystemChanges.Count(c => c.Rule.IsEnabled);
+
         public event Action? RulesListUpdated;
         public event Action? SystemChangesUpdated;
         public event Action<PendingConnectionViewModel>? PopupRequired;
         public event Action<PendingConnectionViewModel>? DashboardActionProcessed;
+        public event Action<string>? StatusTextChanged; 
 
         public MainViewModel(
             FirewallRuleService firewallRuleService,
@@ -68,14 +69,15 @@ namespace MinimalFirewall
             _actionsService = actionsService;
 
             _snapshotService = new FirewallSnapshotService();
-
             _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
+
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
+
+            _backgroundTaskService.StatusChanged += (text) => StatusTextChanged?.Invoke(text);
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-
         public void ClearRulesCache()
         {
             _dataService.InvalidateRuleCache();
@@ -122,11 +124,9 @@ namespace MinimalFirewall
                 int totalToResolve = pidsToResolve.Count > 0 ? pidsToResolve.Count : 1;
                 int resolvedCount = 0;
 
-                // Resolve new PIDs
                 foreach (var pid in pidsToResolve)
                 {
                     if (token.IsCancellationRequested) break;
-
                     (string Name, string Path, string ServiceName) info;
                     try
                     {
@@ -134,7 +134,6 @@ namespace MinimalFirewall
                         string name = p.ProcessName;
                         string path = string.Empty;
                         string serviceName = string.Empty;
-
                         try
                         {
                             if (p.MainModule != null) path = p.MainModule.FileName;
@@ -158,7 +157,6 @@ namespace MinimalFirewall
                     }
 
                     _processCache[pid] = info;
-
                     resolvedCount++;
                     int currentProgress = 20 + (resolvedCount * 60 / totalToResolve);
                     progress?.Report(currentProgress);
@@ -166,7 +164,6 @@ namespace MinimalFirewall
 
                 // Build ViewModels
                 var viewModels = new List<TcpConnectionViewModel>(connections.Count);
-
                 foreach (var conn in connections)
                 {
                     if (!_processCache.TryGetValue(conn.ProcessId, out var info))
@@ -244,7 +241,7 @@ namespace MinimalFirewall
                         Action = matchingRule.Action,
                         WildcardSourcePath = matchingRule.FolderPath
                     };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload, "Applying wildcard match..."));
                     return;
                 }
                 if (matchingRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase))
@@ -263,7 +260,7 @@ namespace MinimalFirewall
         public void ProcessDashboardAction(PendingConnectionViewModel pending, string decision, bool trustPublisher = false)
         {
             var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, TrustPublisher = trustPublisher };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing: {decision} {pending.FileName}"));
             PendingConnections.Remove(pending);
 
             if (decision == "Allow" || decision == "Block")
@@ -275,10 +272,8 @@ namespace MinimalFirewall
                 {
                     Name = pending.FileName,
                     ApplicationName = pending.AppPath,
-                    InboundStatus = parsedDirection == Directions.Incoming ?
-                    parsedAction.ToString() : "N/A",
-                    OutboundStatus = parsedDirection == Directions.Outgoing ?
-                    parsedAction.ToString() : "N/A",
+                    InboundStatus = parsedDirection == Directions.Incoming ? parsedAction.ToString() : "N/A",
+                    OutboundStatus = parsedDirection == Directions.Outgoing ? parsedAction.ToString() : "N/A",
                     Type = RuleType.Program,
                     IsEnabled = true,
                     Grouping = MFWConstants.MainRuleGroup,
@@ -295,7 +290,7 @@ namespace MinimalFirewall
         public void ProcessTemporaryDashboardAction(PendingConnectionViewModel pending, string decision, TimeSpan duration)
         {
             var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, Duration = duration };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing Temp: {pending.FileName}"));
             PendingConnections.Remove(pending);
             DashboardActionProcessed?.Invoke(pending);
         }
@@ -307,17 +302,15 @@ namespace MinimalFirewall
 
             var knownState = _snapshotService.LoadSnapshot();
             bool isFirstInitialization = knownState.Count == 0 && !_snapshotService.SnapshotExists();
-
             if (_appSettings.QuarantineMode)
             {
                 foreach (var change in newChanges)
                 {
                     bool isFresh = !knownState.Contains(change.Name);
-
                     if (change.Type == ChangeType.New && change.Rule.IsEnabled && isFresh && !isFirstInitialization)
                     {
                         var payload = new ForeignRuleChangePayload { Change = change };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload));
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload, $"Quarantining: {change.Name}"));
 
                         change.Rule.IsEnabled = false;
                         change.Rule.Status = "Blocked (Pending Review)";
@@ -349,9 +342,31 @@ namespace MinimalFirewall
             if (change.Rule?.Name is not null)
             {
                 var payload = new ForeignRuleChangePayload { Change = change };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptForeignRule, payload));
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptForeignRule, payload, $"Archiving rule: {change.Name}"));
                 SystemChanges.Remove(change);
                 SystemChangesUpdated?.Invoke();
+            }
+        }
+
+        public void EnableForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.EnableForeignRule, payload, $"Enabling rule: {change.Name}"));
+
+                change.Rule.IsEnabled = true;
+            }
+        }
+
+        public void DisableForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Disabling rule: {change.Name}"));
+
+                change.Rule.IsEnabled = false;
             }
         }
 
@@ -360,18 +375,7 @@ namespace MinimalFirewall
             if (change.Rule?.Name is not null)
             {
                 var payload = new ForeignRuleChangePayload { Change = change };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteForeignRule, payload));
-                SystemChanges.Remove(change);
-                SystemChangesUpdated?.Invoke();
-            }
-        }
-
-        public void DisableForeignRule(FirewallRuleChange change)
-        {
-            if (change.Rule?.Name is not null)
-            {
-                var payload = new ForeignRuleChangePayload { Change = change };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload));
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteForeignRule, payload, $"Deleting rule: {change.Name}"));
                 SystemChanges.Remove(change);
                 SystemChangesUpdated?.Invoke();
             }
@@ -381,7 +385,7 @@ namespace MinimalFirewall
         {
             if (SystemChanges.Count == 0) return;
             var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(SystemChanges) };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload, "Archiving all rules..."));
             SystemChanges.Clear();
             SystemChangesUpdated?.Invoke();
         }
@@ -395,11 +399,11 @@ namespace MinimalFirewall
             {
                 case RuleType.Program:
                     var appPayload = new ApplyApplicationRulePayload { AppPaths = [firstRule.ApplicationName], Action = action };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload, $"Applying: {action} to {item.Name}"));
                     break;
                 case RuleType.Service:
                     var servicePayload = new ApplyServiceRulePayload { ServiceName = firstRule.ServiceName, Action = action };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload));
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload, $"Applying: {action} to Service {item.Name}"));
                     break;
                 case RuleType.UWP:
                     if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
@@ -407,7 +411,7 @@ namespace MinimalFirewall
                         var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
                         var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
                         var uwpPayload = new ApplyUwpRulePayload { UwpApps = [uwpApp], Action = action };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload));
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload, $"Applying: {action} to UWP {item.Name}"));
                     }
                     break;
             }
@@ -435,14 +439,14 @@ namespace MinimalFirewall
             foreach (var wildcardRule in wildcardRulesToDelete)
             {
                 var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload));
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload, "Deleting wildcard rule..."));
                 _wildcardRuleService.RemoveRule(wildcardRule);
             }
 
             if (standardRuleNamesToDelete.Count > 0)
             {
                 var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload));
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload, $"Deleting {standardRuleNamesToDelete.Count} rules..."));
             }
 
             AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
@@ -458,10 +462,8 @@ namespace MinimalFirewall
                 Description = advancedRule.Description,
                 Grouping = advancedRule.Grouping,
                 IsEnabled = advancedRule.IsEnabled,
-                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ?
-                advancedRule.Status : "N/A",
-                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ?
-                advancedRule.Status : "N/A",
+                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ? advancedRule.Status : "N/A",
+                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ? advancedRule.Status : "N/A",
                 ProtocolName = advancedRule.ProtocolName,
                 LocalPorts = advancedRule.LocalPorts,
                 RemotePorts = advancedRule.RemotePorts,
@@ -477,7 +479,7 @@ namespace MinimalFirewall
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
             var payload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = interfaceTypes, IcmpTypesAndCodes = icmpTypesAndCodes };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload, $"Creating rule: {vm.Name}"));
 
             var newAggregatedRule = new AggregatedRuleViewModel
             {
@@ -487,10 +489,8 @@ namespace MinimalFirewall
                 Description = vm.Description,
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
-                vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
-                vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
@@ -511,10 +511,8 @@ namespace MinimalFirewall
             {
                 Name = Path.GetFileName(appPath),
                 ApplicationName = appPath,
-                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ?
-                parsedAction.ToString() : "N/A",
-                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ?
-                parsedAction.ToString() : "N/A",
+                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ? parsedAction.ToString() : "N/A",
+                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ? parsedAction.ToString() : "N/A",
                 Type = RuleType.Program,
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
@@ -525,13 +523,12 @@ namespace MinimalFirewall
                 LocalAddresses = "Any",
                 RemoteAddresses = "Any",
                 Description = "N/A",
-                ServiceName =
-                "N/A"
+                ServiceName = "N/A"
             };
             AllAggregatedRules.Add(newAggregatedRule);
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
             var payload = new ApplyApplicationRulePayload { AppPaths = [appPath], Action = action };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload, $"Applying {action} to {Path.GetFileName(appPath)}"));
         }
 
         private void OnRuleSetChanged()
@@ -576,10 +573,8 @@ namespace MinimalFirewall
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Allow",
-                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ?
-                Directions.Incoming : Directions.Outgoing,
-                Protocol = int.TryParse(pending.Protocol, out int proto) ?
-                proto : 256,
+                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ? Directions.Incoming : Directions.Outgoing,
+                Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
                 ApplicationName = pending.AppPath,
                 RemotePorts = pending.RemotePort,
                 RemoteAddresses = pending.RemoteAddress,
@@ -589,7 +584,7 @@ namespace MinimalFirewall
                 Type = RuleType.Advanced
             };
             var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload));
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload, $"Creating rule for {pending.FileName}"));
             var newAggregatedRule = new AggregatedRuleViewModel
             {
                 Name = vm.Name,
@@ -597,10 +592,8 @@ namespace MinimalFirewall
                 Description = vm.Description,
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
-                vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
-                vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
