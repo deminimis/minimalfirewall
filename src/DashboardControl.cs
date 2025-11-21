@@ -232,17 +232,7 @@ namespace MinimalFirewall
                 if (wildcardDialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
                     var newRule = wildcardDialog.NewRule;
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
-
-                    string decision = newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow";
-                    var allowPayload = new ProcessPendingConnectionPayload
-                    {
-                        PendingConnection = pending,
-                        Decision = decision,
-                        Duration = default,
-                        TrustPublisher = false
-                    };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, allowPayload));
+                    _viewModel.CreateWildcardRule(pending, newRule);
                 }
             }
         }

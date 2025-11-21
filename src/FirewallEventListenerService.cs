@@ -95,46 +95,61 @@ namespace MinimalFirewall
 
         private async Task OnFirewallBlockEvent(string xmlContent)
         {
-            string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
-            string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
-            string directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-            string remoteAddressForClear = GetValueFromXml(xmlContent, "RemoteAddress");
-            string remotePortForClear = GetValueFromXml(xmlContent, "RemotePort");
-            string protocolForClear = GetValueFromXml(xmlContent, "Protocol");
+            string rawAppPath = string.Empty;
+            string appPathForClear = string.Empty;
+            string directionForClear = string.Empty;
+            string remoteAddressForClear = string.Empty;
+            string remotePortForClear = string.Empty;
+            string protocolForClear = string.Empty;
 
             try
             {
-                string rawAppPath = GetValueFromXml(xmlContent, "Application");
-                string protocol = GetValueFromXml(xmlContent, "Protocol");
-                string remotePort = GetValueFromXml(xmlContent, "RemotePort");
-                string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
-                string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                rawAppPath = GetValueFromXml(xmlContent, "Application");
+                directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                remoteAddressForClear = GetValueFromXml(xmlContent, "RemoteAddress");
+                remotePortForClear = GetValueFromXml(xmlContent, "RemotePort");
+                protocolForClear = GetValueFromXml(xmlContent, "Protocol");
                 string filterId = GetValueFromXml(xmlContent, "FilterId");
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
-
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
 
-                string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
+                string appPath = rawAppPath;
+
+                try
+                {
+                    string converted = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
+                    if (!string.IsNullOrEmpty(converted)) appPath = converted;
+                }
+                catch { /* Fallback to raw path */ }
+
                 if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }
-                appPath = PathResolver.NormalizePath(appPath);
 
-                string notificationKey = $"{appPath}|{eventDirection}|{remoteAddress}|{remotePort}|{protocol}";
+                try
+                {
+                    appPath = PathResolver.NormalizePath(appPath);
+                }
+                catch { /* If path is invalid (e.g. device path wasn't mapped), use what we have */ }
+
+                appPathForClear = appPath; 
+
+                string notificationKey = $"{appPath}|{directionForClear}";
+
                 if (!_pendingNotifications.TryAdd(notificationKey, true))
                 {
-                    _logAction($"[EventListener] Notification already pending for '{notificationKey}'. Ignoring duplicate event.");
                     return;
                 }
 
                 if (!ShouldProcessEvent(appPath))
                 {
-                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    ClearPendingNotification(appPath, directionForClear);
                     return;
                 }
 
+                // SVCHOST special handling
                 if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
                 {
                     if (string.IsNullOrEmpty(serviceName))
@@ -143,111 +158,90 @@ namespace MinimalFirewall
                         if (!string.IsNullOrEmpty(processId) && processId != "0")
                         {
                             serviceName = SystemDiscoveryService.GetServicesByPID(processId);
-                            _logAction($"[EventListener] svchost.exe detected. XML ServiceName was empty. PID: {processId}, Resolved Service(s): '{serviceName}'");
+                            _logAction($"[EventListener] svchost.exe detected. XML ServiceName empty. PID: {processId}, Resolved: '{serviceName}'");
                         }
-                    }
-                    else
-                    {
-                        _logAction($"[EventListener] svchost.exe detected. ServiceName from XML: '{serviceName}'");
                     }
                 }
 
+                // Ignore specific noisy services
                 if (!string.IsNullOrEmpty(serviceName) &&
                     (serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
                      serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase)))
                 {
-                    _logAction($"[EventListener] Ignoring event for '{serviceName}' service (managed by system).");
-                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    ClearPendingNotification(appPath, directionForClear);
                     return;
                 }
 
-                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, eventDirection);
-                _logAction($"[EventListener] CheckMfwRuleStatus result for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}') is: {existingRuleStatus}");
+                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, directionForClear);
 
                 if (existingRuleStatus == MfwRuleStatus.MfwBlock)
                 {
-                    _logAction($"[EventListener] An MFW Block rule already exists. Ignoring event.");
-                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    ClearPendingNotification(appPath, directionForClear);
                     return;
                 }
                 else if (existingRuleStatus == MfwRuleStatus.MfwAllow)
                 {
                     if (filterId == "0")
                     {
-                        _logAction($"[EventListener] Race condition detected: An MFW Allow rule exists, but a block event (FilterId 0) was received. Invalidating cache and snoozing to allow network to stabilize.");
+                        _logAction($"[EventListener] Race condition: Rule exists but block received. Invalidating cache.");
                         _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
-                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                        ClearPendingNotification(appPath, directionForClear);
                         return;
                     }
-
-                    _logAction($"[EventListener] An MFW Allow rule exists for this connection. Ignoring block event (FilterId: {filterId}).");
-                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    ClearPendingNotification(appPath, directionForClear);
                     return;
                 }
 
                 var matchingRule = _wildcardRuleService.Match(appPath);
                 if (matchingRule != null)
                 {
-                    _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
                     if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
                     {
                         ActionsService.ApplyWildcardMatch(appPath, serviceName, matchingRule);
-                        _logAction($"[EventListener] Applying Allow action from matched wildcard rule.");
                     }
-                    else
-                    {
-                        _logAction($"[EventListener] Matched wildcard rule action is '{matchingRule.Action}'. Ignoring block event.");
-                    }
-                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    ClearPendingNotification(appPath, directionForClear);
                     return;
                 }
 
+                // Auto-Allow Trusted
                 if (_appSettings.AutoAllowSystemTrusted)
                 {
                     if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
                     {
-                        _logAction($"[EventListener] Auto-allowing trusted application '{appPath}' by publisher '{trustedPublisherName}'.");
-                        string allowAction = $"Allow ({eventDirection})";
-
+                        _logAction($"[EventListener] Auto-allowing trusted app '{appPath}' by '{trustedPublisherName}'.");
                         if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
                         {
+                            string allowAction = $"Allow ({directionForClear})";
                             var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
                         }
-                        else
-                        {
-                            _logAction($"[EventListener ERROR] Cannot auto-allow. BackgroundTaskService is null or appPath is invalid.");
-                        }
-
-                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                        ClearPendingNotification(appPath, directionForClear);
                         return;
-                    }
-                    else
-                    {
-                        _logAction($"[EventListener] App '{appPath}' not trusted or signature check failed. Not auto-allowing.");
                     }
                 }
 
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
-                    Direction = eventDirection,
+                    Direction = directionForClear,
                     ServiceName = serviceName,
-                    Protocol = protocol,
-                    RemotePort = remotePort,
-                    RemoteAddress = remoteAddress,
+                    Protocol = protocolForClear,
+                    RemotePort = remotePortForClear,
+                    RemoteAddress = remoteAddressForClear,
                     FilterId = filterId,
                     LayerId = layerId
                 };
-                _logAction($"[EventListener] Queuing pending connection for user decision: '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}', FilterId: {filterId})");
-                PendingConnectionDetected?.Invoke(pendingVm);
 
+                PendingConnectionDetected?.Invoke(pendingVm);
             }
             catch (Exception ex)
             {
-                _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex}");
-                ClearPendingNotification(appPathForClear, directionForClear, remoteAddressForClear, remotePortForClear, protocolForClear);
+                _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex.Message}");
+                if (!string.IsNullOrEmpty(appPathForClear) && !string.IsNullOrEmpty(directionForClear))
+                {
+                    ClearPendingNotification(appPathForClear, directionForClear);
+                }
             }
         }
 
@@ -261,8 +255,11 @@ namespace MinimalFirewall
         public void ClearPendingNotification(string appPath, string direction)
         {
             if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
-            string keyPrefix = $"{appPath}|{direction}|";
 
+            string broadKey = $"{appPath}|{direction}";
+            _pendingNotifications.TryRemove(broadKey, out _);
+
+            string keyPrefix = $"{appPath}|{direction}|";
             var matchingKeys = _pendingNotifications.Keys.Where(k => k.StartsWith(keyPrefix)).ToList();
             foreach (var k in matchingKeys)
             {
@@ -273,7 +270,6 @@ namespace MinimalFirewall
         public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
             _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
-            _logAction($"[EventListener] Snoozing notifications for '{appPath}' for {duration}.");
         }
 
         public void ClearAllSnoozes()
@@ -291,16 +287,10 @@ namespace MinimalFirewall
 
             if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
             {
-                _logAction($"[EventListener] Event for '{appPath}' is snoozed. Ignoring.");
                 return false;
             }
 
-            bool lockdown = _isLockdownEnabled();
-            if (!lockdown)
-            {
-                _logAction($"[EventListener] ShouldProcessEvent=false (Lockdown not enabled)");
-            }
-            return lockdown;
+            return _isLockdownEnabled();
         }
 
         private static string ParseDirection(string rawDirection)
@@ -342,11 +332,11 @@ namespace MinimalFirewall
             }
             catch (XmlException ex)
             {
-                Debug.WriteLine($"[XML PARSE ERROR] Failed to parse event XML for element '{elementName}': {ex.Message}\nXML: {xml}");
+                Debug.WriteLine($"[XML PARSE ERROR] {ex.Message}");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[UNEXPECTED XML PARSE ERROR] for element '{elementName}': {ex.Message}\nXML: {xml}");
+                Debug.WriteLine($"[UNEXPECTED XML ERROR] {ex.Message}");
             }
             return string.Empty;
         }

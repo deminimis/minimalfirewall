@@ -208,6 +208,7 @@ namespace MinimalFirewall
                 bool hasWildcardPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) || localPortsTextBox.Text.Trim() == "*" ||
                                         string.IsNullOrWhiteSpace(remotePortsTextBox.Text) || remotePortsTextBox.Text.Trim() == "*";
                 bool protocolIsNotAny = selectedProtocol.Value != ProtocolTypes.Any.Value;
+
                 if (hasService && hasWildcardPorts && protocolIsNotAny)
                 {
                     Messenger.MessageBox("When creating a rule for a service with a specific protocol (like TCP or UDP), you must also specify concrete Local and Remote ports. Wildcards (*) are only allowed if the protocol is 'Any'.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -221,32 +222,60 @@ namespace MinimalFirewall
                 groupName = MFWConstants.MainRuleGroup;
             }
 
+
+            string finalLocalPorts = "";
+            string finalRemotePorts = "";
+            string finalIcmp = "";
+
+
+            if (selectedProtocol.Value == 6 || selectedProtocol.Value == 17)
+            {
+                finalLocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text;
+                finalRemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text;
+            }
+            else
+            {
+                // Force empty for Any/ICMP/IGMP/etc.
+                finalLocalPorts = "";
+                finalRemotePorts = "";
+            }
+
+            // 2. Handle ICMP
+            if (selectedProtocol.Value == 1 || selectedProtocol.Value == 58)
+            {
+                finalIcmp = icmpTypesAndCodesTextBox.Text;
+            }
+            else
+            {
+                finalIcmp = "";
+            }
+
+
             var rule = new AdvancedRuleViewModel
             {
                 Name = ruleNameTextBox.Text,
                 Description = descriptionTextBox.Text,
                 IsEnabled = enabledCheckBox.Checked,
                 Grouping = groupName,
-                Status = allowRadioButton.Checked ?
-                    "Allow" : "Block",
+                Status = allowRadioButton.Checked ? "Allow" : "Block",
                 Direction = GetDirection(),
                 Protocol = selectedProtocol.Value,
                 ProtocolName = selectedProtocol.Name,
                 ApplicationName = programPathTextBox.Text,
                 ServiceName = serviceNameTextBox.Text,
-                LocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ?
-                    "*" : localPortsTextBox.Text,
-                RemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ?
-                    "*" : remotePortsTextBox.Text,
-                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ?
-                    "*" : localAddressTextBox.Text,
-                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ?
-                    "*" : remoteAddressTextBox.Text,
+
+                LocalPorts = finalLocalPorts,
+                RemotePorts = finalRemotePorts,
+
+                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ? "*" : localAddressTextBox.Text,
+                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text,
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced,
                 InterfaceTypes = GetInterfaceTypes(),
-                IcmpTypesAndCodes = icmpTypesAndCodesTextBox.Text
+
+                IcmpTypesAndCodes = finalIcmp
             };
+
             this.RuleVm = rule;
 
             DialogResult = DialogResult.OK;

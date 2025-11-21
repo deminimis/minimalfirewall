@@ -393,34 +393,30 @@ namespace MinimalFirewall
                     return;
                 }
                 rulesCollection = firewallPolicy.Rules;
+
+                try
+                {
+                    Debug.WriteLine($"[FirewallRuleService] Committing Rule: {rule.Name}");
+                    Debug.WriteLine($"[FirewallRuleService] - App: {rule.ApplicationName}");
+                    Debug.WriteLine($"[FirewallRuleService] - Interfaces: {rule.InterfaceTypes}");
+                    Debug.WriteLine($"[FirewallRuleService] - Protocol: {rule.Protocol}");
+                }
+                catch
+                {
+                    Debug.WriteLine("[FirewallRuleService] Could not read rule properties for logging.");
+                }
+
                 rulesCollection.Add(rule);
             }
             catch (COMException ex)
             {
                 Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-                if (ex.HResult == E_ACCESSDENIED)
-                {
-                    Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Access Denied. Ensure administrator privileges.");
-                    System.Windows.Forms.MessageBox.Show($"Access Denied: Could not create rule '{rule?.Name}'. Ensure the application is run as Administrator.", "Permission Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                }
-                else if (ex.HResult == HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS)
-                {
-                    Debug.WriteLine($"[WARN] CreateRule: Rule '{rule?.Name}' already exists.");
-                }
-                else
-                {
-                    System.Windows.Forms.MessageBox.Show($"Failed to create firewall rule '{rule?.Name}'.\n\nError: {ex.Message}\n(HResult: 0x{ex.HResult:X8})", "Rule Creation Failed", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                }
-            }
-            catch (ArgumentException ex)
-            {
-                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Invalid argument. Message: {ex.Message}");
-                System.Windows.Forms.MessageBox.Show($"Failed to create rule '{rule?.Name}'. One or more rule properties might be invalid.\n\nError: {ex.Message}", "Invalid Rule Parameter", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                throw;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Unexpected error. Type: {ex.GetType().Name}. Message: {ex.Message}");
-                System.Windows.Forms.MessageBox.Show($"An unexpected error occurred while creating rule '{rule?.Name}'.\n\nError: {ex.Message}", "Rule Creation Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                throw;
             }
             finally
             {
