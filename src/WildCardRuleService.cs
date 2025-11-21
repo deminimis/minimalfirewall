@@ -1,7 +1,10 @@
-﻿// File: WildcardRuleService.cs
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace MinimalFirewall
 {
@@ -136,8 +139,36 @@ namespace MinimalFirewall
             foreach (var rule in rulesSnapshot)
             {
                 string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
+                bool isFolderMatch = false;
 
-                if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                if (expandedFolderPath.Contains('*') || expandedFolderPath.Contains('?'))
+                {
+                    try
+                    {
+
+                        string regexPattern = "^" + Regex.Escape(expandedFolderPath)
+                                               .Replace("\\*", ".*")
+                                               .Replace("\\?", ".");
+
+                        if (Regex.IsMatch(normalizedPath, regexPattern, RegexOptions.IgnoreCase))
+                        {
+                            isFolderMatch = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[Wildcard Match] Regex error for rule {rule.FolderPath}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isFolderMatch = true;
+                    }
+                }
+
+                if (isFolderMatch)
                 {
                     string exePattern = string.IsNullOrWhiteSpace(rule.ExeName) ? "*" : rule.ExeName.Trim();
 

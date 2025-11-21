@@ -58,7 +58,7 @@
             // 
             this.deleteAllRulesButton.FlatAppearance.BorderSize = 0;
             this.deleteAllRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.deleteAllRulesButton.Location = new System.Drawing.Point(29, 700);
+            this.deleteAllRulesButton.Location = new System.Drawing.Point(29, 760);
             this.deleteAllRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.deleteAllRulesButton.Name = "deleteAllRulesButton";
             this.deleteAllRulesButton.Size = new System.Drawing.Size(240, 37);
@@ -71,7 +71,7 @@
             // 
             this.revertFirewallButton.FlatAppearance.BorderSize = 0;
             this.revertFirewallButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.revertFirewallButton.Location = new System.Drawing.Point(280, 700);
+            this.revertFirewallButton.Location = new System.Drawing.Point(280, 760);
             this.revertFirewallButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.revertFirewallButton.Name = "revertFirewallButton";
             this.revertFirewallButton.Size = new System.Drawing.Size(240, 37);
@@ -163,7 +163,7 @@
             this.coffeePanel.Controls.Add(this.coffeeLinkLabel);
             this.coffeePanel.Controls.Add(this.coffeePictureBox);
             this.coffeePanel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.coffeePanel.Location = new System.Drawing.Point(21, 570);
+            this.coffeePanel.Location = new System.Drawing.Point(21, 630);
             this.coffeePanel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.coffeePanel.Name = "coffeePanel";
             this.coffeePanel.Size = new System.Drawing.Size(434, 107);
@@ -202,7 +202,7 @@
             // 
             this.versionLabel.AutoSize = true;
             this.versionLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.versionLabel.Location = new System.Drawing.Point(223, 470);
+            this.versionLabel.Location = new System.Drawing.Point(223, 520);
             this.versionLabel.Name = "versionLabel";
             this.versionLabel.Size = new System.Drawing.Size(57, 20);
             this.versionLabel.TabIndex = 12;
@@ -212,7 +212,7 @@
             // 
             this.checkForUpdatesButton.FlatAppearance.BorderSize = 0;
             this.checkForUpdatesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.checkForUpdatesButton.Location = new System.Drawing.Point(29, 460);
+            this.checkForUpdatesButton.Location = new System.Drawing.Point(29, 510);
             this.checkForUpdatesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.checkForUpdatesButton.Name = "checkForUpdatesButton";
             this.checkForUpdatesButton.Size = new System.Drawing.Size(183, 37);
@@ -241,14 +241,14 @@
             this.openAppDataButton.Name = "openAppDataButton";
             this.openAppDataButton.Size = new System.Drawing.Size(183, 37);
             this.openAppDataButton.TabIndex = 32;
-            this.openAppDataButton.Text = "Open Config Folder";
+            this.openAppDataButton.Text = "Open %AppData%";
             this.openAppDataButton.UseVisualStyleBackColor = true;
             this.openAppDataButton.Click += new System.EventHandler(this.openAppDataButton_Click);
             // 
             // forumLink
             // 
             this.forumLink.AutoSize = true;
-            this.forumLink.Location = new System.Drawing.Point(29, 510);
+            this.forumLink.Location = new System.Drawing.Point(29, 560);
             this.forumLink.Name = "forumLink";
             this.forumLink.Size = new System.Drawing.Size(140, 20);
             this.forumLink.TabIndex = 9;
@@ -260,7 +260,7 @@
             // reportProblemLink
             // 
             this.reportProblemLink.AutoSize = true;
-            this.reportProblemLink.Location = new System.Drawing.Point(29, 530);
+            this.reportProblemLink.Location = new System.Drawing.Point(29, 580);
             this.reportProblemLink.Name = "reportProblemLink";
             this.reportProblemLink.Size = new System.Drawing.Size(126, 20);
             this.reportProblemLink.TabIndex = 8;
@@ -272,7 +272,7 @@
             // helpLink
             // 
             this.helpLink.AutoSize = true;
-            this.helpLink.Location = new System.Drawing.Point(29, 550);
+            this.helpLink.Location = new System.Drawing.Point(29, 600);
             this.helpLink.Name = "helpLink";
             this.helpLink.Size = new System.Drawing.Size(158, 20);
             this.helpLink.TabIndex = 7;
@@ -392,7 +392,7 @@
             // 
             this.exportDiagnosticButton.FlatAppearance.BorderSize = 0;
             this.exportDiagnosticButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.exportDiagnosticButton.Location = new System.Drawing.Point(29, 840);
+            this.exportDiagnosticButton.Location = new System.Drawing.Point(29, 900);
             this.exportDiagnosticButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.exportDiagnosticButton.Name = "exportDiagnosticButton";
             this.exportDiagnosticButton.Size = new System.Drawing.Size(240, 37);
@@ -405,7 +405,7 @@
             // 
             this.importReplaceButton.FlatAppearance.BorderSize = 0;
             this.importReplaceButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.importReplaceButton.Location = new System.Drawing.Point(531, 790);
+            this.importReplaceButton.Location = new System.Drawing.Point(531, 850);
             this.importReplaceButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.importReplaceButton.Name = "importReplaceButton";
             this.importReplaceButton.Size = new System.Drawing.Size(240, 37);
@@ -418,7 +418,7 @@
             // 
             this.importMergeButton.FlatAppearance.BorderSize = 0;
             this.importMergeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.importMergeButton.Location = new System.Drawing.Point(280, 790);
+            this.importMergeButton.Location = new System.Drawing.Point(280, 850);
             this.importMergeButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.importMergeButton.Name = "importMergeButton";
             this.importMergeButton.Size = new System.Drawing.Size(240, 37);
@@ -431,7 +431,7 @@
             // 
             this.exportRulesButton.FlatAppearance.BorderSize = 0;
             this.exportRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.exportRulesButton.Location = new System.Drawing.Point(29, 790);
+            this.exportRulesButton.Location = new System.Drawing.Point(29, 850);
             this.exportRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.exportRulesButton.Name = "exportRulesButton";
             this.exportRulesButton.Size = new System.Drawing.Size(240, 37);
@@ -444,7 +444,7 @@
             // 
             this.cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
             this.cleanUpOrphanedRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 700);
+            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 760);
             this.cleanUpOrphanedRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
             this.cleanUpOrphanedRulesButton.Size = new System.Drawing.Size(240, 37);
@@ -501,6 +501,5 @@
         private Button importMergeButton;
         private Button exportRulesButton;
         private Button exportDiagnosticButton;
-        private Button allowWindowsUpdateButton;
     }
 }

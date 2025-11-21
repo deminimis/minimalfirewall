@@ -1,5 +1,4 @@
-﻿// File: Utilities.cs
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Net;
@@ -96,7 +95,6 @@ namespace MinimalFirewall
         {
             errorMessage = string.Empty;
             if (string.IsNullOrWhiteSpace(icmpString) || icmpString == "*") return true;
-
             var parts = icmpString.Split(',');
             foreach (var part in parts)
             {
@@ -134,15 +132,30 @@ namespace MinimalFirewall
 
         static PathResolver()
         {
-            var driveLetters = Directory.GetLogicalDrives().Select(d => d[0..2]);
-            foreach (var drive in driveLetters)
+            try
             {
-                var targetPath = new StringBuilder(260);
-                if (QueryDosDevice(drive, targetPath, targetPath.Capacity) != 0)
+                var driveLetters = Directory.GetLogicalDrives().Select(d => d[0..2]);
+                foreach (var drive in driveLetters)
                 {
-                    _deviceMap[targetPath.ToString()] = drive;
+                    var targetPath = new StringBuilder(260);
+                    if (QueryDosDevice(drive, targetPath, targetPath.Capacity) != 0)
+                    {
+                        string rawDevicePath = targetPath.ToString();
+                        int nullIndex = rawDevicePath.IndexOf('\0');
+                        if (nullIndex >= 0)
+                        {
+                            rawDevicePath = rawDevicePath.Substring(0, nullIndex);
+                        }
+                        rawDevicePath = rawDevicePath.TrimEnd('\\');
+
+                        if (!string.IsNullOrEmpty(rawDevicePath))
+                        {
+                            _deviceMap[rawDevicePath] = drive;
+                        }
+                    }
                 }
             }
+            catch { /* Ignore errors during static init to prevent crash */ }
 
             var specialFolders = new[]
             {
@@ -158,12 +171,16 @@ namespace MinimalFirewall
 
             foreach (var folder in specialFolders)
             {
-                string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
-                if (!string.IsNullOrEmpty(path))
+                try
                 {
-                    string envVar = $"%{folder}%";
-                    _envVarMap[path] = envVar;
+                    string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        string envVar = $"%{folder}%";
+                        _envVarMap[path] = envVar;
+                    }
                 }
+                catch { }
             }
         }
 
@@ -185,7 +202,14 @@ namespace MinimalFirewall
         public static string ConvertFromEnvironmentPath(string environmentPath)
         {
             if (string.IsNullOrEmpty(environmentPath)) return environmentPath;
-            return Environment.ExpandEnvironmentVariables(environmentPath);
+            try
+            {
+                return Environment.ExpandEnvironmentVariables(environmentPath);
+            }
+            catch
+            {
+                return environmentPath;
+            }
         }
 
         public static string NormalizePath(string path)
@@ -202,7 +226,7 @@ namespace MinimalFirewall
                 string basePath = AppContext.BaseDirectory;
                 return Path.GetFullPath(Path.Combine(basePath, expandedPath));
             }
-            catch (ArgumentException)
+            catch (Exception)
             {
                 return path;
             }
@@ -210,10 +234,30 @@ namespace MinimalFirewall
 
         public static string ConvertDevicePathToDrivePath(string devicePath)
         {
-            if (string.IsNullOrEmpty(devicePath) || (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0])))
+            if (string.IsNullOrEmpty(devicePath)) return devicePath;
+
+            if (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0]))
                 return devicePath;
+
             var matchingDevice = _deviceMap.Keys.FirstOrDefault(d => devicePath.StartsWith(d, StringComparison.OrdinalIgnoreCase));
-            return matchingDevice != null ? string.Concat(_deviceMap[matchingDevice], devicePath.AsSpan(matchingDevice.Length)) : devicePath;
+
+            if (matchingDevice != null)
+            {
+                string relativePath = devicePath.Substring(matchingDevice.Length);
+
+                if (relativePath.StartsWith('\\') && _deviceMap[matchingDevice].EndsWith('\\'))
+                {
+                    relativePath = relativePath.TrimStart('\\');
+                }
+                else if (!relativePath.StartsWith('\\') && !_deviceMap[matchingDevice].EndsWith('\\'))
+                {
+                    relativePath = "\\" + relativePath;
+                }
+
+                return _deviceMap[matchingDevice] + relativePath;
+            }
+
+            return devicePath;
         }
 
         [DllImport("kernel32.dll", EntryPoint = "QueryDosDeviceW", CharSet = CharSet.Unicode, SetLastError = true)]

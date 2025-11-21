@@ -291,6 +291,7 @@ namespace MinimalFirewall
             }
         }
 
+
         public void DeleteAdvancedRules(List<string> ruleNames)
         {
             if (ruleNames.Count == 0) return;
@@ -403,6 +404,7 @@ namespace MinimalFirewall
             }
         }
 
+
         public void ToggleLockdown()
         {
             var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
@@ -450,7 +452,7 @@ namespace MinimalFirewall
             {
                 activityLogger.LogException("SetDefaultOutboundAction", ex);
                 MessageBox.Show("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
-                    "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -745,6 +747,7 @@ namespace MinimalFirewall
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
+            // Validation
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
@@ -760,33 +763,26 @@ namespace MinimalFirewall
                 FindAndQueueDeleteForGeneralBlockRule(vm.ApplicationName);
             }
 
-            bool hasProgramOrService = !string.IsNullOrWhiteSpace(vm.ApplicationName) || !string.IsNullOrWhiteSpace(vm.ServiceName);
-            bool isProtocolTcpUdpOrAny = vm.Protocol == ProtocolTypes.TCP.Value ||
-                                     vm.Protocol == ProtocolTypes.UDP.Value ||
-                                     vm.Protocol == ProtocolTypes.Any.Value;
-            if (hasProgramOrService && !isProtocolTcpUdpOrAny)
+            bool hasSpecificPorts = (!string.IsNullOrEmpty(vm.LocalPorts) && vm.LocalPorts != "*") ||
+                                    (!string.IsNullOrEmpty(vm.RemotePorts) && vm.RemotePorts != "*");
+
+            if (hasSpecificPorts && vm.Protocol == ProtocolTypes.Any.Value)
             {
-                MessageBox.Show(
-                     "When specifying a program or service, the protocol must be TCP, UDP, or Any.",
-                     "Invalid Rule", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                // If user requested specific ports but "Any" protocol, prioritize protocol, ignoring ports (due to api)
             }
 
-            var directionsToCreate = new List<Directions>(2);
+            // A Windows Firewall rule must have exactly one direction, so must create two rules if user selects "both" 
+            var directionsToCreate = new List<Directions>();
             if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
             if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
 
-            var protocolsToCreate = new List<int>();
-            if (hasProgramOrService && vm.Protocol == ProtocolTypes.Any.Value)
-            {
-                protocolsToCreate.Add(ProtocolTypes.TCP.Value);
-                protocolsToCreate.Add(ProtocolTypes.UDP.Value);
-            }
-            else
-            {
-                protocolsToCreate.Add(vm.Protocol);
-            }
+            // Do not split "Any" into TCP/UDP. 
+            var protocolsToCreate = new List<int> { vm.Protocol };
 
+            List<string> errors = new List<string>();
+            int successCount = 0;
+
+            // Execute Batch
             foreach (var direction in directionsToCreate)
             {
                 foreach (var protocol in protocolsToCreate)
@@ -811,35 +807,71 @@ namespace MinimalFirewall
                         InterfaceTypes = vm.InterfaceTypes,
                         IcmpTypesAndCodes = vm.IcmpTypesAndCodes
                     };
+
                     string nameSuffix = "";
+
                     if (directionsToCreate.Count > 1)
                     {
                         nameSuffix += $" - {direction}";
                     }
+
                     if (protocolsToCreate.Count > 1)
                     {
-                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
-                        " - TCP" : " - UDP";
+                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ? " - TCP" : " - UDP";
                     }
-                    ruleVm.Name = vm.Name + nameSuffix;
-                    CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
+
+                    if (!ruleVm.Name.EndsWith(nameSuffix))
+                    {
+                        ruleVm.Name += nameSuffix;
+                    }
+
+                    try
+                    {
+                        CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Rule '{ruleVm.Name}': {ex.Message}");
+                    }
                 }
+            }
+
+            if (errors.Count > 0)
+            {
+                string msg = $"Created {successCount} rules successfully.\n\nFailed to create {errors.Count} rules:\n" + string.Join("\n", errors.Take(5));
+                if (errors.Count > 5) msg += $"\n...and {errors.Count - 5} more.";
+
+                System.Windows.Forms.MessageBox.Show(msg, "Batch Creation Errors", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
         private void CreateSingleAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+            activityLogger.LogDebug($"[Rule Debug] Starting creation for rule: {vm.Name}");
+
+            // Use INetFwRule2 interface for Windows Firewall API
+            Type? ruleType = Type.GetTypeFromProgID("HNetCfg.FWRule");
+            if (ruleType == null)
+            {
+                activityLogger.LogDebug("[FATAL] Could not load HNetCfg.FWRule type. Firewall API unavailable.");
+                return;
+            }
+
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(ruleType)!;
+
             try
             {
                 firewallRule.Name = vm.Name;
                 firewallRule.Description = vm.Description;
                 firewallRule.Enabled = vm.IsEnabled;
                 firewallRule.Grouping = vm.Grouping;
-                firewallRule.Action = vm.Status == "Allow" ?
-                    NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
+
                 firewallRule.Protocol = vm.Protocol;
+
+                var action = vm.Status == "Allow" ? NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+                firewallRule.Action = action;
+                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
 
                 if (!string.IsNullOrWhiteSpace(vm.ServiceName))
                 {
@@ -855,38 +887,47 @@ namespace MinimalFirewall
                     firewallRule.ApplicationName = null;
                 }
 
-                if (vm.Protocol == ProtocolTypes.TCP.Value || vm.Protocol == ProtocolTypes.UDP.Value || vm.Protocol == ProtocolTypes.Any.Value)
+                if (vm.Protocol == 6 || vm.Protocol == 17)
                 {
-                    firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ?
-                    vm.LocalPorts : "*";
+                    firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ? vm.LocalPorts : "*";
                     firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
                 }
 
-                firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ?
-                vm.LocalAddresses : "*";
+                firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
                 firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
+
+                if (vm.Protocol == 1 || vm.Protocol == 58)
+                {
+                    firewallRule.IcmpTypesAndCodes = !string.IsNullOrWhiteSpace(icmpTypesAndCodes) ? icmpTypesAndCodes : "*";
+                }
 
                 NET_FW_PROFILE_TYPE2_ profiles = 0;
                 if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
                 if (vm.Profiles.Contains("Private")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
                 if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
+
                 if (profiles == 0 || vm.Profiles == "All") profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
                 firewallRule.Profiles = (int)profiles;
 
-                firewallRule.InterfaceTypes = interfaceTypes;
-                if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
+                string interfaces = string.IsNullOrWhiteSpace(interfaceTypes) ? "All" : interfaceTypes;
+                try
                 {
-                    firewallRule.IcmpTypesAndCodes = !string.IsNullOrWhiteSpace(icmpTypesAndCodes) ?
-                    icmpTypesAndCodes : "*";
+                    firewallRule.InterfaceTypes = interfaces;
                 }
-                else
+                catch (Exception ex)
                 {
-                    firewallRule.IcmpTypesAndCodes = null;
+                    activityLogger.LogDebug($"[Warning] Failed to set InterfaceTypes to '{interfaces}'. Defaulting to All. Error: {ex.Message}");
+                    firewallRule.InterfaceTypes = "All";
                 }
 
                 firewallService.CreateRule(firewallRule);
+
                 activityLogger.LogChange("Advanced Rule Created", vm.Name);
-                activityLogger.LogDebug($"Created Advanced Rule: '{vm.Name}'");
+            }
+            catch (Exception ex)
+            {
+                activityLogger.LogException($"[FATAL] CreateSingleAdvancedRule failed for '{vm.Name}'", ex);
+                throw;
             }
             finally
             {

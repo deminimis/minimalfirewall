@@ -12,6 +12,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using System.Linq;
 
 
 namespace MinimalFirewall
@@ -32,6 +34,7 @@ namespace MinimalFirewall
         public event Func<Task> DataRefreshRequested;
         public event Action AutoRefreshTimerChanged;
         public event Action? TrafficMonitorSettingChanged;
+
         public SettingsControl()
         {
             InitializeComponent();
@@ -87,8 +90,6 @@ namespace MinimalFirewall
             importReplaceButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
             exportDiagnosticButton.FlatAppearance.BorderSize = 1;
             exportDiagnosticButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-
-
 
             if (_dm.IsDarkMode)
             {
@@ -258,13 +259,18 @@ namespace MinimalFirewall
         {
             try
             {
-                string appDataPath = ConfigPathManager.GetAppDataDirectory();
-                Directory.CreateDirectory(appDataPath);
-                Process.Start("explorer.exe", appDataPath);
+                string standardAppDataPath = ConfigPathManager.GetStandardAppDataDirectory();
+
+                if (!Directory.Exists(standardAppDataPath))
+                {
+                    Directory.CreateDirectory(standardAppDataPath);
+                }
+
+                Process.Start("explorer.exe", standardAppDataPath);
             }
             catch (Exception ex)
             {
-                Messenger.MessageBox($"Could not open AppData folder.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox($"Could not open %AppData% folder.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

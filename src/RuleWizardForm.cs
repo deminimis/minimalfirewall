@@ -606,11 +606,44 @@ namespace MinimalFirewall
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, batchPayload));
                     Messenger.MessageBox($"{executables.Count} rules have been queued for creation.", "Task Queued", MessageBoxButtons.OK, MessageBoxIcon.None);
                     break;
+
                 case RuleTemplate.ProgramRule:
-                    string action = $"{_wizardAction} ({_wizardDirection})";
-                    var payload = new ApplyApplicationRulePayload { AppPaths = { _wizardAppPath }, Action = action };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+
+                    string progName = Path.GetFileNameWithoutExtension(_wizardAppPath);
+                    string actionStr = _wizardAction == Actions.Allow ? "Allow" : "Block";
+
+                    var programVm = new AdvancedRuleViewModel
+                    {
+                        Name = $"{actionStr} {progName}",
+                        Description = $"Rule created via Wizard for {progName}",
+                        IsEnabled = true,
+                        Status = actionStr,
+                        Direction = _wizardDirection,
+                        Protocol = 256, // 256 = Any
+                        ProtocolName = "Any",
+                        LocalPorts = "*",
+                        RemotePorts = "*",
+                        LocalAddresses = "*",
+                        RemoteAddresses = "*",
+                        ApplicationName = _wizardAppPath,
+                        ServiceName = "",
+                        Grouping = MFWConstants.MainRuleGroup,
+                        Profiles = "All",
+                        Type = RuleType.Program,
+                        InterfaceTypes = "All",
+                        IcmpTypesAndCodes = ""
+                    };
+
+                    var progPayload = new CreateAdvancedRulePayload
+                    {
+                        ViewModel = programVm,
+                        InterfaceTypes = "All",
+                        IcmpTypesAndCodes = ""
+                    };
+
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, progPayload));
                     break;
+
                 case RuleTemplate.PortRule:
                     var vm = new AdvancedRuleViewModel
                     {
@@ -631,10 +664,12 @@ namespace MinimalFirewall
                     var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload));
                     break;
+
                 case RuleTemplate.BlockService:
                     var servicePayload = new ApplyServiceRulePayload { ServiceName = _wizardServiceName, Action = "Block (All)" };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload));
                     break;
+
                 case RuleTemplate.AllowFileShare:
                     var fileShareVm = new AdvancedRuleViewModel
                     {
@@ -655,6 +690,7 @@ namespace MinimalFirewall
                     var fileSharePayload = new CreateAdvancedRulePayload { ViewModel = fileShareVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, fileSharePayload));
                     break;
+
                 case RuleTemplate.BlockDevice:
                     var blockDeviceVm = new AdvancedRuleViewModel
                     {
@@ -675,6 +711,7 @@ namespace MinimalFirewall
                     var blockDevicePayload = new CreateAdvancedRulePayload { ViewModel = blockDeviceVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, blockDevicePayload));
                     break;
+
                 case RuleTemplate.RestrictApp:
                     string appName = Path.GetFileNameWithoutExtension(_wizardAppPath);
                     var allowLocalVm = new AdvancedRuleViewModel

@@ -156,7 +156,6 @@ namespace MinimalFirewall
         private static AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<AdvancedRuleViewModel> group)
         {
             var firstRule = group[0];
-
             var commonName = GetCommonName(group);
             if (string.IsNullOrEmpty(commonName) || commonName.StartsWith('@'))
             {
@@ -183,14 +182,15 @@ namespace MinimalFirewall
             bool hasInBlock = group.Exists(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Incoming));
             bool hasOutBlock = group.Exists(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Outgoing));
 
-            aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "N/A");
+            aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "-");
             if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
 
-            aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "N/A");
+            aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "-");
             if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
 
             var localPorts = group.Select(r => r.LocalPorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
             aggRule.LocalPorts = localPorts.Count > 0 ? string.Join(", ", localPorts) : "*";
+
             var remotePorts = group.Select(r => r.RemotePorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
             aggRule.RemotePorts = remotePorts.Count > 0 ? string.Join(", ", remotePorts) : "*";
 

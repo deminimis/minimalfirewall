@@ -110,7 +110,6 @@ namespace MinimalFirewall
 
                 var currentPids = connections.Select(c => c.ProcessId).Distinct().ToHashSet();
 
-                // Cleanup old cache entries
                 foreach (var cachedPid in _processCache.Keys.ToList())
                 {
                     if (!currentPids.Contains(cachedPid))
@@ -259,6 +258,8 @@ namespace MinimalFirewall
 
         public void ProcessDashboardAction(PendingConnectionViewModel pending, string decision, bool trustPublisher = false)
         {
+            _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
+
             var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, TrustPublisher = trustPublisher };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing: {decision} {pending.FileName}"));
             PendingConnections.Remove(pending);
@@ -506,6 +507,11 @@ namespace MinimalFirewall
 
         public void CreateProgramRule(string appPath, string action)
         {
+            if (!string.IsNullOrEmpty(appPath))
+            {
+                _eventListenerService.SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(5));
+            }
+
             FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
             var newAggregatedRule = new AggregatedRuleViewModel
             {
@@ -566,6 +572,8 @@ namespace MinimalFirewall
 
         public void ProcessSpecificAllow(PendingConnectionViewModel pending)
         {
+            _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
+
             var vm = new AdvancedRuleViewModel
             {
                 Name = $"Allow {pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
@@ -607,6 +615,25 @@ namespace MinimalFirewall
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
 
             DashboardActionProcessed?.Invoke(pending);
+        }
+
+        public void CreateWildcardRule(PendingConnectionViewModel pending, WildcardRule newRule)
+        {
+            _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
+
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
+
+            string decision = newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow";
+            var allowPayload = new ProcessPendingConnectionPayload
+            {
+                PendingConnection = pending,
+                Decision = decision,
+                Duration = default,
+                TrustPublisher = false
+            };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, allowPayload));
+
+            PendingConnections.Remove(pending);
         }
 
         public async Task CleanUpOrphanedRulesAsync()
