@@ -771,12 +771,11 @@ namespace MinimalFirewall
                 // If user requested specific ports but "Any" protocol, prioritize protocol, ignoring ports (due to api)
             }
 
-            // A Windows Firewall rule must have exactly one direction, so must create two rules if user selects "both" 
+            // API: rule must have exactly one direction, must create two rules if user selects "both" 
             var directionsToCreate = new List<Directions>();
             if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
             if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
-
-            // Do not split "Any" into TCP/UDP. 
+ 
             var protocolsToCreate = new List<int> { vm.Protocol };
 
             List<string> errors = new List<string>();
@@ -893,6 +892,11 @@ namespace MinimalFirewall
                     firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
                 }
 
+                {
+                    firewallRule.LocalPorts = "*";
+                    firewallRule.RemotePorts = "*";
+                }
+
                 firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
                 firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
 
@@ -988,93 +992,88 @@ namespace MinimalFirewall
             }
         }
 
-        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, int protocol, string description = "")
-        {
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            firewallRule.Name = name;
-            firewallRule.ApplicationName = appPath;
-            firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-            firewallRule.Action = (NET_FW_ACTION_)action;
-            firewallRule.Enabled = true;
-            firewallRule.Protocol = protocol;
-            if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
-            {
-                firewallRule.LocalPorts = "*";
-                firewallRule.RemotePorts = "*";
-            }
-
-            if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
-            {
-                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
-                firewallRule.Description = description;
-            }
-            else
-            {
-                firewallRule.Grouping = MFWConstants.MainRuleGroup;
-            }
-            return firewallRule;
-        }
-
         private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
         {
             activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
-            var firewallRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
-            firewallService.CreateRule(firewallRule);
+
+            var vm = new AdvancedRuleViewModel
+            {
+                Name = name,
+                Description = description,
+                IsEnabled = true,
+                Grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix)) ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup,
+                Status = action == Actions.Allow ? "Allow" : "Block",
+                Direction = direction,
+                Protocol = protocol,
+                ApplicationName = appPath,
+                ServiceName = "",
+                LocalPorts = "*",
+                RemotePorts = "*",
+                LocalAddresses = "*",
+                RemoteAddresses = "*",
+                Profiles = "All",
+                Type = RuleType.Program,
+                InterfaceTypes = "All",
+                IcmpTypesAndCodes = ""
+            };
+
+            CreateSingleAdvancedRule(vm, "All", "");
         }
 
         private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string? appPath = null)
         {
             activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with AppPath: '{appPath ?? "null"}'");
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            try
-            {
-                firewallRule.Name = name;
-                firewallRule.serviceName = serviceName;
-                firewallRule.ApplicationName = string.IsNullOrEmpty(appPath) ? null : appPath;
-                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-                firewallRule.Action = (NET_FW_ACTION_)action;
-                firewallRule.Protocol = protocol;
-                if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
-                {
-                    firewallRule.LocalPorts = "*";
-                    firewallRule.RemotePorts = "*";
-                }
 
-                firewallRule.Grouping = MFWConstants.MainRuleGroup;
-                firewallRule.Enabled = true;
-                firewallService.CreateRule(firewallRule);
-            }
-            finally
+            var vm = new AdvancedRuleViewModel
             {
-                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
-            }
+                Name = name,
+                Description = "",
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Status = action == Actions.Allow ? "Allow" : "Block",
+                Direction = direction,
+                Protocol = protocol,
+                ApplicationName = appPath ?? "",
+                ServiceName = serviceName,
+                LocalPorts = "*",
+                RemotePorts = "*",
+                LocalAddresses = "*",
+                RemoteAddresses = "*",
+                Profiles = "All",
+                Type = RuleType.Service,
+                InterfaceTypes = "All",
+                IcmpTypesAndCodes = ""
+            };
+
+            CreateSingleAdvancedRule(vm, "All", "");
         }
 
         private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
         {
             activityLogger.LogDebug($"Creating UWP Rule: '{name}' for PFN '{packageFamilyName}'");
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-            try
-            {
-                firewallRule.Name = name;
-                firewallRule.Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName;
-                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
-                firewallRule.Action = (NET_FW_ACTION_)action;
-                firewallRule.Protocol = protocol;
-                if (protocol == ProtocolTypes.TCP.Value || protocol == ProtocolTypes.UDP.Value || protocol == ProtocolTypes.Any.Value)
-                {
-                    firewallRule.LocalPorts = "*";
-                    firewallRule.RemotePorts = "*";
-                }
 
-                firewallRule.Grouping = MFWConstants.MainRuleGroup;
-                firewallRule.Enabled = true;
-                firewallService.CreateRule(firewallRule);
-            }
-            finally
+            var vm = new AdvancedRuleViewModel
             {
-                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
-            }
+                Name = name,
+                Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName,
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Status = action == Actions.Allow ? "Allow" : "Block",
+                Direction = direction,
+                Protocol = protocol,
+                ApplicationName = "", 
+                ServiceName = "",
+                LocalPorts = "*",
+                RemotePorts = "*",
+                LocalAddresses = "*",
+                RemoteAddresses = "*",
+                Profiles = "All",
+                Type = RuleType.UWP,
+                InterfaceTypes = "All",
+                IcmpTypesAndCodes = ""
+            };
+
+            CreateSingleAdvancedRule(vm, "All", "");
         }
 
         public async Task DeleteGroupAsync(string groupName)
@@ -1153,110 +1152,35 @@ namespace MinimalFirewall
                     return;
                 }
 
-                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-                string? valueWithError = null;
-                bool ruleCreationSkipped = false;
+                var vm = new AdvancedRuleViewModel
+                {
+                    Name = baseName,
+                    ApplicationName = string.IsNullOrEmpty(serviceNameToUse) ? appPath : null,
+                    ServiceName = !string.IsNullOrEmpty(serviceNameToUse) ? serviceNameToUse : "",
+                    Direction = dir,
+                    Status = act == Actions.Allow ? "Allow" : "Block",
+                    IsEnabled = true,
+                    Grouping = MFWConstants.WildcardRuleGroup,
+                    Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]",
+                    Protocol = protocol,
+                    LocalPorts = (protocol == 6 || protocol == 17) ? (string.IsNullOrEmpty(rule.LocalPorts) ? "*" : rule.LocalPorts) : "*",
+                    RemotePorts = (protocol == 6 || protocol == 17) ? (string.IsNullOrEmpty(rule.RemotePorts) ? "*" : rule.RemotePorts) : "*",
+                    LocalAddresses = "*",
+                    RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
+                    Profiles = "All",
+                    Type = RuleType.Wildcard,
+                    InterfaceTypes = "All",
+                    IcmpTypesAndCodes = ""
+                };
+
                 try
                 {
-                    firewallRule.Name = baseName;
-                    if (!string.IsNullOrEmpty(serviceNameToUse))
-                    {
-                        firewallRule.serviceName = serviceNameToUse;
-                        firewallRule.ApplicationName = appPath;
-                    }
-                    else
-                    {
-                        firewallRule.ApplicationName = appPath;
-                        firewallRule.serviceName = null;
-                    }
-
-                    firewallRule.Direction = (NET_FW_RULE_DIRECTION_)dir;
-                    firewallRule.Action = (NET_FW_ACTION_)act;
-                    firewallRule.Enabled = true;
-                    firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
-                    firewallRule.Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]";
-                    firewallRule.Protocol = protocol;
-                    try
-                    {
-                        valueWithError = rule.LocalPorts;
-                        if (protocol != 6 && protocol != 17) valueWithError = "*";
-                        else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-                        firewallRule.LocalPorts = valueWithError;
-                    }
-                    catch (ArgumentException portEx)
-                    {
-                        activityLogger.LogException($"ApplyWildcardMatch-SetLocalPorts-{baseName}", portEx);
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting LocalPorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
-                        try
-                        {
-                            firewallRule.LocalPorts = "*";
-                        }
-                        catch (Exception fbEx)
-                        {
-                            activityLogger.LogException($"ApplyWildcardMatch-FallbackLocalPorts-{baseName}", fbEx);
-                            ruleCreationSkipped = true;
-                        }
-                    }
-
-                    if (ruleCreationSkipped) return;
-                    try
-                    {
-                        valueWithError = rule.RemotePorts;
-                        if (protocol != 6 && protocol != 17) valueWithError = "*";
-                        else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
-                        firewallRule.RemotePorts = valueWithError;
-                    }
-                    catch (ArgumentException portEx)
-                    {
-                        activityLogger.LogException($"ApplyWildcardMatch-SetRemotePorts-{baseName}", portEx);
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemotePorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
-                        try
-                        {
-                            firewallRule.RemotePorts = "*";
-                        }
-                        catch (Exception fbEx)
-                        {
-                            activityLogger.LogException($"ApplyWildcardMatch-FallbackRemotePorts-{baseName}", fbEx);
-                            ruleCreationSkipped = true;
-                        }
-                    }
-
-                    if (ruleCreationSkipped) return;
-                    try
-                    {
-                        valueWithError = rule.RemoteAddresses;
-                        firewallRule.RemoteAddresses = valueWithError;
-                    }
-                    catch (ArgumentException addrEx)
-                    {
-                        activityLogger.LogException($"ApplyWildcardMatch-SetRemoteAddr-{baseName}", addrEx);
-                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemoteAddresses to '*' for rule '{baseName}' due to error: {addrEx.Message}");
-                        try
-                        {
-                            firewallRule.RemoteAddresses = "*";
-                        }
-                        catch (Exception fbEx)
-                        {
-                            activityLogger.LogException($"ApplyWildcardMatch-FallbackRemoteAddr-{baseName}", fbEx);
-                            ruleCreationSkipped = true;
-                        }
-                    }
-
-                    if (ruleCreationSkipped) return;
-                    firewallService.CreateRule(firewallRule);
+                    CreateSingleAdvancedRule(vm, "All", "");
                     activityLogger.LogDebug($"[ApplyWildcardMatch] Successfully created rule '{baseName}' from wildcard match.");
-                }
-                catch (COMException comEx)
-                {
-                    activityLogger.LogException($"ApplyWildcardMatch-CreateRuleCOM-{baseName}", comEx);
                 }
                 catch (Exception ex)
                 {
-                    activityLogger.LogException($"ApplyWildcardMatch-CreateRuleGeneral-{baseName}", ex);
-                }
-                finally
-                {
-                    if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+                    activityLogger.LogException($"ApplyWildcardMatch-CreateRule-{baseName}", ex);
                 }
             }
 
