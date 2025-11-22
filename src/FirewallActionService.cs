@@ -768,14 +768,14 @@ namespace MinimalFirewall
 
             if (hasSpecificPorts && vm.Protocol == ProtocolTypes.Any.Value)
             {
-                // If user requested specific ports but "Any" protocol, prioritize protocol, ignoring ports (due to api)
+
             }
 
             // API: rule must have exactly one direction, must create two rules if user selects "both" 
             var directionsToCreate = new List<Directions>();
             if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
             if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
- 
+
             var protocolsToCreate = new List<int> { vm.Protocol };
 
             List<string> errors = new List<string>();
@@ -886,15 +886,11 @@ namespace MinimalFirewall
                     firewallRule.ApplicationName = null;
                 }
 
+                // Setting ports on ANY other protocol causes Exception 0x80070057
                 if (vm.Protocol == 6 || vm.Protocol == 17)
                 {
                     firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ? vm.LocalPorts : "*";
                     firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
-                }
-
-                {
-                    firewallRule.LocalPorts = "*";
-                    firewallRule.RemotePorts = "*";
                 }
 
                 firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
@@ -1061,7 +1057,7 @@ namespace MinimalFirewall
                 Status = action == Actions.Allow ? "Allow" : "Block",
                 Direction = direction,
                 Protocol = protocol,
-                ApplicationName = "", 
+                ApplicationName = "",
                 ServiceName = "",
                 LocalPorts = "*",
                 RemotePorts = "*",
@@ -1072,7 +1068,6 @@ namespace MinimalFirewall
                 InterfaceTypes = "All",
                 IcmpTypesAndCodes = ""
             };
-
             CreateSingleAdvancedRule(vm, "All", "");
         }
 

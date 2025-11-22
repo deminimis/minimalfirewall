@@ -1,0 +1,3933 @@
+CONTEXT SUMMARY:
+Total Files: 6
+------------------------------
+- CreateAdvancedRuleForm.cs
+- CreateAdvancedRuleForm.Designer.cs
+- FirewallActionService.cs
+- FirewallDataService.cs
+- FirewallEventListenerService.cs
+- MainViewModel.cs
+==================================================
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/CreateAdvancedRuleForm.cs
+--------------------------------------------------------------------------------
+using DarkModeForms;
+using MinimalFirewall.TypedObjects;
+using System.ComponentModel;
+using NetFwTypeLib;
+using MinimalFirewall.Groups;
+using System.Text.RegularExpressions;
+using System.Net;
+
+namespace MinimalFirewall
+{
+    public partial class CreateAdvancedRuleForm : Form
+    {
+        private readonly DarkModeCS dm;
+        private readonly FirewallActionsService _actionsService;
+        private readonly FirewallRuleViewModel _viewModel;
+        private readonly FirewallGroupManager _groupManager;
+        private readonly ToolTip _toolTip;
+        private readonly AppSettings _appSettings;
+        public AdvancedRuleViewModel? RuleVm { get; private set; }
+        private readonly AdvancedRuleViewModel? _originalRuleVm;
+
+        public CreateAdvancedRuleForm(FirewallActionsService actionsService, AppSettings appSettings)
+        {
+            InitializeComponent();
+            _appSettings = appSettings;
+            dm = new DarkModeCS(this);
+            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(appSettings.Theme == "Dark");
+
+            _actionsService = actionsService;
+            _groupManager = new FirewallGroupManager();
+            _toolTip = new ToolTip();
+            _viewModel = new FirewallRuleViewModel();
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+
+            protocolComboBox.Items.AddRange(new object[] {
+                ProtocolTypes.Any,
+                ProtocolTypes.TCP,
+                ProtocolTypes.UDP,
+                ProtocolTypes.ICMPv4,
+                ProtocolTypes.ICMPv6,
+                ProtocolTypes.IGMP
+            });
+            protocolComboBox.SelectedItem = ProtocolTypes.Any;
+            LoadFirewallGroups();
+            _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
+            _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
+            this.Load += (sender, e) =>
+            {
+                var workingArea = Screen.FromControl(this).WorkingArea;
+                if (this.Height > workingArea.Height)
+                {
+                    this.Height = workingArea.Height;
+                }
+                this.CenterToParent();
+            };
+        }
+
+        public CreateAdvancedRuleForm(FirewallActionsService actionsService, string appPath, string direction, AppSettings appSettings)
+               : this(actionsService, appSettings)
+        {
+            programPathTextBox.Text = appPath;
+            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+            {
+                inboundRadioButton.Checked = true;
+            }
+            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+            {
+                outboundRadioButton.Checked = true;
+            }
+            else
+            {
+                bothDirRadioButton.Checked = true;
+            }
+        }
+
+        public CreateAdvancedRuleForm(FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit, AppSettings appSettings)
+            : this(actionsService, appSettings)
+        {
+            _originalRuleVm = ruleToEdit;
+            this.Text = "Edit Advanced Rule";
+            PopulateFormFromRule(ruleToEdit);
+        }
+
+        private void PopulateFormFromRule(AdvancedRuleViewModel rule)
+        {
+            ruleNameTextBox.Text = rule.Name;
+            descriptionTextBox.Text = rule.Description;
+            enabledCheckBox.Checked = rule.IsEnabled;
+
+            if (rule.Status == "Allow")
+                allowRadioButton.Checked = true;
+            else
+                blockRadioButton.Checked = true;
+
+            if (rule.Direction == (Directions.Incoming | Directions.Outgoing))
+                bothDirRadioButton.Checked = true;
+            else if (rule.Direction == Directions.Incoming)
+                inboundRadioButton.Checked = true;
+            else
+                outboundRadioButton.Checked = true;
+
+            programPathTextBox.Text = rule.ApplicationName;
+            serviceNameTextBox.Text = (rule.ServiceName == "*" || string.IsNullOrEmpty(rule.ServiceName)) ? string.Empty : rule.ServiceName;
+
+            int protocolIndex = -1;
+            var items = protocolComboBox.Items.OfType<ProtocolTypes>().ToList();
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i].Value == rule.Protocol)
+                {
+                    protocolIndex = i;
+                    break;
+                }
+            }
+
+            if (protocolIndex != -1)
+                protocolComboBox.SelectedIndex = protocolIndex;
+            else
+                protocolComboBox.SelectedItem = ProtocolTypes.Any;
+            _viewModel.SelectedProtocol = (ProtocolTypes)protocolComboBox.SelectedItem;
+
+            localPortsTextBox.Text = rule.LocalPorts;
+            remotePortsTextBox.Text = rule.RemotePorts;
+
+            localAddressTextBox.Text = rule.LocalAddresses;
+            remoteAddressTextBox.Text = rule.RemoteAddresses;
+
+            domainCheckBox.Checked = rule.Profiles.Contains("Domain") ||
+                rule.Profiles == "All";
+            privateCheckBox.Checked = rule.Profiles.Contains("Private") || rule.Profiles == "All";
+            publicCheckBox.Checked = rule.Profiles.Contains("Public") || rule.Profiles == "All";
+
+            groupComboBox.Text = rule.Grouping;
+            lanCheckBox.Checked = rule.InterfaceTypes.Contains("Lan") || rule.InterfaceTypes == "All";
+            wirelessCheckBox.Checked = rule.InterfaceTypes.Contains("Wireless") || rule.InterfaceTypes == "All";
+            remoteAccessCheckBox.Checked = rule.InterfaceTypes.Contains("RemoteAccess") ||
+                rule.InterfaceTypes == "All";
+
+            if (_viewModel.IsIcmpSectionVisible)
+            {
+                icmpTypesAndCodesTextBox.Text = rule.IcmpTypesAndCodes;
+            }
+        }
+
+
+        private void LoadFirewallGroups()
+        {
+            var groups = _groupManager.GetAllGroups();
+            var groupNames = new HashSet<string>(groups.Select(g => g.Name));
+
+            groupNames.Add(MFWConstants.MainRuleGroup);
+            groupNames.Add(MFWConstants.WildcardRuleGroup);
+
+            groupComboBox.Items.Clear();
+            foreach (var name in groupNames.OrderBy(n => n))
+            {
+                groupComboBox.Items.Add(name);
+            }
+
+            groupComboBox.SelectedItem = MFWConstants.MainRuleGroup;
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(_viewModel.IsPortSectionVisible))
+            {
+                portsGroupBox.Visible = _viewModel.IsPortSectionVisible;
+            }
+            else if (e.PropertyName == nameof(_viewModel.IsIcmpSectionVisible))
+            {
+                icmpGroupBox.Visible = _viewModel.IsIcmpSectionVisible;
+            }
+        }
+
+        private void ProtocolComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (protocolComboBox.SelectedItem is ProtocolTypes selectedProtocol)
+            {
+                _viewModel.SelectedProtocol = selectedProtocol;
+            }
+        }
+
+        private void OkButton_Click(object sender, EventArgs e)
+        {
+            if (!this.ValidateChildren())
+            {
+                Messenger.MessageBox("Please correct the validation errors before submitting.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(ruleNameTextBox.Text))
+            {
+                Messenger.MessageBox("Rule name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ruleNameTextBox.Focus();
+                return;
+            }
+
+            if (protocolComboBox.SelectedItem is not ProtocolTypes selectedProtocol)
+            {
+                Messenger.MessageBox("A valid protocol must be selected.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (_originalRuleVm == null)
+            {
+                bool hasService = !string.IsNullOrWhiteSpace(serviceNameTextBox.Text);
+                bool hasWildcardPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) || localPortsTextBox.Text.Trim() == "*" ||
+                                        string.IsNullOrWhiteSpace(remotePortsTextBox.Text) || remotePortsTextBox.Text.Trim() == "*";
+                bool protocolIsNotAny = selectedProtocol.Value != ProtocolTypes.Any.Value;
+                if (hasService && hasWildcardPorts && protocolIsNotAny)
+                {
+                    Messenger.MessageBox("When creating a rule for a service with a specific protocol (like TCP or UDP), you must also specify concrete Local and Remote ports. Wildcards (*) are only allowed if the protocol is 'Any'.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+            string groupName = groupComboBox.Text;
+            if (string.IsNullOrWhiteSpace(groupName))
+            {
+                groupName = MFWConstants.MainRuleGroup;
+            }
+
+            var rule = new AdvancedRuleViewModel
+            {
+                Name = ruleNameTextBox.Text,
+                Description = descriptionTextBox.Text,
+                IsEnabled = enabledCheckBox.Checked,
+                Grouping = groupName,
+                Status = allowRadioButton.Checked ?
+                    "Allow" : "Block",
+                Direction = GetDirection(),
+                Protocol = selectedProtocol.Value,
+                ProtocolName = selectedProtocol.Name,
+                ApplicationName = programPathTextBox.Text,
+                ServiceName = serviceNameTextBox.Text,
+                LocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ?
+                    "*" : localPortsTextBox.Text,
+                RemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ?
+                    "*" : remotePortsTextBox.Text,
+                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ?
+                    "*" : localAddressTextBox.Text,
+                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ?
+                    "*" : remoteAddressTextBox.Text,
+                Profiles = GetProfileString(),
+                Type = RuleType.Advanced,
+                InterfaceTypes = GetInterfaceTypes(),
+                IcmpTypesAndCodes = icmpTypesAndCodesTextBox.Text
+            };
+            this.RuleVm = rule;
+
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        private Directions GetDirection()
+        {
+            if (inboundRadioButton.Checked) return Directions.Incoming;
+            if (outboundRadioButton.Checked) return Directions.Outgoing;
+            return Directions.Incoming | Directions.Outgoing;
+        }
+
+        private string GetProfileString()
+        {
+            var profiles = new List<string>(3);
+            if (domainCheckBox.Checked) profiles.Add("Domain");
+            if (privateCheckBox.Checked) profiles.Add("Private");
+            if (publicCheckBox.Checked) profiles.Add("Public");
+            if (profiles.Count == 3 || profiles.Count == 0) return "All";
+            return string.Join(", ", profiles);
+        }
+
+        public string GetInterfaceTypes()
+        {
+            var types = new List<string>(3);
+            if (remoteAccessCheckBox.Checked) types.Add("RemoteAccess");
+            if (wirelessCheckBox.Checked) types.Add("Wireless");
+            if (lanCheckBox.Checked) types.Add("Lan");
+            if (types.Count == 3 || types.Count == 0) return "All";
+            return string.Join(",", types);
+        }
+
+        private void BrowseButton_Click(object sender, EventArgs e)
+        {
+            using var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Executables (*.exe)|*.exe|All files (*.*)|*.*",
+                Title = "Select a program"
+            };
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                programPathTextBox.Text = openFileDialog.FileName;
+            }
+        }
+
+        private void browseServiceButton_Click(object sender, EventArgs e)
+        {
+            var services = SystemDiscoveryService.GetServicesWithExePaths();
+            using var browseForm = new BrowseServicesForm(services, _appSettings);
+            if (browseForm.ShowDialog(this) == DialogResult.OK && browseForm.SelectedService != null)
+            {
+                serviceNameTextBox.Text = browseForm.SelectedService.ServiceName;
+                if (!string.IsNullOrEmpty(browseForm.SelectedService.ExePath))
+                {
+                    programPathTextBox.Text = PathResolver.NormalizePath(browseForm.SelectedService.ExePath);
+                }
+            }
+        }
+
+        private void CancelButton_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+
+        private void AddGroupButton_Click(object sender, EventArgs e)
+        {
+            string newGroupName = groupComboBox.Text;
+            if (!string.IsNullOrWhiteSpace(newGroupName) && !newGroupName.EndsWith(MFWConstants.MfwRuleSuffix))
+            {
+                newGroupName += MFWConstants.MfwRuleSuffix;
+            }
+
+            if (!groupComboBox.Items.Contains(newGroupName))
+            {
+                groupComboBox.Items.Add(newGroupName);
+                groupComboBox.SelectedItem = newGroupName;
+            }
+        }
+
+        private void localPortsTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void remotePortsTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void localAddressTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+
+        private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (!ValidationUtility.ValidateIcmpString(textBox.Text, out string errorMessage))
+                {
+                    errorProvider1.SetError(textBox, errorMessage);
+                    e.Cancel = true;
+                }
+                else
+                {
+                    errorProvider1.SetError(textBox, string.Empty);
+                }
+            }
+        }
+    }
+}
+
+
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/CreateAdvancedRuleForm.Designer.cs
+--------------------------------------------------------------------------------
+// File:CreateAdvancedRuleForm.Designer.cs
+namespace MinimalFirewall
+{
+    partial class CreateAdvancedRuleForm
+    {
+        private System.ComponentModel.IContainer components = null;
+        private System.Windows.Forms.Label labelName;
+        private System.Windows.Forms.TextBox ruleNameTextBox;
+        private System.Windows.Forms.Label labelDescription;
+        private System.Windows.Forms.TextBox descriptionTextBox;
+        private System.Windows.Forms.CheckBox enabledCheckBox;
+        private System.Windows.Forms.GroupBox actionGroupBox;
+        private System.Windows.Forms.RadioButton blockRadioButton;
+        private System.Windows.Forms.RadioButton allowRadioButton;
+        private System.Windows.Forms.GroupBox directionGroupBox;
+        private System.Windows.Forms.RadioButton bothDirRadioButton;
+        private System.Windows.Forms.RadioButton outboundRadioButton;
+        private System.Windows.Forms.RadioButton inboundRadioButton;
+        private System.Windows.Forms.GroupBox programGroupBox;
+        private System.Windows.Forms.Button browseButton;
+        private System.Windows.Forms.TextBox programPathTextBox;
+        private System.Windows.Forms.Label labelProgram;
+        private System.Windows.Forms.TextBox serviceNameTextBox;
+        private System.Windows.Forms.Label labelService;
+        private System.Windows.Forms.GroupBox protocolGroupBox;
+        private DarkModeForms.FlatComboBox protocolComboBox;
+        private System.Windows.Forms.Label labelProtocol;
+        private System.Windows.Forms.GroupBox portsGroupBox;
+        private System.Windows.Forms.TextBox remotePortsTextBox;
+        private System.Windows.Forms.Label labelRemotePorts;
+        private System.Windows.Forms.TextBox localPortsTextBox;
+        private System.Windows.Forms.Label labelLocalPorts;
+        private System.Windows.Forms.GroupBox icmpGroupBox;
+        private System.Windows.Forms.TextBox icmpTypesAndCodesTextBox;
+        private System.Windows.Forms.Label labelIcmpInfo;
+        private System.Windows.Forms.GroupBox scopeGroupBox;
+        private System.Windows.Forms.TextBox remoteAddressTextBox;
+        private System.Windows.Forms.Label labelRemoteAddress;
+        private System.Windows.Forms.TextBox localAddressTextBox;
+        private System.Windows.Forms.Label labelLocalAddress;
+        private System.Windows.Forms.GroupBox profilesGroupBox;
+        private System.Windows.Forms.CheckBox publicCheckBox;
+        private System.Windows.Forms.CheckBox privateCheckBox;
+        private System.Windows.Forms.CheckBox domainCheckBox;
+        private System.Windows.Forms.Button okButton;
+        private System.Windows.Forms.Button cancelButton;
+        private System.Windows.Forms.GroupBox interfaceTypesGroupBox;
+        private System.Windows.Forms.CheckBox lanCheckBox;
+        private System.Windows.Forms.CheckBox wirelessCheckBox;
+        private System.Windows.Forms.CheckBox remoteAccessCheckBox;
+        private System.Windows.Forms.Label labelGroup;
+        private DarkModeForms.FlatComboBox groupComboBox;
+        private System.Windows.Forms.Button addGroupButton;
+        private System.Windows.Forms.Panel mainPanel;
+        private System.Windows.Forms.Panel bottomPanel;
+        private System.Windows.Forms.Label programPathNoteLabel;
+        private System.Windows.Forms.Button browseServiceButton;
+        private System.Windows.Forms.ErrorProvider errorProvider1;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.labelName = new System.Windows.Forms.Label();
+            this.ruleNameTextBox = new System.Windows.Forms.TextBox();
+            this.labelDescription = new System.Windows.Forms.Label();
+            this.descriptionTextBox = new System.Windows.Forms.TextBox();
+            this.enabledCheckBox = new System.Windows.Forms.CheckBox();
+            this.actionGroupBox = new System.Windows.Forms.GroupBox();
+            this.blockRadioButton = new System.Windows.Forms.RadioButton();
+            this.allowRadioButton = new System.Windows.Forms.RadioButton();
+            this.directionGroupBox = new System.Windows.Forms.GroupBox();
+            this.bothDirRadioButton = new System.Windows.Forms.RadioButton();
+            this.outboundRadioButton = new System.Windows.Forms.RadioButton();
+            this.inboundRadioButton = new System.Windows.Forms.RadioButton();
+            this.programGroupBox = new System.Windows.Forms.GroupBox();
+            this.browseServiceButton = new System.Windows.Forms.Button();
+            this.programPathNoteLabel = new System.Windows.Forms.Label();
+            this.serviceNameTextBox = new System.Windows.Forms.TextBox();
+            this.labelService = new System.Windows.Forms.Label();
+            this.browseButton = new System.Windows.Forms.Button();
+            this.programPathTextBox = new System.Windows.Forms.TextBox();
+            this.labelProgram = new System.Windows.Forms.Label();
+            this.protocolGroupBox = new System.Windows.Forms.GroupBox();
+            this.protocolComboBox = new DarkModeForms.FlatComboBox();
+            this.labelProtocol = new System.Windows.Forms.Label();
+            this.portsGroupBox = new System.Windows.Forms.GroupBox();
+            this.remotePortsTextBox = new System.Windows.Forms.TextBox();
+            this.labelRemotePorts = new System.Windows.Forms.Label();
+            this.localPortsTextBox = new System.Windows.Forms.TextBox();
+            this.labelLocalPorts = new System.Windows.Forms.Label();
+            this.icmpGroupBox = new System.Windows.Forms.GroupBox();
+            this.icmpTypesAndCodesTextBox = new System.Windows.Forms.TextBox();
+            this.labelIcmpInfo = new System.Windows.Forms.Label();
+            this.scopeGroupBox = new System.Windows.Forms.GroupBox();
+            this.remoteAddressTextBox = new System.Windows.Forms.TextBox();
+            this.labelRemoteAddress = new System.Windows.Forms.Label();
+            this.localAddressTextBox = new System.Windows.Forms.TextBox();
+            this.labelLocalAddress = new System.Windows.Forms.Label();
+            this.profilesGroupBox = new System.Windows.Forms.GroupBox();
+            this.publicCheckBox = new System.Windows.Forms.CheckBox();
+            this.privateCheckBox = new System.Windows.Forms.CheckBox();
+            this.domainCheckBox = new System.Windows.Forms.CheckBox();
+            this.okButton = new System.Windows.Forms.Button();
+            this.cancelButton = new System.Windows.Forms.Button();
+            this.interfaceTypesGroupBox = new System.Windows.Forms.GroupBox();
+            this.lanCheckBox = new System.Windows.Forms.CheckBox();
+            this.wirelessCheckBox = new System.Windows.Forms.CheckBox();
+            this.remoteAccessCheckBox = new System.Windows.Forms.CheckBox();
+            this.labelGroup = new System.Windows.Forms.Label();
+            this.groupComboBox = new DarkModeForms.FlatComboBox();
+            this.addGroupButton = new System.Windows.Forms.Button();
+            this.mainPanel = new System.Windows.Forms.Panel();
+            this.bottomPanel = new System.Windows.Forms.Panel();
+            this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
+            this.actionGroupBox.SuspendLayout();
+            this.directionGroupBox.SuspendLayout();
+            this.programGroupBox.SuspendLayout();
+            this.protocolGroupBox.SuspendLayout();
+            this.portsGroupBox.SuspendLayout();
+            this.icmpGroupBox.SuspendLayout();
+            this.scopeGroupBox.SuspendLayout();
+            this.profilesGroupBox.SuspendLayout();
+            this.interfaceTypesGroupBox.SuspendLayout();
+            this.mainPanel.SuspendLayout();
+            this.bottomPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // labelName
+            // 
+            this.labelName.AutoSize = true;
+            this.labelName.Location = new System.Drawing.Point(12, 15);
+            this.labelName.Name = "labelName";
+            this.labelName.Size = new System.Drawing.Size(49, 20);
+            this.labelName.TabIndex = 0;
+            this.labelName.Text = "Name";
+            // 
+            // ruleNameTextBox
+            // 
+            this.ruleNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.ruleNameTextBox.Location = new System.Drawing.Point(80, 12);
+            this.ruleNameTextBox.Name = "ruleNameTextBox";
+            this.ruleNameTextBox.Size = new System.Drawing.Size(692, 27);
+            this.ruleNameTextBox.TabIndex = 1;
+            // 
+            // labelDescription
+            // 
+            this.labelDescription.AutoSize = true;
+            this.labelDescription.Location = new System.Drawing.Point(12, 44);
+            this.labelDescription.Name = "labelDescription";
+            this.labelDescription.Size = new System.Drawing.Size(85, 20);
+            this.labelDescription.TabIndex = 2;
+            this.labelDescription.Text = "Description";
+            // 
+            // descriptionTextBox
+            // 
+            this.descriptionTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.descriptionTextBox.Location = new System.Drawing.Point(80, 41);
+            this.descriptionTextBox.Name = "descriptionTextBox";
+            this.descriptionTextBox.Size = new System.Drawing.Size(692, 27);
+            this.descriptionTextBox.TabIndex = 3;
+            // 
+            // enabledCheckBox
+            // 
+            this.enabledCheckBox.AutoSize = true;
+            this.enabledCheckBox.Checked = true;
+            this.enabledCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.enabledCheckBox.Location = new System.Drawing.Point(15, 75);
+            this.enabledCheckBox.Name = "enabledCheckBox";
+            this.enabledCheckBox.Size = new System.Drawing.Size(84, 24);
+            this.enabledCheckBox.TabIndex = 4;
+            this.enabledCheckBox.Text = "Enabled";
+            this.enabledCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // actionGroupBox
+            // 
+            this.actionGroupBox.Controls.Add(this.blockRadioButton);
+            this.actionGroupBox.Controls.Add(this.allowRadioButton);
+            this.actionGroupBox.Location = new System.Drawing.Point(15, 100);
+            this.actionGroupBox.Name = "actionGroupBox";
+            this.actionGroupBox.Size = new System.Drawing.Size(130, 105);
+            this.actionGroupBox.TabIndex = 5;
+            this.actionGroupBox.TabStop = false;
+            this.actionGroupBox.Text = "Action";
+            // 
+            // blockRadioButton
+            // 
+            this.blockRadioButton.AutoSize = true;
+            this.blockRadioButton.Location = new System.Drawing.Point(15, 60);
+            this.blockRadioButton.Name = "blockRadioButton";
+            this.blockRadioButton.Size = new System.Drawing.Size(66, 24);
+            this.blockRadioButton.TabIndex = 1;
+            this.blockRadioButton.Text = "Block";
+            this.blockRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // allowRadioButton
+            // 
+            this.allowRadioButton.AutoSize = true;
+            this.allowRadioButton.Checked = true;
+            this.allowRadioButton.Location = new System.Drawing.Point(15, 30);
+            this.allowRadioButton.Name = "allowRadioButton";
+            this.allowRadioButton.Size = new System.Drawing.Size(68, 24);
+            this.allowRadioButton.TabIndex = 0;
+            this.allowRadioButton.TabStop = true;
+            this.allowRadioButton.Text = "Allow";
+            this.allowRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // directionGroupBox
+            // 
+            this.directionGroupBox.Controls.Add(this.bothDirRadioButton);
+            this.directionGroupBox.Controls.Add(this.outboundRadioButton);
+            this.directionGroupBox.Controls.Add(this.inboundRadioButton);
+            this.directionGroupBox.Location = new System.Drawing.Point(151, 100);
+            this.directionGroupBox.Name = "directionGroupBox";
+            this.directionGroupBox.Size = new System.Drawing.Size(130, 105);
+            this.directionGroupBox.TabIndex = 6;
+            this.directionGroupBox.TabStop = false;
+            this.directionGroupBox.Text = "Direction";
+            // 
+            // bothDirRadioButton
+            // 
+            this.bothDirRadioButton.AutoSize = true;
+            this.bothDirRadioButton.Location = new System.Drawing.Point(15, 72);
+            this.bothDirRadioButton.Name = "bothDirRadioButton";
+            this.bothDirRadioButton.Size = new System.Drawing.Size(62, 24);
+            this.bothDirRadioButton.TabIndex = 2;
+            this.bothDirRadioButton.Text = "Both";
+            this.bothDirRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // outboundRadioButton
+            // 
+            this.outboundRadioButton.AutoSize = true;
+            this.outboundRadioButton.Checked = true;
+            this.outboundRadioButton.Location = new System.Drawing.Point(15, 47);
+            this.outboundRadioButton.Name = "outboundRadioButton";
+            this.outboundRadioButton.Size = new System.Drawing.Size(98, 24);
+            this.outboundRadioButton.TabIndex = 1;
+            this.outboundRadioButton.TabStop = true;
+            this.outboundRadioButton.Text = "Outbound";
+            this.outboundRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // inboundRadioButton
+            // 
+            this.inboundRadioButton.AutoSize = true;
+            this.inboundRadioButton.Location = new System.Drawing.Point(15, 22);
+            this.inboundRadioButton.Name = "inboundRadioButton";
+            this.inboundRadioButton.Size = new System.Drawing.Size(86, 24);
+            this.inboundRadioButton.TabIndex = 0;
+            this.inboundRadioButton.Text = "Inbound";
+            this.inboundRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // programGroupBox
+            // 
+            this.programGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.programGroupBox.Controls.Add(this.browseServiceButton);
+            this.programGroupBox.Controls.Add(this.programPathNoteLabel);
+            this.programGroupBox.Controls.Add(this.serviceNameTextBox);
+            this.programGroupBox.Controls.Add(this.labelService);
+            this.programGroupBox.Controls.Add(this.browseButton);
+            this.programGroupBox.Controls.Add(this.programPathTextBox);
+            this.programGroupBox.Controls.Add(this.labelProgram);
+            this.programGroupBox.Location = new System.Drawing.Point(15, 211);
+            this.programGroupBox.Name = "programGroupBox";
+            this.programGroupBox.Size = new System.Drawing.Size(757, 140);
+            this.programGroupBox.TabIndex = 7;
+            this.programGroupBox.TabStop = false;
+            this.programGroupBox.Text = "Program and Service";
+            // 
+            // browseServiceButton
+            // 
+            this.browseServiceButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.browseServiceButton.Location = new System.Drawing.Point(657, 82);
+            this.browseServiceButton.Name = "browseServiceButton";
+            this.browseServiceButton.Size = new System.Drawing.Size(94, 29);
+            this.browseServiceButton.TabIndex = 7;
+            this.browseServiceButton.Text = "Browse...";
+            this.browseServiceButton.UseVisualStyleBackColor = true;
+            this.browseServiceButton.Click += new System.EventHandler(this.browseServiceButton_Click);
+            // 
+            // programPathNoteLabel
+            // 
+            this.programPathNoteLabel.AutoSize = true;
+            this.programPathNoteLabel.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.programPathNoteLabel.Location = new System.Drawing.Point(75, 50);
+            this.programPathNoteLabel.Name = "programPathNoteLabel";
+            this.programPathNoteLabel.Size = new System.Drawing.Size(431, 20);
+            this.programPathNoteLabel.TabIndex = 6;
+            this.programPathNoteLabel.Text = "Leave blank to apply the rule to any program hosting the service.";
+            // 
+            // serviceNameTextBox
+            // 
+            this.serviceNameTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.serviceNameTextBox.Location = new System.Drawing.Point(75, 82);
+            this.serviceNameTextBox.Name = "serviceNameTextBox";
+            this.serviceNameTextBox.Size = new System.Drawing.Size(576, 27);
+            this.serviceNameTextBox.TabIndex = 4;
+            // 
+            // labelService
+            // 
+            this.labelService.AutoSize = true;
+            this.labelService.Location = new System.Drawing.Point(15, 85);
+            this.labelService.Name = "labelService";
+            this.labelService.Size = new System.Drawing.Size(56, 20);
+            this.labelService.TabIndex = 3;
+            this.labelService.Text = "Service";
+            // 
+            // browseButton
+            // 
+            this.browseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.browseButton.Location = new System.Drawing.Point(657, 22);
+            this.browseButton.Name = "browseButton";
+            this.browseButton.Size = new System.Drawing.Size(94, 29);
+            this.browseButton.TabIndex = 2;
+            this.browseButton.Text = "Browse...";
+            this.browseButton.UseVisualStyleBackColor = true;
+            this.browseButton.Click += new System.EventHandler(this.BrowseButton_Click);
+            // 
+            // programPathTextBox
+            // 
+            this.programPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.programPathTextBox.Location = new System.Drawing.Point(75, 22);
+            this.programPathTextBox.Name = "programPathTextBox";
+            this.programPathTextBox.Size = new System.Drawing.Size(576, 27);
+            this.programPathTextBox.TabIndex = 1;
+            // 
+            // labelProgram
+            // 
+            this.labelProgram.AutoSize = true;
+            this.labelProgram.Location = new System.Drawing.Point(15, 25);
+            this.labelProgram.Name = "labelProgram";
+            this.labelProgram.Size = new System.Drawing.Size(66, 20);
+            this.labelProgram.TabIndex = 0;
+            this.labelProgram.Text = "Program";
+            // 
+            // protocolGroupBox
+            // 
+            this.protocolGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.protocolGroupBox.Controls.Add(this.protocolComboBox);
+            this.protocolGroupBox.Controls.Add(this.labelProtocol);
+            this.protocolGroupBox.Location = new System.Drawing.Point(15, 357);
+            this.protocolGroupBox.Name = "protocolGroupBox";
+            this.protocolGroupBox.Size = new System.Drawing.Size(757, 60);
+            this.protocolGroupBox.TabIndex = 8;
+            this.protocolGroupBox.TabStop = false;
+            this.protocolGroupBox.Text = "Protocol";
+            // 
+            // protocolComboBox
+            // 
+            this.protocolComboBox.BorderColor = System.Drawing.Color.Gray;
+            this.protocolComboBox.ButtonColor = System.Drawing.Color.LightGray;
+            this.protocolComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.protocolComboBox.FormattingEnabled = true;
+            this.protocolComboBox.Location = new System.Drawing.Point(75, 22);
+            this.protocolComboBox.Name = "protocolComboBox";
+            this.protocolComboBox.Size = new System.Drawing.Size(150, 28);
+            this.protocolComboBox.TabIndex = 1;
+            this.protocolComboBox.SelectedIndexChanged += new System.EventHandler(this.ProtocolComboBox_SelectedIndexChanged);
+            // 
+            // labelProtocol
+            // 
+            this.labelProtocol.AutoSize = true;
+            this.labelProtocol.Location = new System.Drawing.Point(15, 25);
+            this.labelProtocol.Name = "labelProtocol";
+            this.labelProtocol.Size = new System.Drawing.Size(64, 20);
+            this.labelProtocol.TabIndex = 0;
+            this.labelProtocol.Text = "Protocol";
+            // 
+            // portsGroupBox
+            // 
+            this.portsGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.portsGroupBox.Controls.Add(this.remotePortsTextBox);
+            this.portsGroupBox.Controls.Add(this.labelRemotePorts);
+            this.portsGroupBox.Controls.Add(this.localPortsTextBox);
+            this.portsGroupBox.Controls.Add(this.labelLocalPorts);
+            this.portsGroupBox.Location = new System.Drawing.Point(15, 423);
+            this.portsGroupBox.Name = "portsGroupBox";
+            this.portsGroupBox.Size = new System.Drawing.Size(757, 90);
+            this.portsGroupBox.TabIndex = 9;
+            this.portsGroupBox.TabStop = false;
+            this.portsGroupBox.Text = "Ports";
+            this.portsGroupBox.Visible = false;
+            // 
+            // remotePortsTextBox
+            // 
+            this.remotePortsTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.remotePortsTextBox.Location = new System.Drawing.Point(90, 53);
+            this.remotePortsTextBox.Name = "remotePortsTextBox";
+            this.remotePortsTextBox.Size = new System.Drawing.Size(657, 27);
+            this.remotePortsTextBox.TabIndex = 3;
+            this.remotePortsTextBox.Text = "*";
+            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remotePortsTextBox_Validating);
+            // 
+            // labelRemotePorts
+            // 
+            this.labelRemotePorts.AutoSize = true;
+            this.labelRemotePorts.Location = new System.Drawing.Point(6, 56);
+            this.labelRemotePorts.Name = "labelRemotePorts";
+            this.labelRemotePorts.Size = new System.Drawing.Size(95, 20);
+            this.labelRemotePorts.TabIndex = 2;
+            this.labelRemotePorts.Text = "Remote Ports";
+            // 
+            // localPortsTextBox
+            // 
+            this.localPortsTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.localPortsTextBox.Location = new System.Drawing.Point(90, 22);
+            this.localPortsTextBox.Name = "localPortsTextBox";
+            this.localPortsTextBox.Size = new System.Drawing.Size(657, 27);
+            this.localPortsTextBox.TabIndex = 1;
+            this.localPortsTextBox.Text = "*";
+            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localPortsTextBox_Validating);
+            // 
+            // labelLocalPorts
+            // 
+            this.labelLocalPorts.AutoSize = true;
+            this.labelLocalPorts.Location = new System.Drawing.Point(6, 25);
+            this.labelLocalPorts.Name = "labelLocalPorts";
+            this.labelLocalPorts.Size = new System.Drawing.Size(81, 20);
+            this.labelLocalPorts.TabIndex = 0;
+            this.labelLocalPorts.Text = "Local Ports";
+            // 
+            // icmpGroupBox
+            // 
+            this.icmpGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
+            this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
+            this.icmpGroupBox.Location = new System.Drawing.Point(15, 423);
+            this.icmpGroupBox.Name = "icmpGroupBox";
+            this.icmpGroupBox.Size = new System.Drawing.Size(757, 90);
+            this.icmpGroupBox.TabIndex = 10;
+            this.icmpGroupBox.TabStop = false;
+            this.icmpGroupBox.Text = "ICMP Settings";
+            this.icmpGroupBox.Visible = false;
+            // 
+            // icmpTypesAndCodesTextBox
+            // 
+            this.icmpTypesAndCodesTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.icmpTypesAndCodesTextBox.Location = new System.Drawing.Point(110, 22);
+            this.icmpTypesAndCodesTextBox.Name = "icmpTypesAndCodesTextBox";
+            this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(637, 27);
+            this.icmpTypesAndCodesTextBox.TabIndex = 1;
+            this.icmpTypesAndCodesTextBox.Text = "*";
+            this.icmpTypesAndCodesTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.icmpTypesAndCodesTextBox_Validating);
+            // 
+            // labelIcmpInfo
+            // 
+            this.labelIcmpInfo.AutoSize = true;
+            this.labelIcmpInfo.Location = new System.Drawing.Point(15, 25);
+            this.labelIcmpInfo.Name = "labelIcmpInfo";
+            this.labelIcmpInfo.Size = new System.Drawing.Size(125, 20);
+            this.labelIcmpInfo.TabIndex = 0;
+            this.labelIcmpInfo.Text = "Type:Code (e.g. 8:0)";
+            // 
+            // scopeGroupBox
+            // 
+            this.scopeGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.scopeGroupBox.Controls.Add(this.remoteAddressTextBox);
+            this.scopeGroupBox.Controls.Add(this.labelRemoteAddress);
+            this.scopeGroupBox.Controls.Add(this.localAddressTextBox);
+            this.scopeGroupBox.Controls.Add(this.labelLocalAddress);
+            this.scopeGroupBox.Location = new System.Drawing.Point(15, 519);
+            this.scopeGroupBox.Name = "scopeGroupBox";
+            this.scopeGroupBox.Size = new System.Drawing.Size(757, 90);
+            this.scopeGroupBox.TabIndex = 11;
+            this.scopeGroupBox.TabStop = false;
+            this.scopeGroupBox.Text = "Scope (Addresses)";
+            // 
+            // remoteAddressTextBox
+            // 
+            this.remoteAddressTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.remoteAddressTextBox.Location = new System.Drawing.Point(105, 53);
+            this.remoteAddressTextBox.Name = "remoteAddressTextBox";
+            this.remoteAddressTextBox.Size = new System.Drawing.Size(642, 27);
+            this.remoteAddressTextBox.TabIndex = 3;
+            this.remoteAddressTextBox.Text = "*";
+            this.remoteAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remoteAddressTextBox_Validating);
+            // 
+            // labelRemoteAddress
+            // 
+            this.labelRemoteAddress.AutoSize = true;
+            this.labelRemoteAddress.Location = new System.Drawing.Point(6, 56);
+            this.labelRemoteAddress.Name = "labelRemoteAddress";
+            this.labelRemoteAddress.Size = new System.Drawing.Size(117, 20);
+            this.labelRemoteAddress.TabIndex = 2;
+            this.labelRemoteAddress.Text = "Remote Address";
+            // 
+            // localAddressTextBox
+            // 
+            this.localAddressTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.localAddressTextBox.Location = new System.Drawing.Point(105, 22);
+            this.localAddressTextBox.Name = "localAddressTextBox";
+            this.localAddressTextBox.Size = new System.Drawing.Size(642, 27);
+            this.localAddressTextBox.TabIndex = 1;
+            this.localAddressTextBox.Text = "*";
+            this.localAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localAddressTextBox_Validating);
+            // 
+            // labelLocalAddress
+            // 
+            this.labelLocalAddress.AutoSize = true;
+            this.labelLocalAddress.Location = new System.Drawing.Point(6, 25);
+            this.labelLocalAddress.Name = "labelLocalAddress";
+            this.labelLocalAddress.Size = new System.Drawing.Size(101, 20);
+            this.labelLocalAddress.TabIndex = 0;
+            this.labelLocalAddress.Text = "Local Address";
+            // 
+            // profilesGroupBox
+            // 
+            this.profilesGroupBox.Controls.Add(this.publicCheckBox);
+            this.profilesGroupBox.Controls.Add(this.privateCheckBox);
+            this.profilesGroupBox.Controls.Add(this.domainCheckBox);
+            this.profilesGroupBox.Location = new System.Drawing.Point(287, 100);
+            this.profilesGroupBox.Name = "profilesGroupBox";
+            this.profilesGroupBox.Size = new System.Drawing.Size(130, 105);
+            this.profilesGroupBox.TabIndex = 12;
+            this.profilesGroupBox.TabStop = false;
+            this.profilesGroupBox.Text = "Profiles";
+            // 
+            // publicCheckBox
+            // 
+            this.publicCheckBox.AutoSize = true;
+            this.publicCheckBox.Checked = true;
+            this.publicCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.publicCheckBox.Location = new System.Drawing.Point(15, 72);
+            this.publicCheckBox.Name = "publicCheckBox";
+            this.publicCheckBox.Size = new System.Drawing.Size(71, 24);
+            this.publicCheckBox.TabIndex = 2;
+            this.publicCheckBox.Text = "Public";
+            this.publicCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // privateCheckBox
+            // 
+            this.privateCheckBox.AutoSize = true;
+            this.privateCheckBox.Checked = true;
+            this.privateCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.privateCheckBox.Location = new System.Drawing.Point(15, 47);
+            this.privateCheckBox.Name = "privateCheckBox";
+            this.privateCheckBox.Size = new System.Drawing.Size(75, 24);
+            this.privateCheckBox.TabIndex = 1;
+            this.privateCheckBox.Text = "Private";
+            this.privateCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // domainCheckBox
+            // 
+            this.domainCheckBox.AutoSize = true;
+            this.domainCheckBox.Checked = true;
+            this.domainCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.domainCheckBox.Location = new System.Drawing.Point(15, 22);
+            this.domainCheckBox.Name = "domainCheckBox";
+            this.domainCheckBox.Size = new System.Drawing.Size(83, 24);
+            this.domainCheckBox.TabIndex = 0;
+            this.domainCheckBox.Text = "Domain";
+            this.domainCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // okButton
+            // 
+            this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.okButton.Location = new System.Drawing.Point(580, 8);
+            this.okButton.Name = "okButton";
+            this.okButton.Size = new System.Drawing.Size(100, 36);
+            this.okButton.TabIndex = 13;
+            this.okButton.Text = "OK";
+            this.okButton.UseVisualStyleBackColor = true;
+            this.okButton.Click += new System.EventHandler(this.OkButton_Click);
+            // 
+            // cancelButton
+            // 
+            this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.cancelButton.Location = new System.Drawing.Point(688, 8);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new System.Drawing.Size(100, 36);
+            this.cancelButton.TabIndex = 14;
+            this.cancelButton.Text = "Cancel";
+            this.cancelButton.UseVisualStyleBackColor = true;
+            this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
+            // 
+            // interfaceTypesGroupBox
+            // 
+            this.interfaceTypesGroupBox.Controls.Add(this.lanCheckBox);
+            this.interfaceTypesGroupBox.Controls.Add(this.wirelessCheckBox);
+            this.interfaceTypesGroupBox.Controls.Add(this.remoteAccessCheckBox);
+            this.interfaceTypesGroupBox.Location = new System.Drawing.Point(423, 100);
+            this.interfaceTypesGroupBox.Name = "interfaceTypesGroupBox";
+            this.interfaceTypesGroupBox.Size = new System.Drawing.Size(149, 105);
+            this.interfaceTypesGroupBox.TabIndex = 15;
+            this.interfaceTypesGroupBox.TabStop = false;
+            this.interfaceTypesGroupBox.Text = "Interface Types";
+            // 
+            // lanCheckBox
+            // 
+            this.lanCheckBox.AutoSize = true;
+            this.lanCheckBox.Checked = true;
+            this.lanCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.lanCheckBox.Location = new System.Drawing.Point(15, 72);
+            this.lanCheckBox.Name = "lanCheckBox";
+            this.lanCheckBox.Size = new System.Drawing.Size(116, 24);
+            this.lanCheckBox.TabIndex = 2;
+            this.lanCheckBox.Text = "Wired (LAN)";
+            this.lanCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // wirelessCheckBox
+            // 
+            this.wirelessCheckBox.AutoSize = true;
+            this.wirelessCheckBox.Checked = true;
+            this.wirelessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.wirelessCheckBox.Location = new System.Drawing.Point(15, 47);
+            this.wirelessCheckBox.Name = "wirelessCheckBox";
+            this.wirelessCheckBox.Size = new System.Drawing.Size(85, 24);
+            this.wirelessCheckBox.TabIndex = 1;
+            this.wirelessCheckBox.Text = "Wireless";
+            this.wirelessCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // remoteAccessCheckBox
+            // 
+            this.remoteAccessCheckBox.AutoSize = true;
+            this.remoteAccessCheckBox.Checked = true;
+            this.remoteAccessCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.remoteAccessCheckBox.Location = new System.Drawing.Point(15, 22);
+            this.remoteAccessCheckBox.Name = "remoteAccessCheckBox";
+            this.remoteAccessCheckBox.Size = new System.Drawing.Size(126, 24);
+            this.remoteAccessCheckBox.TabIndex = 0;
+            this.remoteAccessCheckBox.Text = "Remote (VPN)";
+            this.remoteAccessCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // labelGroup
+            // 
+            this.labelGroup.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
+            this.labelGroup.AutoSize = true;
+            this.labelGroup.Location = new System.Drawing.Point(12, 16);
+            this.labelGroup.Name = "labelGroup";
+            this.labelGroup.Size = new System.Drawing.Size(50, 20);
+            this.labelGroup.TabIndex = 16;
+            this.labelGroup.Text = "Group";
+            // 
+            // groupComboBox
+            // 
+            this.groupComboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupComboBox.BorderColor = System.Drawing.Color.Gray;
+            this.groupComboBox.ButtonColor = System.Drawing.Color.LightGray;
+            this.groupComboBox.FormattingEnabled = true;
+            this.groupComboBox.Location = new System.Drawing.Point(80, 13);
+            this.groupComboBox.Name = "groupComboBox";
+            this.groupComboBox.Size = new System.Drawing.Size(350, 28);
+            this.groupComboBox.TabIndex = 17;
+            // 
+            // addGroupButton
+            // 
+            this.addGroupButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.addGroupButton.Location = new System.Drawing.Point(436, 13);
+            this.addGroupButton.Name = "addGroupButton";
+            this.addGroupButton.Size = new System.Drawing.Size(110, 29);
+            this.addGroupButton.TabIndex = 18;
+            this.addGroupButton.Text = "Add Group";
+            this.addGroupButton.UseVisualStyleBackColor = true;
+            this.addGroupButton.Click += new System.EventHandler(this.AddGroupButton_Click);
+            // 
+            // mainPanel
+            // 
+            this.mainPanel.AutoScroll = true;
+            this.mainPanel.Controls.Add(this.labelName);
+            this.mainPanel.Controls.Add(this.ruleNameTextBox);
+            this.mainPanel.Controls.Add(this.labelDescription);
+            this.mainPanel.Controls.Add(this.descriptionTextBox);
+            this.mainPanel.Controls.Add(this.enabledCheckBox);
+            this.mainPanel.Controls.Add(this.actionGroupBox);
+            this.mainPanel.Controls.Add(this.directionGroupBox);
+            this.mainPanel.Controls.Add(this.profilesGroupBox);
+            this.mainPanel.Controls.Add(this.interfaceTypesGroupBox);
+            this.mainPanel.Controls.Add(this.programGroupBox);
+            this.mainPanel.Controls.Add(this.protocolGroupBox);
+            this.mainPanel.Controls.Add(this.portsGroupBox);
+            this.mainPanel.Controls.Add(this.icmpGroupBox);
+            this.mainPanel.Controls.Add(this.scopeGroupBox);
+            this.mainPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainPanel.Location = new System.Drawing.Point(0, 0);
+            this.mainPanel.Name = "mainPanel";
+            this.mainPanel.Size = new System.Drawing.Size(800, 560);
+            this.mainPanel.TabIndex = 19;
+            // 
+            // bottomPanel
+            // 
+            this.bottomPanel.Controls.Add(this.addGroupButton);
+            this.bottomPanel.Controls.Add(this.groupComboBox);
+            this.bottomPanel.Controls.Add(this.labelGroup);
+            this.bottomPanel.Controls.Add(this.cancelButton);
+            this.bottomPanel.Controls.Add(this.okButton);
+            this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.bottomPanel.Location = new System.Drawing.Point(0, 560);
+            this.bottomPanel.Name = "bottomPanel";
+            this.bottomPanel.Size = new System.Drawing.Size(800, 60);
+            this.bottomPanel.TabIndex = 20;
+            // 
+            // errorProvider1
+            // 
+            this.errorProvider1.ContainerControl = this;
+            // 
+            // CreateAdvancedRuleForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(800, 620);
+            this.Controls.Add(this.mainPanel);
+            this.Controls.Add(this.bottomPanel);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
+            this.MaximizeBox = true;
+            this.MinimizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(816, 400);
+            this.Name = "CreateAdvancedRuleForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "Create Advanced Rule";
+            this.actionGroupBox.ResumeLayout(false);
+            this.actionGroupBox.PerformLayout();
+            this.directionGroupBox.ResumeLayout(false);
+            this.directionGroupBox.PerformLayout();
+            this.programGroupBox.ResumeLayout(false);
+            this.programGroupBox.PerformLayout();
+            this.protocolGroupBox.ResumeLayout(false);
+            this.protocolGroupBox.PerformLayout();
+            this.portsGroupBox.ResumeLayout(false);
+            this.portsGroupBox.PerformLayout();
+            this.icmpGroupBox.ResumeLayout(false);
+            this.icmpGroupBox.PerformLayout();
+            this.scopeGroupBox.ResumeLayout(false);
+            this.scopeGroupBox.PerformLayout();
+            this.profilesGroupBox.ResumeLayout(false);
+            this.profilesGroupBox.PerformLayout();
+            this.interfaceTypesGroupBox.ResumeLayout(false);
+            this.interfaceTypesGroupBox.PerformLayout();
+            this.mainPanel.ResumeLayout(false);
+            this.mainPanel.PerformLayout();
+            this.bottomPanel.ResumeLayout(false);
+            this.bottomPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
+            this.ResumeLayout(false);
+
+        }
+        #endregion
+    }
+}
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/FirewallActionService.cs
+--------------------------------------------------------------------------------
+using NetFwTypeLib;
+using System.Data;
+using System.IO;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System;
+using System.Threading;
+using System.Text.Json;
+
+namespace MinimalFirewall
+{
+    public partial class FirewallActionsService
+    {
+        private readonly FirewallRuleService firewallService;
+        private readonly UserActivityLogger activityLogger;
+        private readonly FirewallEventListenerService eventListenerService;
+        private readonly ForeignRuleTracker foreignRuleTracker;
+        private readonly FirewallSentryService sentryService;
+        private readonly PublisherWhitelistService _whitelistService;
+        private readonly TemporaryRuleManager _temporaryRuleManager;
+        private readonly WildcardRuleService _wildcardRuleService;
+        private readonly FirewallDataService _dataService;
+        private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
+        private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
+        private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
+
+        public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
+
+        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, WildcardRuleService wildcardRuleService, FirewallDataService dataService)
+        {
+            this.firewallService = firewallService;
+            this.activityLogger = activityLogger;
+            this.eventListenerService = eventListenerService;
+            this.foreignRuleTracker = foreignRuleTracker;
+            this.sentryService = sentryService;
+            this._whitelistService = whitelistService;
+            this._wildcardRuleService = wildcardRuleService;
+            _temporaryRuleManager = new TemporaryRuleManager();
+            _dataService = dataService;
+        }
+
+        public void CleanupTemporaryRulesOnStartup()
+        {
+            var expiredRules = _temporaryRuleManager.GetExpiredRules();
+            if (expiredRules.Any())
+            {
+                var ruleNamesToRemove = expiredRules.Keys.ToList();
+                try
+                {
+                    firewallService.DeleteRulesByName(ruleNamesToRemove);
+                    foreach (var ruleName in ruleNamesToRemove)
+                    {
+                        _temporaryRuleManager.Remove(ruleName);
+                    }
+                    activityLogger.LogDebug($"Cleaned up {ruleNamesToRemove.Count} expired temporary rules on startup.");
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException("CleanupTemporaryRulesOnStartup", ex);
+                }
+            }
+        }
+
+        private static bool IsMfwRule(INetFwRule2 rule)
+        {
+            if (string.IsNullOrEmpty(rule.Grouping)) return false;
+            return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                   rule.Grouping == MFWConstants.MainRuleGroup ||
+                   rule.Grouping == MFWConstants.WildcardRuleGroup;
+        }
+
+        private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
+        {
+            string normalizedAppPath = PathResolver.NormalizePath(appPath);
+            var rulesToDelete = new List<string>();
+            var allRules = firewallService.GetAllRules();
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null &&
+                         IsMfwRule(rule) &&
+                        rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
+                        string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+                        rule.Protocol == 256 &&
+                        rule.LocalPorts == "*" &&
+                        rule.RemotePorts == "*")
+                    {
+                        rulesToDelete.Add(rule.Name);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            if (rulesToDelete.Any())
+            {
+                activityLogger.LogDebug($"Auto-deleting general block rule(s) for {appPath} to apply new Allow rule: {string.Join(", ", rulesToDelete)}");
+                try
+                {
+                    firewallService.DeleteRulesByName(rulesToDelete);
+                    foreach (var name in rulesToDelete)
+                        activityLogger.LogChange("Rule Auto-Deleted", name);
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"Auto-deleting rules for {appPath}", ex);
+                }
+            }
+        }
+
+        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
+        {
+            var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var appPath in normalizedAppPaths)
+                {
+                    FindAndQueueDeleteForGeneralBlockRule(appPath);
+                }
+            }
+
+            foreach (var appPath in normalizedAppPaths)
+            {
+                if (!File.Exists(appPath))
+                {
+                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent path: {appPath}");
+                    continue;
+                }
+
+                var rulesToRemove = new List<string>();
+                if (string.IsNullOrEmpty(wildcardSourcePath))
+                {
+                    if (action.Contains("Inbound") || action.Contains("(All)"))
+                    {
+                        rulesToRemove.AddRange(firewallService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
+                    }
+                    if (action.Contains("Outbound") || action.Contains("(All)"))
+                    {
+                        rulesToRemove.AddRange(firewallService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
+                    }
+                }
+
+                string appName = Path.GetFileNameWithoutExtension(appPath);
+                void createRule(string baseName, Directions dir, Actions act)
+                {
+                    string description = string.IsNullOrEmpty(wildcardSourcePath) ? "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
+                }
+
+                ApplyRuleAction(appName, action, createRule);
+                if (rulesToRemove.Any())
+                {
+                    firewallService.DeleteRulesByName(rulesToRemove);
+                }
+
+                activityLogger.LogChange("Rule Changed", action + " for " + appPath);
+            }
+        }
+
+        public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
+        {
+            if (string.IsNullOrEmpty(serviceName)) return;
+
+            if (!ParseActionString(action, out Actions parsedAction, out Directions parsedDirection))
+            {
+                return;
+            }
+
+            var rulesToRemove = new List<string>();
+            if (parsedDirection.HasFlag(Directions.Incoming))
+            {
+                rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
+            }
+            if (parsedDirection.HasFlag(Directions.Outgoing))
+            {
+                rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
+            }
+
+            var protocolsToCreate = new List<int> { 6, 17 };
+
+            foreach (var protocol in protocolsToCreate)
+            {
+                string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+
+                if (parsedDirection.HasFlag(Directions.Incoming))
+                {
+                    string inName = $"{serviceName} - {actionStr}In{protocolSuffix}";
+                    CreateServiceRule(inName, serviceName, Directions.Incoming, parsedAction, protocol, appPath);
+                }
+                if (parsedDirection.HasFlag(Directions.Outgoing))
+                {
+                    string outName = $"{serviceName} - {actionStr}Out{protocolSuffix}";
+                    CreateServiceRule(outName, serviceName, Directions.Outgoing, parsedAction, protocol, appPath);
+                }
+            }
+
+            if (rulesToRemove.Any())
+            {
+                firewallService.DeleteRulesByName(rulesToRemove);
+            }
+
+            activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
+        }
+
+
+        public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)
+        {
+            var validApps = new List<UwpApp>();
+            var cachedUwpApps = _dataService.LoadUwpAppsFromCache();
+            var cachedPfnSet = new HashSet<string>(cachedUwpApps.Select(a => a.PackageFamilyName), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var app in uwpApps)
+            {
+                if (cachedPfnSet.Contains(app.PackageFamilyName))
+                {
+                    validApps.Add(app);
+                }
+                else
+                {
+                    activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent UWP app: {app.Name} ({app.PackageFamilyName})");
+                }
+            }
+
+            if (validApps.Count == 0) return;
+
+            var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
+            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
+
+            foreach (var app in validApps)
+            {
+                void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
+                ApplyRuleAction(app.Name, action, createRule);
+                activityLogger.LogChange("UWP Rule Changed", action + " for " + app.Name);
+            }
+
+            if (rulesToRemove.Any())
+            {
+                firewallService.DeleteRulesByName(rulesToRemove);
+            }
+        }
+
+        public void DeleteApplicationRules(List<string> appPaths)
+        {
+            if (appPaths.Count == 0) return;
+            try
+            {
+                firewallService.DeleteRulesByPath(appPaths);
+                foreach (var path in appPaths) activityLogger.LogChange("Rule Deleted", path);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"DeleteApplicationRules for {string.Join(",", appPaths)}", ex);
+            }
+        }
+
+        public void DeleteRulesForWildcard(WildcardRule wildcard)
+        {
+            if (wildcard == null) return;
+            try
+            {
+                string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
+                firewallService.DeleteRulesByDescription(descriptionTag);
+                activityLogger.LogChange("Wildcard Rules Deleted", $"Deleted rules for folder {wildcard.FolderPath}");
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"DeleteRulesForWildcard for {wildcard.FolderPath}", ex);
+            }
+        }
+
+        public void DeleteUwpRules(List<string> packageFamilyNames)
+        {
+            if (packageFamilyNames.Count == 0) return;
+            try
+            {
+                firewallService.DeleteUwpRules(packageFamilyNames);
+                foreach (var pfn in packageFamilyNames) activityLogger.LogChange("UWP Rule Deleted", pfn);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"DeleteUwpRules for {string.Join(",", packageFamilyNames)}", ex);
+            }
+        }
+
+        public void DeleteAdvancedRules(List<string> ruleNames)
+        {
+            if (ruleNames.Count == 0) return;
+            try
+            {
+                firewallService.DeleteRulesByName(ruleNames);
+                foreach (var name in ruleNames) activityLogger.LogChange("Advanced Rule Deleted", name);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"DeleteAdvancedRules for {string.Join(",", ruleNames)}", ex);
+            }
+        }
+
+
+        private void ManageCryptoServiceRule(bool enable)
+        {
+            INetFwRule2? rule = null;
+            try
+            {
+                rule = firewallService.GetRuleByName(CryptoRuleName);
+                if (enable)
+                {
+                    if (rule == null)
+                    {
+                        var newRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                        newRule.WithName(CryptoRuleName)
+                               .WithDescription("Allows Windows to check for certificate revocation online. Essential for the 'auto-allow trusted' feature in Lockdown Mode.")
+                               .ForService("CryptSvc")
+                               .WithDirection(Directions.Outgoing)
+                               .WithAction(Actions.Allow)
+                               .WithProtocol(ProtocolTypes.TCP.Value)
+                               .WithRemotePorts("80,443")
+                               .WithGrouping(MFWConstants.MainRuleGroup)
+                                .IsEnabled();
+                        firewallService.CreateRule(newRule);
+                        activityLogger.LogDebug("Created system rule for certificate checks.");
+                    }
+                    else if (!rule.Enabled)
+                    {
+                        rule.Enabled = true;
+                        activityLogger.LogDebug("Enabled system rule for certificate checks.");
+                    }
+                }
+                else
+                {
+                    if (rule != null && rule.Enabled)
+                    {
+                        rule.Enabled = false;
+                        activityLogger.LogDebug("Disabled system rule for certificate checks.");
+                    }
+                }
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"ManageCryptoServiceRule (enable: {enable})", ex);
+            }
+            finally
+            {
+                if (rule != null) Marshal.ReleaseComObject(rule);
+            }
+        }
+
+        private void ManageDhcpClientRule(bool enable)
+        {
+            INetFwRule2? rule = null;
+            try
+            {
+                rule = firewallService.GetRuleByName(DhcpRuleName);
+                if (enable)
+                {
+                    if (rule == null)
+                    {
+                        var newRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                        newRule.WithName(DhcpRuleName)
+                               .WithDescription("Allows the DHCP Client (Dhcp) service to get an IP address from your router. Essential for network connectivity in Lockdown Mode.")
+                               .ForService("Dhcp")
+                               .WithDirection(Directions.Outgoing)
+                               .WithAction(Actions.Allow)
+                               .WithProtocol(ProtocolTypes.UDP.Value)
+                               .WithLocalPorts("68")
+                               .WithRemotePorts("67")
+                               .WithGrouping(MFWConstants.MainRuleGroup)
+                               .IsEnabled();
+                        firewallService.CreateRule(newRule);
+                        activityLogger.LogDebug("Created system rule for DHCP Client.");
+                    }
+                    else if (!rule.Enabled)
+                    {
+                        rule.Enabled = true;
+                        activityLogger.LogDebug("Enabled system rule for DHCP Client.");
+                    }
+                }
+                else
+                {
+                    if (rule != null)
+                    {
+                        firewallService.DeleteRulesByName(new List<string> { DhcpRuleName });
+                        activityLogger.LogDebug("Disabled/Deleted system rule for DHCP Client.");
+                    }
+                }
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"ManageDhcpClientRule (enable: {enable})", ex);
+            }
+            finally
+            {
+                if (rule != null) Marshal.ReleaseComObject(rule);
+            }
+        }
+
+        public void ToggleLockdown()
+        {
+            var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            bool newLockdownState = !isCurrentlyLocked;
+            activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
+            try
+            {
+                AdminTaskService.SetAuditPolicy(newLockdownState);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                activityLogger.LogException("SetAuditPolicy", ex);
+            }
+
+            ManageCryptoServiceRule(newLockdownState);
+            ManageDhcpClientRule(newLockdownState);
+
+            if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
+            {
+                MessageBox.Show(
+                    "Failed to verify that Windows Security Auditing was enabled.\n\n" +
+                     "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
+                    "Potential Causes:\n" +
+                    "1. A local or domain Group Policy is preventing this change.\n" +
+                    "2. Other security software is blocking this action.\n\n" +
+                    "The firewall's default policy will be set back to 'Allow' for safety.",
+                     "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                try
+                {
+                    firewallService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException("SetDefaultOutboundAction(Allow) after audit failure", ex);
+                }
+                activityLogger.LogDebug("Lockdown Mode Failed: Could not enable audit policy.");
+                return;
+            }
+
+            try
+            {
+                firewallService.SetDefaultOutboundAction(
+                    newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException("SetDefaultOutboundAction", ex);
+                MessageBox.Show("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
+                    "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (newLockdownState)
+            {
+                eventListenerService.Start();
+            }
+            else
+            {
+                eventListenerService.Stop();
+            }
+
+            activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
+            if (!newLockdownState)
+            {
+                ReenableMfwRules();
+                activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
+            }
+        }
+
+
+        public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
+        {
+            activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
+            TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
+            TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
+            if (trustPublisher && SignatureValidationService.GetPublisherInfo(pending.AppPath, out var publisherName) && publisherName != null)
+            {
+                _whitelistService.Add(publisherName);
+                activityLogger.LogChange("Publisher Whitelisted", $"Publisher '{publisherName}' was added to the whitelist.");
+            }
+
+            eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
+            switch (decision)
+            {
+                case "Allow":
+                case "Block":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
+                    string action = (decision == "Allow" ? "Allow" : "Block") + " (" + pending.Direction + ")";
+                    if (!string.IsNullOrEmpty(pending.ServiceName))
+                    {
+                        var serviceNames = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var serviceName in serviceNames)
+                        {
+                            ApplyServiceRuleChange(serviceName, action, pending.AppPath);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(pending.AppPath))
+                    {
+                        ApplyApplicationRuleChange([pending.AppPath], action);
+                    }
+                    break;
+                case "TemporaryAllow":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
+                    CreateTemporaryAllowRule(pending.AppPath, pending.ServiceName, pending.Direction, duration);
+                    break;
+
+                case "Ignore":
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
+                    activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
+                    break;
+            }
+        }
+
+        private void ReenableMfwRules()
+        {
+            var allRules = firewallService.GetAllRules();
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(rule.Grouping) &&
+                            (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                               rule.Grouping == "Minimal Firewall" ||
+                               rule.Grouping == "Minimal Firewall (Wildcard)"))
+                        {
+                            if (!rule.Enabled)
+                            {
+                                rule.Enabled = true;
+                            }
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        activityLogger.LogException($"Enable rule '{rule.Name}'", ex);
+                    }
+                }
+            }
+            finally
+            {
+                foreach (var rule in allRules)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+        }
+
+        private void SetupRuleTimer(string ruleName, TimeSpan duration)
+        {
+            var timer = new System.Threading.Timer(_ =>
+            {
+                try
+                {
+                    firewallService.DeleteRulesByName([ruleName]);
+                    _temporaryRuleManager.Remove(ruleName);
+                    if (_temporaryRuleTimers.TryRemove(ruleName, out var t))
+                    {
+                        t.Dispose();
+                    }
+                    activityLogger.LogDebug($"Temporary rule {ruleName} expired and was removed.");
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"Deleting temporary rule {ruleName}", ex);
+                }
+            }, null, duration, Timeout.InfiniteTimeSpan);
+            _temporaryRuleTimers[ruleName] = timer;
+        }
+
+        private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)
+        {
+            if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection)) return;
+            string baseName = !string.IsNullOrEmpty(serviceName) ? serviceName.Split(',')[0].Trim() : Path.GetFileNameWithoutExtension(appPath);
+            string guid = Guid.NewGuid().ToString();
+            string description = "Temporarily allowed by Minimal Firewall.";
+            DateTime expiry = DateTime.UtcNow.Add(duration);
+
+            if (!string.IsNullOrEmpty(serviceName))
+            {
+                var protocolsToCreate = new List<int> { 6, 17 };
+
+                foreach (var protocol in protocolsToCreate)
+                {
+                    string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+
+                    if (parsedDirection.HasFlag(Directions.Incoming))
+                    {
+                        string ruleName = $"Temp Allow - {baseName} - In - {guid}{protocolSuffix}";
+                        CreateServiceRule(ruleName, serviceName, Directions.Incoming, parsedAction, protocol, appPath);
+                        _temporaryRuleManager.Add(ruleName, expiry);
+                        SetupRuleTimer(ruleName, duration);
+                    }
+                    if (parsedDirection.HasFlag(Directions.Outgoing))
+                    {
+                        string ruleName = $"Temp Allow - {baseName} - Out - {guid}{protocolSuffix}";
+                        CreateServiceRule(ruleName, serviceName, Directions.Outgoing, parsedAction, protocol, appPath);
+                        _temporaryRuleManager.Add(ruleName, expiry);
+                        SetupRuleTimer(ruleName, duration);
+                    }
+                }
+                activityLogger.LogChange("Temporary Rule Created", $"Allowed {baseName} (service) for {duration.TotalMinutes} minutes.");
+            }
+            else
+            {
+                string ruleName = $"Temp Allow - {baseName} - {direction} - {guid}";
+                CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
+
+                _temporaryRuleManager.Add(ruleName, expiry);
+                SetupRuleTimer(ruleName, duration);
+                activityLogger.LogChange("Temporary Rule Created", $"Allowed {baseName} ({appPath}) for {duration.TotalMinutes} minutes.");
+            }
+        }
+
+        public void AcceptForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: Accepting foreign rule '{change.Rule.Name}'");
+            }
+        }
+
+        public void DeleteForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{change.Rule.Name}'");
+                DeleteAdvancedRules([change.Rule.Name]);
+            }
+        }
+
+        public void SetGroupEnabledState(string groupName, bool isEnabled)
+        {
+            INetFwRules? comRules = null;
+            var rulesInGroup = new List<INetFwRule2>();
+            INetFwPolicy2? firewallPolicy = null;
+            try
+            {
+                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                if (policyType == null) return;
+                firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(policyType)!;
+                if (firewallPolicy == null) return;
+
+                comRules = firewallPolicy.Rules;
+                foreach (INetFwRule2 r in comRules)
+                {
+                    if (r != null && string.Equals(r.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        rulesInGroup.Add(r);
+                    }
+                    else
+                    {
+                        if (r != null) Marshal.ReleaseComObject(r);
+                    }
+                }
+
+                foreach (var rule in rulesInGroup)
+                {
+                    try
+                    {
+                        if (rule.Enabled != isEnabled)
+                        {
+                            rule.Enabled = isEnabled;
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        activityLogger.LogException($"SetGroupEnabledState for rule '{rule.Name}'", ex);
+                    }
+                }
+                activityLogger.LogChange("Group State Changed", $"Group '{groupName}' {(isEnabled ? "Enabled" : "Disabled")}");
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException($"SetGroupEnabledState for group '{groupName}'", ex);
+            }
+            finally
+            {
+                foreach (var rule in rulesInGroup)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+        }
+
+        public void AcceptAllForeignRules(List<FirewallRuleChange> changes)
+        {
+            if (changes == null || changes.Count == 0) return;
+            var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
+            if (ruleNames.Any())
+            {
+                foreignRuleTracker.AcknowledgeRules(ruleNames);
+                activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
+                activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
+            }
+        }
+
+        public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
+        {
+            if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
+            {
+                vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
+                if (!File.Exists(vm.ApplicationName))
+                {
+                    activityLogger.LogDebug($"[Validation] Aborted creating advanced rule due to non-existent path: {vm.ApplicationName}");
+                    return;
+                }
+            }
+
+            if (vm.Status == "Allow" && !string.IsNullOrWhiteSpace(vm.ApplicationName))
+            {
+                FindAndQueueDeleteForGeneralBlockRule(vm.ApplicationName);
+            }
+
+            bool hasProgramOrService = !string.IsNullOrWhiteSpace(vm.ApplicationName) || !string.IsNullOrWhiteSpace(vm.ServiceName);
+            bool isProtocolTcpUdpOrAny = vm.Protocol == ProtocolTypes.TCP.Value ||
+                                     vm.Protocol == ProtocolTypes.UDP.Value ||
+                                     vm.Protocol == ProtocolTypes.Any.Value;
+            if (hasProgramOrService && !isProtocolTcpUdpOrAny)
+            {
+                MessageBox.Show(
+                     "When specifying a program or service, the protocol must be TCP, UDP, or Any.",
+                    "Invalid Rule", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var directionsToCreate = new List<Directions>(2);
+            if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
+            if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
+
+            var protocolsToCreate = new List<int>();
+            if (hasProgramOrService && vm.Protocol == ProtocolTypes.Any.Value)
+            {
+                protocolsToCreate.Add(ProtocolTypes.TCP.Value);
+                protocolsToCreate.Add(ProtocolTypes.UDP.Value);
+            }
+            else
+            {
+                protocolsToCreate.Add(vm.Protocol);
+            }
+
+            foreach (var direction in directionsToCreate)
+            {
+                foreach (var protocol in protocolsToCreate)
+                {
+                    var ruleVm = new AdvancedRuleViewModel
+                    {
+                        Name = vm.Name,
+                        Status = vm.Status,
+                        IsEnabled = vm.IsEnabled,
+                        Description = vm.Description,
+                        Grouping = vm.Grouping,
+                        ApplicationName = vm.ApplicationName,
+                        ServiceName = vm.ServiceName,
+                        LocalPorts = vm.LocalPorts,
+                        RemotePorts = vm.RemotePorts,
+                        LocalAddresses = vm.LocalAddresses,
+                        RemoteAddresses = vm.RemoteAddresses,
+                        Profiles = vm.Profiles,
+                        Type = vm.Type,
+                        Direction = direction,
+                        Protocol = (short)protocol
+                    };
+                    string nameSuffix = "";
+                    if (directionsToCreate.Count > 1)
+                    {
+                        nameSuffix += $" - {direction}";
+                    }
+                    if (protocolsToCreate.Count > 1)
+                    {
+                        nameSuffix += (protocol == ProtocolTypes.TCP.Value) ?
+                            " - TCP" : " - UDP";
+                    }
+                    ruleVm.Name = vm.Name + nameSuffix;
+                    CreateSingleAdvancedRule(ruleVm, interfaceTypes, icmpTypesAndCodes);
+                }
+            }
+        }
+
+        private void CreateSingleAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
+        {
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+            try
+            {
+                firewallRule.Name = vm.Name;
+                firewallRule.Description = vm.Description;
+                firewallRule.Enabled = vm.IsEnabled;
+                firewallRule.Grouping = vm.Grouping;
+                firewallRule.Action = vm.Status == "Allow" ?
+                    NET_FW_ACTION_.NET_FW_ACTION_ALLOW : NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)vm.Direction;
+                firewallRule.Protocol = vm.Protocol;
+
+                if (!string.IsNullOrWhiteSpace(vm.ServiceName))
+                {
+                    firewallRule.serviceName = vm.ServiceName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
+                {
+                    firewallRule.ApplicationName = vm.ApplicationName;
+                }
+                else
+                {
+                    firewallRule.ApplicationName = null;
+                }
+
+                if (vm.Protocol != ProtocolTypes.TCP.Value && vm.Protocol != ProtocolTypes.UDP.Value)
+                {
+                    firewallRule.LocalPorts = "*";
+                    firewallRule.RemotePorts = "*";
+                }
+                else
+                {
+                    firewallRule.LocalPorts = !string.IsNullOrEmpty(vm.LocalPorts) ?
+                        vm.LocalPorts : "*";
+                    firewallRule.RemotePorts = !string.IsNullOrEmpty(vm.RemotePorts) ? vm.RemotePorts : "*";
+                }
+
+                firewallRule.LocalAddresses = !string.IsNullOrEmpty(vm.LocalAddresses) ? vm.LocalAddresses : "*";
+                firewallRule.RemoteAddresses = !string.IsNullOrEmpty(vm.RemoteAddresses) ? vm.RemoteAddresses : "*";
+
+                NET_FW_PROFILE_TYPE2_ profiles = 0;
+                if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
+                if (vm.Profiles.Contains("Private")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
+                if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
+                if (profiles == 0) profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+                firewallRule.Profiles = (int)profiles;
+                firewallRule.InterfaceTypes = interfaceTypes;
+                if (vm.Protocol == ProtocolTypes.ICMPv4.Value || vm.Protocol == ProtocolTypes.ICMPv6.Value)
+                {
+                    if (!string.IsNullOrWhiteSpace(icmpTypesAndCodes))
+                    {
+                        firewallRule.IcmpTypesAndCodes = icmpTypesAndCodes;
+                    }
+                }
+
+                firewallService.CreateRule(firewallRule);
+                activityLogger.LogChange("Advanced Rule Created", vm.Name);
+                activityLogger.LogDebug($"Created Advanced Rule: '{vm.Name}'");
+            }
+            finally
+            {
+                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+            }
+        }
+
+        public static bool ParseActionString(string action, out Actions parsedAction, out Directions parsedDirection)
+        {
+            parsedAction = Actions.Allow;
+            parsedDirection = 0;
+            if (string.IsNullOrEmpty(action)) return false;
+
+            parsedAction = action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) ? Actions.Allow : Actions.Block;
+            if (action.Contains("(All)"))
+            {
+                parsedDirection = Directions.Incoming |
+                    Directions.Outgoing;
+            }
+            else
+            {
+                if (action.Contains("Inbound") || action.Contains("Incoming"))
+                {
+                    parsedDirection |= Directions.Incoming;
+                }
+                if (action.Contains("Outbound") || action.Contains("Outgoing"))
+                {
+                    parsedDirection |= Directions.Outgoing;
+                }
+            }
+
+            if (parsedDirection == 0)
+            {
+                parsedDirection = Directions.Outgoing;
+            }
+
+            return true;
+        }
+
+        private static void ApplyRuleAction(string appName, string action, Action<string, Directions, Actions> createRule)
+        {
+            if (!ParseActionString(action, out Actions parsedAction, out Directions parsedDirection))
+            {
+                return;
+            }
+
+            string actionStr = parsedAction == Actions.Allow ?
+                "" : "Block ";
+            string inName = $"{appName} - {actionStr}In";
+            string outName = $"{appName} - {actionStr}Out";
+            if (parsedDirection.HasFlag(Directions.Incoming))
+            {
+                createRule(inName, Directions.Incoming, parsedAction);
+            }
+            if (parsedDirection.HasFlag(Directions.Outgoing))
+            {
+                createRule(outName, Directions.Outgoing, parsedAction);
+            }
+        }
+
+        private static INetFwRule2 CreateRuleObject(string name, string appPath, Directions direction, Actions action, int protocol, string description = "")
+        {
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+            firewallRule.Name = name;
+            firewallRule.ApplicationName = appPath;
+            firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
+            firewallRule.Action = (NET_FW_ACTION_)action;
+            firewallRule.Enabled = true;
+            firewallRule.Protocol = protocol;
+            if (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix))
+            {
+                firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
+                firewallRule.Description = description;
+            }
+            else
+            {
+                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+            }
+            return firewallRule;
+        }
+
+        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
+        {
+            activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
+            var firewallRule = CreateRuleObject(name, appPath, direction, action, protocol, description);
+            firewallService.CreateRule(firewallRule);
+        }
+
+        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string? appPath = null)
+        {
+            activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with AppPath: '{appPath ?? "null"}'");
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+            try
+            {
+                firewallRule.Name = name;
+                firewallRule.serviceName = serviceName;
+                firewallRule.ApplicationName = string.IsNullOrEmpty(appPath) ? null : appPath;
+                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
+                firewallRule.Action = (NET_FW_ACTION_)action;
+                firewallRule.Protocol = protocol;
+                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+                firewallRule.Enabled = true;
+                firewallService.CreateRule(firewallRule);
+            }
+            finally
+            {
+                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+            }
+        }
+
+        private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
+        {
+            activityLogger.LogDebug($"Creating UWP Rule: '{name}' for PFN '{packageFamilyName}'");
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+            try
+            {
+                firewallRule.Name = name;
+                firewallRule.Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName;
+                firewallRule.Direction = (NET_FW_RULE_DIRECTION_)direction;
+                firewallRule.Action = (NET_FW_ACTION_)action;
+                firewallRule.Protocol = protocol;
+                firewallRule.Grouping = MFWConstants.MainRuleGroup;
+                firewallRule.Enabled = true;
+                firewallService.CreateRule(firewallRule);
+            }
+            finally
+            {
+                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+            }
+        }
+
+        public async Task DeleteGroupAsync(string groupName)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    activityLogger.LogDebug($"Deleting all rules in group: {groupName}");
+                    firewallService.DeleteRulesByGroup(groupName);
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException($"DeleteGroupAsync for {groupName}", ex);
+                }
+            });
+        }
+
+        public void DeleteAllMfwRules()
+        {
+            try
+            {
+                firewallService.DeleteAllMfwRules();
+                _wildcardRuleService.ClearRules();
+                activityLogger.LogChange("Bulk Delete", "All Minimal Firewall rules deleted by user.");
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException("DeleteAllMfwRules", ex);
+            }
+        }
+
+        public void UpdateWildcardRule(WildcardRule oldRule, WildcardRule newRule)
+        {
+            _wildcardRuleService.UpdateRule(oldRule, newRule);
+            DeleteRulesForWildcard(oldRule);
+            activityLogger.LogChange("Wildcard Rule Updated", newRule.FolderPath);
+        }
+
+        public void RemoveWildcardRule(WildcardRule rule)
+        {
+            _wildcardRuleService.RemoveRule(rule);
+            DeleteRulesForWildcard(rule);
+            activityLogger.LogChange("Wildcard Rule Removed", rule.FolderPath);
+        }
+
+        public void RemoveWildcardDefinitionOnly(WildcardRule rule)
+        {
+            _wildcardRuleService.RemoveRule(rule);
+            activityLogger.LogChange("Wildcard Definition Removed", rule.FolderPath);
+        }
+
+        public void ApplyWildcardMatch(string appPath, string serviceName, WildcardRule rule)
+        {
+            if (!ParseActionString(rule.Action, out Actions parsedAction, out Directions parsedDirection))
+            {
+                activityLogger.LogDebug($"[ApplyWildcardMatch] Invalid action string in wildcard rule for {rule.FolderPath}: {rule.Action}");
+                return;
+            }
+
+            void createRule(string baseName, Directions dir, Actions act, int protocol, string? serviceNameToUse)
+            {
+                if (!ValidationUtility.ValidatePortString(rule.LocalPorts, out string localPortError))
+                {
+                    activityLogger.LogDebug($"[ApplyWildcardMatch] Invalid LocalPorts '{rule.LocalPorts}' in wildcard for {rule.FolderPath}. Rule '{baseName}' not created. Error: {localPortError}");
+                    return;
+                }
+                if (!ValidationUtility.ValidatePortString(rule.RemotePorts, out string remotePortError))
+                {
+                    activityLogger.LogDebug($"[ApplyWildcardMatch] Invalid RemotePorts '{rule.RemotePorts}' in wildcard for {rule.FolderPath}. Rule '{baseName}' not created. Error: {remotePortError}");
+                    return;
+                }
+                if (!ValidationUtility.ValidateAddressString(rule.RemoteAddresses, out string remoteAddressError))
+                {
+                    activityLogger.LogDebug($"[ApplyWildcardMatch] Invalid RemoteAddresses '{rule.RemoteAddresses}' in wildcard for {rule.FolderPath}. Rule '{baseName}' not created. Error: {remoteAddressError}");
+                    return;
+                }
+
+                var firewallRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
+                string? valueWithError = null;
+                bool ruleCreationSkipped = false;
+                try
+                {
+                    firewallRule.Name = baseName;
+
+                    if (!string.IsNullOrEmpty(serviceNameToUse))
+                    {
+                        firewallRule.serviceName = serviceNameToUse;
+                        firewallRule.ApplicationName = appPath;
+                    }
+                    else
+                    {
+                        firewallRule.ApplicationName = appPath;
+                        firewallRule.serviceName = null;
+                    }
+
+                    firewallRule.Direction = (NET_FW_RULE_DIRECTION_)dir;
+                    firewallRule.Action = (NET_FW_ACTION_)act;
+                    firewallRule.Enabled = true;
+                    firewallRule.Grouping = MFWConstants.WildcardRuleGroup;
+                    firewallRule.Description = $"{MFWConstants.WildcardDescriptionPrefix}{rule.FolderPath}]";
+                    firewallRule.Protocol = protocol;
+
+                    try
+                    {
+                        valueWithError = rule.LocalPorts;
+                        if (protocol != 6 && protocol != 17) valueWithError = "*";
+                        else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting LocalPorts to: '{valueWithError}' for rule '{baseName}'");
+                        firewallRule.LocalPorts = valueWithError;
+                    }
+                    catch (ArgumentException portEx)
+                    {
+                        activityLogger.LogException($"ApplyWildcardMatch-SetLocalPorts-{baseName}", portEx);
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting LocalPorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
+                        try { firewallRule.LocalPorts = "*"; }
+                        catch (Exception fbEx)
+                        {
+                            activityLogger.LogException($"ApplyWildcardMatch-FallbackLocalPorts-{baseName}", fbEx);
+                            ruleCreationSkipped = true;
+                        }
+                    }
+
+                    if (ruleCreationSkipped) return;
+
+                    try
+                    {
+                        valueWithError = rule.RemotePorts;
+                        if (protocol != 6 && protocol != 17) valueWithError = "*";
+                        else if (string.IsNullOrEmpty(valueWithError)) valueWithError = "*";
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting RemotePorts to: '{valueWithError}' for rule '{baseName}'");
+                        firewallRule.RemotePorts = valueWithError;
+                    }
+                    catch (ArgumentException portEx)
+                    {
+                        activityLogger.LogException($"ApplyWildcardMatch-SetRemotePorts-{baseName}", portEx);
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemotePorts to '*' for rule '{baseName}' due to error: {portEx.Message}");
+                        try { firewallRule.RemotePorts = "*"; }
+                        catch (Exception fbEx)
+                        {
+                            activityLogger.LogException($"ApplyWildcardMatch-FallbackRemotePorts-{baseName}", fbEx);
+                            ruleCreationSkipped = true;
+                        }
+                    }
+
+                    if (ruleCreationSkipped) return;
+
+                    try
+                    {
+                        valueWithError = rule.RemoteAddresses;
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Setting RemoteAddresses to: '{valueWithError}' for rule '{baseName}'");
+                        firewallRule.RemoteAddresses = valueWithError;
+                    }
+                    catch (ArgumentException addrEx)
+                    {
+                        activityLogger.LogException($"ApplyWildcardMatch-SetRemoteAddr-{baseName}", addrEx);
+                        activityLogger.LogDebug($"[ApplyWildcardMatch] Falling back setting RemoteAddresses to '*' for rule '{baseName}' due to error: {addrEx.Message}");
+                        try { firewallRule.RemoteAddresses = "*"; }
+                        catch (Exception fbEx)
+                        {
+                            activityLogger.LogException($"ApplyWildcardMatch-FallbackRemoteAddr-{baseName}", fbEx);
+                            ruleCreationSkipped = true;
+                        }
+                    }
+
+                    if (ruleCreationSkipped) return;
+
+                    firewallService.CreateRule(firewallRule);
+                    activityLogger.LogDebug($"[ApplyWildcardMatch] Successfully created rule '{baseName}' from wildcard match.");
+                }
+                catch (COMException comEx)
+                {
+                    activityLogger.LogException($"ApplyWildcardMatch-CreateRuleCOM-{baseName}", comEx);
+                }
+                catch (Exception ex)
+                {
+                    activityLogger.LogException($"ApplyWildcardMatch-CreateRuleGeneral-{baseName}", ex);
+                }
+                finally
+                {
+                    if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+                }
+            }
+
+            var serviceNames = serviceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+            bool isSvcHost = Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase);
+            string appNameBase = Path.GetFileNameWithoutExtension(appPath);
+
+            List<string?> servicesToCreateRulesFor;
+
+            if (serviceNames.Length > 0)
+            {
+                servicesToCreateRulesFor = new List<string?>(serviceNames);
+            }
+            else if (isSvcHost)
+            {
+                servicesToCreateRulesFor = ["*"];
+            }
+            else
+            {
+                servicesToCreateRulesFor = [null]; 
+            }
+
+            foreach (var sName in servicesToCreateRulesFor)
+            {
+                string ruleNameBase = string.IsNullOrEmpty(sName) ? appNameBase : (sName == "*" ? appNameBase : sName);
+
+                if (rule.Protocol == ProtocolTypes.Any.Value)
+                {
+                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+                    var protocolsToCreate = new List<int> { 6, 17 };
+
+                    foreach (var protocol in protocolsToCreate)
+                    {
+                        string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
+                        if (parsedDirection.HasFlag(Directions.Incoming))
+                        {
+                            createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);
+                        }
+                        if (parsedDirection.HasFlag(Directions.Outgoing))
+                        {
+                            createRule($"{ruleNameBase} - {actionStr}Out{protocolSuffix}", Directions.Outgoing, parsedAction, protocol, sName);
+                        }
+                    }
+                }
+                else
+                {
+                    ApplyRuleAction(ruleNameBase, rule.Action, (name, dir, act) => createRule(name, dir, act, rule.Protocol, sName));
+                }
+            }
+
+            activityLogger.LogChange("Wildcard Rule Applied", rule.Action + " for " + appPath);
+        }
+
+
+        public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            var orphanedRuleNames = new List<string>();
+            var mfwRules = new List<INetFwRule2>();
+            var allRules = firewallService.GetAllRules();
+
+            try
+            {
+                foreach (var rule in allRules)
+                {
+                    if (IsMfwRule(rule))
+                    {
+                        mfwRules.Add(rule);
+                    }
+                    else
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+
+                int total = mfwRules.Count;
+                if (total == 0)
+                {
+                    progress?.Report(100);
+                    return orphanedRuleNames;
+                }
+
+                int processed = 0;
+                await Task.Run(() =>
+                {
+                    foreach (var rule in mfwRules)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        string appPath = rule.ApplicationName;
+
+                        if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
+                        {
+                            string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
+                            if (!File.Exists(expandedPath))
+                            {
+                                orphanedRuleNames.Add(rule.Name);
+                                activityLogger.LogDebug($"Found orphaned rule '{rule.Name}' for path: {expandedPath}");
+                            }
+                        }
+
+                        processed++;
+                        progress?.Report((processed * 100) / total);
+                    }
+                }, token);
+
+                if (token.IsCancellationRequested)
+                {
+                    return new List<string>();
+                }
+
+                if (orphanedRuleNames.Any())
+                {
+                    activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
+                    try
+                    {
+                        firewallService.DeleteRulesByName(orphanedRuleNames);
+                        activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
+                    }
+                    catch (COMException ex)
+                    {
+                        activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
+                    }
+                }
+                else
+                {
+                    activityLogger.LogDebug("No orphaned rules found.");
+                }
+            }
+            finally
+            {
+                foreach (var rule in mfwRules)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+
+            return orphanedRuleNames;
+        }
+
+        public async Task<string> ExportAllMfwRulesAsync()
+        {
+            var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
+            var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules)
+                .Select(r =>
+                {
+                    r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
+                    return r;
+                }).ToList();
+
+            var wildcardRules = _wildcardRuleService.GetRules()
+                .Select(r =>
+                {
+                    r.FolderPath = PathResolver.ConvertToEnvironmentPath(r.FolderPath);
+                    return r;
+                }).ToList();
+
+            var container = new ExportContainer
+            {
+                ExportDate = DateTime.UtcNow,
+                AdvancedRules = portableAdvancedRules,
+                WildcardRules = wildcardRules
+            };
+
+            return JsonSerializer.Serialize(container, ExportContainerJsonContext.Default.ExportContainer);
+        }
+
+        public async Task ImportRulesAsync(string jsonContent, bool replace)
+        {
+            if (BackgroundTaskService == null)
+            {
+                activityLogger.LogDebug("[Import] BackgroundTaskService is not available.");
+                return;
+            }
+
+            try
+            {
+                var container = JsonSerializer.Deserialize(jsonContent, ExportContainerJsonContext.Default.ExportContainer);
+                if (container == null)
+                {
+                    activityLogger.LogDebug("[Import] Failed to deserialize JSON content.");
+                    return;
+                }
+
+                if (replace)
+                {
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
+                    await Task.Delay(1000);
+                }
+
+                foreach (var ruleVm in container.AdvancedRules)
+                {
+                    ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
+                    var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                }
+
+                foreach (var wildcardRule in container.WildcardRules)
+                {
+                    wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
+                }
+
+                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules.Count} advanced rules and {container.WildcardRules.Count} wildcard rules. Replace: {replace}");
+            }
+            catch (JsonException ex)
+            {
+                activityLogger.LogException("ImportRules", ex);
+            }
+        }
+    }
+}
+
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/FirewallDataService.cs
+--------------------------------------------------------------------------------
+using NetFwTypeLib;
+using System.IO;
+using System.Linq;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using Microsoft.Extensions.Caching.Memory;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics;
+
+namespace MinimalFirewall
+{
+    public enum MfwRuleStatus { None, MfwAllow, MfwBlock }
+
+    public class FirewallDataService
+    {
+        private readonly FirewallRuleService _firewallRuleService;
+        private readonly WildcardRuleService _wildcardRuleService;
+        private readonly UwpService _uwpService;
+        private readonly MemoryCache _localCache;
+        private const string ServicesCacheKey = "ServicesList";
+        private const string MfwRulesCacheKey = "MfwRulesList";
+        private const string AggregatedRulesCacheKey = "AggregatedRulesList";
+        public FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
+        {
+            _firewallRuleService = firewallRuleService;
+            _wildcardRuleService = wildcardRuleService;
+            _uwpService = uwpService;
+            _localCache = new MemoryCache(new MemoryCacheOptions());
+        }
+
+        public void ClearAggregatedRulesCache()
+        {
+            _localCache.Remove(AggregatedRulesCacheKey);
+        }
+
+        public void InvalidateMfwRuleCache()
+        {
+            _localCache.Remove(MfwRulesCacheKey);
+        }
+
+        public List<ServiceViewModel> GetCachedServicesWithExePaths()
+        {
+            if (_localCache.TryGetValue(ServicesCacheKey, out List<ServiceViewModel>? services) && services != null)
+            {
+                return services;
+            }
+
+            services = SystemDiscoveryService.GetServicesWithExePaths();
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+            _localCache.Set(ServicesCacheKey, services, cacheOptions);
+            return services;
+        }
+
+        public List<UwpApp> LoadUwpAppsFromCache()
+        {
+            return _uwpService.LoadUwpAppsFromCache();
+        }
+
+        public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            if (_localCache.TryGetValue(AggregatedRulesCacheKey, out List<AggregatedRuleViewModel>? cachedRules) && cachedRules != null)
+            {
+                progress?.Report(100);
+                return cachedRules;
+            }
+
+            var aggregatedRules = await Task.Run(() =>
+            {
+                var allRules = _firewallRuleService.GetAllRules();
+                try
+                {
+                    var enabledRules = allRules.Where(r => r.Enabled && !string.IsNullOrEmpty(r.Grouping)).ToList();
+                    int totalRules = enabledRules.Count;
+                    if (totalRules == 0)
+                    {
+                        progress?.Report(100);
+                        return new List<AggregatedRuleViewModel>();
+                    }
+
+                    var groupedByGroupingAndProtocol = enabledRules
+                        .GroupBy(r => $"{r.Grouping}|{r.ApplicationName}|{r.serviceName}|{r.Protocol}")
+                        .ToList();
+
+                    var aggRules = new List<AggregatedRuleViewModel>();
+                    int processedCount = 0;
+
+                    foreach (var group in groupedByGroupingAndProtocol)
+                    {
+                        if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+                        var groupList = group.ToList();
+                        aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
+                        processedCount += groupList.Count;
+                        progress?.Report((processedCount * 100) / totalRules);
+                    }
+
+                    progress?.Report(100);
+                    return aggRules.OrderBy(r => r.Name).ToList();
+                }
+                finally
+                {
+                    foreach (var rule in allRules)
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+            }, token);
+
+            if (token.IsCancellationRequested) return new List<AggregatedRuleViewModel>();
+
+            var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
+            _localCache.Set(AggregatedRulesCacheKey, aggregatedRules, cacheEntryOptions);
+
+            return aggregatedRules;
+        }
+
+        private AggregatedRuleViewModel CreateAggregatedViewModelForRuleGroup(List<INetFwRule2> group)
+        {
+            var firstRule = group.First();
+
+            var commonName = GetCommonName(group);
+            if (string.IsNullOrEmpty(commonName) || commonName.StartsWith("@"))
+            {
+                commonName = firstRule.Grouping ?? string.Empty;
+            }
+
+            var aggRule = new AggregatedRuleViewModel
+            {
+                Name = commonName,
+                ApplicationName = firstRule.ApplicationName ?? string.Empty,
+                ServiceName = firstRule.serviceName ?? string.Empty,
+                Protocol = firstRule.Protocol,
+                ProtocolName = GetProtocolName(firstRule.Protocol),
+                Type = DetermineRuleType(firstRule),
+                UnderlyingRules = group.Select(CreateAdvancedRuleViewModel).ToList(),
+                IsEnabled = group.All(r => r.Enabled),
+                Profiles = GetProfileString(firstRule.Profiles),
+                Grouping = firstRule.Grouping ?? "",
+                Description = firstRule.Description ?? ""
+            };
+
+            bool hasInAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutAllow = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+            bool hasInBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+            bool hasOutBlock = group.Any(r => r.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK && r.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+
+            aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "N/A");
+            if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
+
+            aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "N/A");
+            if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
+
+            var localPorts = group.Select(r => r.LocalPorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.LocalPorts = localPorts.Any() ? string.Join(", ", localPorts) : "*";
+            var remotePorts = group.Select(r => r.RemotePorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.RemotePorts = remotePorts.Any() ? string.Join(", ", remotePorts) : "*";
+
+            var localAddresses = group.Select(r => r.LocalAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.LocalAddresses = localAddresses.Any() ? string.Join(", ", localAddresses) : "*";
+
+            var remoteAddresses = group.Select(r => r.RemoteAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            aggRule.RemoteAddresses = remoteAddresses.Any() ? string.Join(", ", remoteAddresses) : "*";
+
+            return aggRule;
+        }
+
+        private string GetCommonName(List<INetFwRule2> group)
+        {
+            if (group.Count == 0) return string.Empty;
+            if (group.Count == 1) return group[0].Name ?? string.Empty;
+
+            var names = group.Select(r => r.Name ?? string.Empty).ToList();
+            string first = names[0];
+            int commonPrefixLength = first.Length;
+
+            foreach (string name in names.Skip(1))
+            {
+                commonPrefixLength = Math.Min(commonPrefixLength, name.Length);
+                for (int i = 0; i < commonPrefixLength; i++)
+                {
+                    if (first[i] != name[i])
+                    {
+                        commonPrefixLength = i;
+                        break;
+                    }
+                }
+            }
+
+            string commonPrefix = first.Substring(0, commonPrefixLength).Trim();
+            if (commonPrefix.EndsWith("-") || commonPrefix.EndsWith("("))
+            {
+                commonPrefix = commonPrefix.Substring(0, commonPrefix.Length - 1).Trim();
+            }
+
+            return string.IsNullOrEmpty(commonPrefix) ? (group[0].Grouping ?? string.Empty) : commonPrefix;
+        }
+
+
+        private RuleType DetermineRuleType(INetFwRule2 rule)
+        {
+            if ((rule.Description != null && rule.Description.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal)) ||
+                 (rule.ApplicationName != null && rule.ApplicationName.StartsWith("@", StringComparison.Ordinal)) ||
+                (rule.Name != null && rule.Name.StartsWith("@", StringComparison.Ordinal)))
+            {
+                return RuleType.UWP;
+            }
+
+            if (!string.IsNullOrEmpty(rule.serviceName) && rule.serviceName != "*")
+                return RuleType.Service;
+
+            if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*")
+            {
+                bool hasSpecifics = (!string.IsNullOrEmpty(rule.LocalPorts) && rule.LocalPorts != "*") ||
+                                     (!string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*") ||
+                                     (!string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*") ||
+                                     (!string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*");
+                return hasSpecifics ? RuleType.Advanced : RuleType.Program;
+            }
+            return RuleType.Advanced;
+        }
+
+
+        private List<AdvancedRuleViewModel> GetMfwRulesFromCache()
+        {
+            if (_localCache.TryGetValue(MfwRulesCacheKey, out List<AdvancedRuleViewModel>? cachedRules) && cachedRules != null)
+            {
+                return cachedRules;
+            }
+
+            var allRules = _firewallRuleService.GetAllRules();
+            try
+            {
+                var newCachedRules = allRules
+                    .Where(rule =>
+                        !string.IsNullOrEmpty(rule.Grouping) &&
+                        (rule.Grouping == MFWConstants.MainRuleGroup || rule.Grouping == MFWConstants.WildcardRuleGroup || rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
+                    )
+                     .Select(CreateAdvancedRuleViewModel)
+                    .ToList();
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                _localCache.Set(MfwRulesCacheKey, newCachedRules, cacheEntryOptions);
+                return newCachedRules;
+            }
+            finally
+            {
+                foreach (var rule in allRules)
+                {
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+        }
+
+        public MfwRuleStatus CheckMfwRuleStatus(string appPath, string serviceName, string direction)
+        {
+            if (!Enum.TryParse<Directions>(direction, true, out var dirEnum))
+            {
+                return MfwRuleStatus.None;
+            }
+
+            string normalizedAppPath = string.IsNullOrEmpty(appPath) ? string.Empty : PathResolver.NormalizePath(appPath);
+            var serviceNamesSet = string.IsNullOrEmpty(serviceName)
+                 ? null
+                : new HashSet<string>(serviceName.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
+
+            var mfwRules = GetMfwRulesFromCache();
+
+
+            if (mfwRules == null)
+            {
+                Debug.WriteLine("[ERROR] CheckMfwRuleStatus: GetMfwRulesFromCache() returned null unexpectedly.");
+                return MfwRuleStatus.None;
+            }
+
+            bool foundAllow = false;
+            bool foundBlock = false;
+
+            bool eventHasService = serviceNamesSet != null && serviceNamesSet.Count > 0;
+            bool eventHasApp = !string.IsNullOrEmpty(normalizedAppPath);
+
+            foreach (var rule in mfwRules)
+            {
+                if (rule == null) continue;
+                if (!rule.Direction.HasFlag(dirEnum)) continue;
+
+                bool ruleHasService = !string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*";
+                bool ruleHasApp = !string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*";
+
+                bool match = false;
+
+                if (eventHasService)
+                {
+                    if (ruleHasService && serviceNamesSet!.Contains(rule.ServiceName))
+                    {
+                        if (ruleHasApp)
+                        {
+                            if (eventHasApp && string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                match = true;
+                            }
+                        }
+                        else
+                        {
+                            match = true;
+                        }
+                    }
+                }
+                else
+                {
+                    if (!ruleHasService && ruleHasApp && eventHasApp)
+                    {
+                        if (string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            match = true;
+                        }
+                    }
+                }
+
+                if (match)
+                {
+                    if (rule.Status == "Allow")
+                    {
+                        foundAllow = true;
+                    }
+                    else if (rule.Status == "Block")
+                    {
+                        foundBlock = true;
+                    }
+
+                    if (foundBlock) break;
+                }
+            }
+
+            if (foundBlock) return MfwRuleStatus.MfwBlock;
+            if (foundAllow) return MfwRuleStatus.MfwAllow;
+            return MfwRuleStatus.None;
+        }
+
+        public void ClearCaches()
+        {
+            _localCache.Remove(ServicesCacheKey);
+            _localCache.Remove(MfwRulesCacheKey);
+            _localCache.Remove(AggregatedRulesCacheKey);
+        }
+
+        public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
+        {
+            var appName = rule.ApplicationName ?? string.Empty;
+            return new AdvancedRuleViewModel
+            {
+                Name = rule.Name ?? "Unnamed Rule",
+                Description = rule.Description ?? "N/A",
+                IsEnabled = rule.Enabled,
+                Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
+                Direction = (Directions)rule.Direction,
+                ApplicationName = appName == "*" ? "*" : PathResolver.NormalizePath(appName),
+                LocalPorts = string.IsNullOrEmpty(rule.LocalPorts) ? "*" : rule.LocalPorts,
+                RemotePorts = string.IsNullOrEmpty(rule.RemotePorts) ? "*" : rule.RemotePorts,
+                Protocol = (int)rule.Protocol,
+                ProtocolName = GetProtocolName(rule.Protocol),
+                ServiceName = (string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*") ? string.Empty : rule.serviceName,
+                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ? "*" : rule.LocalAddresses,
+                RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
+                Profiles = GetProfileString(rule.Profiles),
+                Grouping = rule.Grouping ?? string.Empty,
+                InterfaceTypes = rule.InterfaceTypes ?? "All",
+                IcmpTypesAndCodes = rule.IcmpTypesAndCodes ?? ""
+            };
+        }
+
+
+        private static string GetProtocolName(int protocolValue)
+        {
+            return protocolValue switch
+            {
+                6 => "TCP",
+                17 => "UDP",
+                1 => "ICMPv4",
+                58 => "ICMPv6",
+                2 => "IGMP",
+                256 => "Any",
+                _ => protocolValue.ToString(),
+            };
+        }
+
+        private static string GetProfileString(int profiles)
+        {
+            if (profiles == (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL) return "All";
+            var profileNames = new List<string>(3);
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0) profileNames.Add("Domain");
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0) profileNames.Add("Private");
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0) profileNames.Add("Public");
+            return string.Join(", ", profileNames);
+        }
+    }
+}
+
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/FirewallEventListenerService.cs
+--------------------------------------------------------------------------------
+using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
+using System.IO;
+using System.Xml;
+using System.Collections.Concurrent;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+
+namespace MinimalFirewall
+{
+    public partial class FirewallEventListenerService : IDisposable
+    {
+        private readonly FirewallDataService _dataService;
+        private readonly WildcardRuleService _wildcardRuleService;
+        private readonly Func<bool> _isLockdownEnabled;
+        private readonly AppSettings _appSettings;
+        private readonly PublisherWhitelistService _whitelistService;
+        private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, bool> _pendingNotifications = new(StringComparer.OrdinalIgnoreCase);
+        private EventLogWatcher? _eventWatcher;
+        private readonly Action<string> _logAction;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
+
+        public FirewallActionsService? ActionsService { get; set; }
+
+        public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
+
+        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService, BackgroundFirewallTaskService backgroundTaskService)
+        {
+            _dataService = dataService;
+            _wildcardRuleService = wildcardRuleService;
+            _isLockdownEnabled = isLockdownEnabled;
+            _logAction = logAction;
+            _appSettings = appSettings;
+            _whitelistService = whitelistService;
+            _backgroundTaskService = backgroundTaskService;
+        }
+
+        public void Start()
+        {
+            if (_eventWatcher != null)
+            {
+                if (!_eventWatcher.Enabled)
+                {
+                    _eventWatcher.Enabled = true;
+                    _logAction("[EventListener] Event watcher re-enabled.");
+                }
+                return;
+            }
+
+            try
+            {
+                var query = new EventLogQuery("Security", PathType.LogName, "*[System[EventID=5157]]");
+                _eventWatcher = new EventLogWatcher(query);
+                _eventWatcher.EventRecordWritten += OnEventRecordWritten;
+                _eventWatcher.Enabled = true;
+                _logAction("[EventListener] Event watcher started successfully.");
+            }
+            catch (EventLogException ex)
+            {
+                _logAction($"[EventListener ERROR] You may not have permission to read the Security event log: {ex.Message}");
+                MessageBox.Show("Could not start firewall event listener. Please run as Administrator.", "Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void Stop()
+        {
+            if (_eventWatcher != null)
+            {
+                _eventWatcher.Enabled = false;
+                _eventWatcher.EventRecordWritten -= OnEventRecordWritten;
+                _eventWatcher.Dispose();
+                _eventWatcher = null;
+                _logAction("[EventListener] Event watcher stopped and disposed.");
+            }
+        }
+
+        private void OnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+        {
+            if (e.EventRecord == null)
+            {
+                return;
+            }
+
+            try
+            {
+                string xmlContent = e.EventRecord.ToXml();
+                Task.Run(() => OnFirewallBlockEvent(xmlContent));
+            }
+            catch (EventLogException)
+            {
+
+            }
+        }
+
+        private void OnFirewallBlockEvent(string xmlContent)
+        {
+            string rawAppPathForClear = GetValueFromXml(xmlContent, "Application");
+            string appPathForClear = PathResolver.NormalizePath(PathResolver.ConvertDevicePathToDrivePath(rawAppPathForClear));
+            string directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+            string remoteAddressForClear = GetValueFromXml(xmlContent, "RemoteAddress");
+            string remotePortForClear = GetValueFromXml(xmlContent, "RemotePort");
+            string protocolForClear = GetValueFromXml(xmlContent, "Protocol");
+
+            try
+            {
+                string rawAppPath = GetValueFromXml(xmlContent, "Application");
+                string protocol = GetValueFromXml(xmlContent, "Protocol");
+                string remotePort = GetValueFromXml(xmlContent, "RemotePort");
+                string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
+                string eventDirection = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                string filterId = GetValueFromXml(xmlContent, "FilterId");
+                string layerId = GetValueFromXml(xmlContent, "LayerId");
+
+                string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
+                string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
+
+                _logAction($"[EventListener] Block event received for raw path: '{rawAppPath}', Service: '{serviceName}', Direction: '{eventDirection}', Protocol: {protocol}, Remote: {remoteAddress}:{remotePort}, FilterId: {filterId}, LayerId: {layerId}");
+
+                string appPath = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
+                if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logAction($"[EventListener] Ignoring event for System or empty path: '{appPath}'");
+                    return;
+                }
+                appPath = PathResolver.NormalizePath(appPath);
+                _logAction($"[EventListener] Normalized path: '{appPath}', Direction: '{eventDirection}'");
+
+                string notificationKey = $"{appPath}|{eventDirection}|{remoteAddress}|{remotePort}|{protocol}";
+                if (!_pendingNotifications.TryAdd(notificationKey, true))
+                {
+                    _logAction($"[EventListener] Notification already pending for '{notificationKey}'. Ignoring duplicate event.");
+                    return;
+                }
+
+                if (!ShouldProcessEvent(appPath))
+                {
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+
+                if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrEmpty(serviceName))
+                    {
+                        string processId = GetValueFromXml(xmlContent, "ProcessID");
+                        if (!string.IsNullOrEmpty(processId) && processId != "0")
+                        {
+                            serviceName = SystemDiscoveryService.GetServicesByPID(processId);
+                            _logAction($"[EventListener] svchost.exe detected. XML ServiceName was empty. PID: {processId}, Resolved Service(s): '{serviceName}'");
+                        }
+                    }
+                    else
+                    {
+                        _logAction($"[EventListener] svchost.exe detected. ServiceName from XML: '{serviceName}'");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(serviceName) &&
+                    (serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
+                     serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase)))
+                {
+                    _logAction($"[EventListener] Ignoring event for '{serviceName}' service (managed by system).");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+
+                MfwRuleStatus existingRuleStatus = _dataService.CheckMfwRuleStatus(appPath, serviceName, eventDirection);
+                _logAction($"[EventListener] CheckMfwRuleStatus result for '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}') is: {existingRuleStatus}");
+
+                if (existingRuleStatus == MfwRuleStatus.MfwBlock)
+                {
+                    _logAction($"[EventListener] An MFW Block rule already exists. Ignoring event.");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+                else if (existingRuleStatus == MfwRuleStatus.MfwAllow)
+                {
+                    if (filterId == "0")
+                    {
+                        _logAction($"[EventListener] Race condition detected: An MFW Allow rule exists, but a block event (FilterId 0) was received. Invalidating cache and snoozing to allow network to stabilize.");
+                        _dataService.InvalidateMfwRuleCache();
+                        SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
+                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                        return;
+                    }
+
+                    _logAction($"[EventListener] An MFW Allow rule exists for this connection. Ignoring block event (FilterId: {filterId}).");
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+
+                var matchingRule = _wildcardRuleService.Match(appPath);
+                if (matchingRule != null)
+                {
+                    _logAction($"[EventListener] Wildcard rule matched for '{appPath}'. Action: '{matchingRule.Action}'.");
+                    if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
+                    {
+                        ActionsService.ApplyWildcardMatch(appPath, serviceName, matchingRule);
+                        _logAction($"[EventListener] Applying Allow action from matched wildcard rule.");
+                    }
+                    else
+                    {
+                        _logAction($"[EventListener] Matched wildcard rule action is '{matchingRule.Action}'. Ignoring block event.");
+                    }
+                    ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                    return;
+                }
+
+                if (_appSettings.AutoAllowSystemTrusted)
+                {
+                    if (SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
+                    {
+                        _logAction($"[EventListener] Auto-allowing trusted application '{appPath}' by publisher '{trustedPublisherName}'.");
+                        string allowAction = $"Allow ({eventDirection})";
+
+                        if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
+                        {
+                            var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                        }
+                        else
+                        {
+                            _logAction($"[EventListener ERROR] Cannot auto-allow. BackgroundTaskService is null or appPath is invalid.");
+                        }
+
+                        ClearPendingNotification(appPath, eventDirection, remoteAddress, remotePort, protocol);
+                        return;
+                    }
+                    else
+                    {
+                        _logAction($"[EventListener] App '{appPath}' not trusted or signature check failed. Not auto-allowing.");
+                    }
+                }
+
+                var pendingVm = new PendingConnectionViewModel
+                {
+                    AppPath = appPath,
+                    Direction = eventDirection,
+                    ServiceName = serviceName,
+                    Protocol = protocol,
+                    RemotePort = remotePort,
+                    RemoteAddress = remoteAddress,
+                    FilterId = filterId,
+                    LayerId = layerId
+                };
+                _logAction($"[EventListener] Queuing pending connection for user decision: '{appPath}' (Service: '{serviceName}', Direction: '{eventDirection}', FilterId: {filterId})");
+                PendingConnectionDetected?.Invoke(pendingVm);
+
+            }
+            catch (Exception ex)
+            {
+                _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex}");
+                ClearPendingNotification(appPathForClear, directionForClear, remoteAddressForClear, remotePortForClear, protocolForClear);
+            }
+        }
+
+        public void ClearPendingNotification(string appPath, string direction, string remoteAddress, string remotePort, string protocol)
+        {
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            string key = $"{appPath}|{direction}|{remoteAddress}|{remotePort}|{protocol}";
+            if (_pendingNotifications.TryRemove(key, out _))
+            {
+                _logAction($"[EventListener] Cleared specific pending notification flag for '{key}'.");
+            }
+        }
+
+        public void ClearPendingNotification(string appPath, string direction)
+        {
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            string keyPrefix = $"{appPath}|{direction}|";
+
+            var matchingKeys = _pendingNotifications.Keys.Where(k => k.StartsWith(keyPrefix)).ToList();
+            foreach (var k in matchingKeys)
+            {
+                if (_pendingNotifications.TryRemove(k, out _))
+                {
+                    _logAction($"[EventListener] Cleared pending notification flag for '{k}' (fallback match).");
+                }
+            }
+        }
+
+        public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
+        {
+            _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
+            _logAction($"[EventListener] Snoozing notifications for '{appPath}' for {duration}.");
+        }
+
+        public void ClearAllSnoozes()
+        {
+            _snoozedApps.Clear();
+            _logAction($"[EventListener] Cleared all snoozes.");
+        }
+
+        private bool ShouldProcessEvent(string appPath)
+        {
+            if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
+            {
+                _logAction($"[EventListener] ShouldProcessEvent=false (System or empty path)");
+                return false;
+            }
+
+            if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
+            {
+                _logAction($"[EventListener] Event for '{appPath}' is snoozed. Ignoring.");
+                return false;
+            }
+
+            bool lockdown = _isLockdownEnabled();
+            if (!lockdown)
+            {
+                _logAction($"[EventListener] ShouldProcessEvent=false (Lockdown not enabled)");
+            }
+            return lockdown;
+        }
+
+        private static string ParseDirection(string rawDirection)
+        {
+            return rawDirection switch
+            {
+                "%%14592" => "Incoming",
+                "%%14593" => "Outgoing",
+                _ => rawDirection,
+            };
+        }
+
+        private static string GetValueFromXml(string xml, string elementName)
+        {
+            try
+            {
+                using var stringReader = new StringReader(xml);
+                using var xmlReader = XmlReader.Create(stringReader, new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment });
+
+                while (xmlReader.Read())
+                {
+                    if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "Data")
+                    {
+                        if (xmlReader.GetAttribute("Name") == elementName)
+                        {
+                            if (xmlReader.IsEmptyElement)
+                            {
+                                return string.Empty;
+                            }
+                            xmlReader.Read();
+                            if (xmlReader.NodeType == XmlNodeType.Text)
+                            {
+                                return xmlReader.Value;
+                            }
+                            return string.Empty;
+                        }
+                    }
+                }
+            }
+            catch (XmlException ex)
+            {
+                Debug.WriteLine($"[XML PARSE ERROR] Failed to parse event XML for element '{elementName}': {ex.Message}\nXML: {xml}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UNEXPECTED XML PARSE ERROR] for element '{elementName}': {ex.Message}\nXML: {xml}");
+            }
+            return string.Empty;
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            GC.SuppressFinalize(this);
+        }
+    }
+}
+
+
+--------------------------------------------------
+// Full Path: C:/Users/anon/PROGRAMMING/C#/SimpleFirewall/VS Minimal Firewall/MinimalFirewall-NET8/Backups/v2.5.4 - ws/2.5.4.7 - fixed wildcard svchost/MainViewModel.cs
+--------------------------------------------------------------------------------
+// File: MainViewModel.cs
+using Firewall.Traffic.ViewModels;
+using MinimalFirewall.TypedObjects;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System;
+using DarkModeForms;
+
+namespace MinimalFirewall
+{
+    public class MainViewModel : ObservableViewModel
+    {
+        private readonly FirewallRuleService _firewallRuleService;
+        private readonly WildcardRuleService _wildcardRuleService;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
+        private readonly FirewallDataService _dataService;
+        private readonly FirewallSentryService _firewallSentryService;
+        private readonly ForeignRuleTracker _foreignRuleTracker;
+        private readonly FirewallEventListenerService _eventListenerService;
+        private readonly AppSettings _appSettings;
+        private readonly UserActivityLogger _activityLogger;
+        private readonly FirewallActionsService _actionsService;
+        private System.Threading.Timer? _sentryRefreshDebounceTimer;
+
+        public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
+        public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = new();
+        public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
+        public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
+        public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
+        public int UnseenSystemChangesCount => SystemChanges.Count;
+        public event Action? RulesListUpdated;
+        public event Action? SystemChangesUpdated;
+        public event Action<PendingConnectionViewModel>? PopupRequired;
+        public event Action<PendingConnectionViewModel>? DashboardActionProcessed;
+        public MainViewModel(
+            FirewallRuleService firewallRuleService,
+            WildcardRuleService wildcardRuleService,
+            BackgroundFirewallTaskService backgroundTaskService,
+            FirewallDataService dataService,
+            FirewallSentryService firewallSentryService,
+            ForeignRuleTracker foreignRuleTracker,
+            TrafficMonitorViewModel trafficMonitorViewModel,
+            FirewallEventListenerService eventListenerService,
+            AppSettings appSettings,
+            UserActivityLogger activityLogger,
+            FirewallActionsService actionsService)
+        {
+            _firewallRuleService = firewallRuleService;
+            _wildcardRuleService = wildcardRuleService;
+            _backgroundTaskService = backgroundTaskService;
+            _dataService = dataService;
+            _firewallSentryService = firewallSentryService;
+            _foreignRuleTracker = foreignRuleTracker;
+            TrafficMonitorViewModel = trafficMonitorViewModel;
+            _eventListenerService = eventListenerService;
+            _appSettings = appSettings;
+            _activityLogger = activityLogger;
+            _actionsService = actionsService;
+
+            _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
+
+            _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
+            _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
+        }
+
+        public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+        public void ClearRulesCache()
+        {
+            _dataService.ClearCaches();
+        }
+
+        public void ClearRulesData()
+        {
+            ClearRulesCache();
+            AllAggregatedRules.Clear();
+            VirtualRulesData.Clear();
+            RulesListUpdated?.Invoke();
+        }
+
+        public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
+        }
+
+        public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            var vms = await Task.Run(() =>
+            {
+                var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
+                var processInfoCache = new Dictionary<int, (string Name, string Path, string ServiceName)>();
+                var viewModels = new List<TcpConnectionViewModel>();
+                int total = connections.Count > 0 ? connections.Count : 1;
+                int current = 0;
+
+                foreach (var conn in connections)
+                {
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    if (!processInfoCache.TryGetValue(conn.ProcessId, out var info))
+                    {
+                        try
+                        {
+                            using (var p = Process.GetProcessById(conn.ProcessId))
+                            {
+                                string name = p.ProcessName;
+                                string path = string.Empty;
+                                string serviceName = string.Empty;
+                                try { if (p.MainModule != null) path = p.MainModule.FileName; }
+                                catch (Win32Exception) { path = "N/A (Access Denied)"; }
+
+                                if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    serviceName = SystemDiscoveryService.GetServicesByPID(conn.ProcessId.ToString());
+                                }
+                                info = (name, path, serviceName);
+                            }
+                        }
+                        catch (ArgumentException) { info = ("(Exited)", string.Empty, string.Empty); }
+                        catch { info = ("System", string.Empty, string.Empty); }
+                        processInfoCache[conn.ProcessId] = info;
+                    }
+                    // Pass the _backgroundTaskService when creating the ViewModel
+                    viewModels.Add(new TcpConnectionViewModel(conn, info, _backgroundTaskService));
+                    current++;
+                    progress?.Report((current * 100) / total);
+                }
+                return viewModels;
+            }, token);
+
+            if (token.IsCancellationRequested) return;
+
+            TrafficMonitorViewModel.ActiveConnections.Clear();
+            foreach (var vm in vms)
+            {
+                TrafficMonitorViewModel.ActiveConnections.Add(vm);
+            }
+        }
+
+        public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
+        {
+            IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
+            if (!showSystemRules)
+            {
+                filteredRules = filteredRules.Where(r => r.Grouping.EndsWith(" - MFW"));
+            }
+
+            if (enabledTypes.Count > 0 && enabledTypes.Count < 5)
+            {
+                filteredRules = filteredRules.Where(r => enabledTypes.Contains(r.Type));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                filteredRules = filteredRules.Where(r =>
+                    r.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    r.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    r.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+            }
+
+            VirtualRulesData = new SortableBindingList<AggregatedRuleViewModel>(filteredRules.ToList());
+            RulesListUpdated?.Invoke();
+        }
+
+        private Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
+        {
+            return columnIndex switch
+            {
+                2 => rule => rule.InboundStatus,
+                3 => rule => rule.OutboundStatus,
+                4 => rule => rule.ProtocolName,
+                5 => rule => rule.LocalPorts,
+                6 => rule => rule.RemotePorts,
+                7 => rule => rule.LocalAddresses,
+                8 => rule => rule.RemoteAddresses,
+                9 => rule => rule.ApplicationName,
+                10 => rule => rule.ServiceName,
+                11 => rule => rule.Profiles,
+                12 => rule => rule.Grouping,
+                13 => rule => rule.Description,
+                _ => rule => rule.Name,
+            };
+        }
+
+        public void AddPendingConnection(PendingConnectionViewModel pending)
+        {
+            var matchingRule = _wildcardRuleService.Match(pending.AppPath);
+            if (matchingRule != null)
+            {
+                if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+                {
+                    var payload = new ApplyApplicationRulePayload
+                    {
+                        AppPaths = [pending.AppPath],
+                        Action = matchingRule.Action,
+                        WildcardSourcePath = matchingRule.FolderPath
+                    };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+                    return;
+                }
+                if (matchingRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase));
+            if (!alreadyPending)
+            {
+                PendingConnections.Add(pending);
+            }
+        }
+
+        public void ProcessDashboardAction(PendingConnectionViewModel pending, string decision, bool trustPublisher = false)
+        {
+            var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, TrustPublisher = trustPublisher };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
+            PendingConnections.Remove(pending);
+
+            if (decision == "Allow" || decision == "Block")
+            {
+                string action = $"{decision} ({pending.Direction})";
+                FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
+
+                var newAggregatedRule = new AggregatedRuleViewModel
+                {
+                    Name = pending.FileName,
+                    ApplicationName = pending.AppPath,
+                    InboundStatus = parsedDirection == Directions.Incoming ? parsedAction.ToString() : "N/A",
+                    OutboundStatus = parsedDirection == Directions.Outgoing ? parsedAction.ToString() : "N/A",
+                    Type = RuleType.Program,
+                    IsEnabled = true,
+                    Grouping = MFWConstants.MainRuleGroup,
+                    Profiles = "All",
+                    ProtocolName = "Any"
+                };
+                AllAggregatedRules.Add(newAggregatedRule);
+                ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            }
+
+            DashboardActionProcessed?.Invoke(pending);
+        }
+
+        public void ProcessTemporaryDashboardAction(PendingConnectionViewModel pending, string decision, TimeSpan duration)
+        {
+            var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, Duration = duration };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload));
+            PendingConnections.Remove(pending);
+            DashboardActionProcessed?.Invoke(pending);
+        }
+
+        public async Task ScanForSystemChangesAsync(CancellationToken token, IProgress<int>? progress = null)
+        {
+            var newChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker, progress, token), token);
+            if (token.IsCancellationRequested) return;
+
+            SystemChanges.Clear();
+            SystemChanges.AddRange(newChanges);
+            SystemChangesUpdated?.Invoke();
+        }
+
+        public async Task RebuildBaselineAsync()
+        {
+            _foreignRuleTracker.Clear();
+            await ScanForSystemChangesAsync(CancellationToken.None);
+        }
+
+        public void AcceptForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptForeignRule, payload));
+                SystemChanges.Remove(change);
+                SystemChangesUpdated?.Invoke();
+            }
+        }
+
+        public void DeleteForeignRule(FirewallRuleChange change)
+        {
+            if (change.Rule?.Name is not null)
+            {
+                var payload = new ForeignRuleChangePayload { Change = change };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteForeignRule, payload));
+                SystemChanges.Remove(change);
+                SystemChangesUpdated?.Invoke();
+            }
+        }
+
+        public void AcceptAllForeignRules()
+        {
+            if (SystemChanges.Count == 0) return;
+            var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(SystemChanges) };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload));
+            SystemChanges.Clear();
+            SystemChangesUpdated?.Invoke();
+        }
+
+        public void ApplyRuleChange(AggregatedRuleViewModel item, string action)
+        {
+            var firstRule = item.UnderlyingRules.FirstOrDefault();
+            if (firstRule == null) return;
+
+            switch (firstRule.Type)
+            {
+                case RuleType.Program:
+                    var appPayload = new ApplyApplicationRulePayload { AppPaths = [firstRule.ApplicationName], Action = action };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                    break;
+                case RuleType.Service:
+                    var servicePayload = new ApplyServiceRulePayload { ServiceName = firstRule.ServiceName, Action = action };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload));
+                    break;
+                case RuleType.UWP:
+                    if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
+                    {
+                        var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
+                        var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
+                        var uwpPayload = new ApplyUwpRulePayload { UwpApps = [uwpApp], Action = action };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload));
+                    }
+                    break;
+            }
+
+            FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
+            var ruleToUpdate = AllAggregatedRules.FirstOrDefault(r => r == item);
+            if (ruleToUpdate != null)
+            {
+                if (parsedDirection.HasFlag(Directions.Incoming)) ruleToUpdate.InboundStatus = parsedAction.ToString();
+                if (parsedDirection.HasFlag(Directions.Outgoing)) ruleToUpdate.OutboundStatus = parsedAction.ToString();
+            }
+            RulesListUpdated?.Invoke();
+        }
+
+        public void DeleteRules(List<AggregatedRuleViewModel> rulesToDelete)
+        {
+            var wildcardRulesToDelete = rulesToDelete
+                .Where(i => i.Type == RuleType.Wildcard && i.WildcardDefinition != null)
+                .Select(i => i.WildcardDefinition!)
+                .ToList();
+            var standardRuleNamesToDelete = rulesToDelete
+                .Where(i => i.Type != RuleType.Wildcard)
+                .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
+                .ToList();
+            foreach (var wildcardRule in wildcardRulesToDelete)
+            {
+                var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload));
+                _wildcardRuleService.RemoveRule(wildcardRule);
+            }
+
+            if (standardRuleNamesToDelete.Any())
+            {
+                var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload));
+            }
+
+            AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
+        }
+
+        public AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
+        {
+            return new AggregatedRuleViewModel
+            {
+                Name = advancedRule.Name,
+                ApplicationName = advancedRule.ApplicationName,
+                ServiceName = advancedRule.ServiceName,
+                Description = advancedRule.Description,
+                Grouping = advancedRule.Grouping,
+                IsEnabled = advancedRule.IsEnabled,
+                InboundStatus = advancedRule.Direction.HasFlag(Directions.Incoming) ? advancedRule.Status : "N/A",
+                OutboundStatus = advancedRule.Direction.HasFlag(Directions.Outgoing) ? advancedRule.Status : "N/A",
+                ProtocolName = advancedRule.ProtocolName,
+                LocalPorts = advancedRule.LocalPorts,
+                RemotePorts = advancedRule.RemotePorts,
+                LocalAddresses = advancedRule.LocalAddresses,
+                RemoteAddresses = advancedRule.RemoteAddresses,
+                Profiles = advancedRule.Profiles,
+                Type = advancedRule.Type,
+                UnderlyingRules = new List<AdvancedRuleViewModel> { advancedRule }
+            };
+        }
+
+
+        public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
+        {
+            var payload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = interfaceTypes, IcmpTypesAndCodes = icmpTypesAndCodes };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+
+            var newAggregatedRule = new AggregatedRuleViewModel
+            {
+                Name = vm.Name,
+                ApplicationName = vm.ApplicationName,
+                ServiceName = vm.ServiceName,
+                Description = vm.Description,
+                Grouping = vm.Grouping,
+                IsEnabled = vm.IsEnabled,
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
+                ProtocolName = vm.ProtocolName,
+                LocalPorts = vm.LocalPorts,
+                RemotePorts = vm.RemotePorts,
+                LocalAddresses = vm.LocalAddresses,
+                RemoteAddresses = vm.RemoteAddresses,
+                Profiles = vm.Profiles,
+                Type = vm.Type,
+                UnderlyingRules = [vm]
+            };
+            AllAggregatedRules.Add(newAggregatedRule);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+        }
+
+        public void CreateProgramRule(string appPath, string action)
+        {
+            FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
+            var newAggregatedRule = new AggregatedRuleViewModel
+            {
+                Name = Path.GetFileName(appPath),
+                ApplicationName = appPath,
+                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ? parsedAction.ToString() : "N/A",
+                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ? parsedAction.ToString() : "N/A",
+                Type = RuleType.Program,
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Profiles = "All",
+                ProtocolName = "Any",
+                LocalPorts = "Any",
+                RemotePorts = "Any",
+                LocalAddresses = "Any",
+                RemoteAddresses = "Any",
+                Description = "N/A",
+                ServiceName = "N/A"
+            };
+            AllAggregatedRules.Add(newAggregatedRule);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            var payload = new ApplyApplicationRulePayload { AppPaths = { appPath }, Action = action };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload));
+        }
+
+        private void OnRuleSetChanged()
+        {
+            ClearRulesCache();
+            if (!_appSettings.AlertOnForeignRules)
+            {
+                return;
+            }
+
+            _sentryRefreshDebounceTimer?.Change(1000, Timeout.Infinite);
+        }
+
+        private async void DebouncedSentryRefresh(object? state)
+        {
+            _activityLogger.LogDebug("Sentry: Debounce timer elapsed. Checking for foreign rules.");
+            await ScanForSystemChangesAsync(CancellationToken.None);
+        }
+
+        private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
+        {
+            bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+            if (alreadyPending)
+            {
+                _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (already in dashboard list)");
+                return;
+            }
+
+            AddPendingConnection(pending);
+            if (_appSettings.IsPopupsEnabled)
+            {
+                PopupRequired?.Invoke(pending);
+            }
+        }
+
+        public void ProcessSpecificAllow(PendingConnectionViewModel pending)
+        {
+            var vm = new AdvancedRuleViewModel
+            {
+                Name = $"Allow {pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
+                Description = "Granular rule created by Minimal Firewall popup.",
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Status = "Allow",
+                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ? Directions.Incoming : Directions.Outgoing,
+                Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
+                ApplicationName = pending.AppPath,
+                RemotePorts = pending.RemotePort,
+                RemoteAddresses = pending.RemoteAddress,
+                LocalPorts = "*",
+                LocalAddresses = "*",
+                Profiles = "All",
+                Type = RuleType.Advanced
+            };
+            var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload));
+            var newAggregatedRule = new AggregatedRuleViewModel
+            {
+                Name = vm.Name,
+                ApplicationName = vm.ApplicationName,
+                Description = vm.Description,
+                Grouping = vm.Grouping,
+                IsEnabled = vm.IsEnabled,
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
+                ProtocolName = vm.ProtocolName,
+                LocalPorts = vm.LocalPorts,
+                RemotePorts = vm.RemotePorts,
+                LocalAddresses = vm.LocalAddresses,
+                RemoteAddresses = vm.RemoteAddresses,
+                Profiles = vm.Profiles,
+                Type = vm.Type,
+                UnderlyingRules = new List<AdvancedRuleViewModel> { vm }
+            };
+            AllAggregatedRules.Add(newAggregatedRule);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+
+            DashboardActionProcessed?.Invoke(pending);
+        }
+        public async Task CleanUpOrphanedRulesAsync()
+        {
+            using var statusForm = new StatusForm("Scanning for orphaned rules...", _appSettings);
+            statusForm.Show(Form.ActiveForm);
+            var progress = new Progress<int>(p => statusForm.UpdateProgress(p));
+            var cts = new CancellationTokenSource();
+            statusForm.FormClosing += (s, e) =>
+            {
+                if (e.CloseReason == CloseReason.UserClosing)
+                {
+                    cts.Cancel();
+                }
+            };
+
+            try
+            {
+                var deletedRules = await _actionsService.CleanUpOrphanedRulesAsync(cts.Token, progress);
+                if (!cts.IsCancellationRequested)
+                {
+                    statusForm.Close();
+                    Messenger.MessageBox(
+                        $"{deletedRules.Count} orphaned rule(s) found and deleted.",
+                        "Cleanup Complete",
+                        MessageBoxButtons.OK,
+                        MsgIcon.None);
+                    ClearRulesCache();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("CleanUpOrphanedRulesAsync", ex);
+                if (!statusForm.IsDisposed)
+                {
+                    statusForm.Close();
+                }
+                Messenger.MessageBox(
+                    "An error occurred during the cleanup process. Please check the debug log for details.",
+                    "Cleanup Error",
+                    MessageBoxButtons.OK,
+                    MsgIcon.Error);
+            }
+        }
+    }
+}
+
