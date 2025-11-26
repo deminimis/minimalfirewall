@@ -1,11 +1,15 @@
-﻿// File: Program.cs
+﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
+using System.Windows.Forms;
+
 namespace MinimalFirewall
 {
     internal static class Program
     {
         private const string AppGuid = "6326C497-403B-F991-2F6A-A5FBA67C364C";
+
         [STAThread]
         static void Main()
         {
@@ -13,10 +17,12 @@ namespace MinimalFirewall
             {
                 if (createdNew)
                 {
+                    Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+                    Application.EnableVisualStyles();
+                    Application.SetCompatibleTextRenderingDefault(false);
+
                     CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
                     CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-
-                    ApplicationConfiguration.Initialize();
 
                     var args = Environment.GetCommandLineArgs();
                     bool startMinimized = args.Contains("-tray", StringComparer.OrdinalIgnoreCase);

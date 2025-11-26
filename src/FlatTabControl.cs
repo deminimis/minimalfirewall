@@ -1,8 +1,9 @@
-﻿// File: FlatTabControl.cs
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Windows.Forms;
 
 namespace DarkModeForms
 {
@@ -31,14 +32,29 @@ namespace DarkModeForms
 
         public FlatTabControl()
         {
-            try
+            this.SetStyle(ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            this.DrawMode = TabDrawMode.OwnerDrawFixed;
+            this.SizeMode = TabSizeMode.Fixed;
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // High DPI Scaling Logic
+            float scale = this.DeviceDpi / 96f;
+            int baseWidth = 70;
+            int baseHeight = 120;
+            Size scaledSize = new Size((int)(baseWidth * scale), (int)(baseHeight * scale));
+
+            if (this.ItemSize.Width < scaledSize.Width)
             {
-                this.DrawMode = TabDrawMode.OwnerDrawFixed;
+                this.ItemSize = scaledSize;
             }
-            catch { }
         }
 
         private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -47,24 +63,17 @@ namespace DarkModeForms
 
         internal void DrawControl(Graphics g)
         {
-            try
+            if (!Visible) return;
+
+            using (Brush bBackColor = new SolidBrush(this.BackColor))
             {
-                if (!Visible)
-                {
-                    return;
-                }
-
-                using (Brush bBackColor = new SolidBrush(this.BackColor))
-                {
-                    g.FillRectangle(bBackColor, this.ClientRectangle);
-                }
-
-                for (int i = 0; i < this.TabCount; i++)
-                {
-                    DrawTab(g, this.TabPages[i], i);
-                }
+                g.FillRectangle(bBackColor, this.ClientRectangle);
             }
-            catch { }
+
+            for (int i = 0; i < this.TabCount; i++)
+            {
+                DrawTab(g, this.TabPages[i], i);
+            }
         }
 
         internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
@@ -72,47 +81,84 @@ namespace DarkModeForms
             Rectangle tabRect = this.GetTabRect(nIndex);
             bool isSelected = (this.SelectedIndex == nIndex);
 
+            bool isDarkModeText = (SelectedForeColor.R + SelectedForeColor.G + SelectedForeColor.B) > 382;
+
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
             if (this.Alignment == TabAlignment.Left)
             {
-                Color tabBackColor = isSelected ? SelectTabColor : this.TabColor;
 
+                Color tabBackColor = isSelected ? SelectTabColor : this.TabColor;
                 using (Brush b = new SolidBrush(tabBackColor))
                 {
                     g.FillRectangle(b, tabRect);
                 }
+
+
                 using (Pen p = new Pen(this.BorderColor))
                 {
-                    g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - Scale(1, g));
+                    int offset = Scale(1, g);
+                    g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - offset);
                 }
+
+                Rectangle textRect = tabRect; 
+                TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
 
                 if (this.ImageList != null && customTabPage.ImageIndex >= 0 && customTabPage.ImageIndex < this.ImageList.Images.Count)
                 {
-                    Image? icon = this.ImageList.Images[customTabPage.ImageIndex];
-                    if (icon != null)
+                    Image originalIcon = this.ImageList.Images[customTabPage.ImageIndex];
+                    if (originalIcon != null)
                     {
-                        int iconHeight = this.ImageList.ImageSize.Height;
-                        int iconWidth = this.ImageList.ImageSize.Width;
-                        int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
-                        int iconY = tabRect.Y + (tabRect.Height - iconHeight) / 2;
-                        g.DrawImage(icon, new Rectangle(iconX, iconY, iconWidth, iconHeight));
+                        int iconW = this.ImageList.ImageSize.Width;
+                        int iconH = this.ImageList.ImageSize.Height;
+
+
+                        int iconX = tabRect.X + (tabRect.Width - iconW) / 2;
+                        int iconY = tabRect.Y + Scale(15, g);
+
+
+                        if (isDarkModeText && customTabPage.ImageKey != "locked.png")
+                        {
+                            using (Image whiteIcon = RecolorImage(originalIcon, SelectedForeColor))
+                            {
+                                g.DrawImage(whiteIcon, new Rectangle(iconX, iconY, iconW, iconH));
+                            }
+                        }
+                        else
+                        {
+                            g.DrawImage(originalIcon, new Rectangle(iconX, iconY, iconW, iconH));
+                        }
+
+                        int textPadding = Scale(5, g);
+                        int textTop = iconY + iconH + textPadding;
+                        textRect = new Rectangle(
+                            tabRect.X,
+                            textTop,
+                            tabRect.Width,
+                            tabRect.Bottom - textTop - Scale(5, g)
+                        );
+
+                        textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
                     }
                 }
 
                 if (isSelected)
                 {
-                    using (Pen p = new Pen(this.LineColor, Scale(2, g)))
+                    using (Pen p = new Pen(this.LineColor, Scale(3, g)))
                     {
                         g.DrawLine(p, tabRect.Right - Scale(1, g), tabRect.Top, tabRect.Right - Scale(1, g), tabRect.Bottom - Scale(1, g));
                     }
                 }
+
+                Color textColor = isSelected ? SelectedForeColor : ForeColor;
+                TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, textColor, textFlags);
             }
             else
             {
+                // Fallback for Top/Bottom tabs 
                 int scaled3 = Scale(3, g);
-                Point[] points;
-                points = new[]
+                Point[] points = new[]
                 {
                     new Point(tabRect.Left, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Top + scaled3),
@@ -138,6 +184,34 @@ namespace DarkModeForms
 
                 TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
+        }
+
+        private Image RecolorImage(Image sourceImage, Color newColor)
+        {
+            var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
+            using (var g = Graphics.FromImage(newBitmap))
+            {
+                float r = newColor.R / 255f;
+                float g_ = newColor.G / 255f;
+                float b = newColor.B / 255f;
+
+                var colorMatrix = new ColorMatrix(new float[][]
+                {
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 0, 0},
+                    new float[] {0, 0, 0, 1, 0},
+                    new float[] {r, g_, b, 0, 1}
+                });
+
+                using (var attributes = new ImageAttributes())
+                {
+                    attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                    g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+                }
+            }
+            return newBitmap;
         }
     }
 }
