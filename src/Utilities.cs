@@ -215,9 +215,39 @@ namespace MinimalFirewall
         public static string NormalizePath(string path)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
+
+            string expandedPath;
             try
             {
-                string expandedPath = Environment.ExpandEnvironmentVariables(path);
+                expandedPath = Environment.ExpandEnvironmentVariables(path);
+            }
+            catch
+            {
+                return path;
+            }
+
+            if (File.Exists(expandedPath))
+            {
+                try
+                {
+                    string? dir = Path.GetDirectoryName(expandedPath);
+                    string file = Path.GetFileName(expandedPath);
+                    if (dir != null)
+                    {
+                        string? actualPath = Directory.EnumerateFiles(dir, file).FirstOrDefault();
+                        if (!string.IsNullOrEmpty(actualPath))
+                        {
+                            return actualPath;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            try
+            {
                 if (Path.IsPathRooted(expandedPath))
                 {
                     return Path.GetFullPath(expandedPath);

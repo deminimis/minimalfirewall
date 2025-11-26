@@ -1,13 +1,12 @@
-﻿// File: FlatComboBox.cs
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace DarkModeForms
 {
-
     public class FlatComboBox : ComboBox
     {
         private Color borderColor = Color.Gray;
@@ -40,78 +39,46 @@ namespace DarkModeForms
             }
         }
 
+        public FlatComboBox()
+        {
+            // double buffering to reduce flicker
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+        }
+
         private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
+
         protected override void WndProc(ref Message m)
         {
-            if (m.Msg == WM_PAINT && DropDownStyle != ComboBoxStyle.Simple)
+            if (m.Msg == 0xF && DropDownStyle != ComboBoxStyle.Simple)
             {
-                var clientRect = ClientRectangle;
-                var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
-                var outerBorder = new Rectangle(clientRect.Location,
-                    new Size(clientRect.Width - 1, clientRect.Height - 1));
-                var innerBorder = new Rectangle(outerBorder.X + 1, outerBorder.Y + 1,
-                    outerBorder.Width - dropDownButtonWidth - 2, outerBorder.Height - 2);
-                var innerInnerBorder = new Rectangle(innerBorder.X + 1, innerBorder.Y + 1,
-                    innerBorder.Width - 2, innerBorder.Height - 2);
-                var dropDownRect = new Rectangle(innerBorder.Right + 1, innerBorder.Y - 1,
-                    dropDownButtonWidth, innerBorder.Height + 2);
-                if (RightToLeft == RightToLeft.Yes)
-                {
-                    innerBorder.X = clientRect.Width - innerBorder.Right;
-                    innerInnerBorder.X = clientRect.Width - innerInnerBorder.Right;
-                    dropDownRect.X = clientRect.Width - dropDownRect.Right;
-                    dropDownRect.Width += 1;
-                }
-                var innerBorderColor = Enabled ? BackColor : SystemColors.Control;
-                var outerBorderColor = Enabled ? BorderColor : SystemColors.ControlDark;
-                var buttonColor1 = Enabled ? ButtonColor : SystemColors.Control;
-                var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2,
-                    dropDownRect.Top + dropDownRect.Height / 2);
-                var arrow = new Point[]
-                {
-            new Point(middle.X - 3, middle.Y - 2),
-            new Point(middle.X + 4, middle.Y - 2),
-            new Point(middle.X, middle.Y + 2)
-                };
-                var ps = new PAINTSTRUCT();
-                bool shoulEndPaint = false;
-                IntPtr dc;
-                if (m.WParam == IntPtr.Zero)
-                {
-                    dc = BeginPaint(Handle, ref ps);
-                    m.WParam = dc;
-                    shoulEndPaint = true;
-                }
-                else
-                {
-                    dc = m.WParam;
-                }
-                var rgn = CreateRectRgn(innerInnerBorder.Left, innerInnerBorder.Top,
-                    innerInnerBorder.Right, innerInnerBorder.Bottom);
-                SelectClipRgn(dc, rgn);
-                DefWndProc(ref m);
-                DeleteObject(rgn);
-                rgn = CreateRectRgn(clientRect.Left, clientRect.Top,
-                    clientRect.Right, clientRect.Bottom);
-                SelectClipRgn(dc, rgn);
+                base.WndProc(ref m);
 
-                using (var g = Graphics.FromHdc(dc))
+                using (Graphics g = Graphics.FromHwnd(Handle))
                 {
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
-                    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    g.CompositingQuality = CompositingQuality.HighQuality;
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    var clientRect = ClientRectangle;
+                    var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
+
+                    if (dropDownButtonWidth < Scale(12, g)) dropDownButtonWidth = Scale(16, g);
+
+                    var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
+
+                    using (var backBrush = new SolidBrush(this.Enabled ? this.BackColor : SystemColors.Control))
+                    {
+                    }
 
                     #region DropDown Button
-
-                    using (var b = new SolidBrush(buttonColor1))
+                    using (var b = new SolidBrush(Enabled ? ButtonColor : SystemColors.Control))
                     {
                         g.FillRectangle(b, dropDownRect);
                     }
-
-                    #endregion DropDown Button
+                    #endregion
 
                     #region Chevron
-
+                    Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
                     Size cSize = new Size(Scale(8, g), Scale(4, g));
                     var chevron = new Point[]
                     {
@@ -119,84 +86,28 @@ namespace DarkModeForms
                         new Point(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
                         new Point(middle.X, middle.Y + (cSize.Height / 2))
                     };
-                    using (var chevronPen = new Pen(BorderColor, 2.5f))
+                    using (var chevronPen = new Pen(BorderColor, Scale(2, g)))
                     {
                         g.DrawLine(chevronPen, chevron[0], chevron[2]);
                         g.DrawLine(chevronPen, chevron[1], chevron[2]);
                     }
-
-                    #endregion Chevron
+                    #endregion
 
                     #region Borders
-
-                    using (var p = new Pen(innerBorderColor))
+                    using (var p = new Pen(Enabled ? BorderColor : SystemColors.ControlDark, Scale(1, g)))
                     {
-                        g.DrawRectangle(p, innerBorder);
-                        g.DrawRectangle(p, innerInnerBorder);
-                    }
-                    using (var p = new Pen(outerBorderColor))
-                    {
-                        g.DrawRectangle(p, outerBorder);
-                    }
+                        Rectangle borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
+                        g.DrawRectangle(p, borderRect);
 
-                    #endregion Borders
+                        // Divider line for button
+                        g.DrawLine(p, dropDownRect.Left, dropDownRect.Top, dropDownRect.Left, dropDownRect.Bottom);
+                    }
+                    #endregion
                 }
-                if (shoulEndPaint)
-                    EndPaint(Handle, ref ps);
-                DeleteObject(rgn);
+                return; 
             }
-            else
-                base.WndProc(ref m);
-        }
 
-        private const int WM_PAINT = 0xF;
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
-        {
-            public int L, T, R, B;
+            base.WndProc(ref m);
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct PAINTSTRUCT
-        {
-            public IntPtr hdc;
-            public bool fErase;
-            public int rcPaint_left;
-            public int rcPaint_top;
-            public int rcPaint_right;
-            public int rcPaint_bottom;
-            public bool fRestore;
-            public bool fIncUpdate;
-            public int reserved1;
-            public int reserved2;
-            public int reserved3;
-            public int reserved4;
-            public int reserved5;
-            public int reserved6;
-            public int reserved7;
-            public int reserved8;
-        }
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr BeginPaint(IntPtr hWnd,
-            [In, Out] ref PAINTSTRUCT lpPaint);
-        [DllImport("user32.dll")]
-        private static extern bool EndPaint(IntPtr hWnd, ref PAINTSTRUCT lpPaint);
-        [DllImport("gdi32.dll")]
-        public static extern int SelectClipRgn(IntPtr hDC, IntPtr hRgn);
-        [DllImport("user32.dll")]
-        public static extern int GetUpdateRgn(IntPtr hwnd, IntPtr hrgn, bool fErase);
-        public enum RegionFlags
-        {
-            ERROR = 0,
-            NULLREGION = 1,
-            SIMPLEREGION = 2,
-            COMPLEXREGION = 3,
-        }
-
-        [DllImport("gdi32.dll")]
-        internal static extern bool DeleteObject(IntPtr hObject);
-        [DllImport("gdi32.dll")]
-        private static extern IntPtr CreateRectRgn(int x1, int y1, int x2, int y2);
     }
 }

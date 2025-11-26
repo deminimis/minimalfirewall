@@ -1,5 +1,4 @@
-﻿// File: FlatProgressBar.cs
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
@@ -11,6 +10,7 @@ namespace DarkModeForms
         private Timer marqueeTimer;
         private int marqueePosition = 0;
         private ProgressBarStyle style = ProgressBarStyle.Blocks;
+
         public new ProgressBarStyle Style
         {
             get { return style; }
@@ -31,8 +31,7 @@ namespace DarkModeForms
 
         public FlatProgressBar()
         {
-            this.SetStyle(ControlStyles.UserPaint, true);
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+            this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             marqueeTimer = new Timer();
             marqueeTimer.Interval = 30;
             marqueeTimer.Tick += MarqueeTimer_Tick;
@@ -43,181 +42,105 @@ namespace DarkModeForms
             marqueePosition += 5;
             if (marqueePosition > this.Width)
             {
-                marqueePosition = -100;
+                marqueePosition = -this.Width / 2;
             }
             this.Invalidate();
         }
 
-        protected override void OnPaintBackground(PaintEventArgs pevent)
-        {
-        }
+        private int min = 0;
+        private int max = 100;
+        private int val = 0;
+        public Color BarColor { get; set; } = Color.Green;
 
-        int min = 0;
-        int max = 100;
-        int val = 0;
-        Color BarColor = Color.Green;
         protected override void OnResize(EventArgs e)
         {
+            base.OnResize(e);
             this.Invalidate();
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            using (SolidBrush brush = new SolidBrush(BarColor))
-            using (Brush BackBrush = new SolidBrush(this.BackColor))
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+
+            // Background
+            using (Brush backBrush = new SolidBrush(this.BackColor))
             {
-                g.FillRectangle(BackBrush, this.ClientRectangle);
+                g.FillRectangle(backBrush, this.ClientRectangle);
+            }
+
+            // Foreground Bar
+            using (SolidBrush brush = new SolidBrush(BarColor))
+            {
                 if (Style == ProgressBarStyle.Marquee)
                 {
-                    int marqueeWidth = this.Width / 4;
+                    int marqueeWidth = this.Width / 3;
                     Rectangle marqueeRect = new Rectangle(marqueePosition, 0, marqueeWidth, this.Height);
-                    g.FillRectangle(brush, marqueeRect);
+                    if (marqueeRect.X < this.Width)
+                        g.FillRectangle(brush, marqueeRect);
                 }
                 else
                 {
                     float percent = (float)(val - min) / (float)(max - min);
+                    if (percent > 1) percent = 1;
+                    if (percent < 0) percent = 0;
+
                     Rectangle rect = this.ClientRectangle;
                     rect.Width = (int)((float)rect.Width * percent);
                     g.FillRectangle(brush, rect);
                 }
-
-                Draw3DBorder(g);
             }
+
+            // Border
+            Draw3DBorder(g);
         }
 
         public new int Minimum
         {
-            get
-            {
-                return min;
-            }
-
+            get => min;
             set
             {
-                if (value < 0)
-                {
-                    value = 0;
-                }
-
-                if (value > max)
-                {
-                    max = value;
-                }
-
                 min = value;
-                if (val < min)
-                {
-                    val = min;
-                }
-
-                this.Invalidate();
+                if (min > max) max = min;
+                if (val < min) val = min;
+                Invalidate();
             }
         }
 
         public new int Maximum
         {
-            get
-            {
-                return max;
-            }
-
+            get => max;
             set
             {
-                if (value < min)
-                {
-                    min = value;
-                }
-
                 max = value;
-                if (val > max)
-                {
-                    val = max;
-                }
-
-                this.Invalidate();
+                if (max < min) min = max;
+                if (val > max) val = max;
+                Invalidate();
             }
         }
 
         public new int Value
         {
-            get
-            {
-                return val;
-            }
-
+            get => val;
             set
             {
                 int oldValue = val;
-                if (value < min)
-                {
-                    val = min;
-                }
-                else if (value > max)
-                {
-                    val = max;
-                }
-                else
-                {
-                    val = value;
-                }
-
-                float percent;
-                Rectangle newValueRect = this.ClientRectangle;
-                Rectangle oldValueRect = this.ClientRectangle;
-
-                percent = (float)(val - min) / (float)(max - min);
-                newValueRect.Width = (int)((float)newValueRect.Width * percent);
-
-                percent = (float)(oldValue - min) / (float)(max - min);
-                oldValueRect.Width = (int)((float)oldValueRect.Width * percent);
-                Rectangle updateRect = new Rectangle();
-
-                if (newValueRect.Width > oldValueRect.Width)
-                {
-                    updateRect.X = oldValueRect.Size.Width;
-                    updateRect.Width = newValueRect.Width - oldValueRect.Width;
-                }
-                else
-                {
-                    updateRect.X = newValueRect.Size.Width;
-                    updateRect.Width = oldValueRect.Width - newValueRect.Width;
-                }
-
-                updateRect.Height = this.Height;
-                this.Invalidate(updateRect);
-            }
-        }
-
-        public Color ProgressBarColor
-        {
-            get
-            {
-                return BarColor;
-            }
-
-            set
-            {
-                BarColor = value;
-                this.Invalidate();
+                val = value;
+                if (val < min) val = min;
+                if (val > max) val = max;
+                if (val != oldValue) Invalidate();
             }
         }
 
         private void Draw3DBorder(Graphics g)
         {
-            int PenWidth = (int)Pens.White.Width;
-            g.DrawLine(Pens.DarkGray,
-                new Point(this.ClientRectangle.Left, this.ClientRectangle.Top),
-                new Point(this.ClientRectangle.Width - PenWidth, this.ClientRectangle.Top));
-            g.DrawLine(Pens.DarkGray,
-                new Point(this.ClientRectangle.Left, this.ClientRectangle.Top),
-                new Point(this.ClientRectangle.Left, this.ClientRectangle.Height - PenWidth));
-            g.DrawLine(Pens.DarkGray,
-                new Point(this.ClientRectangle.Left, this.ClientRectangle.Height - PenWidth),
-                new Point(this.ClientRectangle.Width - PenWidth, this.ClientRectangle.Height - PenWidth));
-            g.DrawLine(Pens.DarkGray,
-                new Point(this.ClientRectangle.Width - PenWidth, this.ClientRectangle.Top),
-                new Point(this.ClientRectangle.Width - PenWidth, this.ClientRectangle.Height - PenWidth));
+            int penWidth = (int)(1 * (g.DpiX / 96f)); 
+            if (penWidth < 1) penWidth = 1;
+
+            using (Pen pen = new Pen(Color.DarkGray, penWidth))
+            {
+                g.DrawRectangle(pen, 0, 0, this.Width - penWidth, this.Height - penWidth);
+            }
         }
 
         protected override void Dispose(bool disposing)

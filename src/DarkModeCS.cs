@@ -1,5 +1,4 @@
-﻿// File: DarkModeCS.cs
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -19,8 +18,7 @@ namespace DarkModeForms
     {
         private class NotificationInfo
         {
-            public int Count
-            { get; set; }
+            public int Count { get; set; }
         }
         private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
         public void SetNotificationCount(Control control, int count)
@@ -356,7 +354,13 @@ namespace DarkModeForms
                 button.FlatStyle = IsDarkMode ?
                     FlatStyle.Flat : FlatStyle.Standard;
                 button.FlatAppearance.CheckedBackColor = OScolors.Accent;
-                button.BackColor = OScolors.Control;
+
+                // Preserve Transparency for Icon Buttons
+                if (button.BackColor != Color.Transparent)
+                {
+                    button.BackColor = OScolors.Control;
+                }
+
                 button.FlatAppearance.BorderColor = (button.FindForm()?.AcceptButton == button) ? OScolors.Accent : OScolors.Control;
                 button.FlatAppearance.MouseOverBackColor = OScolors.ControlLight;
             }
@@ -409,6 +413,17 @@ namespace DarkModeForms
             {
                 tablePanel.BackColor = tablePanel.Parent.BackColor;
                 tablePanel.ForeColor = OScolors.TextInactive;
+            }
+            // FlatTabControl ecustom colors
+            else if (control is FlatTabControl flatTab)
+            {
+                flatTab.BackColor = OScolors.Background; // Fills the area behind tabs
+                flatTab.TabColor = OScolors.SurfaceDark; // Unselected tab
+                flatTab.SelectTabColor = OScolors.Surface; // Selected tab
+                flatTab.SelectedForeColor = OScolors.TextActive;
+                flatTab.ForeColor = OScolors.TextInactive;
+                flatTab.LineColor = OScolors.Accent;
+                flatTab.BorderColor = OScolors.ControlDark;
             }
             else if (control is TabControl tab && tab.Parent != null)
             {
@@ -934,26 +949,19 @@ namespace DarkModeForms
 
     public class OSThemeColors
     {
-        public Color Background
-        { get; set; } = SystemColors.Control;
+        public Color Background { get; set; } = SystemColors.Control;
         public Color BackgroundDark { get; set; } = SystemColors.ControlDark;
-        public Color BackgroundLight
-        { get; set; } = SystemColors.ControlLight;
+        public Color BackgroundLight { get; set; } = SystemColors.ControlLight;
         public Color Surface { get; set; } = SystemColors.ControlLightLight;
-        public Color SurfaceDark
-        { get; set; } = SystemColors.ControlLight;
+        public Color SurfaceDark { get; set; } = SystemColors.ControlLight;
         public Color SurfaceLight { get; set; } = Color.White;
-        public Color TextActive
-        { get; set; } = SystemColors.ControlText;
+        public Color TextActive { get; set; } = SystemColors.ControlText;
         public Color TextInactive { get; set; } = SystemColors.GrayText;
-        public Color TextInAccent
-        { get; set; } = SystemColors.HighlightText;
+        public Color TextInAccent { get; set; } = SystemColors.HighlightText;
         public Color Control { get; set; } = SystemColors.ButtonFace;
-        public Color ControlDark
-        { get; set; } = SystemColors.ButtonShadow;
+        public Color ControlDark { get; set; } = SystemColors.ButtonShadow;
         public Color ControlLight { get; set; } = SystemColors.ButtonHighlight;
-        public Color Accent
-        { get; set; } = DarkModeCS.GetWindowsAccentColor();
+        public Color Accent { get; set; } = DarkModeCS.GetWindowsAccentColor();
         public Color AccentOpaque { get; set; } = DarkModeCS.GetWindowsAccentOpaqueColor();
         public Color AccentDark => ControlPaint.Dark(Accent);
         public Color AccentLight => ControlPaint.Light(Accent);

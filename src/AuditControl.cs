@@ -41,10 +41,16 @@ namespace MinimalFirewall
             _dm = dm;
 
             systemChangesDataGridView.AutoGenerateColumns = false;
+
+            foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
+            {
+                col.SortMode = DataGridViewColumnSortMode.Programmatic;
+            }
+
             _bindingSource = new BindingSource();
             systemChangesDataGridView.DataSource = _bindingSource;
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
-            _viewModel.StatusTextChanged += OnStatusTextChanged; 
+            _viewModel.StatusTextChanged += OnStatusTextChanged;
             auditSearchTextBox.Text = _appSettings.AuditSearchText;
             quarantineCheckBox.Checked = _appSettings.QuarantineMode;
 
@@ -99,27 +105,25 @@ namespace MinimalFirewall
             string searchText = auditSearchTextBox.Text;
 
             var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
-                _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c => c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                                                      c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                                                      c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
-                                                      c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+                _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c =>
+                      (c.Name != null && c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                      (c.Description != null && c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                      (c.ApplicationName != null && c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                      (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+
             var bindableList = new SortableBindingList<FirewallRuleChange>([.. filteredChanges]);
 
             int sortColIndex = _appSettings.AuditSortColumn;
             ListSortDirection sortDirection = _appSettings.AuditSortOrder == 0 ?
                 ListSortDirection.Ascending : ListSortDirection.Descending;
+
+            DataGridViewColumn? sortColumn = null;
             if (sortColIndex >= 0 && sortColIndex < systemChangesDataGridView.Columns.Count)
             {
-                var column = systemChangesDataGridView.Columns[sortColIndex];
-                if (!string.IsNullOrEmpty(column.DataPropertyName))
+                sortColumn = systemChangesDataGridView.Columns[sortColIndex];
+                if (!string.IsNullOrEmpty(sortColumn.DataPropertyName))
                 {
-                    bindableList.Sort(column.DataPropertyName, sortDirection);
-                    foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
-                    {
-                        col.HeaderCell.SortGlyphDirection = SortOrder.None;
-                    }
-                    column.HeaderCell.SortGlyphDirection = sortDirection == ListSortDirection.Ascending ?
-                        SortOrder.Ascending : SortOrder.Descending;
+                    bindableList.Sort(sortColumn.DataPropertyName, sortDirection);
                 }
             }
             else
@@ -130,6 +134,17 @@ namespace MinimalFirewall
             _bindingSource.DataSource = bindableList;
             _bindingSource.ResetBindings(false);
             systemChangesDataGridView.Refresh();
+
+            foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
+            {
+                col.HeaderCell.SortGlyphDirection = SortOrder.None;
+            }
+
+            if (sortColumn != null)
+            {
+                sortColumn.HeaderCell.SortGlyphDirection = sortDirection == ListSortDirection.Ascending ?
+                    SortOrder.Ascending : SortOrder.Descending;
+            }
         }
 
         private async void rebuildBaselineButton_Click(object sender, EventArgs e)
@@ -156,15 +171,17 @@ namespace MinimalFirewall
         private void systemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.ColumnIndex < 0) return;
-            int newSortOrder = 0;
+
+            int currentDirection = _appSettings.AuditSortOrder;
+            int newDirection = 0; 
+
             if (_appSettings.AuditSortColumn == e.ColumnIndex)
             {
-                newSortOrder = _appSettings.AuditSortOrder == 0 ?
-                1 : 0;
+                newDirection = (currentDirection == 0) ? 1 : 0;
             }
 
             _appSettings.AuditSortColumn = e.ColumnIndex;
-            _appSettings.AuditSortOrder = newSortOrder;
+            _appSettings.AuditSortOrder = newDirection;
             _appSettings.Save();
 
             ApplySearchFilter();

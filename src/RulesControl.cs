@@ -301,11 +301,13 @@ namespace MinimalFirewall
             }
         }
 
-        private void CreateRuleButton_Click(object sender, EventArgs e)
+        private async void CreateRuleButton_Click(object sender, EventArgs e)
         {
             using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _appSettings);
             if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
             {
+                await Task.Delay(2000);
+                DataRefreshRequested?.Invoke();
             }
         }
 
