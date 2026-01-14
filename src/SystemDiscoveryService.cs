@@ -86,32 +86,40 @@ namespace MinimalFirewall
         public static List<string> GetFilesInFolder(string directoryPath, List<string> searchPatterns)
         {
             var files = new List<string>();
-            if (searchPatterns == null || searchPatterns.Count == 0)
+            if (searchPatterns == null || searchPatterns.Count == 0 || !Directory.Exists(directoryPath))
             {
                 return files;
             }
-            GetFilesInFolderRecursive(directoryPath, searchPatterns, files);
-            return files;
-        }
 
-        private static void GetFilesInFolderRecursive(string directoryPath, List<string> searchPatterns, List<string> files)
-        {
-            try
+            var dirs = new Stack<string>();
+            dirs.Push(directoryPath);
+
+            while (dirs.Count > 0)
             {
-                foreach (string pattern in searchPatterns)
+                string currentDir = dirs.Pop();
+
+                try
                 {
-                    files.AddRange(Directory.GetFiles(directoryPath, pattern));
+                    foreach (string pattern in searchPatterns)
+                    {
+                        files.AddRange(Directory.EnumerateFiles(currentDir, pattern));
+                    }
+
+                    foreach (var subDir in Directory.EnumerateDirectories(currentDir))
+                    {
+                        dirs.Push(subDir);
+                    }
                 }
-                foreach (var directory in Directory.GetDirectories(directoryPath))
+                catch (UnauthorizedAccessException)
                 {
-                    GetFilesInFolderRecursive(directory, searchPatterns, files);
+                    // Ignore folders we don't have permission to access
+                }
+                catch (IOException ex)
+                {
+                    Debug.WriteLine($"Error scanning folder {currentDir}: {ex.Message}");
                 }
             }
-            catch (UnauthorizedAccessException) { }
-            catch (IOException ex)
-            {
-                Debug.WriteLine($"Error scanning folder {directoryPath}: {ex.Message}");
-            }
+            return files;
         }
     }
 }

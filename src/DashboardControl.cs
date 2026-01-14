@@ -4,7 +4,8 @@ using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
+using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace MinimalFirewall
@@ -19,10 +20,23 @@ namespace MinimalFirewall
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource;
 
+        private static readonly Color AllowColor = Color.FromArgb(204, 255, 204);
+        private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
+        private static readonly Color HighlightOverlay = Color.FromArgb(25, Color.Black);
+
         public DashboardControl()
         {
             InitializeComponent();
+
             this.DoubleBuffered = true;
+
+            // FORCE Double Buffering on the DataGridView 
+            if (dashboardDataGridView != null)
+            {
+                typeof(Control).InvokeMember("DoubleBuffered",
+                    BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
+                    null, dashboardDataGridView, new object[] { true });
+            }
         }
 
         public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, BackgroundFirewallTaskService backgroundTaskService)
@@ -52,9 +66,12 @@ namespace MinimalFirewall
 
         private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            // Don't try to update if the window is closing
+            if (this.Disposing || this.IsDisposed || !this.IsHandleCreated) return;
+
             if (this.InvokeRequired)
             {
-                this.Invoke(new Action(LoadDashboardItems));
+                this.BeginInvoke(new Action(LoadDashboardItems));
             }
             else
             {
@@ -65,7 +82,6 @@ namespace MinimalFirewall
         private void LoadDashboardItems()
         {
             _bindingSource.ResetBindings(false);
-            dashboardDataGridView.Refresh();
         }
 
         private void dashboardDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -73,24 +89,20 @@ namespace MinimalFirewall
             if (e.RowIndex < 0) return;
 
             var grid = (DataGridView)sender;
-            var column = grid.Columns[e.ColumnIndex];
 
             if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
             {
-                if (column is DataGridViewButtonColumn)
+                if (e.ColumnIndex == allowButtonColumn.Index)
                 {
-                    if (column.Name == "allowButtonColumn")
-                    {
-                        _viewModel.ProcessDashboardAction(pending, "Allow");
-                    }
-                    else if (column.Name == "blockButtonColumn")
-                    {
-                        _viewModel.ProcessDashboardAction(pending, "Block");
-                    }
-                    else if (column.Name == "ignoreButtonColumn")
-                    {
-                        _viewModel.ProcessDashboardAction(pending, "Ignore");
-                    }
+                    _viewModel.ProcessDashboardAction(pending, "Allow");
+                }
+                else if (e.ColumnIndex == blockButtonColumn.Index)
+                {
+                    _viewModel.ProcessDashboardAction(pending, "Block");
+                }
+                else if (e.ColumnIndex == ignoreButtonColumn.Index)
+                {
+                    _viewModel.ProcessDashboardAction(pending, "Ignore");
                 }
             }
         }
@@ -99,11 +111,11 @@ namespace MinimalFirewall
         {
             if (e.RowIndex < 0) return;
 
-            var grid = (DataGridView)sender;
-
-            if (grid.Columns[e.ColumnIndex].Name == "dashIconColumn")
+            // Icon Column Logic
+            if (e.ColumnIndex == dashIconColumn.Index)
             {
-                if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending && _appSettings.ShowAppIcons)
+                if (_appSettings.ShowAppIcons &&
+                    dashboardDataGridView.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
                 {
                     int iconIndex = _iconService.GetIconIndex(pending.AppPath);
                     if (iconIndex != -1 && _iconService.ImageList != null)
@@ -114,22 +126,20 @@ namespace MinimalFirewall
                 return;
             }
 
-            var allowColumn = grid.Columns["allowButtonColumn"];
-            var blockColumn = grid.Columns["blockButtonColumn"];
-            var ignoreColumn = grid.Columns["ignoreButtonColumn"];
-
-            if (e.ColumnIndex == allowColumn.Index)
+            // Color Logic 
+            if (e.ColumnIndex == allowButtonColumn.Index)
             {
-                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204);
+                e.CellStyle.BackColor = AllowColor;
                 e.CellStyle.ForeColor = Color.Black;
             }
-            else if (e.ColumnIndex == blockColumn.Index)
+            else if (e.ColumnIndex == blockButtonColumn.Index)
             {
-                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204);
+                e.CellStyle.BackColor = BlockColor;
                 e.CellStyle.ForeColor = Color.Black;
             }
 
-            if (grid.Rows[e.RowIndex].Selected)
+            // Selection Logic
+            if (dashboardDataGridView.Rows[e.RowIndex].Selected)
             {
                 e.CellStyle.SelectionBackColor = SystemColors.Highlight;
                 e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
@@ -144,14 +154,15 @@ namespace MinimalFirewall
         private void dashboardDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             var grid = (DataGridView)sender;
-            var row = grid.Rows[e.RowIndex];
 
-            if (row.Selected) return;
+            if (grid.Rows[e.RowIndex].Selected) return;
 
-            var mouseOverRow = grid.HitTest(grid.PointToClient(MousePosition).X, grid.PointToClient(MousePosition).Y).RowIndex;
-            if (e.RowIndex == mouseOverRow)
+            var clientPoint = grid.PointToClient(MousePosition);
+            var hitTest = grid.HitTest(clientPoint.X, clientPoint.Y);
+
+            if (e.RowIndex == hitTest.RowIndex)
             {
-                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                using var overlayBrush = new SolidBrush(HighlightOverlay);
                 e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
             }
         }
@@ -160,8 +171,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                var grid = (DataGridView)sender;
-                grid.InvalidateRow(e.RowIndex);
+                dashboardDataGridView.InvalidateRow(e.RowIndex);
             }
         }
 
@@ -169,8 +179,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                var grid = (DataGridView)sender;
-                grid.InvalidateRow(e.RowIndex);
+                dashboardDataGridView.InvalidateRow(e.RowIndex);
             }
         }
 
@@ -184,8 +193,6 @@ namespace MinimalFirewall
                 _viewModel.ProcessTemporaryDashboardAction(pending, "TemporaryAllow", TimeSpan.FromMinutes(minutes));
             }
         }
-
-
 
         private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -237,7 +244,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        private void ContextMenu_Opening(object sender, CancelEventArgs e)
         {
             if (dashboardDataGridView.SelectedRows.Count == 0)
             {
@@ -247,8 +254,15 @@ namespace MinimalFirewall
 
             if (dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
-                bool isSigned = SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
-                allowAndTrustPublisherToolStripMenuItem.Visible = isSigned;
+                if (!string.IsNullOrEmpty(pending.AppPath) && File.Exists(pending.AppPath))
+                {
+                    bool isSigned = SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
+                    allowAndTrustPublisherToolStripMenuItem.Visible = isSigned;
+                }
+                else
+                {
+                    allowAndTrustPublisherToolStripMenuItem.Visible = false;
+                }
             }
         }
 
@@ -257,8 +271,7 @@ namespace MinimalFirewall
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
                 dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
             {
-                using var dialog = new
-                 CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
+                using var dialog = new CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
                 dialog.ShowDialog(this.FindForm());
             }
         }
@@ -304,6 +317,7 @@ namespace MinimalFirewall
                 Clipboard.SetText(details.ToString());
             }
         }
+
         private void showBlockingRuleInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (dashboardDataGridView.SelectedRows.Count > 0 &&
@@ -322,7 +336,5 @@ namespace MinimalFirewall
                 DarkModeForms.Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
             }
         }
-
     }
 }
-

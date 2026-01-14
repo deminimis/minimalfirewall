@@ -1,5 +1,4 @@
-﻿// File: SignatureValidationService.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -18,7 +17,7 @@ namespace MinimalFirewall
 
             try
             {
-                using (var cert = X509Certificate.CreateFromSignedFile(filePath))
+                using (var cert = new X509Certificate2(filePath))
                 {
                     publisherName = cert.Subject;
                     return !string.IsNullOrEmpty(publisherName);
@@ -38,18 +37,24 @@ namespace MinimalFirewall
         public static bool IsSignatureTrusted(string filePath, out string? publisherName)
         {
             publisherName = null;
-            if (!GetPublisherInfo(filePath, out publisherName))
+
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
             {
                 return false;
             }
 
             try
             {
-                using (var cert = X509Certificate.CreateFromSignedFile(filePath))
-                using (var cert2 = new X509Certificate2(cert))
+                using (var cert = new X509Certificate2(filePath))
                 using (var chain = new X509Chain())
                 {
-                    return chain.Build(cert2);
+                    publisherName = cert.Subject;
+                    if (string.IsNullOrEmpty(publisherName)) return false;
+
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online; 
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                    return chain.Build(cert);
                 }
             }
             catch (Exception ex) when (ex is CryptographicException or IOException or UnauthorizedAccessException)

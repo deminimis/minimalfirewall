@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace MinimalFirewall
 {
@@ -12,7 +13,10 @@ namespace MinimalFirewall
     {
         private readonly string _configPath;
         private List<WildcardRule> _rules = [];
-        private readonly object _rulesLock = new object();
+
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
+
+        private Dictionary<WildcardRule, (Regex? FolderRegex, Regex? ExeRegex)> _regexCache = [];
 
         public WildcardRuleService()
         {
@@ -22,21 +26,34 @@ namespace MinimalFirewall
 
         public List<WildcardRule> GetRules()
         {
-            lock (_rulesLock)
+            _lock.EnterReadLock();
+            try
             {
                 return new List<WildcardRule>(_rules);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
             }
         }
 
         public void AddRule(WildcardRule rule)
         {
-            lock (_rulesLock)
+            _lock.EnterWriteLock();
+            try
             {
-                if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) && r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
+                // Check for duplicates
+                if (!_rules.Any(r => r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                                     r.ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase)))
                 {
                     _rules.Add(rule);
+                    UpdateCacheForRule(rule); 
                     SaveRules();
                 }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
@@ -48,7 +65,8 @@ namespace MinimalFirewall
 
         public void RemoveRule(WildcardRule rule)
         {
-            lock (_rulesLock)
+            _lock.EnterWriteLock();
+            try
             {
                 var ruleToRemove = _rules.FirstOrDefault(r =>
                     r.FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
@@ -62,48 +80,58 @@ namespace MinimalFirewall
                 if (ruleToRemove != null)
                 {
                     _rules.Remove(ruleToRemove);
+                    _regexCache.Remove(ruleToRemove); // Remove from cache
                     SaveRules();
                 }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
         public void ClearRules()
         {
-            lock (_rulesLock)
+            _lock.EnterWriteLock();
+            try
             {
                 _rules.Clear();
+                _regexCache.Clear();
                 SaveRules();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
         private void LoadRules()
         {
+            _lock.EnterWriteLock();
             try
             {
                 if (File.Exists(_configPath))
                 {
                     string json = File.ReadAllText(_configPath);
                     var loadedRules = JsonSerializer.Deserialize(json, WildcardRuleJsonContext.Default.ListWildcardRule);
-                    lock (_rulesLock)
-                    {
-                        _rules = loadedRules ?? [];
-                    }
+                    _rules = loadedRules ?? [];
                 }
                 else
                 {
-                    lock (_rulesLock)
-                    {
-                        _rules = [];
-                    }
+                    _rules = [];
                 }
+
+                RebuildCache();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 Debug.WriteLine("[ERROR] Failed to load wildcard rules: " + ex.Message);
-                lock (_rulesLock)
-                {
-                    _rules = [];
-                }
+                _rules = [];
+                _regexCache.Clear();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 
@@ -120,81 +148,118 @@ namespace MinimalFirewall
             }
         }
 
+
+        // Converts wildcard strings (e.g. "path\to\*" or "*.exe") into compiled Regex objects.
+        private void RebuildCache()
+        {
+            _regexCache.Clear();
+            foreach (var rule in _rules)
+            {
+                UpdateCacheForRule(rule);
+            }
+        }
+
+        private void UpdateCacheForRule(WildcardRule rule)
+        {
+            Regex? folderRegex = null;
+            Regex? exeRegex = null;
+
+            // Compile Folder Regex if it contains wildcards
+            string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
+            if (expandedFolderPath.Contains('*') || expandedFolderPath.Contains('?'))
+            {
+                try
+                {
+                    string pattern = "^" + Regex.Escape(expandedFolderPath)
+                                           .Replace("\\*", ".*")
+                                           .Replace("\\?", ".") + "$";
+
+
+                    folderRegex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[Wildcard Cache] Invalid folder regex for {rule.FolderPath}: {ex.Message}");
+                }
+            }
+
+            try
+            {
+                string exePattern = string.IsNullOrWhiteSpace(rule.ExeName) ? "*" : rule.ExeName.Trim();
+                string regexPattern = "^" + Regex.Escape(exePattern)
+                                       .Replace("\\*", ".*")
+                                       .Replace("\\?", ".") + "$";
+
+                exeRegex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[Wildcard Cache] Invalid exe regex for {rule.ExeName}: {ex.Message}");
+            }
+
+            _regexCache[rule] = (folderRegex, exeRegex);
+        }
+
         public WildcardRule? Match(string path)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(path)) return null;
 
             string normalizedPath = PathResolver.NormalizePath(path);
             string fileName = Path.GetFileName(normalizedPath);
 
-            List<WildcardRule> rulesSnapshot;
-            lock (_rulesLock)
+            _lock.EnterReadLock();
+            try
             {
-                rulesSnapshot = new List<WildcardRule>(_rules);
-            }
-
-            foreach (var rule in rulesSnapshot)
-            {
-                string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
-                bool isFolderMatch = false;
-
-                if (expandedFolderPath.Contains('*') || expandedFolderPath.Contains('?'))
+                foreach (var rule in _rules)
                 {
-                    try
+                    if (!_regexCache.TryGetValue(rule, out var regexes)) continue;
+
+                    string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
+                    bool isFolderMatch = false;
+
+                    if (regexes.FolderRegex != null)
                     {
-
-                        string regexPattern = "^" + Regex.Escape(expandedFolderPath)
-                                               .Replace("\\*", ".*")
-                                               .Replace("\\?", ".");
-
-                        if (Regex.IsMatch(normalizedPath, regexPattern, RegexOptions.IgnoreCase))
+                        // Use the cached Regex for folder wildcards
+                        string? directoryName = Path.GetDirectoryName(normalizedPath);
+                        if (directoryName != null && regexes.FolderRegex.IsMatch(directoryName))
+                        {
+                            isFolderMatch = true;
+                        }
+                        // Fallback: Check if the regex was meant to match the full path prefix
+                        else if (regexes.FolderRegex.IsMatch(normalizedPath))
                         {
                             isFolderMatch = true;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"[Wildcard Match] Regex error for rule {rule.FolderPath}: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isFolderMatch = true;
-                    }
-                }
-
-                if (isFolderMatch)
-                {
-                    string exePattern = string.IsNullOrWhiteSpace(rule.ExeName) ? "*" : rule.ExeName.Trim();
-
-                    if (exePattern == "*" || exePattern == "*.exe")
-                    {
-                        return rule;
-                    }
-
-                    if (exePattern.StartsWith("*") && exePattern.EndsWith("*"))
-                    {
-                        if (fileName.Contains(exePattern.Trim('*'), StringComparison.OrdinalIgnoreCase)) return rule;
-                    }
-                    else if (exePattern.StartsWith("*"))
-                    {
-                        if (fileName.EndsWith(exePattern.TrimStart('*'), StringComparison.OrdinalIgnoreCase)) return rule;
-                    }
-                    else if (exePattern.EndsWith("*"))
-                    {
-                        if (fileName.StartsWith(exePattern.TrimEnd('*'), StringComparison.OrdinalIgnoreCase)) return rule;
-                    }
                     else
                     {
-                        if (fileName.Equals(exePattern, StringComparison.OrdinalIgnoreCase)) return rule;
+                        if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isFolderMatch = true;
+                        }
+                    }
+
+                    if (isFolderMatch)
+                    {
+                        if (regexes.ExeRegex != null)
+                        {
+                            if (regexes.ExeRegex.IsMatch(fileName))
+                            {
+                                return rule;
+                            }
+                        }
+                        else
+                        {
+                            if (rule.ExeName == "*" || rule.ExeName == "*.exe") return rule;
+                        }
                     }
                 }
             }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+
             return null;
         }
     }

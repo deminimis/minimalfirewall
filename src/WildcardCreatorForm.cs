@@ -1,46 +1,54 @@
-﻿// File: WildcardCreatorForm.cs
+﻿using System;
+using System.ComponentModel;
 using System.IO;
+using System.Windows.Forms;
 using DarkModeForms;
 using MinimalFirewall.TypedObjects;
-using System.ComponentModel;
 
 namespace MinimalFirewall
 {
     public partial class WildcardCreatorForm : Form
     {
-        private readonly WildcardRuleService _wildcardRuleService;
         private readonly DarkModeCS dm;
-        private readonly WildcardRule? _originalRule;
 
         public WildcardRule NewRule { get; private set; } = new();
 
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService, AppSettings appSettings, WildcardRule? ruleToEdit = null)
         {
             InitializeComponent();
+
+            // Apply Theme
             dm = new DarkModeCS(this);
             dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
             dm.ApplyTheme(appSettings.Theme == "Dark");
-            _wildcardRuleService = wildcardRuleService;
-            directionCombo.SelectedIndex = 0;
+
+
+            directionCombo.SelectedIndex = 0; // Default to first item
+            protocolComboBox.Items.Clear();
             protocolComboBox.Items.AddRange(new object[] { "Any", "TCP", "UDP" });
             protocolComboBox.SelectedItem = "Any";
 
-            _originalRule = ruleToEdit;
-            if (_originalRule != null)
+            if (ruleToEdit != null)
             {
                 this.Text = "Edit Wildcard Rule";
-                PopulateForm(_originalRule);
+                NewRule = ruleToEdit;
+                PopulateForm(ruleToEdit);
             }
         }
 
-        public WildcardCreatorForm(WildcardRuleService wildcardRuleService, string initialAppPath, AppSettings appSettings) : this(wildcardRuleService, appSettings)
+        public WildcardCreatorForm(WildcardRuleService wildcardRuleService, string initialAppPath, AppSettings appSettings)
+            : this(wildcardRuleService, appSettings)
         {
-            string? dirPath = Path.GetDirectoryName(initialAppPath);
-            if (!string.IsNullOrEmpty(dirPath) && Directory.Exists(dirPath))
+            try
             {
-                folderPathTextBox.Text = dirPath;
+                string? dirPath = Path.GetDirectoryName(initialAppPath);
+                if (!string.IsNullOrEmpty(dirPath))
+                {
+                    folderPathTextBox.Text = dirPath;
+                }
                 exeNameTextBox.Text = Path.GetFileName(initialAppPath);
             }
+            catch { /* Ignore path parsing errors on init */ }
         }
 
         private void PopulateForm(WildcardRule rule)
@@ -48,7 +56,7 @@ namespace MinimalFirewall
             folderPathTextBox.Text = rule.FolderPath;
             exeNameTextBox.Text = rule.ExeName;
 
-            if (rule.Action.StartsWith("Allow"))
+            if (rule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
             {
                 allowRadio.Checked = true;
             }
@@ -57,11 +65,11 @@ namespace MinimalFirewall
                 blockRadio.Checked = true;
             }
 
-            if (rule.Action.Contains("Inbound"))
+            if (rule.Action.Contains("Inbound", StringComparison.OrdinalIgnoreCase))
             {
                 directionCombo.SelectedItem = "Inbound";
             }
-            else if (rule.Action.Contains("All"))
+            else if (rule.Action.Contains("All", StringComparison.OrdinalIgnoreCase))
             {
                 directionCombo.SelectedItem = "All";
             }
@@ -72,15 +80,9 @@ namespace MinimalFirewall
 
             switch (rule.Protocol)
             {
-                case 6:
-                    protocolComboBox.SelectedItem = "TCP";
-                    break;
-                case 17:
-                    protocolComboBox.SelectedItem = "UDP";
-                    break;
-                default:
-                    protocolComboBox.SelectedItem = "Any";
-                    break;
+                case 6: protocolComboBox.SelectedItem = "TCP"; break;
+                case 17: protocolComboBox.SelectedItem = "UDP"; break;
+                default: protocolComboBox.SelectedItem = "Any"; break;
             }
 
             localPortsTextBox.Text = rule.LocalPorts;
@@ -101,12 +103,15 @@ namespace MinimalFirewall
 
         private void okButton_Click(object sender, EventArgs e)
         {
-            string folderPath = folderPathTextBox.Text;
-            string expandedPath = Environment.ExpandEnvironmentVariables(folderPath);
             errorProvider1.SetError(folderPathTextBox, string.Empty);
             errorProvider1.SetError(localPortsTextBox, string.Empty);
             errorProvider1.SetError(remotePortsTextBox, string.Empty);
             errorProvider1.SetError(remoteAddressTextBox, string.Empty);
+
+            string folderPath = folderPathTextBox.Text;
+            string expandedPath = Environment.ExpandEnvironmentVariables(folderPath);
+
+            // --- Validation Logic ---
 
             if (string.IsNullOrWhiteSpace(folderPath))
             {
@@ -114,7 +119,8 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (!Directory.Exists(expandedPath))
+            bool isWildcardPath = folderPath.Contains('*') || folderPath.Contains('?');
+            if (!isWildcardPath && !Directory.Exists(expandedPath))
             {
                 errorProvider1.SetError(folderPathTextBox, "The specified directory does not exist.");
                 return;
@@ -138,19 +144,23 @@ namespace MinimalFirewall
                 return;
             }
 
+            // --- Object Creation ---
+
             NewRule.FolderPath = PathResolver.NormalizePath(folderPath);
             NewRule.ExeName = exeNameTextBox.Text;
+
             string action = allowRadio.Checked ? "Allow" : "Block";
             string direction = directionCombo.Text;
             NewRule.Action = $"{action} ({direction})";
 
-            NewRule.Protocol = protocolComboBox.SelectedItem switch
+            NewRule.Protocol = protocolComboBox.SelectedItem?.ToString() switch
             {
                 "TCP" => 6,
                 "UDP" => 17,
-                _ => 256,
+                _ => 256, 
             };
 
+            // Use "*" if empty
             NewRule.LocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text;
             NewRule.RemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text;
             NewRule.RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text;
@@ -170,19 +180,16 @@ namespace MinimalFirewall
             this.Height += isVisible ? -advancedGroupBox.Height : advancedGroupBox.Height;
         }
 
+        // --- Non-Blocking Validation Events ---
+
         private void localPortsTextBox_Validating(object sender, CancelEventArgs e)
         {
             if (sender is TextBox textBox)
             {
                 if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
-                {
                     errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
                 else
-                {
                     errorProvider1.SetError(textBox, string.Empty);
-                }
             }
         }
 
@@ -191,14 +198,9 @@ namespace MinimalFirewall
             if (sender is TextBox textBox)
             {
                 if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
-                {
                     errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
                 else
-                {
                     errorProvider1.SetError(textBox, string.Empty);
-                }
             }
         }
 
@@ -207,14 +209,9 @@ namespace MinimalFirewall
             if (sender is TextBox textBox)
             {
                 if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
-                {
                     errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
                 else
-                {
                     errorProvider1.SetError(textBox, string.Empty);
-                }
             }
         }
     }

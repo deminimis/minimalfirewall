@@ -6,27 +6,46 @@ using System.Collections.Concurrent;
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 
 namespace MinimalFirewall
 {
     public partial class FirewallEventListenerService : IDisposable
     {
+        private const int BlockedConnectionEventId = 5157;
+        private const string SecurityLogName = "Security";
+        private const string WfpAuditSubcategoryGuid = "{0CCE9226-69AE-11D9-BED3-505054503030}";
+
+        private const string DirectionInboundCode = "%%14592";
+        private const string DirectionOutboundCode = "%%14593";
+        private const string DirectionInbound = "Incoming";
+        private const string DirectionOutbound = "Outgoing";
+
         private readonly FirewallDataService _dataService;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly Func<bool> _isLockdownEnabled;
         private readonly AppSettings _appSettings;
         private readonly PublisherWhitelistService _whitelistService;
+        private readonly BackgroundFirewallTaskService _backgroundTaskService;
+        private readonly Action<string> _logAction;
+
         private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, bool> _pendingNotifications = new(StringComparer.OrdinalIgnoreCase);
+
         private EventLogWatcher? _eventWatcher;
-        private readonly Action<string> _logAction;
-        private readonly BackgroundFirewallTaskService _backgroundTaskService;
+        private readonly string _currentAssemblyName;
 
         public FirewallActionsService? ActionsService { get; set; }
-
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
 
-        public FirewallEventListenerService(FirewallDataService dataService, WildcardRuleService wildcardRuleService, Func<bool> isLockdownEnabled, Action<string> logAction, AppSettings appSettings, PublisherWhitelistService whitelistService, BackgroundFirewallTaskService backgroundTaskService)
+        public FirewallEventListenerService(
+            FirewallDataService dataService,
+            WildcardRuleService wildcardRuleService,
+            Func<bool> isLockdownEnabled,
+            Action<string> logAction,
+            AppSettings appSettings,
+            PublisherWhitelistService whitelistService,
+            BackgroundFirewallTaskService backgroundTaskService)
         {
             _dataService = dataService;
             _wildcardRuleService = wildcardRuleService;
@@ -35,6 +54,8 @@ namespace MinimalFirewall
             _appSettings = appSettings;
             _whitelistService = whitelistService;
             _backgroundTaskService = backgroundTaskService;
+
+            _currentAssemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? "MinimalFirewall";
         }
 
         public void Start()
@@ -49,22 +70,20 @@ namespace MinimalFirewall
                 return;
             }
 
-            // Enforce auditing
             EnsureWfpAuditingEnabled();
 
             try
             {
-                // Listens for both 5157 (Connection Blocked) and 5152 (Packet Dropped)
-                var query = new EventLogQuery("Security", PathType.LogName, "*[System[(EventID=5157 or EventID=5152)]]");
+                var query = new EventLogQuery(SecurityLogName, PathType.LogName, $"*[System[(EventID={BlockedConnectionEventId})]]");
 
                 _eventWatcher = new EventLogWatcher(query);
                 _eventWatcher.EventRecordWritten += OnEventRecordWritten;
                 _eventWatcher.Enabled = true;
-                _logAction("[EventListener] Event watcher started successfully (Listening for 5157 & 5152).");
+                _logAction($"[EventListener] Event watcher started successfully (Listening for {BlockedConnectionEventId}).");
             }
             catch (EventLogException ex)
             {
-                _logAction($"[EventListener ERROR] You may not have permission to read the Security event log: {ex.Message}");
+                _logAction($"[EventListener ERROR] Permission denied reading Security log: {ex.Message}");
                 MessageBox.Show("Could not start firewall event listener. Please run as Administrator.", "Permission Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -88,28 +107,24 @@ namespace MinimalFirewall
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
-                Task.Run(async () => await OnFirewallBlockEvent(xmlContent));
+                Task.Run(async () => await ProcessFirewallBlockEventAsync(xmlContent));
             }
-            catch (EventLogException) { }
+            catch (EventLogException) { /* Ignore log read errors */ }
         }
 
-        private async Task OnFirewallBlockEvent(string xmlContent)
+        private async Task ProcessFirewallBlockEventAsync(string xmlContent)
         {
-            string rawAppPath = string.Empty;
-            string appPathForClear = string.Empty;
-            string directionForClear = string.Empty;
-            string remoteAddressForClear = string.Empty;
-            string remotePortForClear = string.Empty;
-            string protocolForClear = string.Empty;
+            string appPath = string.Empty;
+            string direction = string.Empty;
 
             try
             {
-                // XML parsing
-                rawAppPath = GetValueFromXml(xmlContent, "Application");
-                directionForClear = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                remoteAddressForClear = GetValueFromXml(xmlContent, "RemoteAddress");
-                remotePortForClear = GetValueFromXml(xmlContent, "RemotePort");
-                protocolForClear = GetValueFromXml(xmlContent, "Protocol");
+                // explicit extraction to guarantee no fields are skipped
+                string rawAppPath = GetValueFromXml(xmlContent, "Application");
+                direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
+                string remotePort = GetValueFromXml(xmlContent, "RemotePort");
+                string protocol = GetValueFromXml(xmlContent, "Protocol");
                 string filterId = GetValueFromXml(xmlContent, "FilterId");
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
@@ -117,233 +132,193 @@ namespace MinimalFirewall
 
                 string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
 
-                if (IsNetworkNoise(remoteAddressForClear))
-                {
-                    return;
-                }
+                if (IsNetworkNoise(remoteAddress)) return;
 
-                if (!string.IsNullOrEmpty(rawAppPath) &&
-                    rawAppPath.Contains(System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? "MinimalFirewall", StringComparison.OrdinalIgnoreCase))
-                {
-                    return;
-                }
+                if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase)) return;
 
-                // Find name for 5152 events
-                string appPath = rawAppPath;
-                bool resolved = false;
+                appPath = ResolveAppPath(rawAppPath);
 
-                if (string.IsNullOrEmpty(appPath) || appPath == "-" || appPath.EndsWith(@"\-"))
-                {
-                    int.TryParse(pidStr, out int pid);
-                    int.TryParse(protocolForClear, out int protocolNum);
+                if (!IsValidAppPath(appPath)) return;
 
-                    if (protocolNum == 1 || protocolNum == 58)
-                    {
-                        appPath = "System (ICMP Traffic)";
-                        resolved = true;
-                    }
-                    else if (pid == 0)
-                    {
-                        appPath = "Unsolicited Traffic (No Process)";
-                        resolved = true;
-                    }
-                    else if (pid == 4)
-                    {
-                        appPath = "System (Kernel)";
-                        resolved = true;
-                    }
-                    else if (pid > 4)
-                    {
-                        try
-                        {
-                            using var p = Process.GetProcessById(pid);
-                            if (p.MainModule != null)
-                            {
-                                appPath = p.MainModule.FileName;
-                                resolved = true;
-                            }
-                        }
-                        catch
-                        {
-                            // Process may have closed
-                        }
-                    }
+                string notificationKey = $"{appPath}|{direction}";
+                if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
 
-                    if (!resolved)
-                    {
-                        appPath = "System (Packet Drop)";
-                    }
-                }
-                else
-                {
-                    // Normal path processing for standard events
-                    try
-                    {
-                        string converted = PathResolver.ConvertDevicePathToDrivePath(rawAppPath);
-                        if (!string.IsNullOrEmpty(converted)) appPath = converted;
-                        appPath = PathResolver.NormalizePath(appPath);
-                    }
-                    catch { /* Keep original if normalization fails */ }
-                }
-
-
-                // Ignore System, Unsolicited Traffic, or Empty paths
-                if (string.IsNullOrEmpty(appPath) ||
-                    appPath.Equals("System", StringComparison.OrdinalIgnoreCase) ||
-                    appPath.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase))
-                {
-                    return;
-                }
-
-                appPathForClear = appPath;
-
-                // check pending alerts
-                string notificationKey = $"{appPath}|{directionForClear}";
-                if (!_pendingNotifications.TryAdd(notificationKey, true))
-                {
-                    return;
-                }
-
+                // Logic Check (Snoozed or Lockdown)
                 if (!ShouldProcessEvent(appPath))
                 {
-                    ClearPendingNotification(appPath, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                // Svchost resolution
-                if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.IsNullOrEmpty(serviceName))
-                    {
-                        if (!string.IsNullOrEmpty(pidStr) && pidStr != "0")
-                        {
-                            serviceName = SystemDiscoveryService.GetServicesByPID(pidStr);
-                            _logAction($"[EventListener] svchost.exe detected. PID: {pidStr}, Resolved: '{serviceName}'");
-                        }
-                    }
-                }
+                serviceName = ResolveServiceName(appPath, serviceName, pidStr);
 
-                // Ignore noisy services
-                if (!string.IsNullOrEmpty(serviceName) &&
-                    (serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
-                     serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase) ||
-                     serviceName.Equals("Ssdpsrv", StringComparison.OrdinalIgnoreCase)))
+                // Ignore Noisy Services
+                if (IsNoisyService(serviceName))
                 {
-                    ClearPendingNotification(appPath, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                // check existing rules
-                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, directionForClear);
+                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, direction);
+
                 if (existingRuleStatus == MfwRuleStatus.MfwBlock)
                 {
-                    ClearPendingNotification(appPath, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                     return;
                 }
-                else if (existingRuleStatus == MfwRuleStatus.MfwAllow)
+
+                if (existingRuleStatus == MfwRuleStatus.MfwAllow)
                 {
                     if (filterId == "0")
                     {
                         _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
-                        ClearPendingNotification(appPath, directionForClear);
-                        return;
                     }
-                    ClearPendingNotification(appPath, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                // wildcard check
-                var matchingRule = _wildcardRuleService.Match(appPath);
-                if (matchingRule != null)
+                if (CheckWildcardMatch(appPath, serviceName))
                 {
-                    if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
-                    {
-                        ActionsService.ApplyWildcardMatch(appPath, serviceName, matchingRule);
-                    }
-                    ClearPendingNotification(appPath, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                // auto-allow trusted
-                if (_appSettings.AutoAllowSystemTrusted)
+                if (await CheckAutoAllowTrustedAsync(appPath, direction))
                 {
-                    if (File.Exists(appPath) && SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) && trustedPublisherName != null)
-                    {
-                        if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
-                        {
-                            string allowAction = $"Allow ({directionForClear})";
-                            var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
-                        }
-                        ClearPendingNotification(appPath, directionForClear);
-                        return;
-                    }
+                    ClearPendingNotification(appPath, direction);
+                    return;
                 }
 
-                // View model for dashboard
+                //  Notify UI
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
-                    Direction = directionForClear,
+                    Direction = direction,
                     ServiceName = serviceName,
-                    Protocol = protocolForClear,
-                    RemotePort = remotePortForClear,
-                    RemoteAddress = remoteAddressForClear,
+                    Protocol = protocol,
+                    RemotePort = remotePort,
+                    RemoteAddress = remoteAddress,
                     FilterId = filterId,
                     LayerId = layerId
                 };
+
                 PendingConnectionDetected?.Invoke(pendingVm);
             }
             catch (Exception ex)
             {
                 _logAction($"[FATAL ERROR IN EVENT HANDLER] {ex.Message}");
-                if (!string.IsNullOrEmpty(appPathForClear) && !string.IsNullOrEmpty(directionForClear))
+                if (!string.IsNullOrEmpty(appPath) && !string.IsNullOrEmpty(direction))
                 {
-                    ClearPendingNotification(appPathForClear, directionForClear);
+                    ClearPendingNotification(appPath, direction);
                 }
             }
         }
 
-        // Noise filter method
-        private bool IsNetworkNoise(string remoteIp)
+
+        private string ResolveAppPath(string rawPath)
         {
-            if (string.IsNullOrEmpty(remoteIp)) return false;
+            string finalPath = rawPath;
+            try
+            {
+                string converted = PathResolver.ConvertDevicePathToDrivePath(rawPath);
+                if (!string.IsNullOrEmpty(converted)) finalPath = converted;
+                finalPath = PathResolver.NormalizePath(finalPath);
+            }
+            catch { /* Keep original on failure */ }
+            return finalPath;
+        }
 
-            // Broadcast 
-            if (remoteIp == "255.255.255.255") return true;
+        private bool IsValidAppPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return false;
+            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return false;
+            return true;
+        }
 
-            // IPv4 Multicast (224.0.0.0 to 239.255.255.255)
-            if (remoteIp.StartsWith("224.") || remoteIp.StartsWith("239.")) return true;
+        private string ResolveServiceName(string appPath, string currentService, string pid)
+        {
+            if (!string.IsNullOrEmpty(currentService)) return currentService;
 
-            // IPv6 Multicast (ff00::/8)
-            if (remoteIp.StartsWith("ff", StringComparison.OrdinalIgnoreCase)) return true;
+            if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrEmpty(pid) &&
+                pid != "0")
+            {
+                string resolved = SystemDiscoveryService.GetServicesByPID(pid);
+                _logAction($"[EventListener] svchost.exe detected. PID: {pid}, Resolved: '{resolved}'");
+                return resolved;
+            }
+            return string.Empty;
+        }
 
+        private bool IsNoisyService(string serviceName)
+        {
+            if (string.IsNullOrEmpty(serviceName)) return false;
+            return serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
+                   serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase) ||
+                   serviceName.Equals("Ssdpsrv", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool CheckWildcardMatch(string appPath, string serviceName)
+        {
+            var matchingRule = _wildcardRuleService.Match(appPath);
+            if (matchingRule != null)
+            {
+                if (matchingRule.Action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) && ActionsService != null)
+                {
+                    ActionsService.ApplyWildcardMatch(appPath, serviceName, matchingRule);
+                }
+                return true;
+            }
             return false;
         }
 
-        // Audit Policy enforcement
+        private async Task<bool> CheckAutoAllowTrustedAsync(string appPath, string direction)
+        {
+            if (!_appSettings.AutoAllowSystemTrusted) return false;
+
+            return await Task.Run(() =>
+            {
+                if (File.Exists(appPath) &&
+                    SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) &&
+                    !string.IsNullOrEmpty(trustedPublisherName))
+                {
+                    if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
+                    {
+                        string allowAction = $"Allow ({direction})";
+                        var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        private bool IsNetworkNoise(string remoteIp)
+        {
+            if (string.IsNullOrEmpty(remoteIp)) return false;
+            if (remoteIp == "255.255.255.255") return true;
+            if (remoteIp.StartsWith("224.") || remoteIp.StartsWith("239.")) return true;
+            if (remoteIp.StartsWith("ff", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
         private void EnsureWfpAuditingEnabled()
         {
             try
             {
-                // Enable 5157
-                Process.Start(new ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = "auditpol.exe",
-                    Arguments = "/set /subcategory:\"{0CCE9226-69AE-11D9-BED3-505054503030}\" /success:disable /failure:enable", // GUID for Filtering Platform Connection
+                    Arguments = $"/set /subcategory:\"{WfpAuditSubcategoryGuid}\" /success:disable /failure:enable",
                     CreateNoWindow = true,
-                    UseShellExecute = false
-                });
-
-                // Enable 5152
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "auditpol.exe",
-                    Arguments = "/set /subcategory:\"{0CCE9225-69AE-11D9-BED3-505054503030}\" /success:disable /failure:enable", // GUID for Filtering Platform Packet Drop
-                    CreateNoWindow = true,
-                    UseShellExecute = false
-                });
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using var p = Process.Start(psi);
+                p?.WaitForExit(1000);
             }
             catch (Exception ex)
             {
@@ -364,11 +339,13 @@ namespace MinimalFirewall
             string broadKey = $"{appPath}|{direction}";
             _pendingNotifications.TryRemove(broadKey, out _);
 
-            string keyPrefix = $"{appPath}|{direction}|";
-            var matchingKeys = _pendingNotifications.Keys.Where(k => k.StartsWith(keyPrefix)).ToList();
-            foreach (var k in matchingKeys)
+            string keyPrefix = broadKey + "|";
+            foreach (var key in _pendingNotifications.Keys)
             {
-                _pendingNotifications.TryRemove(k, out _);
+                if (key.StartsWith(keyPrefix, StringComparison.Ordinal))
+                {
+                    _pendingNotifications.TryRemove(key, out _);
+                }
             }
         }
 
@@ -380,19 +357,17 @@ namespace MinimalFirewall
         public void ClearAllSnoozes()
         {
             _snoozedApps.Clear();
-            _logAction($"[EventListener] Cleared all snoozes.");
+            _logAction("[EventListener] Cleared all snoozes.");
         }
 
         private bool ShouldProcessEvent(string appPath)
         {
-            if (string.IsNullOrEmpty(appPath) || appPath.Equals("System", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
+            if (string.IsNullOrEmpty(appPath)) return false;
 
-            if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil) && DateTime.UtcNow < snoozeUntil)
+            if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil))
             {
-                return false;
+                if (DateTime.UtcNow < snoozeUntil) return false;
+                _snoozedApps.TryRemove(appPath, out _);
             }
 
             return _isLockdownEnabled();
@@ -402,8 +377,8 @@ namespace MinimalFirewall
         {
             return rawDirection switch
             {
-                "%%14592" => "Incoming",
-                "%%14593" => "Outgoing",
+                DirectionInboundCode => DirectionInbound,
+                DirectionOutboundCode => DirectionOutbound,
                 _ => rawDirection,
             };
         }

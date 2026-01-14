@@ -40,6 +40,12 @@ namespace MinimalFirewall
 
         protected override void Dispose(bool disposing)
         {
+            // Unsubscribe to prevent memory leaks 
+            if (disposing && _viewModel != null)
+            {
+                _viewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
+            }
+
             if (disposing && (components != null))
             {
                 components.Dispose();

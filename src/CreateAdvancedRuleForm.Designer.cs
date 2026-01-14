@@ -444,6 +444,7 @@
             this.icmpGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
+            this.icmpGroupBox.Controls.Add(this.labelIcmpExample);
             this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
             this.icmpGroupBox.Location = new System.Drawing.Point(15, 423);
             this.icmpGroupBox.Name = "icmpGroupBox";
@@ -482,23 +483,6 @@
             this.labelIcmpExample.Size = new System.Drawing.Size(180, 20);
             this.labelIcmpExample.TabIndex = 2;
             this.labelIcmpExample.Text = "(e.g., 8:0, 3:*, 5, or *)";
-            // 
-            // icmpGroupBox
-            // 
-            this.icmpGroupBox.Controls.Clear(); 
-            this.icmpGroupBox.Controls.Add(this.labelIcmpInfo);
-            this.icmpGroupBox.Controls.Add(this.labelIcmpExample);
-            this.icmpGroupBox.Controls.Add(this.icmpTypesAndCodesTextBox);
-
-            var labelIcmpExample = new System.Windows.Forms.Label();
-            labelIcmpExample.AutoSize = true;
-            labelIcmpExample.ForeColor = System.Drawing.SystemColors.GrayText;
-            labelIcmpExample.Location = new System.Drawing.Point(107, 52);
-            labelIcmpExample.Name = "labelIcmpExample";
-            labelIcmpExample.Size = new System.Drawing.Size(180, 20);
-            labelIcmpExample.TabIndex = 2;
-            labelIcmpExample.Text = "(e.g., 8:0, 3:*, 5, or *)";
-            this.icmpGroupBox.Controls.Add(labelIcmpExample);
             // 
             // scopeGroupBox
             // 

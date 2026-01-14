@@ -11,9 +11,14 @@ namespace MinimalFirewall
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                _initialLoadTimer?.Dispose();
+
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
@@ -30,6 +35,8 @@ namespace MinimalFirewall
             // 
             // statusLabel
             // 
+            this.statusLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.statusLabel.Location = new System.Drawing.Point(6, 20);
             this.statusLabel.Name = "statusLabel";
             this.statusLabel.Size = new System.Drawing.Size(388, 23);
@@ -39,6 +46,7 @@ namespace MinimalFirewall
             // 
             // okButton
             // 
+            this.okButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.okButton.Location = new System.Drawing.Point(150, 90);
             this.okButton.Name = "okButton";
             this.okButton.Size = new System.Drawing.Size(100, 36);
@@ -50,6 +58,8 @@ namespace MinimalFirewall
             // 
             // progressBar
             // 
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBar.Location = new System.Drawing.Point(28, 60);
             this.progressBar.Name = "progressBar";
             this.progressBar.Size = new System.Drawing.Size(280, 23);
@@ -57,6 +67,7 @@ namespace MinimalFirewall
             // 
             // progressLabel
             // 
+            this.progressLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.progressLabel.Location = new System.Drawing.Point(314, 60);
             this.progressLabel.Name = "progressLabel";
             this.progressLabel.Size = new System.Drawing.Size(59, 23);

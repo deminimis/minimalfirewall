@@ -12,6 +12,12 @@ namespace MinimalFirewall
     public class AppSettings : INotifyPropertyChanged
     {
         private static readonly string _configPath = ConfigPathManager.GetSettingsPath();
+
+        // Lock object to prevent file corruption during rapid reads/writes
+        private static readonly object _fileLock = new object();
+
+        private CancellationTokenSource? _saveCts;
+
         private bool _isPopupsEnabled = false;
         private bool _isLoggingEnabled;
         private string _theme = "Dark";
@@ -35,7 +41,11 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
-        private bool _quarantineMode = false; 
+        private bool _quarantineMode = false;
+
+        private Point _windowLocation = new Point(100, 100);
+        private Size _windowSize = new Size(1280, 800);
+        private int _windowState = (int)FormWindowState.Maximized;
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
@@ -61,9 +71,10 @@ namespace MinimalFirewall
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
         public bool QuarantineMode { get => _quarantineMode; set => SetField(ref _quarantineMode, value); }
-        public Point WindowLocation { get; set; } = new Point(100, 100);
-        public Size WindowSize { get; set; } = new Size(1280, 800);
-        public int WindowState { get; set; } = (int)FormWindowState.Maximized;
+
+        public Point WindowLocation { get => _windowLocation; set => SetField(ref _windowLocation, value); }
+        public Size WindowSize { get => _windowSize; set => SetField(ref _windowSize, value); }
+        public int WindowState { get => _windowState; set => SetField(ref _windowState, value); }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)
@@ -76,38 +87,63 @@ namespace MinimalFirewall
             if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
             OnPropertyChanged(propertyName!);
-            Save();
+
+            QueueSave();
             return true;
+        }
+
+
+        // Waits 500ms before saving. 
+        public void QueueSave()
+        {
+            _saveCts?.Cancel();
+            _saveCts = new CancellationTokenSource();
+            var token = _saveCts.Token;
+
+            Task.Delay(500, token).ContinueWith(t =>
+            {
+                if (t.IsCanceled) return;
+                Save();
+            }, TaskScheduler.Default);
         }
 
         public void Save()
         {
-            try
+            lock (_fileLock)
             {
-                string json = JsonSerializer.Serialize(this, AppSettingsJsonContext.Default.AppSettings);
-                File.WriteAllText(_configPath, json);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Debug.WriteLine($"[ERROR] Failed to save settings due to a file error: {ex.Message}");
+                try
+                {
+                    // Ensure the directory exists 
+                    ConfigPathManager.EnsureStorageDirectoryExists();
+
+                    string json = JsonSerializer.Serialize(this, AppSettingsJsonContext.Default.AppSettings);
+                    File.WriteAllText(_configPath, json);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to save settings due to a file error: {ex.Message}");
+                }
             }
         }
 
         public static AppSettings Load()
         {
-            try
+            lock (_fileLock)
             {
-                if (File.Exists(_configPath))
+                try
                 {
-                    string json = File.ReadAllText(_configPath);
-                    return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+                    if (File.Exists(_configPath))
+                    {
+                        string json = File.ReadAllText(_configPath);
+                        return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+                    }
                 }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to load settings: {ex.Message}");
+                }
+                return new AppSettings();
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
-            {
-                Debug.WriteLine($"[ERROR] Failed to load settings: {ex.Message}");
-            }
-            return new AppSettings();
         }
     }
 

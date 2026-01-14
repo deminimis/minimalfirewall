@@ -11,6 +11,7 @@ namespace MinimalFirewall
     {
         private readonly string _storagePath;
         private readonly ConcurrentDictionary<string, DateTime> _temporaryRules;
+        private readonly object _fileLock = new object();
 
         public TemporaryRuleManager()
         {
@@ -22,11 +23,14 @@ namespace MinimalFirewall
         {
             try
             {
-                if (File.Exists(_storagePath))
+                lock (_fileLock)
                 {
-                    string json = File.ReadAllText(_storagePath);
-                    var rules = JsonSerializer.Deserialize(json, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                    return new ConcurrentDictionary<string, DateTime>(rules ?? new Dictionary<string, DateTime>(), StringComparer.OrdinalIgnoreCase);
+                    if (File.Exists(_storagePath))
+                    {
+                        string json = File.ReadAllText(_storagePath);
+                        var rules = JsonSerializer.Deserialize(json, TempRuleJsonContext.Default.DictionaryStringDateTime);
+                        return new ConcurrentDictionary<string, DateTime>(rules ?? new Dictionary<string, DateTime>(), StringComparer.OrdinalIgnoreCase);
+                    }
                 }
             }
             catch (Exception ex)
@@ -38,15 +42,25 @@ namespace MinimalFirewall
 
         private void Save()
         {
-            try
+            lock (_fileLock)
             {
-                var rulesToSave = new Dictionary<string, DateTime>(_temporaryRules, StringComparer.OrdinalIgnoreCase);
-                string json = JsonSerializer.Serialize(rulesToSave, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                File.WriteAllText(_storagePath, json);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] Failed to save temporary rules: {ex.Message}");
+                try
+                {
+                    // Ensure the directory exists before writing
+                    string? dir = Path.GetDirectoryName(_storagePath);
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+
+                    var rulesToSave = new Dictionary<string, DateTime>(_temporaryRules, StringComparer.OrdinalIgnoreCase);
+                    string json = JsonSerializer.Serialize(rulesToSave, TempRuleJsonContext.Default.DictionaryStringDateTime);
+                    File.WriteAllText(_storagePath, json);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to save temporary rules: {ex.Message}");
+                }
             }
         }
 

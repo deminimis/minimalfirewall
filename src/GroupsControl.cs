@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System;
 using System.Drawing;
+using System.Reflection;
 
 namespace MinimalFirewall
 {
@@ -18,11 +19,17 @@ namespace MinimalFirewall
 
         private BindingSource _bindingSource;
 
+        private const int SwitchWidthBase = 50;
+        private const int SwitchHeightBase = 25;
+        private const int ThumbSizeBase = 21;
+
         public GroupsControl()
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
-            _bindingSource = new BindingSource();
+
+            _bindingSource = new BindingSource(this.components);
+
+            EnableDoubleBuffering(groupsDataGridView);
         }
 
         public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, DarkModeCS dm)
@@ -33,6 +40,13 @@ namespace MinimalFirewall
 
             groupsDataGridView.AutoGenerateColumns = false;
             groupsDataGridView.DataSource = _bindingSource;
+        }
+
+        private void EnableDoubleBuffering(Control control)
+        {
+            typeof(Control).InvokeMember("DoubleBuffered",
+                BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
+                null, control, new object[] { true });
         }
 
         public void ClearGroups()
@@ -48,31 +62,55 @@ namespace MinimalFirewall
         private async Task DisplayGroupsAsync()
         {
             if (groupsDataGridView is null || _groupManager is null) return;
-            var groups = await Task.Run(() => _groupManager.GetAllGroups());
-            _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups);
-            groupsDataGridView.Refresh();
+
+            try
+            {
+                var groups = await Task.Run(() => _groupManager.GetAllGroups());
+
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new Action(() => _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups)));
+                }
+                else
+                {
+                    _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups);
+                }
+                groupsDataGridView.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading groups: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void deleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (groupsDataGridView.SelectedRows.Count > 0 && _backgroundTaskService != null)
             {
-                var result = MessageBox.Show("Are you sure you want to delete the \nselected group(s) and all associated rules?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                var result = MessageBox.Show(
+                    "Are you sure you want to delete the \nselected group(s) and all associated rules?",
+                    "Confirm Deletion",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
                 if (result == DialogResult.Yes)
                 {
-                    var rowsToDelete = new List<DataGridViewRow>();
+                    // Collect items first to avoid modifying the collection while iterating
+                    var itemsToDelete = new List<FirewallGroup>();
+
                     foreach (DataGridViewRow row in groupsDataGridView.SelectedRows)
                     {
                         if (row.DataBoundItem is FirewallGroup group)
                         {
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
-                            rowsToDelete.Add(row);
+                            itemsToDelete.Add(group);
                         }
                     }
 
-                    foreach (var row in rowsToDelete)
+                    foreach (var group in itemsToDelete)
                     {
-                        groupsDataGridView.Rows.Remove(row);
+                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteGroup, group.Name));
+
+                        _bindingSource.Remove(group);
                     }
                 }
             }
@@ -90,6 +128,7 @@ namespace MinimalFirewall
                     var payload = new SetGroupEnabledStatePayload { GroupName = group.Name, IsEnabled = newState };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.SetGroupEnabledState, payload));
 
+                    // Force immediate repaint 
                     groupsDataGridView.InvalidateCell(e.ColumnIndex, e.RowIndex);
                 }
             }
@@ -104,7 +143,6 @@ namespace MinimalFirewall
                 {
                     DrawToggleSwitch(e.Graphics, e.CellBounds, group.IsEnabled);
                 }
-
                 e.Handled = true;
             }
         }
@@ -113,15 +151,19 @@ namespace MinimalFirewall
         {
             if (_dm == null) return;
 
-            int switchWidth = (int)(50 * (g.DpiY / 96f));
-            int switchHeight = (int)(25 * (g.DpiY / 96f));
-            int thumbSize = (int)(21 * (g.DpiY / 96f));
+            // DPI Scaling calculation
+            float scaleFactor = g.DpiY / 96f;
+            int switchWidth = (int)(SwitchWidthBase * scaleFactor);
+            int switchHeight = (int)(SwitchHeightBase * scaleFactor);
+            int thumbSize = (int)(ThumbSizeBase * scaleFactor);
+            int padding = (int)(2 * scaleFactor);
 
             Rectangle switchRect = new Rectangle(
                 bounds.X + (bounds.Width - switchWidth) / 2,
                 bounds.Y + (bounds.Height - switchHeight) / 2,
                 switchWidth,
                 switchHeight);
+
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             Color backColor = isChecked ? Color.FromArgb(0, 192, 0) : Color.FromArgb(200, 0, 0);
@@ -131,12 +173,15 @@ namespace MinimalFirewall
                 path.AddArc(switchRect.X, switchRect.Y, switchRect.Height, switchRect.Height, 90, 180);
                 path.AddArc(switchRect.Right - switchRect.Height, switchRect.Y, switchRect.Height, switchRect.Height, 270, 180);
                 path.CloseFigure();
+
                 using var brush = new SolidBrush(backColor);
                 g.FillPath(brush, path);
             }
 
             int thumbX = isChecked ?
-                switchRect.Right - thumbSize - (int)(2 * (g.DpiY / 96f)) : switchRect.X + (int)(2 * (g.DpiY / 96f));
+                switchRect.Right - thumbSize - padding :
+                switchRect.X + padding;
+
             Rectangle thumbRect = new Rectangle(
                 thumbX,
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
@@ -169,8 +214,9 @@ namespace MinimalFirewall
 
             foreach (DataGridViewColumn col in groupsDataGridView.Columns)
             {
-                col.HeaderCell.SortGlyphDirection = SortOrder.None;
+                if (col != column) col.HeaderCell.SortGlyphDirection = SortOrder.None;
             }
+
             column.HeaderCell.SortGlyphDirection = direction == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending;
         }
 

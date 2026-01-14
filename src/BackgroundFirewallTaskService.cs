@@ -36,6 +36,7 @@ namespace MinimalFirewall
         private readonly BlockingCollection<FirewallTask> _taskQueue = new();
         private readonly Task _worker;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
+
         // Dependencies
         private readonly FirewallActionsService _actionsService;
         private readonly UserActivityLogger _activityLogger;
@@ -45,7 +46,7 @@ namespace MinimalFirewall
         private readonly Dictionary<FirewallTaskType, IFirewallTaskHandler> _handlers;
 
         public event Action<int>? QueueCountChanged;
-        public event Action<string>? StatusChanged; 
+        public event Action<string>? StatusChanged;
         public event Action? WildcardRulesChanged;
 
         public BackgroundFirewallTaskService(
@@ -69,73 +70,110 @@ namespace MinimalFirewall
             if (!_taskQueue.IsAddingCompleted)
             {
                 _taskQueue.Add(task);
-                QueueCountChanged?.Invoke(_taskQueue.Count);
+                SafeInvoke(QueueCountChanged, _taskQueue.Count);
             }
         }
 
         private async Task ProcessQueueAsync()
         {
-            foreach (var task in _taskQueue.GetConsumingEnumerable(_cancellationTokenSource.Token))
+            try
             {
-                StatusChanged?.Invoke(task.Description);
-                TaskResult result = TaskResult.None;
-                try
+                while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (_handlers.TryGetValue(task.TaskType, out var handler))
+                    FirewallTask? task = null;
+
+                    // 1. Smart Waiting Logic:
+                    // If queue is empty, we wait UP TO 1500ms for a new item.
+                    // If an item arrives, TryTake returns true immediately (no lag).
+                    // If 1500ms passes, it returns false, and we update status to "Ready".
+                    if (_taskQueue.Count == 0)
                     {
-                        result = await handler.HandleAsync(task.Payload);
+                        if (!_taskQueue.TryTake(out task, 1500, _cancellationTokenSource.Token))
+                        {
+                            // Timed out => No tasks came in for 1.5s. Safe to set Ready.
+                            SafeInvoke(StatusChanged, "Ready");
+
+                            // Now block indefinitely until work actually arrives
+                            task = _taskQueue.Take(_cancellationTokenSource.Token);
+                        }
                     }
                     else
                     {
-                        _activityLogger.LogDebug($"[Warning] No handler registered for task type: {task.TaskType}");
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (COMException comEx)
-                {
-                    _activityLogger.LogException($"BackgroundTask-{task.TaskType}-COM", comEx);
-                }
-                catch (InvalidComObjectException invComEx)
-                {
-                    _activityLogger.LogException($"BackgroundTask-{task.TaskType}-InvalidCOM", invComEx);
-                }
-                catch (Exception ex)
-                {
-                    _activityLogger.LogException($"BackgroundTask-{task.TaskType}", ex);
-                }
-                finally
-                {
-                    if (result.RequiresCacheInvalidation)
-                    {
-                        _dataService.InvalidateRuleCache();
-                        _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task: {task.TaskType}");
+                        // Queue has items, grab the next one immediately
+                        task = _taskQueue.Take(_cancellationTokenSource.Token);
                     }
 
-                    if (result.RequiresWildcardRefresh)
+                    // 2. Process the task
+                    if (task != null)
                     {
-                        WildcardRulesChanged?.Invoke();
-                    }
-
-                    QueueCountChanged?.Invoke(_taskQueue.Count);
-                }
-
-                if (_taskQueue.Count == 0)
-                {
-                    try
-                    {
-                        await Task.Delay(1500, _cancellationTokenSource.Token);
-                    }
-                    catch (OperationCanceledException) { break; }
-
-                    if (_taskQueue.Count == 0)
-                    {
-                        StatusChanged?.Invoke("Ready");
+                        await RunTaskLogicAsync(task);
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Graceful shutdown
+            }
+        }
+
+        private async Task RunTaskLogicAsync(FirewallTask task)
+        {
+            SafeInvoke(StatusChanged, task.Description);
+            TaskResult result = TaskResult.None;
+
+            try
+            {
+                if (_handlers.TryGetValue(task.TaskType, out var handler))
+                {
+                    result = await handler.HandleAsync(task.Payload);
+                }
+                else
+                {
+                    _activityLogger.LogDebug($"[Warning] No handler registered for task type: {task.TaskType}");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // Allow main loop to catch this
+            }
+            catch (COMException comEx)
+            {
+                _activityLogger.LogException($"BackgroundTask-{task.TaskType}-COM", comEx);
+            }
+            catch (InvalidComObjectException invComEx)
+            {
+                _activityLogger.LogException($"BackgroundTask-{task.TaskType}-InvalidCOM", invComEx);
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException($"BackgroundTask-{task.TaskType}", ex);
+            }
+            finally
+            {
+                if (result.RequiresCacheInvalidation)
+                {
+                    _dataService.InvalidateRuleCache();
+                    _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task: {task.TaskType}");
+                }
+
+                if (result.RequiresWildcardRefresh)
+                {
+                    SafeInvoke(WildcardRulesChanged);
+                }
+
+                SafeInvoke(QueueCountChanged, _taskQueue.Count);
+            }
+        }
+
+        // Helper to prevent subscriber errors (UI crashes) from killing the service
+        private void SafeInvoke(Action? action)
+        {
+            try { action?.Invoke(); } catch { /* Ignore UI update errors */ }
+        }
+
+        private void SafeInvoke<T>(Action<T>? action, T param)
+        {
+            try { action?.Invoke(param); } catch { /* Ignore UI update errors */ }
         }
 
         // Map the TaskType enum 
@@ -203,7 +241,8 @@ namespace MinimalFirewall
             {
                 _worker.Wait(2000);
             }
-            catch (Exception) { }
+            catch (AggregateException) { /* Expected */ }
+            catch (Exception) { /* Expected */ }
 
             _cancellationTokenSource.Dispose();
             _taskQueue.Dispose();
@@ -225,17 +264,13 @@ namespace MinimalFirewall
 
         public Task<TaskResult> HandleAsync(object payload)
         {
+            // Simplified pattern matching works for both specific types and generic objects
             if (payload is T typedPayload)
             {
                 _action(typedPayload);
                 return Task.FromResult(_result);
             }
 
-            if (typeof(T) == typeof(object))
-            {
-                _action((T)payload);
-                return Task.FromResult(_result);
-            }
             return Task.FromResult(TaskResult.None);
         }
     }

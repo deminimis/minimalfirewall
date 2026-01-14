@@ -4,11 +4,14 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace MinimalFirewall
 {
     public partial class NotifierForm : Form
     {
+        // Enums and Properties
         public enum NotifierResult { Ignore, Allow, Block, TemporaryAllow, CreateWildcard }
         public NotifierResult Result { get; set; } = NotifierResult.Ignore;
         public PendingConnectionViewModel PendingConnection { get; private set; }
@@ -16,6 +19,7 @@ namespace MinimalFirewall
         public bool TrustPublisher { get; private set; } = false;
         private readonly DarkModeCS dm;
 
+        // Settings file path for window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
 
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
@@ -23,6 +27,8 @@ namespace MinimalFirewall
             InitializeComponent();
 
             PendingConnection = pending;
+
+            // Initialize Dark Mode
             dm = new DarkModeCS(this)
             {
                 ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
@@ -35,15 +41,18 @@ namespace MinimalFirewall
                 pathLabel.ForeColor = Color.White;
             }
 
+            // Set UI Text
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
             this.Text = "Connection Blocked";
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
+
             pathLabel.Text = pending.AppPath;
+            pathLabel.WordWrap = false; 
 
             this.AcceptButton = this.ignoreButton;
 
-            // custom colors for buttons
+            // Button Styling
             Color allowColor = Color.FromArgb(204, 255, 204);
             Color blockColor = Color.FromArgb(255, 204, 204);
 
@@ -59,13 +68,17 @@ namespace MinimalFirewall
             blockButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(blockColor, 0.2f);
 
             SetupTempAllowMenu();
-            SetupTrustPublisherCheckBox();
         }
 
-        // remember window position
+        // Window Load: Restore position and ensure visibility
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+
+            // Ensure the notification is seen over other apps
+            this.TopMost = true;
+            this.Activate();
+
             try
             {
                 if (File.Exists(_layoutSettingsPath))
@@ -75,17 +88,21 @@ namespace MinimalFirewall
 
                     if (settings != null)
                     {
+                        // Restore Size
                         if (settings.Width >= this.MinimumSize.Width && settings.Height >= this.MinimumSize.Height)
                         {
                             this.Size = new Size(settings.Width, settings.Height);
                         }
 
-                        // Check if the saved location is actually visible on screen
+                        // Restore Location only if visible on current screens
                         Point savedLoc = new Point(settings.X, settings.Y);
+                        Rectangle targetRect = new Rectangle(savedLoc, this.Size);
                         bool isVisible = false;
+
+                        // Check intersection to ensure window isn't lost off-screen
                         foreach (Screen screen in Screen.AllScreens)
                         {
-                            if (screen.WorkingArea.Contains(savedLoc))
+                            if (screen.WorkingArea.IntersectsWith(targetRect))
                             {
                                 isVisible = true;
                                 break;
@@ -100,10 +117,42 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch { }
+            catch (Exception)
+            {
+            }
         }
 
-        // save window position on close
+        protected override async void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            try
+            {
+                string publisherName = null;
+
+                bool hasInfo = await Task.Run(() => SignatureValidationService.GetPublisherInfo(PendingConnection.AppPath, out publisherName));
+
+                if (hasInfo && !string.IsNullOrEmpty(publisherName))
+                {
+                    if (publisherName.Length > 30)
+                    {
+                        publisherName = publisherName.Substring(0, 30) + "...";
+                    }
+                    trustPublisherCheckBox.Text = $"Trust: {publisherName}";
+                    trustPublisherCheckBox.Visible = true;
+                }
+                else
+                {
+                    trustPublisherCheckBox.Visible = false;
+                }
+            }
+            catch
+            {
+                trustPublisherCheckBox.Visible = false;
+            }
+        }
+
+        // Window Closing: Save position
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             try
@@ -122,7 +171,9 @@ namespace MinimalFirewall
                     File.WriteAllText(_layoutSettingsPath, json);
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             base.OnFormClosing(e);
         }
@@ -135,23 +186,6 @@ namespace MinimalFirewall
             tempAllowContextMenu.Items.Add("For 1 hour").Click += (s, e) => SetTemporaryAllow(TimeSpan.FromHours(1));
             tempAllowContextMenu.Items.Add("For 3 hours").Click += (s, e) => SetTemporaryAllow(TimeSpan.FromHours(3));
             tempAllowContextMenu.Items.Add("For 8 hours").Click += (s, e) => SetTemporaryAllow(TimeSpan.FromHours(8));
-        }
-
-        private void SetupTrustPublisherCheckBox()
-        {
-            if (SignatureValidationService.GetPublisherInfo(PendingConnection.AppPath, out var publisherName) && publisherName != null)
-            {
-                if (publisherName.Length > 30)
-                {
-                    publisherName = publisherName.Substring(0, 30) + "...";
-                }
-                trustPublisherCheckBox.Text = $"Trust: {publisherName}";
-                trustPublisherCheckBox.Visible = true;
-            }
-            else
-            {
-                trustPublisherCheckBox.Visible = false;
-            }
         }
 
         private void SetTemporaryAllow(TimeSpan duration)
@@ -196,7 +230,7 @@ namespace MinimalFirewall
             this.Close();
         }
 
-        private void copyDetailsButton_Click(object sender, EventArgs e)
+        private async void copyDetailsButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -206,22 +240,34 @@ namespace MinimalFirewall
                 details.AppendLine($"Path: {PendingConnection.AppPath}");
                 details.AppendLine($"Service: {PendingConnection.ServiceName}");
                 details.AppendLine($"Direction: {PendingConnection.Direction}");
-                Clipboard.SetText(details.ToString());
+
+                // Retry logic for clipboard 
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        Clipboard.SetText(details.ToString());
+                        break;
+                    }
+                    catch (ExternalException)
+                    {
+                        if (i == 4) throw;
+                        await Task.Delay(50);
+                    }
+                }
 
                 copyDetailsButton.Text = "✓";
 
-                var t = new System.Windows.Forms.Timer();
-                t.Interval = 2000;
-                t.Tick += (s, args) =>
+                await Task.Delay(2000);
+
+                if (!this.IsDisposed && this.IsHandleCreated)
                 {
                     copyDetailsButton.Text = "📋";
-                    t.Stop();
-                    t.Dispose();
-                };
-                t.Start();
+                }
             }
             catch
             {
+                // Silently fail if clipboard is inaccessible
             }
         }
 
