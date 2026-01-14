@@ -213,6 +213,7 @@ namespace MinimalFirewall
         public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
         {
             if (string.IsNullOrEmpty(serviceName)) return;
+
             if (!ParseActionString(action, out Actions parsedAction, out Directions parsedDirection))
             {
                 return;
@@ -228,21 +229,19 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
-            // Consolidated TCP/UDP creation
             var protocolsToCreate = new List<int> { 6, 17 };
             foreach (var protocol in protocolsToCreate)
             {
                 string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
-                string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
 
                 if (parsedDirection.HasFlag(Directions.Incoming))
                 {
-                    string inName = $"{serviceName} - {actionStr}In{protocolSuffix}";
+                    string inName = $"{serviceName} - In{protocolSuffix}";
                     CreateServiceRule(inName, serviceName, Directions.Incoming, parsedAction, protocol, appPath);
                 }
                 if (parsedDirection.HasFlag(Directions.Outgoing))
                 {
-                    string outName = $"{serviceName} - {actionStr}Out{protocolSuffix}";
+                    string outName = $"{serviceName} - Out{protocolSuffix}";
                     CreateServiceRule(outName, serviceName, Directions.Outgoing, parsedAction, protocol, appPath);
                 }
             }
@@ -998,9 +997,9 @@ namespace MinimalFirewall
                 return;
             }
 
-            string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-            string inName = $"{appName} - {actionStr}In";
-            string outName = $"{appName} - {actionStr}Out";
+            string inName = appName;
+            string outName = appName;
+
             if (parsedDirection.HasFlag(Directions.Incoming))
             {
                 createRule(inName, Directions.Incoming, parsedAction);

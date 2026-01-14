@@ -237,8 +237,12 @@ namespace MinimalFirewall
             }
             if (_mainViewModel.IsLockedDown)
             {
-                AdminTaskService.SetAuditPolicy(true);
+                _eventListenerService.EnableAuditing();
                 _eventListenerService.Start();
+            }
+            else
+            {
+                _eventListenerService.DisableAuditing();
             }
 
             UpdateTrayStatus();
@@ -610,7 +614,7 @@ namespace MinimalFirewall
 
         private void ToggleLockdownTrayMenuItem_Click(object? sender, EventArgs e)
         {
-            _actionsService.ToggleLockdown();
+            _mainViewModel.ToggleLockdownMode();
             UpdateTrayStatus();
         }
 
@@ -1151,7 +1155,9 @@ namespace MinimalFirewall
         private void ToggleLockdownButton_Click(object sender, EventArgs e)
         {
             bool wasLocked = _mainViewModel.IsLockedDown;
-            _actionsService.ToggleLockdown();
+
+            _mainViewModel.ToggleLockdownMode();
+
             UpdateTrayStatus();
 
             bool isNowLocked = _mainViewModel.IsLockedDown;

@@ -69,7 +69,6 @@ namespace MinimalFirewall
             _iconService = iconService;
             _appSettings = appSettings;
             _dm = dm;
-
             // Load initial filter states
             programFilterCheckBox.Checked = _appSettings.FilterPrograms;
             serviceFilterCheckBox.Checked = _appSettings.FilterServices;
@@ -81,7 +80,6 @@ namespace MinimalFirewall
             _rulesSortColumn = _appSettings.RulesSortColumn;
             _rulesSortOrder = (SortOrder)_appSettings.RulesSortOrder;
 
-            // Reflection hack to enable double buffering on the grid for smoother scrolling
             typeof(DataGridView).InvokeMember(
                "DoubleBuffered",
                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
@@ -91,6 +89,12 @@ namespace MinimalFirewall
 
             rulesDataGridView.VirtualMode = true;
             rulesDataGridView.AutoGenerateColumns = false;
+
+            foreach (DataGridViewColumn col in rulesDataGridView.Columns)
+            {
+                col.SortMode = DataGridViewColumnSortMode.Programmatic;
+            }
+
             rulesDataGridView.DataSource = null;
             rulesDataGridView.CellValueNeeded += RulesDataGridView_CellValueNeeded;
 
@@ -112,7 +116,6 @@ namespace MinimalFirewall
 
             _currentRuleList = _mainViewModel.VirtualRulesData;
 
-            // Re-apply sorting if applicable
             if (_appSettings != null && _rulesSortColumn > -1 && _rulesSortColumn < rulesDataGridView.Columns.Count)
             {
                 var col = rulesDataGridView.Columns[_rulesSortColumn];
@@ -537,8 +540,15 @@ namespace MinimalFirewall
         {
             if (e.ColumnIndex < 0 || _appSettings == null) return;
 
-            _rulesSortColumn = e.ColumnIndex;
-            _rulesSortOrder = _rulesSortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            if (_rulesSortColumn == e.ColumnIndex)
+            {
+                _rulesSortOrder = _rulesSortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _rulesSortColumn = e.ColumnIndex;
+                _rulesSortOrder = SortOrder.Ascending;
+            }
 
             foreach (DataGridViewColumn col in rulesDataGridView.Columns)
             {
@@ -546,7 +556,6 @@ namespace MinimalFirewall
             }
             rulesDataGridView.Columns[_rulesSortColumn].HeaderCell.SortGlyphDirection = _rulesSortOrder;
 
-            // Persist settings
             _appSettings.RulesSortColumn = _rulesSortColumn;
             _appSettings.RulesSortOrder = (int)_rulesSortOrder;
             _appSettings.Save();

@@ -291,8 +291,20 @@ namespace MinimalFirewall
             {
                 if (_appSettings != null && ev.ColumnIndex >= 0)
                 {
-                    int currentSort = _appSettings.LiveConnectionsSortOrder;
-                    currentSort = currentSort == (int)SortOrder.Ascending ? (int)SortOrder.Descending : (int)SortOrder.Ascending;
+                    int currentSort;
+
+                    if (_appSettings.LiveConnectionsSortColumn == ev.ColumnIndex)
+                    {
+                        // Toggle direction
+                        currentSort = _appSettings.LiveConnectionsSortOrder == (int)SortOrder.Ascending
+                            ? (int)SortOrder.Descending
+                            : (int)SortOrder.Ascending;
+                    }
+                    else
+                    {
+                        // New column, reset to Ascending
+                        currentSort = (int)SortOrder.Ascending;
+                    }
 
                     _appSettings.LiveConnectionsSortColumn = ev.ColumnIndex;
                     _appSettings.LiveConnectionsSortOrder = currentSort;
