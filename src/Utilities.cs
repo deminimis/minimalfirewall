@@ -147,8 +147,7 @@ namespace MinimalFirewall
                         {
                             rawDevicePath = rawDevicePath.Substring(0, nullIndex);
                         }
-                        rawDevicePath = rawDevicePath.TrimEnd('\\');
-
+                        rawDevicePath = rawDevicePath.Trim().TrimEnd('\\');
                         if (!string.IsNullOrEmpty(rawDevicePath))
                         {
                             _deviceMap[rawDevicePath] = drive;
@@ -156,7 +155,7 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch { /* Ignore errors during static init to prevent crash */ }
+            catch {  }
 
             var specialFolders = new[]
             {
@@ -169,7 +168,6 @@ namespace MinimalFirewall
                 Environment.SpecialFolder.ProgramFilesX86,
                 Environment.SpecialFolder.Windows
             };
-
             foreach (var folder in specialFolders)
             {
                 try
@@ -188,7 +186,6 @@ namespace MinimalFirewall
         public static string ConvertToEnvironmentPath(string absolutePath)
         {
             if (string.IsNullOrEmpty(absolutePath)) return absolutePath;
-
             foreach (var kvp in _envVarMap.OrderByDescending(x => x.Key.Length))
             {
                 if (absolutePath.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))
@@ -216,7 +213,6 @@ namespace MinimalFirewall
         public static string NormalizePath(string path)
         {
             if (string.IsNullOrEmpty(path)) return string.Empty;
-
             string expandedPath;
             try
             {
@@ -266,16 +262,13 @@ namespace MinimalFirewall
         public static string ConvertDevicePathToDrivePath(string devicePath)
         {
             if (string.IsNullOrEmpty(devicePath)) return devicePath;
-
             if (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0]))
                 return devicePath;
-
             var matchingDevice = _deviceMap.Keys.FirstOrDefault(d => devicePath.StartsWith(d, StringComparison.OrdinalIgnoreCase));
 
             if (matchingDevice != null)
             {
                 string relativePath = devicePath.Substring(matchingDevice.Length);
-
                 if (relativePath.StartsWith('\\') && _deviceMap[matchingDevice].EndsWith('\\'))
                 {
                     relativePath = relativePath.TrimStart('\\');

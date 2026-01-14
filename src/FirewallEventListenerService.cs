@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms; 
+using System.Windows.Forms;
 using System;
 
 namespace MinimalFirewall
@@ -18,6 +18,11 @@ namespace MinimalFirewall
         private const int BlockedConnectionEventId = 5157;
         private const string SecurityLogName = "Security";
         private const string WfpAuditSubcategoryGuid = "{0CCE9226-69AE-11D9-BED3-505054503030}";
+
+        // WFP Raw Direction Codes (Culture Invariant)
+        // 0 is always Inbound, 1 is always Outbound, regardless of Windows Language.
+        private const int FwpDirectionInbound = 0;
+        private const int FwpDirectionOutbound = 1;
 
         private const string DirectionInboundCode = "%%14592";
         private const string DirectionOutboundCode = "%%14593";
@@ -39,6 +44,7 @@ namespace MinimalFirewall
 
         public FirewallActionsService? ActionsService { get; set; }
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
+
         public FirewallEventListenerService(
             FirewallDataService dataService,
             WildcardRuleService wildcardRuleService,
@@ -119,21 +125,46 @@ namespace MinimalFirewall
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
-                Task.Run(async () => await ProcessFirewallBlockEventAsync(xmlContent));
+
+                // Culture-Invariant - Extract raw Direction integer from properties
+                // Standard WFP 5157 Property Order: [0]ProcessId, [1]Application, [2]Direction, ...
+                int? rawDirectionCode = null;
+                if (e.EventRecord.Properties != null && e.EventRecord.Properties.Count > 2)
+                {
+                    try
+                    {
+                        if (e.EventRecord.Properties[2].Value != null)
+                        {
+                            rawDirectionCode = Convert.ToInt32(e.EventRecord.Properties[2].Value);
+                        }
+                    }
+                    catch { /* Ignore cast errors, fall back to XML parsing */ }
+                }
+
+                Task.Run(async () => await ProcessFirewallBlockEventAsync(xmlContent, rawDirectionCode));
             }
             catch (EventLogException) { /* Ignore log read errors */ }
         }
 
-        private async Task ProcessFirewallBlockEventAsync(string xmlContent)
+        private async Task ProcessFirewallBlockEventAsync(string xmlContent, int? rawDirectionCode)
         {
             string appPath = string.Empty;
             string direction = string.Empty;
 
             try
             {
-                // explicit extraction to guarantee no fields are skipped
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-                direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+
+                // Use raw code if available (Culture Invariant), otherwise fallback to parsing the XML string
+                if (rawDirectionCode.HasValue)
+                {
+                    direction = ParseDirectionFromCode(rawDirectionCode.Value);
+                }
+                else
+                {
+                    direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                }
+
                 string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
                 string remotePort = GetValueFromXml(xmlContent, "RemotePort");
                 string protocol = GetValueFromXml(xmlContent, "Protocol");
@@ -152,6 +183,7 @@ namespace MinimalFirewall
 
                 string notificationKey = $"{appPath}|{direction}";
                 if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
+
                 // Logic Check (Snoozed or Lockdown)
                 if (!ShouldProcessEvent(appPath))
                 {
@@ -178,7 +210,6 @@ namespace MinimalFirewall
                 {
                     if (filterId == "0")
                     {
-
                         _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
                     }
@@ -202,13 +233,11 @@ namespace MinimalFirewall
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
-                    Direction =
-                    direction,
+                    Direction = direction,
                     ServiceName = serviceName,
                     Protocol = protocol,
                     RemotePort = remotePort,
                     RemoteAddress = remoteAddress,
-
                     FilterId = filterId,
                     LayerId = layerId
                 };
@@ -297,8 +326,7 @@ namespace MinimalFirewall
                         string allowAction = $"Allow ({direction})";
                         var appPayload = new ApplyApplicationRulePayload
                         {
-                            AppPaths = new List<string>
-                        { appPath },
+                            AppPaths = new List<string> { appPath },
                             Action = allowAction
                         };
                         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
@@ -325,8 +353,7 @@ namespace MinimalFirewall
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName =
-                    "auditpol.exe",
+                    FileName = "auditpol.exe",
                     Arguments = $"/set /subcategory:\"{WfpAuditSubcategoryGuid}\" /success:disable /failure:enable",
                     CreateNoWindow = true,
                     UseShellExecute = false,
@@ -349,7 +376,6 @@ namespace MinimalFirewall
                 var psi = new ProcessStartInfo
                 {
                     FileName = "auditpol.exe",
-                    // Disable both success and failure to "clean up" the policy
                     Arguments = $"/set /subcategory:\"{WfpAuditSubcategoryGuid}\" /success:disable /failure:disable",
                     CreateNoWindow = true,
                     UseShellExecute = false,
@@ -411,14 +437,24 @@ namespace MinimalFirewall
             return _isLockdownEnabled();
         }
 
+        private static string ParseDirectionFromCode(int directionCode)
+        {
+            return directionCode switch
+            {
+                FwpDirectionInbound => DirectionInbound,
+                FwpDirectionOutbound => DirectionOutbound,
+                _ => "Unknown" // Fallback, from 0/1
+            };
+        }
+
         private static string ParseDirection(string rawDirection)
         {
+            // fallback - checks for XML resource codes
             return rawDirection switch
             {
                 DirectionInboundCode => DirectionInbound,
                 DirectionOutboundCode => DirectionOutbound,
-                _ =>
-                rawDirection,
+                _ => rawDirection,
             };
         }
 
@@ -433,11 +469,9 @@ namespace MinimalFirewall
                     if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "Data")
                     {
                         if (xmlReader.GetAttribute("Name") == elementName)
-
                         {
                             if (xmlReader.IsEmptyElement)
                             {
-
                                 return string.Empty;
                             }
                             xmlReader.Read();
