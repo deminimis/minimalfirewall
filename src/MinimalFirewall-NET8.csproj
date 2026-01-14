@@ -31,13 +31,6 @@
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<None Remove="1 ClubGPT - developer team in one GPT 🦾.md" />
-		<None Remove="1-adminnhelper-allfiles.txt" />
-		<None Remove="1-oldfiles4.8.txt" />
-		<None Remove="1allfiles.txt" />
-		<None Remove="1file_combiner.py" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="logo.ico" />

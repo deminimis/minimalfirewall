@@ -1,5 +1,4 @@
-﻿// File: PublisherWhitelistService.cs
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,6 +9,7 @@ namespace MinimalFirewall
     {
         private readonly string _configPath;
         private HashSet<string> _trustedPublishers;
+        private readonly object _lock = new object();
 
         public PublisherWhitelistService()
         {
@@ -19,57 +19,87 @@ namespace MinimalFirewall
 
         private HashSet<string> Load()
         {
-            try
+            lock (_lock)
             {
-                if (File.Exists(_configPath))
+                try
                 {
-                    string json = File.ReadAllText(_configPath);
-                    return JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (File.Exists(_configPath))
+                    {
+                        string json = File.ReadAllText(_configPath);
+                        if (string.IsNullOrWhiteSpace(json))
+                            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                        return JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString)
+                               ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to load publisher whitelist: {ex.Message}");
+                }
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] Failed to load publisher whitelist: {ex.Message}");
-            }
-            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         private void Save()
         {
-            try
+            lock (_lock)
             {
-                string json = JsonSerializer.Serialize(_trustedPublishers, WhitelistJsonContext.Default.HashSetString);
-                File.WriteAllText(_configPath, json);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] Failed to save publisher whitelist: {ex.Message}");
+                try
+                {
+                    string json = JsonSerializer.Serialize(_trustedPublishers, WhitelistJsonContext.Default.HashSetString);
+
+                    string tempPath = _configPath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+
+                    File.Move(tempPath, _configPath, overwrite: true);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to save publisher whitelist: {ex.Message}");
+                }
             }
         }
 
         public List<string> GetTrustedPublishers()
         {
-            return _trustedPublishers.OrderBy(p => p).ToList();
+            lock (_lock)
+            {
+                return _trustedPublishers.OrderBy(p => p).ToList();
+            }
         }
 
         public bool IsTrusted(string publisherName)
         {
-            return !string.IsNullOrEmpty(publisherName) && _trustedPublishers.Contains(publisherName);
+            if (string.IsNullOrEmpty(publisherName)) return false;
+
+            lock (_lock)
+            {
+                return _trustedPublishers.Contains(publisherName);
+            }
         }
 
         public void Add(string publisherName)
         {
-            if (!string.IsNullOrEmpty(publisherName) && _trustedPublishers.Add(publisherName))
+            if (string.IsNullOrEmpty(publisherName)) return;
+
+            lock (_lock)
             {
-                Save();
+                if (_trustedPublishers.Add(publisherName))
+                {
+                    Save();
+                }
             }
         }
 
         public void Remove(string publisherName)
         {
-            if (_trustedPublishers.Remove(publisherName))
+            lock (_lock)
             {
-                Save();
+                if (_trustedPublishers.Remove(publisherName))
+                {
+                    Save();
+                }
             }
         }
     }

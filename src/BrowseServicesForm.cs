@@ -13,10 +13,14 @@ namespace MinimalFirewall
         public BrowseServicesForm(List<ServiceViewModel> services, AppSettings appSettings)
         {
             InitializeComponent();
+
+            // prevents crashes if null list is passed
+            _allServices = services ?? new List<ServiceViewModel>();
+
             dm = new DarkModeCS(this);
             dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
             dm.ApplyTheme(appSettings.Theme == "Dark");
-            _allServices = services;
+
             LoadServices();
         }
 
@@ -33,8 +37,14 @@ namespace MinimalFirewall
 
             foreach (var service in filteredServices)
             {
-                servicesListBox.Items.Add($"{service.DisplayName} ({service.ServiceName})");
+                servicesListBox.Items.Add(new ServiceListItem(service));
             }
+
+            if (servicesListBox.Items.Count == 1)
+            {
+                servicesListBox.SelectedIndex = 0;
+            }
+
             servicesListBox.EndUpdate();
         }
 
@@ -45,16 +55,15 @@ namespace MinimalFirewall
 
         private void okButton_Click(object sender, EventArgs e)
         {
-            if (servicesListBox.SelectedItem is string selectedItem)
+            //  Retrieve object directly. No string parsing needed.
+            if (servicesListBox.SelectedItem is ServiceListItem selectedItem)
             {
-                SelectedService = _allServices.FirstOrDefault(s => selectedItem == $"{s.DisplayName} ({s.ServiceName})");
+                SelectedService = selectedItem.Service;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             else
             {
-                this.DialogResult = DialogResult.Cancel;
-                this.Close();
             }
         }
 
@@ -66,7 +75,25 @@ namespace MinimalFirewall
 
         private void servicesListBox_DoubleClick(object sender, EventArgs e)
         {
-            okButton_Click(sender, e);
+            if (servicesListBox.SelectedItem != null)
+            {
+                okButton_Click(sender, e);
+            }
+        }
+
+        private class ServiceListItem
+        {
+            public ServiceViewModel Service { get; }
+
+            public ServiceListItem(ServiceViewModel service)
+            {
+                Service = service;
+            }
+
+            public override string ToString()
+            {
+                return $"{Service.DisplayName} ({Service.ServiceName})";
+            }
         }
     }
 }

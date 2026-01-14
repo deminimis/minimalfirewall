@@ -5,11 +5,19 @@ using NetFwTypeLib;
 using MinimalFirewall.Groups;
 using System.Text.RegularExpressions;
 using System.Net;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace MinimalFirewall
 {
     public partial class CreateAdvancedRuleForm : Form
     {
+        // Constants for Protocol Numbers
+        private const int ProtocolTcp = 6;
+        private const int ProtocolUdp = 17;
+        private const int ProtocolIcmpV4 = 1;
+        private const int ProtocolIcmpV6 = 58;
+
         private readonly DarkModeCS dm;
         private readonly FirewallActionsService _actionsService;
         private readonly FirewallRuleViewModel _viewModel;
@@ -23,8 +31,12 @@ namespace MinimalFirewall
         {
             InitializeComponent();
             _appSettings = appSettings;
-            dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+
+
+            dm = new DarkModeCS(this)
+            {
+                ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+            };
             dm.ApplyTheme(appSettings.Theme == "Dark");
 
             _actionsService = actionsService;
@@ -33,27 +45,20 @@ namespace MinimalFirewall
             _viewModel = new FirewallRuleViewModel();
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-            protocolComboBox.Items.AddRange(new object[] {
+
+            protocolComboBox.Items.AddRange(
+            [
                 ProtocolTypes.Any,
                 ProtocolTypes.TCP,
                 ProtocolTypes.UDP,
                 ProtocolTypes.ICMPv4,
                 ProtocolTypes.ICMPv6,
                 ProtocolTypes.IGMP
-            });
+            ]);
             protocolComboBox.SelectedItem = ProtocolTypes.Any;
             LoadFirewallGroups();
             _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
             _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
-            this.Load += (sender, e) =>
-            {
-                var workingArea = Screen.FromControl(this).WorkingArea;
-                if (this.Height > workingArea.Height)
-                {
-                    this.Height = workingArea.Height;
-                }
-                this.CenterToParent();
-            };
         }
 
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, string appPath, string direction, AppSettings appSettings)
@@ -82,6 +87,18 @@ namespace MinimalFirewall
             PopulateFormFromRule(ruleToEdit);
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            var workingArea = Screen.FromControl(this).WorkingArea;
+            if (this.Height > workingArea.Height)
+            {
+                this.Height = workingArea.Height;
+            }
+            this.CenterToParent();
+        }
+
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)
         {
             ruleNameTextBox.Text = rule.Name;
@@ -103,21 +120,23 @@ namespace MinimalFirewall
             programPathTextBox.Text = rule.ApplicationName;
             serviceNameTextBox.Text = (rule.ServiceName == "*" || string.IsNullOrEmpty(rule.ServiceName)) ? string.Empty : rule.ServiceName;
 
-            int protocolIndex = -1;
-            var items = protocolComboBox.Items.OfType<ProtocolTypes>().ToList();
-            for (int i = 0; i < items.Count; i++)
+
+            bool found = false;
+            foreach (var item in protocolComboBox.Items)
             {
-                if (items[i].Value == rule.Protocol)
+                if (item is ProtocolTypes pt && pt.Value == rule.Protocol)
                 {
-                    protocolIndex = i;
+                    protocolComboBox.SelectedItem = item;
+                    found = true;
                     break;
                 }
             }
 
-            if (protocolIndex != -1)
-                protocolComboBox.SelectedIndex = protocolIndex;
-            else
+            if (!found)
+            {
                 protocolComboBox.SelectedItem = ProtocolTypes.Any;
+            }
+
             _viewModel.SelectedProtocol = (ProtocolTypes)protocolComboBox.SelectedItem;
 
             localPortsTextBox.Text = rule.LocalPorts;
@@ -126,16 +145,14 @@ namespace MinimalFirewall
             localAddressTextBox.Text = rule.LocalAddresses;
             remoteAddressTextBox.Text = rule.RemoteAddresses;
 
-            domainCheckBox.Checked = rule.Profiles.Contains("Domain") ||
-                rule.Profiles == "All";
+            domainCheckBox.Checked = rule.Profiles.Contains("Domain") || rule.Profiles == "All";
             privateCheckBox.Checked = rule.Profiles.Contains("Private") || rule.Profiles == "All";
             publicCheckBox.Checked = rule.Profiles.Contains("Public") || rule.Profiles == "All";
 
             groupComboBox.Text = rule.Grouping;
             lanCheckBox.Checked = rule.InterfaceTypes.Contains("Lan") || rule.InterfaceTypes == "All";
             wirelessCheckBox.Checked = rule.InterfaceTypes.Contains("Wireless") || rule.InterfaceTypes == "All";
-            remoteAccessCheckBox.Checked = rule.InterfaceTypes.Contains("RemoteAccess") ||
-                rule.InterfaceTypes == "All";
+            remoteAccessCheckBox.Checked = rule.InterfaceTypes.Contains("RemoteAccess") || rule.InterfaceTypes == "All";
 
             if (_viewModel.IsIcmpSectionVisible)
             {
@@ -143,14 +160,15 @@ namespace MinimalFirewall
             }
         }
 
-
         private void LoadFirewallGroups()
         {
             var groups = _groupManager.GetAllGroups();
-            var groupNames = new HashSet<string>(groups.Select(g => g.Name));
 
-            groupNames.Add(MFWConstants.MainRuleGroup);
-            groupNames.Add(MFWConstants.WildcardRuleGroup);
+            var groupNames = new HashSet<string>(groups.Select(g => g.Name))
+            {
+                MFWConstants.MainRuleGroup,
+                MFWConstants.WildcardRuleGroup
+            };
 
             groupComboBox.Items.Clear();
             foreach (var name in groupNames.OrderBy(n => n))
@@ -216,32 +234,29 @@ namespace MinimalFirewall
                 }
             }
 
-            string groupName = groupComboBox.Text;
+            string groupName = groupComboBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(groupName))
             {
                 groupName = MFWConstants.MainRuleGroup;
             }
 
+            // Calculate values directly to avoid redundant assignment
+            string finalLocalPorts;
+            string finalRemotePorts;
+            string finalIcmp;
 
-            string finalLocalPorts = "";
-            string finalRemotePorts = "";
-            string finalIcmp = "";
-
-
-            if (selectedProtocol.Value == 6 || selectedProtocol.Value == 17)
+            if (selectedProtocol.Value == ProtocolTcp || selectedProtocol.Value == ProtocolUdp)
             {
                 finalLocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text;
                 finalRemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text;
             }
             else
             {
-                // Force empty for Any/ICMP/IGMP/etc.
                 finalLocalPorts = "";
                 finalRemotePorts = "";
             }
 
-            // 2. Handle ICMP
-            if (selectedProtocol.Value == 1 || selectedProtocol.Value == 58)
+            if (selectedProtocol.Value == ProtocolIcmpV4 || selectedProtocol.Value == ProtocolIcmpV6)
             {
                 finalIcmp = icmpTypesAndCodesTextBox.Text;
             }
@@ -250,30 +265,29 @@ namespace MinimalFirewall
                 finalIcmp = "";
             }
 
-
             var rule = new AdvancedRuleViewModel
             {
-                Name = ruleNameTextBox.Text,
-                Description = descriptionTextBox.Text,
+                Name = ruleNameTextBox.Text.Trim(),
+                Description = descriptionTextBox.Text.Trim(),
                 IsEnabled = enabledCheckBox.Checked,
                 Grouping = groupName,
                 Status = allowRadioButton.Checked ? "Allow" : "Block",
                 Direction = GetDirection(),
                 Protocol = selectedProtocol.Value,
                 ProtocolName = selectedProtocol.Name,
-                ApplicationName = programPathTextBox.Text,
-                ServiceName = serviceNameTextBox.Text,
+                ApplicationName = programPathTextBox.Text.Trim(),
+                ServiceName = serviceNameTextBox.Text.Trim(),
 
-                LocalPorts = finalLocalPorts,
-                RemotePorts = finalRemotePorts,
+                LocalPorts = finalLocalPorts.Trim(),
+                RemotePorts = finalRemotePorts.Trim(),
 
-                LocalAddresses = string.IsNullOrWhiteSpace(localAddressTextBox.Text) ? "*" : localAddressTextBox.Text,
-                RemoteAddresses = string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text,
+                LocalAddresses = (string.IsNullOrWhiteSpace(localAddressTextBox.Text) ? "*" : localAddressTextBox.Text).Trim(),
+                RemoteAddresses = (string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text).Trim(),
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced,
                 InterfaceTypes = GetInterfaceTypes(),
 
-                IcmpTypesAndCodes = finalIcmp
+                IcmpTypesAndCodes = finalIcmp.Trim()
             };
 
             this.RuleVm = rule;
@@ -322,17 +336,33 @@ namespace MinimalFirewall
             }
         }
 
-        private void browseServiceButton_Click(object sender, EventArgs e)
+        private async void browseServiceButton_Click(object sender, EventArgs e)
         {
-            var services = SystemDiscoveryService.GetServicesWithExePaths();
-            using var browseForm = new BrowseServicesForm(services, _appSettings);
-            if (browseForm.ShowDialog(this) == DialogResult.OK && browseForm.SelectedService != null)
+            try
             {
-                serviceNameTextBox.Text = browseForm.SelectedService.ServiceName;
-                if (!string.IsNullOrEmpty(browseForm.SelectedService.ExePath))
+                this.Cursor = Cursors.WaitCursor;
+                browseServiceButton.Enabled = false;
+
+                var services = await Task.Run(() => SystemDiscoveryService.GetServicesWithExePaths());
+
+                using var browseForm = new BrowseServicesForm(services, _appSettings);
+                if (browseForm.ShowDialog(this) == DialogResult.OK && browseForm.SelectedService != null)
                 {
-                    programPathTextBox.Text = PathResolver.NormalizePath(browseForm.SelectedService.ExePath);
+                    serviceNameTextBox.Text = browseForm.SelectedService.ServiceName;
+                    if (!string.IsNullOrEmpty(browseForm.SelectedService.ExePath))
+                    {
+                        programPathTextBox.Text = PathResolver.NormalizePath(browseForm.SelectedService.ExePath);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Messenger.MessageBox($"Error loading services: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+                browseServiceButton.Enabled = true;
             }
         }
 
@@ -344,13 +374,13 @@ namespace MinimalFirewall
 
         private void AddGroupButton_Click(object sender, EventArgs e)
         {
-            string newGroupName = groupComboBox.Text;
+            string newGroupName = groupComboBox.Text.Trim();
             if (!string.IsNullOrWhiteSpace(newGroupName) && !newGroupName.EndsWith(MFWConstants.MfwRuleSuffix))
             {
                 newGroupName += MFWConstants.MfwRuleSuffix;
             }
 
-            if (!groupComboBox.Items.Contains(newGroupName))
+            if (!string.IsNullOrWhiteSpace(newGroupName) && !groupComboBox.Items.Contains(newGroupName))
             {
                 groupComboBox.Items.Add(newGroupName);
                 groupComboBox.SelectedItem = newGroupName;
@@ -438,4 +468,3 @@ namespace MinimalFirewall
         }
     }
 }
-

@@ -10,26 +10,61 @@ namespace MinimalFirewall
         private const int HRESULT_FROM_WIN32_ERROR_FILE_NOT_FOUND = unchecked((int)0x80070002);
         private const int HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS = unchecked((int)0x800700B7);
 
+        // Optimization: Cache the COM Type lookup to avoid repeated reflection calls
+        private static readonly Lazy<Type?> _firewallPolicyType = new(() => Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
+
         public FirewallRuleService()
         {
         }
 
         private static INetFwPolicy2 GetLocalPolicy()
         {
-            Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-            if (policyType == null)
+            if (_firewallPolicyType.Value == null)
             {
                 throw new InvalidOperationException("Firewall policy type could not be retrieved.");
             }
-            return (INetFwPolicy2)Activator.CreateInstance(policyType)!;
+            return (INetFwPolicy2)Activator.CreateInstance(_firewallPolicyType.Value)!;
+        }
+
+        /// <summary>
+        /// Helper to iterate rules, extract names based on a condition, and immediately release COM objects.
+        /// Reduces memory overhead and code duplication for Delete operations.
+        /// </summary>
+        private List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
+        {
+            var matchedNames = new List<string>();
+            var allRules = GetAllRules();
+
+            foreach (var rule in allRules)
+            {
+                try
+                {
+                    if (rule != null && predicate(rule))
+                    {
+                        matchedNames.Add(rule.Name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WARN] Error checking rule predicate: {ex.Message}");
+                }
+                finally
+                {
+                    // Always release the COM object immediately after inspection
+                    if (rule != null) Marshal.ReleaseComObject(rule);
+                }
+            }
+            return matchedNames;
         }
 
         public List<INetFwRule2> GetAllRules()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy?.Rules == null) return [];
+
             var rulesList = new List<INetFwRule2>();
             var comRules = firewallPolicy.Rules;
+
             try
             {
                 foreach (INetFwRule2 rule in comRules)
@@ -41,6 +76,7 @@ namespace MinimalFirewall
             catch (COMException ex)
             {
                 Debug.WriteLine($"[ERROR] GetAllRules: Failed to retrieve firewall rules. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                // If retrieval fails halfway, release what we collected
                 foreach (var rule in rulesList)
                 {
                     Marshal.ReleaseComObject(rule);
@@ -85,6 +121,7 @@ namespace MinimalFirewall
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy == null) return;
+
             foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
             {
                 NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
@@ -125,6 +162,8 @@ namespace MinimalFirewall
             string normalizedAppPath = PathResolver.NormalizePath(appPath);
             var matchingRules = new List<INetFwRule2>();
             var allRules = GetAllRules();
+
+            // Rules that we inspect but don't return need to be released
             var rulesToRelease = new List<INetFwRule2>();
 
             try
@@ -192,31 +231,11 @@ namespace MinimalFirewall
             if (appPaths.Count == 0) return [];
 
             var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
 
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null && !string.IsNullOrEmpty(rule.ApplicationName) && pathSet.Contains(PathResolver.NormalizePath(rule.ApplicationName)))
-                    {
-                        rulesToRemove.Add(rule.Name);
-                        rulesToKeepForRelease.Add(rule);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                !string.IsNullOrEmpty(rule.ApplicationName) &&
+                pathSet.Contains(PathResolver.NormalizePath(rule.ApplicationName))
+            );
 
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
@@ -226,31 +245,9 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(serviceName)) return [];
 
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
-
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule is INetFwRule2 rule2 && string.Equals(rule2.serviceName, serviceName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        rulesToRemove.Add(rule2.Name);
-                        rulesToKeepForRelease.Add(rule2);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase)
+            );
 
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
@@ -260,37 +257,17 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(serviceName)) return [];
 
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
+            NET_FW_ACTION_ conflictingAction = (newAction == NET_FW_ACTION_.NET_FW_ACTION_ALLOW)
+                ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
+                : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
 
-            NET_FW_ACTION_ conflictingAction = (newAction == NET_FW_ACTION_.NET_FW_ACTION_ALLOW) ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase) &&
+                (rule.Direction == newDirection || rule.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_MAX) &&
+                rule.Action == conflictingAction
+            );
 
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule is INetFwRule2 rule2 &&
-                        string.Equals(rule2.serviceName, serviceName, StringComparison.OrdinalIgnoreCase) &&
-                        (rule2.Direction == newDirection || rule2.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_MAX) &&
-                        rule2.Action == conflictingAction)
-                    {
-                        rulesToRemove.Add(rule2.Name);
-                        rulesToKeepForRelease.Add(rule2);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
-
+            DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
         }
 
@@ -299,39 +276,16 @@ namespace MinimalFirewall
             if (packageFamilyNames.Count == 0) return [];
 
             var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
 
-            try
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
             {
-                foreach (var rule in allRules)
+                if (rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
                 {
-                    if (rule != null && rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
-                    {
-                        string pfnInRule = rule.Description[MFWConstants.UwpDescriptionPrefix.Length..];
-                        if (pfnSet.Contains(pfnInRule))
-                        {
-                            rulesToRemove.Add(rule.Name);
-                            rulesToKeepForRelease.Add(rule);
-                        }
-                        else
-                        {
-                            rulesToRelease.Add(rule);
-                        }
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
+                    string pfnInRule = rule.Description[MFWConstants.UwpDescriptionPrefix.Length..];
+                    return pfnSet.Contains(pfnInRule);
                 }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+                return false;
+            });
 
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
@@ -410,8 +364,15 @@ namespace MinimalFirewall
             }
             catch (COMException ex)
             {
-                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-                throw;
+                if (ex.HResult == HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS)
+                {
+                    Debug.WriteLine($"[WARN] CreateRule: Rule '{rule?.Name}' already exists. Skipping.");
+                }
+                else
+                {
+                    Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -430,31 +391,9 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(description)) return [];
 
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
-
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null && string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase))
-                    {
-                        rulesToRemove.Add(rule.Name);
-                        rulesToKeepForRelease.Add(rule);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase)
+            );
 
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
@@ -464,31 +403,9 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(groupName)) return [];
 
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
-
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null && string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        rulesToRemove.Add(rule.Name);
-                        rulesToKeepForRelease.Add(rule);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase)
+            );
 
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
@@ -496,35 +413,14 @@ namespace MinimalFirewall
 
         public void DeleteAllMfwRules()
         {
-            var rulesToRemove = new List<string>();
-            var allRules = GetAllRules();
-            var rulesToRelease = new List<INetFwRule2>();
-            var rulesToKeepForRelease = new List<INetFwRule2>();
+            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+                !string.IsNullOrEmpty(rule.Grouping) &&
+                (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                 rule.Grouping == MFWConstants.MainRuleGroup ||
+                 rule.Grouping == MFWConstants.WildcardRuleGroup)
+            );
 
-            try
-            {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null && !string.IsNullOrEmpty(rule.Grouping) &&
-                        (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                         rule.Grouping == MFWConstants.MainRuleGroup ||
-                         rule.Grouping == MFWConstants.WildcardRuleGroup))
-                    {
-                        rulesToRemove.Add(rule.Name);
-                        rulesToKeepForRelease.Add(rule);
-                    }
-                    else if (rule != null)
-                    {
-                        rulesToRelease.Add(rule);
-                    }
-                }
-                Debug.WriteLine($"[INFO] DeleteAllMfwRules: Identified {rulesToRemove.Count} MFW rules for deletion.");
-            }
-            finally
-            {
-                foreach (var rule in rulesToRelease) Marshal.ReleaseComObject(rule);
-                foreach (var rule in rulesToKeepForRelease) Marshal.ReleaseComObject(rule);
-            }
+            Debug.WriteLine($"[INFO] DeleteAllMfwRules: Identified {rulesToRemove.Count} MFW rules for deletion.");
 
             if (rulesToRemove.Count > 0)
             {

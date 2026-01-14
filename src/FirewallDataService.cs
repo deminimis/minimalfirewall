@@ -59,7 +59,7 @@ namespace MinimalFirewall
         {
             return Task.Run(() =>
             {
-                var allRules = _firewallRuleService.GetAllRules();
+                var allRules = _firewallRuleService.GetAllRules().ToList();
                 try
                 {
                     var mfwRules = allRules
@@ -110,39 +110,32 @@ namespace MinimalFirewall
 
             var aggregatedRules = await Task.Run(() =>
             {
-                try
+                int totalRules = allMfwRules.Count;
+                if (totalRules == 0)
                 {
-                    int totalRules = allMfwRules.Count;
-                    if (totalRules == 0)
-                    {
-                        progress?.Report(100);
-                        return new List<AggregatedRuleViewModel>();
-                    }
-
-                    var groupedByGroupingAndProtocol = allMfwRules
-                        .Where(r => r.IsEnabled)
-                        .GroupBy(r => $"{r.Grouping}|{r.ApplicationName}|{r.ServiceName}|{r.Protocol}")
-                        .ToList();
-
-                    var aggRules = new List<AggregatedRuleViewModel>();
-                    int processedCount = 0;
-
-                    foreach (var group in groupedByGroupingAndProtocol)
-                    {
-                        if (token.IsCancellationRequested) return [];
-                        var groupList = group.ToList();
-                        aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
-                        processedCount += groupList.Count;
-                        progress?.Report((processedCount * 100) / totalRules);
-                    }
-
                     progress?.Report(100);
-                    return aggRules.OrderBy(r => r.Name).ToList();
+                    return new List<AggregatedRuleViewModel>();
                 }
-                finally
-                {
 
+                var groupedByGroupingAndProtocol = allMfwRules
+                    .Where(r => r.IsEnabled)
+                    .GroupBy(r => (r.Grouping, r.ApplicationName, r.ServiceName, r.Protocol))
+                    .ToList();
+
+                var aggRules = new List<AggregatedRuleViewModel>();
+                int processedCount = 0;
+
+                foreach (var group in groupedByGroupingAndProtocol)
+                {
+                    if (token.IsCancellationRequested) return [];
+                    var groupList = group.ToList();
+                    aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
+                    processedCount += groupList.Count;
+                    progress?.Report((processedCount * 100) / totalRules);
                 }
+
+                progress?.Report(100);
+                return aggRules.OrderBy(r => r.Name).ToList();
             }, token);
 
             if (token.IsCancellationRequested) return [];
@@ -300,7 +293,7 @@ namespace MinimalFirewall
                     {
                         if (ruleHasApp)
                         {
-                            if (eventHasApp && string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
+                            if (eventHasApp && string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase))
                             {
                                 match = true;
                             }
@@ -315,7 +308,7 @@ namespace MinimalFirewall
                 {
                     if (!ruleHasService && ruleHasApp && eventHasApp)
                     {
-                        if (string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase))
                         {
                             match = true;
                         }
@@ -351,7 +344,12 @@ namespace MinimalFirewall
 
         public static AdvancedRuleViewModel CreateAdvancedRuleViewModel(INetFwRule2 rule)
         {
-            var appName = rule.ApplicationName ?? string.Empty;
+            // Read COM properties once to avoid repeated interop calls
+            var rawAppName = rule.ApplicationName;
+            var rawProtocol = rule.Protocol;
+
+            string appName = string.IsNullOrEmpty(rawAppName) ? string.Empty : rawAppName;
+
             return new AdvancedRuleViewModel
             {
                 Name = rule.Name ?? "Unnamed Rule",
@@ -362,11 +360,10 @@ namespace MinimalFirewall
                 ApplicationName = appName == "*" ? "*" : PathResolver.NormalizePath(appName),
                 LocalPorts = string.IsNullOrEmpty(rule.LocalPorts) ? "*" : rule.LocalPorts,
                 RemotePorts = string.IsNullOrEmpty(rule.RemotePorts) ? "*" : rule.RemotePorts,
-                Protocol = (int)rule.Protocol,
-                ProtocolName = GetProtocolName(rule.Protocol),
+                Protocol = (int)rawProtocol,
+                ProtocolName = GetProtocolName(rawProtocol),
                 ServiceName = (string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*") ? string.Empty : rule.serviceName,
-                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ?
-"*" : rule.LocalAddresses,
+                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ? "*" : rule.LocalAddresses,
                 RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
                 Profiles = GetProfileString(rule.Profiles),
                 Grouping = rule.Grouping ?? string.Empty,

@@ -16,11 +16,14 @@ namespace DarkModeForms
 {
     public class DarkModeCS : IDisposable
     {
+        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
+        private static readonly ConditionalWeakTable<Control, PaintEventHandler> _roundBorderPainters = new();
+
         private class NotificationInfo
         {
             public int Count { get; set; }
         }
-        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
+
         public void SetNotificationCount(Control control, int count)
         {
             if (count > 0)
@@ -50,69 +53,65 @@ namespace DarkModeForms
 
         private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
         {
-            using (Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold))
+            using Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold);
+            SizeF textSize = g.MeasureString(text, notifFont);
+            int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
+            int x, y;
+            switch (alignment)
             {
-                SizeF textSize = g.MeasureString(text, notifFont);
-                int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
-                int x, y;
+                case TabAlignment.Left:
+                case TabAlignment.Right:
+                    x = tabRect.Left + 5;
+                    y = tabRect.Bottom - diameter - 5;
+                    break;
+                default:
+                    x = tabRect.Right - diameter - 3;
+                    y = tabRect.Top + 3;
+                    break;
+            }
+
+            Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            using (var path = new GraphicsPath())
+            {
+                path.AddEllipse(bubbleRect);
+                PointF point1 = PointF.Empty, point2 = PointF.Empty, point3 = PointF.Empty;
                 switch (alignment)
                 {
                     case TabAlignment.Left:
+                        point1 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.2f);
+                        point2 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.4f);
+                        point3 = new PointF(bubbleRect.Right + 6, bubbleRect.Top - 4);
+                        break;
                     case TabAlignment.Right:
-                        x = tabRect.Left + 5;
-                        y = tabRect.Bottom - diameter - 5;
+                        point1 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.2f);
+                        point2 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.4f);
+                        point3 = new PointF(bubbleRect.Left - 6, bubbleRect.Top - 4);
                         break;
                     default:
-                        x = tabRect.Right - diameter - 3;
-                        y = tabRect.Top + 3;
+                        point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
+                        point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
+                        point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
                         break;
                 }
 
-
-                Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-
-                using (var path = new GraphicsPath())
+                path.AddPolygon(new[] { point1, point2, point3 });
+                using (SolidBrush redBrush = new SolidBrush(Color.Red))
                 {
-                    path.AddEllipse(bubbleRect);
-                    PointF point1 = PointF.Empty, point2 = PointF.Empty, point3 = PointF.Empty;
-                    switch (alignment)
-                    {
-                        case TabAlignment.Left:
-                            point1 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.2f);
-                            point2 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.4f);
-                            point3 = new PointF(bubbleRect.Right + 6, bubbleRect.Top - 4);
-                            break;
-                        case TabAlignment.Right:
-                            point1 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.2f);
-                            point2 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.4f);
-                            point3 = new PointF(bubbleRect.Left - 6, bubbleRect.Top - 4);
-                            break;
-                        default:
-                            point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
-                            point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
-                            point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
-                            break;
-                    }
-
-                    path.AddPolygon(new[] { point1, point2, point3 });
-                    using (SolidBrush redBrush = new SolidBrush(Color.Red))
-                    {
-                        g.FillPath(redBrush, path);
-                    }
+                    g.FillPath(redBrush, path);
                 }
+            }
 
-                using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+            using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+            {
+                using (StringFormat sf = new StringFormat
                 {
-                    using (StringFormat sf = new StringFormat
-                    {
-
-                        Alignment = StringAlignment.Center,
-                        LineAlignment = StringAlignment.Center
-                    })
-                    {
-                        g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
-                    }
+                    Alignment = StringAlignment.Center,
+                    LineAlignment = StringAlignment.Center
+                })
+                {
+                    g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
                 }
             }
         }
@@ -140,11 +139,14 @@ namespace DarkModeForms
         private const int WM_SETREDRAW = 0x000B;
 
         [DllImport("DwmApi")]
-        public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+
         [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
         private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
+
         [DllImport("dwmapi.dll", EntryPoint = "#127")]
-        public static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+        private static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+
         [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
         private static extern IntPtr CreateRoundRectRgn
         (
@@ -155,6 +157,7 @@ namespace DarkModeForms
           int nWidthEllipse,
           int nHeightEllipse
         );
+
         [DllImport("user32.dll", ExactSpelling = true, CharSet = CharSet.Auto)]
         private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
         private const uint GW_CHILD = 5;
@@ -217,7 +220,7 @@ namespace DarkModeForms
             }
         }
 
-        public bool isDarkMode()
+        public static bool isDarkMode()
         {
             return GetWindowsColorMode() <= 0;
         }
@@ -324,8 +327,9 @@ namespace DarkModeForms
             string Mode = IsDarkMode ? "DarkMode_Explorer" : "ClearMode_Explorer";
             SetWindowTheme(control.Handle, Mode, null);
 
-            control.GetType().GetProperty("BackColor")?.SetValue(control, OScolors.Control);
-            control.GetType().GetProperty("ForeColor")?.SetValue(control, OScolors.TextActive);
+            control.BackColor = OScolors.Control;
+            control.ForeColor = OScolors.TextActive;
+
             if (control is Label lbl && control.Parent != null)
             {
                 control.BackColor = control.Parent.BackColor;
@@ -355,7 +359,6 @@ namespace DarkModeForms
                     FlatStyle.Flat : FlatStyle.Standard;
                 button.FlatAppearance.CheckedBackColor = OScolors.Accent;
 
-                // Preserve Transparency for Icon Buttons
                 if (button.BackColor != Color.Transparent)
                 {
                     button.BackColor = OScolors.Control;
@@ -370,12 +373,15 @@ namespace DarkModeForms
                 {
                     comboBox.SelectionStart = comboBox.Text.Length;
                 }
-                control.BeginInvoke(new Action(() =>
+                if (control.IsHandleCreated)
                 {
-                    if (control is ComboBox invokedComboBox && !invokedComboBox.DropDownStyle.Equals(ComboBoxStyle.DropDownList))
-                        invokedComboBox.SelectionLength = 0;
+                    control.BeginInvoke(new Action(() =>
+                    {
+                        if (control is ComboBox invokedComboBox && !invokedComboBox.DropDownStyle.Equals(ComboBoxStyle.DropDownList))
+                            invokedComboBox.SelectionLength = 0;
 
-                }));
+                    }));
+                }
 
                 if (!control.Enabled && IsDarkMode)
                 {
@@ -414,12 +420,11 @@ namespace DarkModeForms
                 tablePanel.BackColor = tablePanel.Parent.BackColor;
                 tablePanel.ForeColor = OScolors.TextInactive;
             }
-            // FlatTabControl ecustom colors
             else if (control is FlatTabControl flatTab)
             {
-                flatTab.BackColor = OScolors.Background; // Fills the area behind tabs
-                flatTab.TabColor = OScolors.SurfaceDark; // Unselected tab
-                flatTab.SelectTabColor = OScolors.Surface; // Selected tab
+                flatTab.BackColor = OScolors.Background; 
+                flatTab.TabColor = OScolors.SurfaceDark; 
+                flatTab.SelectTabColor = OScolors.Surface; 
                 flatTab.SelectedForeColor = OScolors.TextActive;
                 flatTab.ForeColor = OScolors.TextInactive;
                 flatTab.LineColor = OScolors.Accent;
@@ -579,10 +584,13 @@ namespace DarkModeForms
         private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
         {
             if (sender is not TabControl tab || tab.Parent == null) return;
+
+            //  Check bounds before filling to prevent overflow
             using (SolidBrush headerBrush = new SolidBrush(tab.Parent.BackColor))
             {
                 e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
             }
+
             for (int i = 0; i < tab.TabPages.Count; i++)
             {
                 TabPage tabPage = tab.TabPages[i];
@@ -606,8 +614,7 @@ namespace DarkModeForms
                         e.Graphics.FillRectangle(tabBackColor, tabRect);
                     }
                 }
-                Image?
-                icon = null;
+                Image? icon = null;
                 if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
                 {
                     icon = tab.ImageList.Images[tabPage.ImageIndex];
@@ -780,7 +787,14 @@ namespace DarkModeForms
             {
                 _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
                 _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
-                _Control.Paint += (sender, e) =>
+
+                if (_roundBorderPainters.TryGetValue(_Control, out PaintEventHandler? existingHandler))
+                {
+                    _Control.Paint -= existingHandler;
+                    _roundBorderPainters.Remove(_Control);
+                }
+
+                PaintEventHandler newHandler = (sender, e) =>
                 {
                     Graphics graph = e.Graphics;
                     if (Radius > 1 && _Control.Parent != null)
@@ -815,6 +829,9 @@ namespace DarkModeForms
                         }
                     }
                 };
+
+                _Control.Paint += newHandler;
+                _roundBorderPainters.Add(_Control, newHandler);
             }
         }
 
@@ -881,22 +898,39 @@ namespace DarkModeForms
 
         private static int WindowsVersion()
         {
+            // Try parsed version first
+            try
+            {
+                var major = Environment.OSVersion.Version.Major;
+                if (major >= 10) return major;
+            }
+            catch { }
+
+            // Fallback to Registry CurrentMajorVersionNumber 
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
+                if (key != null)
+                {
+                    var majorObj = key.GetValue("CurrentMajorVersionNumber");
+                    if (majorObj is int majorInt) return majorInt;
+                }
+            }
+            catch { }
+
+            // Last resort fallback to string parsing (legacy method)
             try
             {
                 using var reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
                 string? productName = reg?.GetValue("ProductName")?.ToString();
                 if (!string.IsNullOrEmpty(productName))
                 {
-                    var parts = productName.Split(' ');
-                    if (parts.Length > 1 && int.TryParse(parts[1], out int result))
-                    {
-                        return result;
-                    }
+                    if (productName.Contains("Windows 1")) return 10;
                 }
             }
             catch { }
 
-            return Environment.OSVersion.Version.Major;
+            return 10; // Default to 10 to ensure Dark Mode attempts to load
         }
 
         private static Color GetReadableColor(Color backgroundColor)
@@ -975,15 +1009,26 @@ namespace DarkModeForms
 
     public class MyRenderer : ToolStripProfessionalRenderer
     {
-        public bool ColorizeIcons
-        { get; set; } = true;
+        private readonly Dictionary<string, Image> _imageCache = new();
+
+        public bool ColorizeIcons { get; set; } = true;
+
+        private OSThemeColors _myColors;
         public OSThemeColors MyColors
-        { get; set; }
+        {
+            get => _myColors;
+            set
+            {
+                _myColors = value;
+                foreach (var img in _imageCache.Values) img.Dispose();
+                _imageCache.Clear();
+            }
+        }
 
         public MyRenderer(ProfessionalColorTable table, bool pColorizeIcons = true) : base(table)
         {
             ColorizeIcons = pColorizeIcons;
-            MyColors = new OSThemeColors();
+            _myColors = new OSThemeColors();
         }
 
         protected override void OnRenderGrip(ToolStripGripRenderEventArgs e)
@@ -1159,31 +1204,42 @@ namespace DarkModeForms
                 return;
             }
 
-            if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
+
+            string stateKey = e.Item.Enabled ? "Enabled" : "Disabled";
+            string cacheKey = $"{e.Image.GetHashCode()}-{stateKey}-{ColorizeIcons}";
+
+            if (!_imageCache.TryGetValue(cacheKey, out Image? imageToDraw))
             {
-                Color _ClearColor = e.Item.Enabled ?
-                    MyColors.TextActive : MyColors.SurfaceDark;
-                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
+                // Image creation logic
+                if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
                 {
-                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    e.Graphics.CompositingQuality = CompositingQuality.AssumeLinear;
-                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
+                    Color _ClearColor = e.Item.Enabled ?
+                        MyColors.TextActive : MyColors.SurfaceDark;
+                    imageToDraw = DarkModeCS.RecolorImage(e.Image, _ClearColor);
                 }
-                return;
+                else if (ColorizeIcons)
+                {
+                    Color _ClearColor = e.Item.Enabled ?
+                        MyColors.TextInactive : MyColors.SurfaceDark;
+                    imageToDraw = DarkModeCS.RecolorImage(e.Image, _ClearColor);
+                }
+                else
+                {
+                    base.OnRenderItemImage(e);
+                    return;
+                }
+
+                if (imageToDraw != null)
+                    _imageCache[cacheKey] = imageToDraw;
             }
 
-            if (ColorizeIcons)
+            // Draw cached image
+            if (imageToDraw != null)
             {
-                Color _ClearColor = e.Item.Enabled ?
-                    MyColors.TextInactive : MyColors.SurfaceDark;
-                using (Image adjustedImage = DarkModeCS.RecolorImage(e.Image, _ClearColor))
-                {
-                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    e.Graphics.DrawImage(adjustedImage, e.ImageRectangle);
-                }
+                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                e.Graphics.CompositingQuality = CompositingQuality.AssumeLinear;
+                e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                e.Graphics.DrawImage(imageToDraw, e.ImageRectangle);
             }
             else
             {

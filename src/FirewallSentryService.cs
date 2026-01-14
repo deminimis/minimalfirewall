@@ -14,10 +14,10 @@ namespace MinimalFirewall
         private ManagementEventWatcher? _watcher;
         private bool _isStarted = false;
 
-
         private Dictionary<string, AdvancedRuleViewModel> _ruleCache = new(StringComparer.OrdinalIgnoreCase);
 
         public event Action? RuleSetChanged;
+
         public FirewallSentryService(FirewallRuleService firewallService)
         {
             this.firewallService = firewallService;
@@ -30,8 +30,9 @@ namespace MinimalFirewall
             {
                 var scope = new ManagementScope(@"root\StandardCimv2");
                 var query = new WqlEventQuery(
-                    "SELECT * FROM __InstanceOperationEvent WITHIN 1 " +
+                    "SELECT * FROM __InstanceOperationEvent WITHIN 3 " +
                     "WHERE TargetInstance ISA 'MSFT_NetFirewallRule'");
+
                 _watcher = new ManagementEventWatcher(scope, query);
                 _watcher.EventArrived += OnFirewallRuleChangeEvent;
                 _watcher.Start();
@@ -45,17 +46,21 @@ namespace MinimalFirewall
 
         public void Stop()
         {
-            if (!_isStarted) return;
+            if (!_isStarted || _watcher == null) return;
             try
             {
-                _watcher?.Stop();
-                _watcher?.Dispose();
-                _watcher = null;
-                _isStarted = false;
+                _watcher.EventArrived -= OnFirewallRuleChangeEvent;
+                _watcher.Stop();
+                _watcher.Dispose();
             }
             catch (ManagementException ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[SENTRY ERROR] Failed to stop WMI watcher: {ex.Message}");
+            }
+            finally
+            {
+                _watcher = null;
+                _isStarted = false;
             }
         }
 
@@ -71,6 +76,7 @@ namespace MinimalFirewall
 
             // Snapshot of rules currently in the system
             var currentScan = new Dictionary<string, AdvancedRuleViewModel>(StringComparer.OrdinalIgnoreCase);
+
             try
             {
                 int totalRules = allRules.Count;
@@ -84,17 +90,27 @@ namespace MinimalFirewall
                 foreach (var rule in allRules)
                 {
                     if (token.IsCancellationRequested) return new List<FirewallRuleChange>();
+
                     processedRules++;
                     progress?.Report((processedRules * 100) / totalRules);
 
-                    if (rule == null || string.IsNullOrEmpty(rule.Name)) continue;
-                    if (IsMfwRule(rule)) continue;
+                    if (rule == null) continue;
+
+                    string ruleName = rule.Name;
+                    string ruleGrouping = rule.Grouping;
+
+                    if (string.IsNullOrEmpty(ruleName)) continue;
+
+                    // Pass the cached string instead of the COM object
+                    if (IsMfwRule(ruleGrouping)) continue;
 
                     var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
-                    currentScan[ruleVm.Name] = ruleVm;
 
-                    bool isAcknowledged = acknowledgedTracker.IsAcknowledged(rule.Name);
-                    bool existsInCache = _ruleCache.TryGetValue(rule.Name, out var cachedRule);
+                    // Use the cached ruleName for dictionary lookups
+                    currentScan[ruleName] = ruleVm;
+
+                    bool isAcknowledged = acknowledgedTracker.IsAcknowledged(ruleName);
+                    bool existsInCache = _ruleCache.TryGetValue(ruleName, out var cachedRule);
 
                     FirewallRuleChange? changeObj = null;
 
@@ -133,7 +149,7 @@ namespace MinimalFirewall
                     }
                 }
 
-                // Check fo r deletions
+                // Check for deletions
                 foreach (var kvp in _ruleCache)
                 {
                     if (!currentScan.ContainsKey(kvp.Key))
@@ -156,41 +172,50 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
+                    if (rule != null)
+                    {
+                        try { Marshal.ReleaseComObject(rule); }
+                        catch { /* Ignore release errors to prevent loop crash */ }
+                    }
                 }
             }
             return changes;
         }
 
-        private void EnrichWithPublisher(FirewallRuleChange changeObj, string appPath)
+        private void EnrichWithPublisher(FirewallRuleChange changeObj, string? appPath)
         {
+            if (string.IsNullOrWhiteSpace(appPath)) return;
+
             if (string.Equals(appPath, "System", StringComparison.OrdinalIgnoreCase))
             {
                 changeObj.Publisher = "Microsoft Corporation (System)";
+                return;
             }
-            else if (!string.IsNullOrEmpty(appPath))
+
+            try
             {
-                try
+                string expandedPath = Environment.ExpandEnvironmentVariables(appPath.Trim());
+                if (File.Exists(expandedPath))
                 {
-                    string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
-                    if (File.Exists(expandedPath))
+                    if (SignatureValidationService.GetPublisherInfo(expandedPath, out string? publisher))
                     {
-                        if (SignatureValidationService.GetPublisherInfo(expandedPath, out string? publisher))
-                        {
-                            changeObj.Publisher = publisher ?? string.Empty;
-                        }
+                        changeObj.Publisher = publisher ?? string.Empty;
                     }
                 }
-                catch { /* Ignore invalid paths/perms */ }
+            }
+            catch
+            {
+                /* Ignore invalid paths/perms to prevent scanning interruption */
             }
         }
 
-        private static bool IsMfwRule(NetFwTypeLib.INetFwRule2 rule)
+        // Changed to accept string directly to avoid passing COM objects
+        private static bool IsMfwRule(string grouping)
         {
-            if (string.IsNullOrEmpty(rule.Grouping)) return false;
-            return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                   rule.Grouping == MFWConstants.MainRuleGroup ||
-                   rule.Grouping == MFWConstants.WildcardRuleGroup;
+            if (string.IsNullOrEmpty(grouping)) return false;
+            return grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+                   grouping == MFWConstants.MainRuleGroup ||
+                   grouping == MFWConstants.WildcardRuleGroup;
         }
 
         public void Dispose()

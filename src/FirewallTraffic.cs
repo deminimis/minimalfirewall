@@ -1,17 +1,15 @@
-﻿using System;
+﻿using MinimalFirewall;
+using MinimalFirewall.TypedObjects;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Linq;
-using MinimalFirewall;
-using MinimalFirewall.TypedObjects;
 
 namespace Firewall.Traffic
 {
@@ -23,6 +21,7 @@ namespace Firewall.Traffic
 
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
         private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, uint ulAf, int TableClass, uint Reserved);
+
         public static List<TcpTrafficRow> GetConnections()
         {
             var connections = new List<TcpTrafficRow>();
@@ -51,59 +50,76 @@ namespace Firewall.Traffic
             };
         }
 
+        // Retrieves TCP table
         private static List<TcpTrafficRow> GetConnectionsForFamily(uint family)
         {
             IntPtr pTcpTable = IntPtr.Zero;
             uint pdwSize = 0;
-            uint retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+            uint retVal;
+            int retryCount = 0;
+
+            // determine necessary buffer size
+            retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
 
             if (retVal != 0 && retVal != ERROR_INSUFFICIENT_BUFFER)
             {
-                int error = Marshal.GetLastWin32Error();
-                Debug.WriteLine($"[ERROR] GetExtendedTcpTable failed on initial call with error code: {retVal}, Win32 Error: {error}");
+                Debug.WriteLine($"[ERROR] GetExtendedTcpTable sizing failed: {retVal}, Win32: {Marshal.GetLastWin32Error()}");
                 return [];
             }
 
-            pTcpTable = Marshal.AllocHGlobal((int)pdwSize);
-            try
+            do
             {
-                retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
-                if (retVal == 0)
+                try
                 {
-                    int rowCount = Marshal.ReadInt32(pTcpTable);
-                    var connections = new List<TcpTrafficRow>(rowCount);
-                    IntPtr rowPtr = pTcpTable + Marshal.SizeOf<int>();
+                    pTcpTable = Marshal.AllocHGlobal((int)pdwSize);
+                    retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
 
-                    for (int i = 0; i < rowCount; i++)
+                    if (retVal == 0) // Success
                     {
-                        if (family == AF_INET)
+                        int rowCount = Marshal.ReadInt32(pTcpTable);
+                        var connections = new List<TcpTrafficRow>(rowCount);
+                        IntPtr rowPtr = pTcpTable + Marshal.SizeOf<int>();
+
+                        for (int i = 0; i < rowCount; i++)
                         {
-                            var rowStructure = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
-                            connections.Add(new TcpTrafficRow(rowStructure));
-                            rowPtr += Marshal.SizeOf<MIB_TCPROW_OWNER_PID>();
+                            if (family == AF_INET)
+                            {
+                                var row = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
+                                connections.Add(new TcpTrafficRow(row));
+                                rowPtr += Marshal.SizeOf<MIB_TCPROW_OWNER_PID>();
+                            }
+                            else
+                            {
+                                var row = Marshal.PtrToStructure<MIB_TCP6ROW_OWNER_PID>(rowPtr);
+                                connections.Add(new TcpTrafficRow(row));
+                                rowPtr += Marshal.SizeOf<MIB_TCP6ROW_OWNER_PID>();
+                            }
                         }
-                        else
-                        {
-                            var rowStructure = Marshal.PtrToStructure<MIB_TCP6ROW_OWNER_PID>(rowPtr);
-                            connections.Add(new TcpTrafficRow(rowStructure));
-                            rowPtr += Marshal.SizeOf<MIB_TCP6ROW_OWNER_PID>();
-                        }
+                        return connections;
                     }
-                    return connections;
+                    else if (retVal == ERROR_INSUFFICIENT_BUFFER)
+                    {
+                        // Buffer too small, retry with new pdwSize
+                        Marshal.FreeHGlobal(pTcpTable);
+                        pTcpTable = IntPtr.Zero;
+                        retryCount++;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[ERROR] GetExtendedTcpTable fetch failed: {retVal}");
+                        return [];
+                    }
                 }
-                else
+                finally
                 {
-                    int error = Marshal.GetLastWin32Error();
-                    Debug.WriteLine($"[ERROR] GetExtendedTcpTable failed on second call with error code: {retVal}, Win32 Error: {error}");
+                    if (pTcpTable != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(pTcpTable);
+                        pTcpTable = IntPtr.Zero;
+                    }
                 }
-            }
-            finally
-            {
-                if (pTcpTable != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(pTcpTable);
-                }
-            }
+            } while (retVal == ERROR_INSUFFICIENT_BUFFER && retryCount < 5);
+
             return [];
         }
 
@@ -139,15 +155,8 @@ namespace Firewall.Traffic
                        State == other.State;
             }
 
-            public override bool Equals(object? obj)
-            {
-                return obj is TcpTrafficRow other && Equals(other);
-            }
-
-            public override int GetHashCode()
-            {
-                return HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State);
-            }
+            public override bool Equals(object? obj) => obj is TcpTrafficRow other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -184,17 +193,20 @@ namespace Firewall.Traffic.ViewModels
     public class TcpConnectionViewModel : INotifyPropertyChanged
     {
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
-        public TcpTrafficTracker.TcpTrafficRow Connection { get; }
-        public string ProcessName { get; private set; }
-        public string ProcessPath { get; private set; }
-        public string ServiceName { get; private set; }
 
-        public string DisplayName => string.IsNullOrEmpty(ServiceName) ? ProcessName : $"{ProcessName} ({ServiceName})";
-        public string LocalAddress => Connection.LocalEndPoint.Address.ToString();
+        public TcpTrafficTracker.TcpTrafficRow Connection { get; }
+
+        // Cached strings 
+        public string ProcessName { get; }
+        public string ProcessPath { get; }
+        public string ServiceName { get; }
+        public string DisplayName { get; }
+        public string LocalAddress { get; }
+        public string RemoteAddress { get; }
+        public string State { get; }
+
         public int LocalPort => Connection.LocalEndPoint.Port;
-        public string RemoteAddress => Connection.RemoteEndPoint.Address.ToString();
         public int RemotePort => Connection.RemoteEndPoint.Port;
-        public string State => TcpTrafficTracker.GetStateString(Connection.State);
 
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
@@ -202,10 +214,17 @@ namespace Firewall.Traffic.ViewModels
         public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path, string ServiceName) processInfo, BackgroundFirewallTaskService backgroundTaskService)
         {
             Connection = connection;
+            _backgroundTaskService = backgroundTaskService;
+
+            // Cache static data once
             ProcessName = processInfo.Name;
             ProcessPath = processInfo.Path;
             ServiceName = processInfo.ServiceName;
-            _backgroundTaskService = backgroundTaskService;
+            DisplayName = string.IsNullOrEmpty(ServiceName) ? ProcessName : $"{ProcessName} ({ServiceName})";
+            LocalAddress = connection.LocalEndPoint.Address.ToString();
+            RemoteAddress = connection.RemoteEndPoint.Address.ToString();
+            State = TcpTrafficTracker.GetStateString(Connection.State);
+
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
             BlockRemoteIpCommand = new RelayCommand(BlockIp, () => true);
         }
@@ -255,12 +274,12 @@ namespace Firewall.Traffic.ViewModels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class TrafficMonitorViewModel : INotifyPropertyChanged
     {
         private ObservableCollection<TcpConnectionViewModel> _activeConnections = new ObservableCollection<TcpConnectionViewModel>();
+
         public ObservableCollection<TcpConnectionViewModel> ActiveConnections
         {
             get => _activeConnections;
@@ -298,10 +317,6 @@ namespace Firewall.Traffic.ViewModels
 
         public bool CanExecute(object? parameter) => _canExecute();
         public void Execute(object? parameter) => _execute();
-
-        public void RaiseCanExecuteChanged()
-        {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-        }
+        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
     }
 }

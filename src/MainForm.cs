@@ -24,25 +24,25 @@ namespace MinimalFirewall
     public partial class MainForm : Form
     {
         #region Fields
-        private readonly FirewallDataService _dataService;
-        private readonly FirewallActionsService _actionsService;
-        private readonly FirewallEventListenerService _eventListenerService;
-        private readonly FirewallSentryService _firewallSentryService;
-        private readonly FirewallRuleService _firewallRuleService;
-        private readonly UserActivityLogger _activityLogger;
-        private readonly WildcardRuleService _wildcardRuleService;
-        private readonly ForeignRuleTracker _foreignRuleTracker;
-        private readonly AppSettings _appSettings;
-        private readonly StartupService _startupService;
-        private readonly FirewallGroupManager _groupManager;
-        private readonly IconService _iconService;
-        private readonly PublisherWhitelistService _whitelistService;
-        private readonly BackgroundFirewallTaskService _backgroundTaskService;
-        private readonly MainViewModel _mainViewModel;
+        private FirewallDataService _dataService;
+        private FirewallActionsService _actionsService;
+        private FirewallEventListenerService _eventListenerService;
+        private FirewallSentryService _firewallSentryService;
+        private FirewallRuleService _firewallRuleService;
+        private UserActivityLogger _activityLogger;
+        private WildcardRuleService _wildcardRuleService;
+        private ForeignRuleTracker _foreignRuleTracker;
+        private AppSettings _appSettings;
+        private StartupService _startupService;
+        private FirewallGroupManager _groupManager;
+        private IconService _iconService;
+        private PublisherWhitelistService _whitelistService;
+        private BackgroundFirewallTaskService _backgroundTaskService;
+        private MainViewModel _mainViewModel;
         private readonly Queue<PendingConnectionViewModel> _popupQueue = [];
         private volatile bool _isPopupVisible = false;
         private readonly object _popupLock = new();
-        private readonly DarkModeCS dm;
+        private DarkModeCS dm;
         private System.Threading.Timer? _autoRefreshTimer;
         private readonly Dictionary<string, System.Threading.Timer> _tabUnloadTimers = [];
         private Image? _lockedGreenIcon;
@@ -75,8 +75,11 @@ namespace MinimalFirewall
             _startMinimized = startMinimized;
             InitializeComponent();
 
+            // UI Initialization
             this.Opacity = 0;
             this.ShowInTaskbar = false;
+            this.DoubleBuffered = true;
+            this.Text = "Minimal Firewall";
 
             using (Graphics g = this.CreateGraphics())
             {
@@ -89,63 +92,25 @@ namespace MinimalFirewall
                 }
             }
 
-            this.DoubleBuffered = true;
-            this.Text = "Minimal Firewall";
-
+            // Configuration & Theme
             ConfigPathManager.EnsureStorageDirectoryExists();
             _appSettings = AppSettings.Load();
             dm = new DarkModeCS(this);
-
-            // Fixed CS8602: Safe navigation for components
             if (this.components != null)
             {
                 dm.Components = this.components.Components;
             }
 
-            _startupService = new StartupService();
-            _groupManager = new FirewallGroupManager();
-            // Fixed IDE0017: Object initialization simplified
-            _iconService = new IconService { ImageList = this.appIconList };
-            _whitelistService = new PublisherWhitelistService();
-            _firewallRuleService = new FirewallRuleService();
-            _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
-            _wildcardRuleService = new WildcardRuleService();
-            _foreignRuleTracker = new ForeignRuleTracker();
-            var uwpService = new UwpService(_firewallRuleService);
-            _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService);
-            _firewallSentryService = new FirewallSentryService(_firewallRuleService);
-            var trafficMonitorViewModel = new TrafficMonitorViewModel();
+            InitializeServices();
 
-            // Fixed CS8604: Pass null! to satisfy the compiler for the circular dependency with BackgroundTaskService. 
-            // BackgroundTaskService is initialized immediately after and logic should handle the brief null state or order logic.
-            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService, null!);
-
-            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
-            _eventListenerService.ActionsService = _actionsService;
-
-            _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService, _dataService);
-            _actionsService.BackgroundTaskService = _backgroundTaskService;
-
-            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
-
+            // Event Subscriptions
             _backgroundTaskService.QueueCountChanged += OnQueueCountChanged;
             _backgroundTaskService.WildcardRulesChanged += OnWildcardRulesChanged;
             _mainViewModel.PopupRequired += OnPopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
-
-            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _backgroundTaskService);
-            rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
-            wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
-            auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
-            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
-
-            string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _mainViewModel.SystemChangesUpdated += () => {
                 UpdateUiWithChangesCount();
             };
-
-            settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, versionInfo, dm);
 
             settingsControl1.ThemeChanged += UpdateThemeAndColors;
             settingsControl1.IconVisibilityChanged += UpdateIconColumnVisibility;
@@ -159,29 +124,57 @@ namespace MinimalFirewall
             rescanButton.BringToFront();
         }
 
+        private void InitializeServices()
+        {
+            _startupService = new StartupService();
+            _groupManager = new FirewallGroupManager();
+            _iconService = new IconService { ImageList = this.appIconList };
+            _whitelistService = new PublisherWhitelistService();
+            _firewallRuleService = new FirewallRuleService();
+            _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
+            _wildcardRuleService = new WildcardRuleService();
+            _foreignRuleTracker = new ForeignRuleTracker();
+
+            var uwpService = new UwpService(_firewallRuleService);
+            _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService);
+            _firewallSentryService = new FirewallSentryService(_firewallRuleService);
+            var trafficMonitorViewModel = new TrafficMonitorViewModel();
+
+            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService, null!);
+
+            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
+            _eventListenerService.ActionsService = _actionsService;
+
+            _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService, _dataService);
+            _actionsService.BackgroundTaskService = _backgroundTaskService;
+
+            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
+
+            // Initialize UI Controls with Services
+            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _backgroundTaskService);
+            rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
+            wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
+            auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
+            groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
+            liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
+
+            settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3), dm);
+        }
+
         private void OnQueueCountChanged(int count)
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(() => OnQueueCountChanged(count));
-                return;
-            }
-
-            if (count == 0)
-            {
-                _mainViewModel.ClearRulesCache();
-            }
+                if (count == 0)
+                {
+                    _mainViewModel.ClearRulesCache();
+                }
+            });
         }
 
         private void OnWildcardRulesChanged()
         {
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new Action(OnWildcardRulesChanged));
-                return;
-            }
-
-            wildcardRulesControl1.LoadRules();
+            SafeInvoke(() => wildcardRulesControl1.LoadRules());
         }
 
         protected override void OnLoad(EventArgs e)
@@ -190,6 +183,12 @@ namespace MinimalFirewall
             UpdateThemeAndColors();
             ApplyLastWindowState();
         }
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _cachedArrowPen?.Dispose();
+            base.OnFormClosed(e);
+        }
+
 
         protected override async void OnShown(EventArgs e)
         {
@@ -228,7 +227,6 @@ namespace MinimalFirewall
             else
             {
                 Hide();
-                // Fixed CS4014: Using discard to suppress warning for fire-and-forget async call
                 _ = PrepareForTrayAsync();
             }
 
@@ -254,7 +252,37 @@ namespace MinimalFirewall
             UpdateIconColumnVisibility();
         }
 
-        // Fixed CA1822: Member marked as static
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            LayoutButtons();
+        }
+
+        private void LayoutButtons()
+        {
+            if (lockdownButton == null || rescanButton == null) return;
+
+            lockdownButton.Text = string.Empty;
+            rescanButton.Text = string.Empty;
+            lockdownButton.AutoSize = false;
+            rescanButton.AutoSize = false;
+
+            using (var g = this.CreateGraphics())
+            {
+                float dpiScale = g.DpiY / 96f;
+                int scaledSize = (int)(40 * dpiScale);
+
+                lockdownButton.Size = new Size(scaledSize, scaledSize);
+                rescanButton.Size = new Size(scaledSize, scaledSize);
+
+                int rescanX = (int)(15 * dpiScale);
+                int lockdownX = (int)(65 * dpiScale);
+
+                rescanButton.Left = rescanX;
+                lockdownButton.Left = lockdownX;
+            }
+        }
+
         private static Icon CreateRecoloredIcon(Icon originalIcon, Color color)
         {
             using var bmp = originalIcon.ToBitmap();
@@ -311,23 +339,8 @@ namespace MinimalFirewall
                 _refreshWhiteIcon = DarkModeCS.RecolorImage(refreshIcon, Color.White);
             }
 
-            lockdownButton!.Text = string.Empty;
-            rescanButton.Text = string.Empty;
-            lockdownButton.AutoSize = false;
-            rescanButton.AutoSize = false;
-            using (var g = this.CreateGraphics())
-            {
-                float dpiScale = g.DpiY / 96f;
-                int scaledSize = (int)(40 * dpiScale);
-                lockdownButton.Size = new Size(scaledSize, scaledSize);
-                rescanButton.Size = new Size(scaledSize, scaledSize);
+            LayoutButtons();
 
-                int rescanX = (int)(15 * dpiScale);
-                int lockdownX = (int)(65 * dpiScale);
-
-                rescanButton.Left = rescanX;
-                lockdownButton.Left = lockdownX;
-            }
             lockdownButton.Image = null;
             rescanButton.Image = null;
             using (var stream = assembly.GetManifestResourceStream("MinimalFirewall.logo.png"))
@@ -342,12 +355,20 @@ namespace MinimalFirewall
 
         #region Settings and Theme
 
+        private Pen? _cachedArrowPen;
+
         private void UpdateThemeAndColors()
         {
             this.SuspendLayout();
             bool isDark = _appSettings.Theme == "Dark";
+
             dm.ColorMode = isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
             dm.ApplyTheme(isDark);
+
+            _cachedArrowPen?.Dispose();
+            Color arrowColor = isDark ? Color.White : Color.Black;
+            _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
+
             rulesControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
             settingsControl1.ApplyTheme(isDark, dm);
@@ -399,48 +420,42 @@ namespace MinimalFirewall
 
         private void UpdateUiWithChangesCount()
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(new Action(UpdateUiWithChangesCount));
-                return;
-            }
-
-            if (_appSettings.AlertOnForeignRules && _mainViewModel.UnseenSystemChangesCount > 0)
-            {
-                systemChangesTabPage.Text = "Audit";
-                dm.SetNotificationCount(systemChangesTabPage, _mainViewModel.UnseenSystemChangesCount);
-            }
-            else
-            {
-                systemChangesTabPage.Text = "Audit";
-                dm.SetNotificationCount(systemChangesTabPage, 0);
-            }
-            UpdateTrayStatus();
+                if (_appSettings.AlertOnForeignRules && _mainViewModel.UnseenSystemChangesCount > 0)
+                {
+                    systemChangesTabPage.Text = "Audit";
+                    dm.SetNotificationCount(systemChangesTabPage, _mainViewModel.UnseenSystemChangesCount);
+                }
+                else
+                {
+                    systemChangesTabPage.Text = "Audit";
+                    dm.SetNotificationCount(systemChangesTabPage, 0);
+                }
+                UpdateTrayStatus();
+            });
         }
 
         private void OnPopupRequired(PendingConnectionViewModel pending)
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(() => OnPopupRequired(pending));
-                return;
-            }
-
-            bool alreadyInPopupQueue = _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
-            if (alreadyInPopupQueue)
-            {
-                _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (in popup queue)");
-                return;
-            }
-
-            if (_appSettings.IsPopupsEnabled)
-            {
-                lock (_popupLock)
+                bool alreadyInPopupQueue = _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+                if (alreadyInPopupQueue)
                 {
-                    _popupQueue.Enqueue(pending);
+                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (in popup queue)");
+                    return;
                 }
-                BeginInvoke(new Action(ProcessNextPopup));
-            }
+
+                if (_appSettings.IsPopupsEnabled)
+                {
+                    lock (_popupLock)
+                    {
+                        _popupQueue.Enqueue(pending);
+                    }
+                    BeginInvoke(new Action(ProcessNextPopup));
+                }
+            });
         }
 
         private void ProcessNextPopup()
@@ -533,47 +548,44 @@ namespace MinimalFirewall
 
         private void OnDashboardActionProcessed(PendingConnectionViewModel processedConnection)
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(() => OnDashboardActionProcessed(processedConnection));
-                return;
-            }
-
-            NotifierForm? notifierToClose = null;
-            lock (_popupLock)
-            {
-                var newQueue = new Queue<PendingConnectionViewModel>(
-                    _popupQueue.Where(p =>
-                        !(p.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                           p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
-                    )
-                );
-                _popupQueue.Clear();
-                foreach (var item in newQueue)
+                NotifierForm? notifierToClose = null;
+                lock (_popupLock)
                 {
-                    _popupQueue.Enqueue(item);
-                }
-
-                if (_isPopupVisible)
-                {
-                    var activeNotifier = Application.OpenForms.OfType<NotifierForm>().FirstOrDefault();
-                    if (activeNotifier != null)
+                    var newQueue = new Queue<PendingConnectionViewModel>(
+                        _popupQueue.Where(p =>
+                            !(p.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                               p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                        )
+                    );
+                    _popupQueue.Clear();
+                    foreach (var item in newQueue)
                     {
-                        var pendingInPopup = activeNotifier.PendingConnection;
-                        if (pendingInPopup.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                            pendingInPopup.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                        _popupQueue.Enqueue(item);
+                    }
+
+                    if (_isPopupVisible)
+                    {
+                        var activeNotifier = Application.OpenForms.OfType<NotifierForm>().FirstOrDefault();
+                        if (activeNotifier != null)
                         {
-                            notifierToClose = activeNotifier;
+                            var pendingInPopup = activeNotifier.PendingConnection;
+                            if (pendingInPopup.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                                pendingInPopup.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                            {
+                                notifierToClose = activeNotifier;
+                            }
                         }
                     }
                 }
-            }
 
-            if (notifierToClose != null)
-            {
-                notifierToClose.Result = NotifierForm.NotifierResult.Ignore;
-                notifierToClose.Close();
-            }
+                if (notifierToClose != null)
+                {
+                    notifierToClose.Result = NotifierForm.NotifierResult.Ignore;
+                    notifierToClose.Close();
+                }
+            });
         }
         #endregion
 
@@ -734,7 +746,6 @@ namespace MinimalFirewall
                 {
                     notifyIcon.Visible = true;
                 }
-                // Fixed CS4014: Using discard
                 _ = PrepareForTrayAsync();
             }
             else
@@ -832,9 +843,15 @@ namespace MinimalFirewall
         public async Task ForceDataRefreshAsync(bool forceUwpScan = false, bool showStatus = true, StatusForm? statusFormInstance = null)
         {
             if (_isRefreshingData) return;
-            _scanCts?.Cancel();
+
+            if (_scanCts != null)
+            {
+                _scanCts.Cancel();
+                _scanCts.Dispose();
+            }
             _scanCts = new CancellationTokenSource();
             var token = _scanCts.Token;
+
             StatusForm? statusForm = null;
             try
             {
@@ -886,35 +903,34 @@ namespace MinimalFirewall
 
         private void UpdateUIForRefresh(bool showStatus)
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(() => UpdateUIForRefresh(showStatus));
-                return;
-            }
-
-            rescanButton.Text = "Refreshing...";
-            rescanButton.Enabled = false;
-            lockdownButton.Enabled = false;
+                rescanButton.Text = "Refreshing...";
+                rescanButton.Enabled = false;
+                lockdownButton.Enabled = false;
+            });
         }
 
         private void UpdateUIAfterRefresh(bool showStatus)
         {
-            if (this.InvokeRequired)
+            SafeInvoke(() =>
             {
-                this.Invoke(() => UpdateUIAfterRefresh(showStatus));
-                return;
-            }
-
-            rescanButton.Text = "";
-            rescanButton.Enabled = true;
-            lockdownButton.Enabled = true;
+                rescanButton.Text = "";
+                rescanButton.Enabled = true;
+                lockdownButton.Enabled = true;
+            });
         }
 
         private async Task ScanForSystemChangesAsync(bool showStatusWindow = false, IProgress<int>? progress = null, CancellationToken token = default)
         {
             if (token == default)
             {
-                _scanCts?.Cancel();
+           
+                if (_scanCts != null)
+                {
+                    _scanCts.Cancel();
+                    _scanCts.Dispose();
+                }
                 _scanCts = new CancellationTokenSource();
                 token = _scanCts.Token;
             }
@@ -953,9 +969,15 @@ namespace MinimalFirewall
             }
 
             if (_isRefreshingData) return;
-            _scanCts?.Cancel();
+
+            if (_scanCts != null)
+            {
+                _scanCts.Cancel();
+                _scanCts.Dispose();
+            }
             _scanCts = new CancellationTokenSource();
             var token = _scanCts.Token;
+
             StatusForm? statusForm = null;
             try
             {
@@ -975,7 +997,6 @@ namespace MinimalFirewall
             }
             catch (OperationCanceledException)
             {
-
             }
             finally
             {
@@ -1043,7 +1064,6 @@ namespace MinimalFirewall
             if (e.TabPage == null) return;
             _scanCts?.Cancel();
 
-            // Fixed IDE0300: Collection initialization simplified
             string[] tabsToUnload = ["rulesTabPage", "systemChangesTabPage", "groupsTabPage", "liveConnectionsTabPage", "wildcardRulesTabPage"];
             if (tabsToUnload.Contains(e.TabPage.Name))
             {
@@ -1157,15 +1177,20 @@ namespace MinimalFirewall
 
         private void ArrowPictureBox_Paint(object sender, PaintEventArgs e)
         {
+            if (_cachedArrowPen == null)
+            {
+                Color arrowColor = (_appSettings.Theme == "Dark") ? Color.White : Color.Black;
+                _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
+            }
+
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            Color arrowColor = (_appSettings.Theme == "Dark") ? Color.White : Color.Black;
-            using var arrowPen = new Pen(arrowColor, 2.5f);
-            arrowPen.EndCap = LineCap.ArrowAnchor;
+
             Point startPoint = new(arrowPictureBox.Width - 1, 0);
             Point endPoint = new(5, arrowPictureBox.Height - 5);
             Point controlPoint1 = new(arrowPictureBox.Width - 5, arrowPictureBox.Height / 2);
             Point controlPoint2 = new(arrowPictureBox.Width / 2, arrowPictureBox.Height);
-            e.Graphics.DrawBezier(arrowPen, startPoint, controlPoint1, controlPoint2, endPoint);
+
+            e.Graphics.DrawBezier(_cachedArrowPen, startPoint, controlPoint1, controlPoint2, endPoint);
         }
 
         private void LockdownButton_MouseEnter(object? sender, EventArgs e)
@@ -1188,7 +1213,6 @@ namespace MinimalFirewall
             rescanButton.Invalidate();
         }
 
-        // Fixed CA1822: Member marked as static
         private static Image RecolorImage(Image sourceImage, Color newColor)
         {
             var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height);
@@ -1251,5 +1275,22 @@ namespace MinimalFirewall
             }
         }
         #endregion
+
+        #region Helpers
+
+        private void SafeInvoke(Action action)
+        {
+            if (this.Disposing || this.IsDisposed || !this.IsHandleCreated) return;
+
+            if (this.InvokeRequired)
+            {
+                this.Invoke(action);
+            }
+            else
+            {
+                action();
+            }
+        }
+        #endregion 
     }
 }

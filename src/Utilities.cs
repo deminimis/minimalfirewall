@@ -30,6 +30,11 @@ namespace MinimalFirewall
 
     public static class ValidationUtility
     {
+        private static readonly HashSet<string> _reservedKeywords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "LocalSubnet", "DNS", "DHCP", "WINS", "DefaultGateway"
+        };
+
         public static bool ValidatePortString(string portString, out string errorMessage)
         {
             errorMessage = string.Empty;
@@ -73,11 +78,7 @@ namespace MinimalFirewall
                 var trimmedPart = part.Trim();
                 if (string.IsNullOrEmpty(trimmedPart)) continue;
 
-                if (trimmedPart.Equals("LocalSubnet", StringComparison.OrdinalIgnoreCase) ||
-                    trimmedPart.Equals("DNS", StringComparison.OrdinalIgnoreCase) ||
-                    trimmedPart.Equals("DHCP", StringComparison.OrdinalIgnoreCase) ||
-                    trimmedPart.Equals("WINS", StringComparison.OrdinalIgnoreCase) ||
-                    trimmedPart.Equals("DefaultGateway", StringComparison.OrdinalIgnoreCase))
+                if (_reservedKeywords.Contains(trimmedPart))
                 {
                     continue;
                 }
@@ -137,7 +138,7 @@ namespace MinimalFirewall
                 var driveLetters = Directory.GetLogicalDrives().Select(d => d[0..2]);
                 foreach (var drive in driveLetters)
                 {
-                    var targetPath = new StringBuilder(260);
+                    var targetPath = new StringBuilder(4096);
                     if (QueryDosDevice(drive, targetPath, targetPath.Capacity) != 0)
                     {
                         string rawDevicePath = targetPath.ToString();

@@ -2,6 +2,7 @@
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -27,7 +28,8 @@ namespace MinimalFirewall
         private readonly UserActivityLogger _activityLogger;
         private readonly FirewallActionsService _actionsService;
         private readonly FirewallSnapshotService _snapshotService;
-        private readonly Dictionary<uint, (string Name, string Path, string ServiceName)> _processCache = [];
+
+        private readonly ConcurrentDictionary<uint, (string Name, string Path, string ServiceName)> _processCache = new();
 
         private readonly System.Threading.Timer? _sentryRefreshDebounceTimer;
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
@@ -41,7 +43,7 @@ namespace MinimalFirewall
         public event Action? SystemChangesUpdated;
         public event Action<PendingConnectionViewModel>? PopupRequired;
         public event Action<PendingConnectionViewModel>? DashboardActionProcessed;
-        public event Action<string>? StatusTextChanged; 
+        public event Action<string>? StatusTextChanged;
 
         public MainViewModel(
             FirewallRuleService firewallRuleService,
@@ -78,6 +80,7 @@ namespace MinimalFirewall
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+
         public void ClearRulesCache()
         {
             _dataService.InvalidateRuleCache();
@@ -110,15 +113,16 @@ namespace MinimalFirewall
 
                 var currentPids = connections.Select(c => c.ProcessId).Distinct().ToHashSet();
 
-                foreach (var cachedPid in _processCache.Keys.ToList())
+                // Cleanup old PIDs from cache
+                foreach (var cachedPid in _processCache.Keys.ToArray())
                 {
                     if (!currentPids.Contains(cachedPid))
                     {
-                        _processCache.Remove(cachedPid);
+                        _processCache.TryRemove(cachedPid, out _);
                     }
                 }
 
-                // Find new PIDs
+                // Resolve new PIDs
                 var pidsToResolve = currentPids.Where(pid => !_processCache.ContainsKey(pid)).ToList();
                 int totalToResolve = pidsToResolve.Count > 0 ? pidsToResolve.Count : 1;
                 int resolvedCount = 0;
@@ -126,36 +130,10 @@ namespace MinimalFirewall
                 foreach (var pid in pidsToResolve)
                 {
                     if (token.IsCancellationRequested) break;
-                    (string Name, string Path, string ServiceName) info;
-                    try
-                    {
-                        using var p = Process.GetProcessById((int)pid);
-                        string name = p.ProcessName;
-                        string path = string.Empty;
-                        string serviceName = string.Empty;
-                        try
-                        {
-                            if (p.MainModule != null) path = p.MainModule.FileName;
-                        }
-                        catch (Win32Exception) { path = "N/A (Access Denied)"; }
-                        catch { }
 
-                        if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
-                        {
-                            serviceName = SystemDiscoveryService.GetServicesByPID(pid.ToString());
-                        }
-                        info = (name, path, serviceName);
-                    }
-                    catch (ArgumentException)
-                    {
-                        info = ("(Exited)", string.Empty, string.Empty);
-                    }
-                    catch
-                    {
-                        info = (pid == 4 ? "System" : "Unknown", string.Empty, string.Empty);
-                    }
-
+                    var info = ResolveProcessInfo(pid);
                     _processCache[pid] = info;
+
                     resolvedCount++;
                     int currentProgress = 20 + (resolvedCount * 60 / totalToResolve);
                     progress?.Report(currentProgress);
@@ -182,6 +160,41 @@ namespace MinimalFirewall
             TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>(vms);
         }
 
+        private (string Name, string Path, string ServiceName) ResolveProcessInfo(uint pid)
+        {
+            try
+            {
+                if (pid == 0) return ("System Idle", string.Empty, string.Empty);
+                if (pid == 4) return ("System", string.Empty, string.Empty);
+
+                using var p = Process.GetProcessById((int)pid);
+                string name = p.ProcessName;
+                string path = string.Empty;
+                string serviceName = string.Empty;
+
+                try
+                {
+                    if (p.MainModule != null) path = p.MainModule.FileName;
+                }
+                catch (Win32Exception) { path = "N/A (Access Denied)"; }
+                catch { }
+
+                if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
+                {
+                    serviceName = SystemDiscoveryService.GetServicesByPID(pid.ToString());
+                }
+                return (name, path, serviceName);
+            }
+            catch (ArgumentException)
+            {
+                return ("(Exited)", string.Empty, string.Empty);
+            }
+            catch
+            {
+                return ("Unknown", string.Empty, string.Empty);
+            }
+        }
+
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
         {
             IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
@@ -205,6 +218,12 @@ namespace MinimalFirewall
 
             VirtualRulesData = new SortableBindingList<AggregatedRuleViewModel>(filteredRules.ToList());
             RulesListUpdated?.Invoke();
+        }
+
+        private void AddRuleAndRefresh(AggregatedRuleViewModel newRule)
+        {
+            AllAggregatedRules.Add(newRule);
+            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
         }
 
         private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
@@ -281,8 +300,7 @@ namespace MinimalFirewall
                     Profiles = "All",
                     ProtocolName = "Any"
                 };
-                AllAggregatedRules.Add(newAggregatedRule);
-                ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+                AddRuleAndRefresh(newAggregatedRule);
             }
 
             DashboardActionProcessed?.Invoke(pending);
@@ -501,8 +519,7 @@ namespace MinimalFirewall
                 Type = vm.Type,
                 UnderlyingRules = [vm]
             };
-            AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            AddRuleAndRefresh(newAggregatedRule);
         }
 
         public void CreateProgramRule(string appPath, string action)
@@ -531,8 +548,8 @@ namespace MinimalFirewall
                 Description = "N/A",
                 ServiceName = "N/A"
             };
-            AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            AddRuleAndRefresh(newAggregatedRule);
+
             var payload = new ApplyApplicationRulePayload { AppPaths = [appPath], Action = action };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload, $"Applying {action} to {Path.GetFileName(appPath)}"));
         }
@@ -550,8 +567,15 @@ namespace MinimalFirewall
 
         private async void DebouncedSentryRefresh(object? state)
         {
-            _activityLogger.LogDebug("Sentry: Debounce timer elapsed. Checking for foreign rules.");
-            await ScanForSystemChangesAsync(CancellationToken.None);
+            try
+            {
+                _activityLogger.LogDebug("Sentry: Debounce timer elapsed. Checking for foreign rules.");
+                await ScanForSystemChangesAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("Error during sentry refresh", ex);
+            }
         }
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
@@ -593,6 +617,7 @@ namespace MinimalFirewall
             };
             var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload, $"Creating rule for {pending.FileName}"));
+
             var newAggregatedRule = new AggregatedRuleViewModel
             {
                 Name = vm.Name,
@@ -611,8 +636,7 @@ namespace MinimalFirewall
                 Type = vm.Type,
                 UnderlyingRules = [vm]
             };
-            AllAggregatedRules.Add(newAggregatedRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            AddRuleAndRefresh(newAggregatedRule);
 
             DashboardActionProcessed?.Invoke(pending);
         }

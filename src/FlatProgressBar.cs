@@ -103,6 +103,8 @@ namespace DarkModeForms
                 min = value;
                 if (min > max) max = min;
                 if (val < min) val = min;
+
+                base.Minimum = min;
                 Invalidate();
             }
         }
@@ -115,6 +117,8 @@ namespace DarkModeForms
                 max = value;
                 if (max < min) min = max;
                 if (val > max) val = max;
+
+                base.Maximum = max;
                 Invalidate();
             }
         }
@@ -128,13 +132,15 @@ namespace DarkModeForms
                 val = value;
                 if (val < min) val = min;
                 if (val > max) val = max;
+
+                base.Value = val;
                 if (val != oldValue) Invalidate();
             }
         }
 
         private void Draw3DBorder(Graphics g)
         {
-            int penWidth = (int)(1 * (g.DpiX / 96f)); 
+            int penWidth = (int)(1 * (g.DpiX / 96f));
             if (penWidth < 1) penWidth = 1;
 
             using (Pen pen = new Pen(Color.DarkGray, penWidth))

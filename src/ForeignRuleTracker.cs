@@ -1,5 +1,4 @@
-﻿// File: ForeignRuleTracker.cs
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Diagnostics;
@@ -10,6 +9,8 @@ namespace MinimalFirewall
     {
         private readonly string _baselinePath;
         private HashSet<string> _acknowledgedRuleNames = new(StringComparer.OrdinalIgnoreCase);
+        // Lock object for thread safety
+        private readonly object _lock = new();
 
         public ForeignRuleTracker()
         {
@@ -19,52 +20,71 @@ namespace MinimalFirewall
 
         private void LoadAcknowledgedRules()
         {
-            try
+            lock (_lock)
             {
-                if (File.Exists(_baselinePath))
+                try
                 {
-                    string json = File.ReadAllText(_baselinePath);
-                    _acknowledgedRuleNames = JsonSerializer.Deserialize(json, ForeignRuleTrackerJsonContext.Default.HashSetString) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (File.Exists(_baselinePath))
+                    {
+                        string json = File.ReadAllText(_baselinePath);
+                        var loaded = JsonSerializer.Deserialize(json, ForeignRuleTrackerJsonContext.Default.HashSetString);
+                        _acknowledgedRuleNames = loaded ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] Failed to load foreign rule baseline: {ex.Message}");
-                _acknowledgedRuleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to load foreign rule baseline: {ex.Message}");
+                    _acknowledgedRuleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
             }
         }
 
         private void Save()
         {
-            try
+            lock (_lock)
             {
-                string json = JsonSerializer.Serialize(_acknowledgedRuleNames, ForeignRuleTrackerJsonContext.Default.HashSetString);
-                File.WriteAllText(_baselinePath, json);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] Failed to save foreign rule baseline: {ex.Message}");
+                try
+                {
+                    string json = JsonSerializer.Serialize(_acknowledgedRuleNames, ForeignRuleTrackerJsonContext.Default.HashSetString);
+
+                    // Write to a temp file first to prevent corruption on crash
+                    string tempPath = _baselinePath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+
+                    // Atomic move/overwrite
+                    File.Move(tempPath, _baselinePath, overwrite: true);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[ERROR] Failed to save foreign rule baseline: {ex.Message}");
+                }
             }
         }
 
         public void Clear()
         {
-            _acknowledgedRuleNames.Clear();
-            Save();
+            lock (_lock)
+            {
+                _acknowledgedRuleNames.Clear();
+                Save();
+            }
         }
 
         public bool IsAcknowledged(string ruleName)
         {
-            return _acknowledgedRuleNames.Contains(ruleName);
+            lock (_lock)
+            {
+                return _acknowledgedRuleNames.Contains(ruleName);
+            }
         }
 
         public void AcknowledgeRules(IEnumerable<string> ruleNames)
         {
-            foreach (var name in ruleNames)
+            lock (_lock)
             {
-                _acknowledgedRuleNames.Add(name);
+                _acknowledgedRuleNames.UnionWith(ruleNames);
+                Save();
             }
-            Save();
         }
     }
 

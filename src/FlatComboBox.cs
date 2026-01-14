@@ -41,7 +41,6 @@ namespace DarkModeForms
 
         public FlatComboBox()
         {
-            // double buffering to reduce flicker
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
 
@@ -65,10 +64,6 @@ namespace DarkModeForms
                     if (dropDownButtonWidth < Scale(12, g)) dropDownButtonWidth = Scale(16, g);
 
                     var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
-
-                    using (var backBrush = new SolidBrush(this.Enabled ? this.BackColor : SystemColors.Control))
-                    {
-                    }
 
                     #region DropDown Button
                     using (var b = new SolidBrush(Enabled ? ButtonColor : SystemColors.Control))
@@ -99,12 +94,11 @@ namespace DarkModeForms
                         Rectangle borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
                         g.DrawRectangle(p, borderRect);
 
-                        // Divider line for button
                         g.DrawLine(p, dropDownRect.Left, dropDownRect.Top, dropDownRect.Left, dropDownRect.Bottom);
                     }
                     #endregion
                 }
-                return; 
+                return;
             }
 
             base.WndProc(ref m);

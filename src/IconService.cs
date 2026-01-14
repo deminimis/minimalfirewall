@@ -39,6 +39,7 @@ namespace MinimalFirewall
 
         private const uint SHGFI_ICON = 0x000000100;
         private const uint SHGFI_LARGEICON = 0x000000000;
+        private const uint SHGFI_SMALLICON = 0x000000001;
         #endregion
 
         public ImageList? ImageList
@@ -74,7 +75,8 @@ namespace MinimalFirewall
                 }
                 _imageList.Images.Add("default", (Bitmap)bmp.Clone());
                 bmp.Dispose();
-                _defaultIconIndex = _imageList.Images.IndexOfKey("default");
+
+                _defaultIconIndex = _imageList.Images.Count - 1;
             }
             catch (Exception ex)
             {
@@ -91,7 +93,7 @@ namespace MinimalFirewall
                 {
                     Image systemImage = _imageList.Images["advanced.png"];
                     _imageList.Images.Add("system_icon", systemImage);
-                    _systemIconIndex = _imageList.Images.IndexOfKey("system_icon");
+                    _systemIconIndex = _imageList.Images.Count - 1;
                 }
                 else
                 {
@@ -122,11 +124,16 @@ namespace MinimalFirewall
                 return _systemIconIndex;
             }
 
+            // Check ImageList size to request the correct icon size
+            uint iconSizeFlag = _imageList.ImageSize.Width <= 16 ? SHGFI_SMALLICON : SHGFI_LARGEICON;
+
             IntPtr hIcon = IntPtr.Zero;
             try
             {
                 var shinfo = new SHFILEINFO();
-                const uint flags = SHGFI_ICON | SHGFI_LARGEICON;
+                // Add the size flag to the standard icon flag
+                uint flags = SHGFI_ICON | iconSizeFlag;
+
                 SHGetFileInfo(filePath, 0, ref shinfo, (uint)Marshal.SizeOf(shinfo), flags);
                 hIcon = shinfo.hIcon;
 
@@ -135,7 +142,7 @@ namespace MinimalFirewall
                     Icon icon = (Icon)Icon.FromHandle(hIcon).Clone();
                     _imageList.Images.Add(filePath, icon);
 
-                    int newIndex = _imageList.Images.IndexOfKey(filePath);
+                    int newIndex = _imageList.Images.Count - 1;
                     _iconCache[filePath] = newIndex;
                     return newIndex;
                 }
@@ -159,7 +166,8 @@ namespace MinimalFirewall
                     if (icon != null)
                     {
                         _imageList.Images.Add(filePath, (Icon)icon.Clone());
-                        int newIndex = _imageList.Images.IndexOfKey(filePath);
+
+                        int newIndex = _imageList.Images.Count - 1;
                         _iconCache[filePath] = newIndex;
                         return newIndex;
                     }
@@ -182,18 +190,23 @@ namespace MinimalFirewall
                 return;
             }
 
+            var keysToRemove = new List<string>();
             foreach (var key in _iconCache.Keys)
             {
                 if (key != "default" && key != "system_icon")
                 {
-                    if (_imageList.Images.ContainsKey(key))
-                    {
-                        _imageList.Images.RemoveByKey(key);
-                    }
+                    keysToRemove.Add(key);
+                }
+            }
+
+            foreach (var key in keysToRemove)
+            {
+                if (_imageList.Images.ContainsKey(key))
+                {
+                    _imageList.Images.RemoveByKey(key);
                 }
             }
             _iconCache.Clear();
         }
     }
 }
-

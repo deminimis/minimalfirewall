@@ -22,6 +22,13 @@ namespace MinimalFirewall
 
         private SortableBindingList<TcpConnectionViewModel> _sortableList = new();
 
+        // Cached GDI+ objects 
+        private static readonly Brush HoverOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+        private static readonly Color EstablishedColor = Color.FromArgb(204, 255, 204);
+        private static readonly Color ListenColor = Color.FromArgb(255, 255, 204);
+
+        private int _hoveredRowIndex = -1;
+
         public LiveConnectionsControl()
         {
             InitializeComponent();
@@ -58,35 +65,28 @@ namespace MinimalFirewall
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
             UpdateEnabledState();
-            ApplySavedSorting();
             UpdateLiveConnectionsView();
         }
 
-        private void LiveConnectionsDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
+        private void UnsubscribeEvents()
         {
-            if (e.RowIndex >= _sortableList.Count || e.RowIndex < 0) return;
-            var conn = _sortableList[e.RowIndex];
-
-            switch (liveConnectionsDataGridView.Columns[e.ColumnIndex].Name)
+            if (_viewModel != null)
             {
-                case "connIconColumn":
-                    if (_appSettings != null && _appSettings.ShowAppIcons && !string.IsNullOrEmpty(conn.ProcessPath))
-                    {
-                        int iconIndex = _iconService.GetIconIndex(conn.ProcessPath);
-                        if (iconIndex != -1 && _iconService.ImageList != null)
-                        {
-                            e.Value = _iconService.ImageList.Images[iconIndex];
-                        }
-                    }
-                    break;
-                case "connNameColumn": e.Value = conn.DisplayName; break;
-                case "connStateColumn": e.Value = conn.State; break;
-                case "connLocalAddrColumn": e.Value = conn.LocalAddress; break;
-                case "connLocalPortColumn": e.Value = conn.LocalPort; break;
-                case "connRemoteAddrColumn": e.Value = conn.RemoteAddress; break;
-                case "connRemotePortColumn": e.Value = conn.RemotePort; break;
-                case "connPathColumn": e.Value = conn.ProcessPath; break;
+                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
             }
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            UnsubscribeEvents();
+            base.OnHandleDestroyed(e);
+        }
+
+        public void OnTabDeselected()
+        {
+            UnsubscribeEvents();
+            if (_viewModel != null) _viewModel.StopMonitoring();
+            UpdateEnabledState();
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -95,7 +95,7 @@ namespace MinimalFirewall
             {
                 if (this.InvokeRequired)
                 {
-                    this.Invoke(new Action(() => UpdateLiveConnectionsView()));
+                    this.Invoke(new Action(UpdateLiveConnectionsView));
                 }
                 else
                 {
@@ -116,8 +116,15 @@ namespace MinimalFirewall
         {
             if (_viewModel == null) return;
 
+            string? selectedIdentifier = null;
+            if (TryGetSelectedConnection(out var currentConn) && currentConn != null)
+            {
+                selectedIdentifier = currentConn.ProcessPath + currentConn.RemotePort;
+            }
+
             var newList = _viewModel.ActiveConnections.ToList();
 
+            // apply sorting
             if (_appSettings != null)
             {
                 int sortCol = _appSettings.LiveConnectionsSortColumn;
@@ -150,13 +157,49 @@ namespace MinimalFirewall
 
             liveConnectionsDataGridView.RowCount = _sortableList.Count;
             liveConnectionsDataGridView.Invalidate();
+
+            if (selectedIdentifier != null)
+            {
+                var itemToSelect = _sortableList.FirstOrDefault(x => (x.ProcessPath + x.RemotePort) == selectedIdentifier);
+                if (itemToSelect != null)
+                {
+                    int newIndex = _sortableList.IndexOf(itemToSelect);
+                    if (newIndex >= 0 && newIndex < liveConnectionsDataGridView.RowCount)
+                    {
+                        liveConnectionsDataGridView.ClearSelection();
+                        liveConnectionsDataGridView.Rows[newIndex].Selected = true;
+                    }
+                }
+            }
+
             UpdateEnabledState();
         }
 
-        public void OnTabDeselected()
+        private void LiveConnectionsDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
         {
-            if (_viewModel != null) _viewModel.StopMonitoring();
-            UpdateEnabledState();
+            if (e.RowIndex >= _sortableList.Count || e.RowIndex < 0) return;
+            var conn = _sortableList[e.RowIndex];
+
+            switch (liveConnectionsDataGridView.Columns[e.ColumnIndex].Name)
+            {
+                case "connIconColumn":
+                    if (_appSettings != null && _appSettings.ShowAppIcons && !string.IsNullOrEmpty(conn.ProcessPath))
+                    {
+                        int iconIndex = _iconService.GetIconIndex(conn.ProcessPath);
+                        if (iconIndex != -1 && _iconService.ImageList != null)
+                        {
+                            e.Value = _iconService.ImageList.Images[iconIndex];
+                        }
+                    }
+                    break;
+                case "connNameColumn": e.Value = conn.DisplayName; break;
+                case "connStateColumn": e.Value = conn.State; break;
+                case "connLocalAddrColumn": e.Value = conn.LocalAddress; break;
+                case "connLocalPortColumn": e.Value = conn.LocalPort; break;
+                case "connRemoteAddrColumn": e.Value = conn.RemoteAddress; break;
+                case "connRemotePortColumn": e.Value = conn.RemotePort; break;
+                case "connPathColumn": e.Value = conn.ProcessPath; break;
+            }
         }
 
         public void UpdateIconColumnVisibility()
@@ -168,26 +211,22 @@ namespace MinimalFirewall
             }
         }
 
-        private void ApplySavedSorting()
-        {
-            // Handled in UpdateLiveConnectionsView now
-        }
-
         private void liveConnectionsDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= _sortableList.Count) return;
             var conn = _sortableList[e.RowIndex];
 
+            // Color code rows based on connection state
             if (conn.State != null)
             {
                 if (conn.State.Equals("Established", StringComparison.OrdinalIgnoreCase))
                 {
-                    e.CellStyle.BackColor = Color.FromArgb(204, 255, 204);
+                    e.CellStyle.BackColor = EstablishedColor;
                     e.CellStyle.ForeColor = Color.Black;
                 }
                 else if (conn.State.Equals("Listen", StringComparison.OrdinalIgnoreCase))
                 {
-                    e.CellStyle.BackColor = Color.FromArgb(255, 255, 204);
+                    e.CellStyle.BackColor = ListenColor;
                     e.CellStyle.ForeColor = Color.Black;
                 }
             }
@@ -204,6 +243,8 @@ namespace MinimalFirewall
             }
         }
 
+        // --- Mouse & Selection Handling ---
+
         private void liveConnectionsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
@@ -214,6 +255,32 @@ namespace MinimalFirewall
                     grid.ClearSelection();
                     grid.Rows[e.RowIndex].Selected = true;
                 }
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                _hoveredRowIndex = e.RowIndex;
+                liveConnectionsDataGridView.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void liveConnectionsDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                _hoveredRowIndex = -1;
+                liveConnectionsDataGridView.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void liveConnectionsDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        {
+            if (!liveConnectionsDataGridView.Rows[e.RowIndex].Selected && e.RowIndex == _hoveredRowIndex)
+            {
+                e.Graphics.FillRectangle(HoverOverlayBrush, e.RowBounds);
             }
         }
 
@@ -236,6 +303,8 @@ namespace MinimalFirewall
             };
         }
 
+        // --- Context Menu Actions ---
+
         private bool TryGetSelectedConnection(out TcpConnectionViewModel? connection)
         {
             connection = null;
@@ -248,6 +317,21 @@ namespace MinimalFirewall
                 return true;
             }
             return false;
+        }
+
+        private void liveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            if (!TryGetSelectedConnection(out var connection) || connection == null)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
+            blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
+            bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath);
+            openFileLocationToolStripMenuItem.Enabled = pathExists;
+            createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
         }
 
         private void killProcessToolStripMenuItem_Click(object sender, EventArgs e)
@@ -319,48 +403,6 @@ namespace MinimalFirewall
                 details.AppendLine($"Local: {connection.LocalAddress}:{connection.LocalPort}");
                 details.AppendLine($"Remote: {connection.RemoteAddress}:{connection.RemotePort}");
                 Clipboard.SetText(details.ToString());
-            }
-        }
-
-        private void liveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
-        {
-            if (!TryGetSelectedConnection(out var connection) || connection == null)
-            {
-                e.Cancel = true;
-                return;
-            }
-
-            killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
-            blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
-            bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath);
-            openFileLocationToolStripMenuItem.Enabled = pathExists;
-            createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
-        }
-
-        private void liveConnectionsDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
-        {
-            if (liveConnectionsDataGridView.Rows[e.RowIndex].Selected) return;
-            var mouseOverRow = liveConnectionsDataGridView.HitTest(liveConnectionsDataGridView.PointToClient(MousePosition).X, liveConnectionsDataGridView.PointToClient(MousePosition).Y).RowIndex;
-            if (e.RowIndex == mouseOverRow)
-            {
-                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
-                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
-            }
-        }
-
-        private void liveConnectionsDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                liveConnectionsDataGridView.InvalidateRow(e.RowIndex);
-            }
-        }
-
-        private void liveConnectionsDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
-        {
-            if (e.RowIndex >= 0)
-            {
-                liveConnectionsDataGridView.InvalidateRow(e.RowIndex);
             }
         }
     }

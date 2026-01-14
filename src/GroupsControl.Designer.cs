@@ -52,7 +52,7 @@ namespace MinimalFirewall
             this.groupsDataGridView.AllowUserToAddRows = false;
             this.groupsDataGridView.AllowUserToDeleteRows = false;
             this.groupsDataGridView.AllowUserToResizeRows = false;
-            this.groupsDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.groupsDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
             this.groupsDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
             this.groupsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.groupsDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
@@ -90,7 +90,7 @@ namespace MinimalFirewall
             // groupNameColumn
             // 
             this.groupNameColumn.DataPropertyName = "Name";
-            this.groupNameColumn.FillWeight = 80F;
+            this.groupNameColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill; 
             this.groupNameColumn.HeaderText = "Group Name";
             this.groupNameColumn.Name = "groupNameColumn";
             this.groupNameColumn.ReadOnly = true;
@@ -98,7 +98,7 @@ namespace MinimalFirewall
             // groupEnabledColumn
             // 
             this.groupEnabledColumn.DataPropertyName = "IsEnabled";
-            this.groupEnabledColumn.FillWeight = 20F;
+            this.groupEnabledColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.groupEnabledColumn.HeaderText = "Enabled";
             this.groupEnabledColumn.Name = "groupEnabledColumn";
             this.groupEnabledColumn.ReadOnly = true;

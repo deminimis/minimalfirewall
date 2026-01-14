@@ -15,7 +15,7 @@ using System.Text.Json;
 
 namespace MinimalFirewall
 {
-    public partial class FirewallActionsService
+    public partial class FirewallActionsService : IDisposable
     {
         private readonly FirewallRuleService firewallService;
         private readonly UserActivityLogger activityLogger;
@@ -26,7 +26,15 @@ namespace MinimalFirewall
         private readonly TemporaryRuleManager _temporaryRuleManager;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly FirewallDataService _dataService;
+
+        // Timer cleanup management
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
+        private bool _disposed;
+
+        // COM Type caching for performance
+        private static readonly Type? FwRuleType = Type.GetTypeFromProgID("HNetCfg.FWRule");
+        private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
 
@@ -43,6 +51,28 @@ namespace MinimalFirewall
             this._wildcardRuleService = wildcardRuleService;
             _temporaryRuleManager = new TemporaryRuleManager();
             _dataService = dataService;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    foreach (var timer in _temporaryRuleTimers.Values)
+                    {
+                        timer.Dispose();
+                    }
+                    _temporaryRuleTimers.Clear();
+                }
+                _disposed = true;
+            }
         }
 
         public void CleanupTemporaryRulesOnStartup()
@@ -69,10 +99,14 @@ namespace MinimalFirewall
 
         private static bool IsMfwRule(INetFwRule2 rule)
         {
-            if (string.IsNullOrEmpty(rule.Grouping)) return false;
-            return rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                   rule.Grouping == MFWConstants.MainRuleGroup ||
-                   rule.Grouping == MFWConstants.WildcardRuleGroup;
+            // Optimize: Read COM property once
+            string grouping = rule.Grouping;
+            if (string.IsNullOrEmpty(grouping)) return false;
+
+            // Optimize: Use safe casing comparison
+            return grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(grouping, MFWConstants.MainRuleGroup, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(grouping, MFWConstants.WildcardRuleGroup, StringComparison.OrdinalIgnoreCase);
         }
 
         private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
@@ -84,15 +118,21 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
-                    if (rule != null &&
-                        IsMfwRule(rule) &&
-                        rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
-                        string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
-                        rule.Protocol == 256 &&
-                        rule.LocalPorts == "*" &&
-                        rule.RemotePorts == "*")
+                    if (rule == null) continue;
+
+                    // Optimize: Check cheap properties first before string manipulation
+                    if (rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
+                        rule.Protocol == 256 && // Any
+                        IsMfwRule(rule))
                     {
-                        rulesToDelete.Add(rule.Name);
+                        // Ports check (accessing property is costly, do strictly if needed)
+                        if (rule.LocalPorts == "*" && rule.RemotePorts == "*")
+                        {
+                            if (string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
+                            {
+                                rulesToDelete.Add(rule.Name);
+                            }
+                        }
                     }
                 }
             }
@@ -188,12 +228,13 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
+            // Consolidated TCP/UDP creation
             var protocolsToCreate = new List<int> { 6, 17 };
             foreach (var protocol in protocolsToCreate)
             {
-                string protocolSuffix = (protocol == 6) ?
-                    " - TCP" : " - UDP";
+                string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
                 string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
+
                 if (parsedDirection.HasFlag(Directions.Incoming))
                 {
                     string inName = $"{serviceName} - {actionStr}In{protocolSuffix}";
@@ -214,12 +255,12 @@ namespace MinimalFirewall
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
         }
 
-
         public void ApplyUwpRuleChange(List<UwpApp> uwpApps, string action)
         {
             var validApps = new List<UwpApp>();
             var cachedUwpApps = _dataService.LoadUwpAppsFromCache();
             var cachedPfnSet = new HashSet<string>(cachedUwpApps.Select(a => a.PackageFamilyName), StringComparer.OrdinalIgnoreCase);
+
             foreach (var app in uwpApps)
             {
                 if (cachedPfnSet.Contains(app.PackageFamilyName))
@@ -291,7 +332,6 @@ namespace MinimalFirewall
             }
         }
 
-
         public void DeleteAdvancedRules(List<string> ruleNames)
         {
             if (ruleNames.Count == 0) return;
@@ -306,97 +346,51 @@ namespace MinimalFirewall
             }
         }
 
-
-        private void ManageCryptoServiceRule(bool enable)
+        // Consolidated helper for System Rules (Crypto/DHCP)
+        private void ManageSystemRule(string ruleName, string description, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
         {
             INetFwRule2? rule = null;
             try
             {
-                rule = firewallService.GetRuleByName(CryptoRuleName);
+                rule = firewallService.GetRuleByName(ruleName);
                 if (enable)
                 {
                     if (rule == null)
                     {
-                        var newRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-                        newRule.WithName(CryptoRuleName)
-                               .WithDescription("Allows Windows to check for certificate revocation online. Essential for the 'auto-allow trusted' feature in Lockdown Mode.")
-                               .ForService("CryptSvc")
+                        if (FwRuleType == null) throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
+                        var newRule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
+                        newRule.WithName(ruleName)
+                               .WithDescription(description)
+                               .ForService(serviceName)
                                .WithDirection(Directions.Outgoing)
                                .WithAction(Actions.Allow)
-                               .WithProtocol(ProtocolTypes.TCP.Value)
-                               .WithRemotePorts("80,443")
+                               .WithProtocol(protocol)
+                               .WithRemotePorts(remotePorts)
+                               .WithLocalPorts(localPorts)
                                .WithGrouping(MFWConstants.MainRuleGroup)
                                .IsEnabled();
                         firewallService.CreateRule(newRule);
-                        activityLogger.LogDebug("Created system rule for certificate checks.");
+                        activityLogger.LogDebug($"Created system rule: {ruleName}");
                     }
                     else if (!rule.Enabled)
                     {
                         rule.Enabled = true;
-                        activityLogger.LogDebug("Enabled system rule for certificate checks.");
-                    }
-                }
-                else
-                {
-                    if (rule != null && rule.Enabled)
-                    {
-                        rule.Enabled = false;
-                        activityLogger.LogDebug("Disabled system rule for certificate checks.");
-                    }
-                }
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"ManageCryptoServiceRule (enable: {enable})", ex);
-            }
-            finally
-            {
-                if (rule != null) Marshal.ReleaseComObject(rule);
-            }
-        }
-
-        private void ManageDhcpClientRule(bool enable)
-        {
-            INetFwRule2? rule = null;
-            try
-            {
-                rule = firewallService.GetRuleByName(DhcpRuleName);
-                if (enable)
-                {
-                    if (rule == null)
-                    {
-                        var newRule = (INetFwRule2)Activator.CreateInstance(Type.GetTypeFromProgID("HNetCfg.FWRule")!)!;
-                        newRule.WithName(DhcpRuleName)
-                               .WithDescription("Allows the DHCP Client (Dhcp) service to get an IP address from your router. Essential for network connectivity in Lockdown Mode.")
-                               .ForService("Dhcp")
-                               .WithDirection(Directions.Outgoing)
-                               .WithAction(Actions.Allow)
-                               .WithProtocol(ProtocolTypes.UDP.Value)
-                               .WithLocalPorts("68")
-                               .WithRemotePorts("67")
-                               .WithGrouping(MFWConstants.MainRuleGroup)
-                               .IsEnabled();
-                        firewallService.CreateRule(newRule);
-                        activityLogger.LogDebug("Created system rule for DHCP Client.");
-                    }
-                    else if (!rule.Enabled)
-                    {
-                        rule.Enabled = true;
-                        activityLogger.LogDebug("Enabled system rule for DHCP Client.");
+                        activityLogger.LogDebug($"Enabled system rule: {ruleName}");
                     }
                 }
                 else
                 {
                     if (rule != null)
                     {
-                        firewallService.DeleteRulesByName(new List<string> { DhcpRuleName });
-                        activityLogger.LogDebug("Disabled/Deleted system rule for DHCP Client.");
+                        // Clean removal is safer than just disabling to prevent clutter
+                        firewallService.DeleteRulesByName(new List<string> { ruleName });
+                        activityLogger.LogDebug($"Disabled/Deleted system rule: {ruleName}");
                     }
                 }
             }
             catch (COMException ex)
             {
-                activityLogger.LogException($"ManageDhcpClientRule (enable: {enable})", ex);
+                activityLogger.LogException($"ManageSystemRule '{ruleName}' (enable: {enable})", ex);
             }
             finally
             {
@@ -404,6 +398,46 @@ namespace MinimalFirewall
             }
         }
 
+        private void ManageCryptoServiceRule(bool enable)
+        {
+            ManageSystemRule(
+                CryptoRuleName,
+                "Allows Windows to check for certificate revocation online. Essential for the 'auto-allow trusted' feature in Lockdown Mode.",
+                "CryptSvc",
+                ProtocolTypes.TCP.Value,
+                "80,443", // Remote
+                "*",      // Local
+                enable
+            );
+        }
+
+        private void ManageDhcpClientRule(bool enable)
+        {
+            ManageSystemRule(
+                DhcpRuleName,
+                "Allows the DHCP Client (Dhcp) service to get an IP address from your router. Essential for network connectivity in Lockdown Mode.",
+                "Dhcp",
+                ProtocolTypes.UDP.Value,
+                "67",  // Remote
+                "68",  // Local
+                enable
+            );
+        }
+
+        // Thread-safe wrapper for MessageBox
+        private void SafeShowMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+        {
+            if (Application.OpenForms.Count > 0)
+            {
+                var form = Application.OpenForms[0];
+                if (form.InvokeRequired)
+                {
+                    form.Invoke(new Action(() => MessageBox.Show(form, text, caption, buttons, icon)));
+                    return;
+                }
+            }
+            MessageBox.Show(text, caption, buttons, icon);
+        }
 
         public void ToggleLockdown()
         {
@@ -421,9 +455,10 @@ namespace MinimalFirewall
 
             ManageCryptoServiceRule(newLockdownState);
             ManageDhcpClientRule(newLockdownState);
+
             if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
             {
-                MessageBox.Show(
+                SafeShowMessageBox(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
                      "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
                     "Potential Causes:\n" +
@@ -451,7 +486,7 @@ namespace MinimalFirewall
             catch (COMException ex)
             {
                 activityLogger.LogException("SetDefaultOutboundAction", ex);
-                MessageBox.Show("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
+                SafeShowMessageBox("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
                 "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -472,7 +507,6 @@ namespace MinimalFirewall
                 activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
             }
         }
-
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
@@ -526,10 +560,12 @@ namespace MinimalFirewall
                 {
                     try
                     {
-                        if (!string.IsNullOrEmpty(rule.Grouping) &&
-                             (rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
-                               rule.Grouping == "Minimal Firewall" ||
-                               rule.Grouping == "Minimal Firewall (Wildcard)"))
+                        // Safe COM property access
+                        string grouping = rule.Grouping;
+                        if (!string.IsNullOrEmpty(grouping) &&
+                             (grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(grouping, "Minimal Firewall", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(grouping, "Minimal Firewall (Wildcard)", StringComparison.OrdinalIgnoreCase)))
                         {
                             if (!rule.Enabled)
                             {
@@ -587,8 +623,7 @@ namespace MinimalFirewall
                 var protocolsToCreate = new List<int> { 6, 17 };
                 foreach (var protocol in protocolsToCreate)
                 {
-                    string protocolSuffix = (protocol == 6) ?
-                        " - TCP" : " - UDP";
+                    string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
                     string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
                     if (parsedDirection.HasFlag(Directions.Incoming))
                     {
@@ -684,9 +719,8 @@ namespace MinimalFirewall
             INetFwPolicy2? firewallPolicy = null;
             try
             {
-                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-                if (policyType == null) return;
-                firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(policyType)!;
+                if (FwPolicyType == null) return;
+                firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(FwPolicyType)!;
                 if (firewallPolicy == null) return;
 
                 comRules = firewallPolicy.Rules;
@@ -763,14 +797,6 @@ namespace MinimalFirewall
                 FindAndQueueDeleteForGeneralBlockRule(vm.ApplicationName);
             }
 
-            bool hasSpecificPorts = (!string.IsNullOrEmpty(vm.LocalPorts) && vm.LocalPorts != "*") ||
-                                    (!string.IsNullOrEmpty(vm.RemotePorts) && vm.RemotePorts != "*");
-
-            if (hasSpecificPorts && vm.Protocol == ProtocolTypes.Any.Value)
-            {
-
-            }
-
             // API: rule must have exactly one direction, must create two rules if user selects "both" 
             var directionsToCreate = new List<Directions>();
             if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
@@ -841,7 +867,7 @@ namespace MinimalFirewall
                 string msg = $"Created {successCount} rules successfully.\n\nFailed to create {errors.Count} rules:\n" + string.Join("\n", errors.Take(5));
                 if (errors.Count > 5) msg += $"\n...and {errors.Count - 5} more.";
 
-                System.Windows.Forms.MessageBox.Show(msg, "Batch Creation Errors", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                SafeShowMessageBox(msg, "Batch Creation Errors", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -849,15 +875,13 @@ namespace MinimalFirewall
         {
             activityLogger.LogDebug($"[Rule Debug] Starting creation for rule: {vm.Name}");
 
-            // Use INetFwRule2 interface for Windows Firewall API
-            Type? ruleType = Type.GetTypeFromProgID("HNetCfg.FWRule");
-            if (ruleType == null)
+            if (FwRuleType == null)
             {
                 activityLogger.LogDebug("[FATAL] Could not load HNetCfg.FWRule type. Firewall API unavailable.");
                 return;
             }
 
-            var firewallRule = (INetFwRule2)Activator.CreateInstance(ruleType)!;
+            var firewallRule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
 
             try
             {
@@ -974,8 +998,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            string actionStr = parsedAction == Actions.Allow ?
-            "" : "Block ";
+            string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
             string inName = $"{appName} - {actionStr}In";
             string outName = $"{appName} - {actionStr}Out";
             if (parsedDirection.HasFlag(Directions.Incoming))
@@ -997,7 +1020,7 @@ namespace MinimalFirewall
                 Name = name,
                 Description = description,
                 IsEnabled = true,
-                Grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix)) ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup,
+                Grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix, StringComparison.OrdinalIgnoreCase)) ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup,
                 Status = action == Actions.Allow ? "Allow" : "Block",
                 Direction = direction,
                 Protocol = protocol,
@@ -1204,13 +1227,11 @@ namespace MinimalFirewall
 
                 if (rule.Protocol == ProtocolTypes.Any.Value)
                 {
-                    string actionStr = parsedAction == Actions.Allow ?
-                    "" : "Block ";
+                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
                     var protocolsToCreate = new List<int> { 6, 17 };
                     foreach (var protocol in protocolsToCreate)
                     {
-                        string protocolSuffix = (protocol == 6) ?
-                        " - TCP" : " - UDP";
+                        string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
                         if (parsedDirection.HasFlag(Directions.Incoming))
                         {
                             createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);
@@ -1229,7 +1250,6 @@ namespace MinimalFirewall
 
             activityLogger.LogChange("Wildcard Rule Applied", rule.Action + " for " + appPath);
         }
-
 
         public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
         {

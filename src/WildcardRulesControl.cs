@@ -1,12 +1,6 @@
-﻿// File: WildcardRulesControl.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using MinimalFirewall.TypedObjects;
 
@@ -14,15 +8,18 @@ namespace MinimalFirewall
 {
     public partial class WildcardRulesControl : UserControl
     {
-        private WildcardRuleService _wildcardRuleService = null!;
-        private BackgroundFirewallTaskService _backgroundTaskService = null!;
-        private AppSettings _appSettings = null!;
-        private BindingSource _bindingSource;
+        private WildcardRuleService? _wildcardRuleService;
+        private BackgroundFirewallTaskService? _backgroundTaskService;
+        private AppSettings? _appSettings;
+        private BindingSource _bindingSource = new BindingSource();
 
         public WildcardRulesControl()
         {
             InitializeComponent();
             this.DoubleBuffered = true;
+
+            wildcardDataGridView.AutoGenerateColumns = false;
+            wildcardDataGridView.DataSource = _bindingSource;
         }
 
         public void Initialize(WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
@@ -30,20 +27,15 @@ namespace MinimalFirewall
             _wildcardRuleService = wildcardRuleService;
             _backgroundTaskService = backgroundTaskService;
             _appSettings = appSettings;
-
-            wildcardDataGridView.AutoGenerateColumns = false;
-            _bindingSource = new BindingSource();
-            wildcardDataGridView.DataSource = _bindingSource;
         }
 
         public void LoadRules()
         {
-            if (_wildcardRuleService != null)
-            {
-                _bindingSource.DataSource = _wildcardRuleService.GetRules();
-                _bindingSource.ResetBindings(false);
-                wildcardDataGridView.Refresh();
-            }
+            if (_wildcardRuleService == null) return;
+
+            var rules = _wildcardRuleService.GetRules();
+            _bindingSource.DataSource = new BindingList<WildcardRule>(rules);
+            _bindingSource.ResetBindings(false);
         }
 
         public void ClearRules()
@@ -53,17 +45,24 @@ namespace MinimalFirewall
 
         private void addRuleButton_Click(object sender, EventArgs e)
         {
+            if (_wildcardRuleService == null || _appSettings == null || _backgroundTaskService == null) return;
+
             using var form = new WildcardCreatorForm(_wildcardRuleService, _appSettings);
             if (form.ShowDialog(this.FindForm()) == DialogResult.OK)
             {
                 var newRule = form.NewRule;
+
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
-                LoadRules();
+
+                _bindingSource.Add(newRule);
+                _bindingSource.ResetBindings(false);
             }
         }
 
         private void editRuleButton_Click(object sender, EventArgs e)
         {
+            if (_wildcardRuleService == null || _appSettings == null || _backgroundTaskService == null) return;
+
             if (wildcardDataGridView.SelectedRows.Count != 1 || wildcardDataGridView.SelectedRows[0].DataBoundItem is not WildcardRule selectedRule)
             {
                 MessageBox.Show("Please select a single rule to edit.", "Edit Rule", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -75,103 +74,81 @@ namespace MinimalFirewall
             {
                 var updatedRule = form.NewRule;
                 var payload = new UpdateWildcardRulePayload { OldRule = selectedRule, NewRule = updatedRule };
+
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.UpdateWildcardRule, payload));
-                LoadRules();
+
+                int index = _bindingSource.IndexOf(selectedRule);
+                if (index >= 0)
+                {
+                    _bindingSource[index] = updatedRule;
+                    _bindingSource.ResetBindings(false);
+                }
             }
         }
 
         private void deleteRuleButton_Click(object sender, EventArgs e)
         {
-            if (wildcardDataGridView.SelectedRows.Count == 0 || _backgroundTaskService == null || _bindingSource.DataSource == null)
-            {
-                return;
-            }
+            if (wildcardDataGridView.SelectedRows.Count == 0 || _backgroundTaskService == null) return;
 
             var result = MessageBox.Show($"Are you sure you want to delete {wildcardDataGridView.SelectedRows.Count} rule definition(s)? This will also remove any firewall rules created by them.", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (result == DialogResult.Yes)
             {
-                var rulesToRemoveFromBindingSource = new List<WildcardRule>();
-                foreach (DataGridViewRow row in wildcardDataGridView.SelectedRows)
-                {
-                    if (row.DataBoundItem is WildcardRule ruleToDelete)
-                    {
-                        rulesToRemoveFromBindingSource.Add(ruleToDelete);
-                        var payload = new DeleteWildcardRulePayload { Wildcard = ruleToDelete };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.RemoveWildcardRule, payload));
-                    }
-                }
-
-                if (_bindingSource.List is IList<WildcardRule> list) 
-                {
-                    foreach (var rule in rulesToRemoveFromBindingSource)
-                    {
-                        int indexToRemove = -1;
-                        for (int i = 0; i < list.Count; i++)
-                        {
-                            if (list[i].FolderPath.Equals(rule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
-                                list[i].ExeName.Equals(rule.ExeName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                indexToRemove = i;
-                                break;
-                            }
-                        }
-                        if (indexToRemove != -1)
-                        {
-                            _bindingSource.RemoveAt(indexToRemove);
-                        }
-                    }
-                }
-                else 
-                {
-                    LoadRules();
-                }
-
-                _bindingSource.ResetBindings(false); 
-                wildcardDataGridView.Refresh(); 
+                DeleteSelectedRules(FirewallTaskType.RemoveWildcardRule, removeFromUi: true);
             }
         }
 
         private void deleteDefinitionOnlyToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (wildcardDataGridView.SelectedRows.Count == 0)
-            {
-                return;
-            }
+            if (wildcardDataGridView.SelectedRows.Count == 0) return;
 
             var result = MessageBox.Show($"Are you sure you want to delete the selected {wildcardDataGridView.SelectedRows.Count} wildcard definition(s)? Any existing rules already generated by them will NOT be deleted.", "Confirm Action", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (result == DialogResult.Yes)
             {
-                foreach (DataGridViewRow row in wildcardDataGridView.SelectedRows)
-                {
-                    if (row.DataBoundItem is WildcardRule ruleToDelete)
-                    {
-                        var payload = new DeleteWildcardRulePayload { Wildcard = ruleToDelete };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.RemoveWildcardDefinitionOnly, payload));
-                    }
-                }
-                LoadRules();
+                DeleteSelectedRules(FirewallTaskType.RemoveWildcardDefinitionOnly, removeFromUi: true);
             }
         }
 
         private void deleteAllGeneratedRulesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (wildcardDataGridView.SelectedRows.Count == 0)
-            {
-                return;
-            }
+            if (wildcardDataGridView.SelectedRows.Count == 0) return;
 
             var result = MessageBox.Show($"Are you sure you want to delete all individual firewall rules generated by the selected {wildcardDataGridView.SelectedRows.Count} wildcard definition(s)? The definitions themselves will not be deleted.", "Confirm Action", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (result == DialogResult.Yes)
             {
-                foreach (DataGridViewRow row in wildcardDataGridView.SelectedRows)
-                {
-                    if (row.DataBoundItem is WildcardRule rule)
-                    {
-                        var payload = new DeleteWildcardRulePayload { Wildcard = rule };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload));
-                    }
-                }
+                DeleteSelectedRules(FirewallTaskType.DeleteWildcardRules, removeFromUi: false);
                 MessageBox.Show("The generated rules for the selected definitions have been queued for deletion.", "Task Queued", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+
+        private void DeleteSelectedRules(FirewallTaskType taskType, bool removeFromUi)
+        {
+            var itemsToProcess = new List<WildcardRule>();
+            foreach (DataGridViewRow row in wildcardDataGridView.SelectedRows)
+            {
+                if (row.DataBoundItem is WildcardRule rule)
+                {
+                    itemsToProcess.Add(rule);
+                }
+            }
+
+            foreach (var rule in itemsToProcess)
+            {
+                var payload = new DeleteWildcardRulePayload { Wildcard = rule };
+                _backgroundTaskService?.EnqueueTask(new FirewallTask(taskType, payload));
+
+                if (removeFromUi)
+                {
+                    _bindingSource.Remove(rule);
+                }
+            }
+
+            if (removeFromUi)
+            {
+                _bindingSource.ResetBindings(false);
             }
         }
 
@@ -179,7 +156,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex < 0 || e.RowIndex >= _bindingSource.Count) return;
 
-            if (_bindingSource.List[e.RowIndex] is WildcardRule rule)
+            if (_bindingSource[e.RowIndex] is WildcardRule rule)
             {
                 var column = wildcardDataGridView.Columns[e.ColumnIndex];
                 if (column.DataPropertyName == "Protocol")

@@ -53,16 +53,19 @@ namespace MinimalFirewall
         }
 
         private const uint AUDIT_FAILURE = 0x00000002;
+
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool AuditQuerySystemPolicy(
-            [In] Guid pSubCategoryGuids,
+            [In] ref Guid pSubCategoryGuids,
             [In] uint PolicyCount,
             [Out] out IntPtr ppPolicy
         );
+
         [DllImport("advapi32.dll", SetLastError = true)]
         private static extern bool AuditFree(
             [In] IntPtr pBuffer
         );
+
         [StructLayout(LayoutKind.Sequential)]
         private struct AUDIT_POLICY_INFORMATION
         {
@@ -72,7 +75,7 @@ namespace MinimalFirewall
 
         private static bool IsAuditingEnabledForSubcategory(Guid subcategoryGuid)
         {
-            if (!AuditQuerySystemPolicy(subcategoryGuid, 1, out IntPtr pPolicy))
+            if (!AuditQuerySystemPolicy(ref subcategoryGuid, 1, out IntPtr pPolicy))
             {
                 int error = Marshal.GetLastWin32Error();
                 Debug.WriteLine($"[AdminTask ERROR] AuditQuerySystemPolicy failed for GUID {subcategoryGuid}, Win32 Error: {error}");
@@ -130,6 +133,7 @@ namespace MinimalFirewall
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
+
                 if (process.WaitForExit(5000) && outputWaitHandle.WaitOne(5000) && errorWaitHandle.WaitOne(5000))
                 {
                     output = outputBuilder.ToString();
@@ -142,7 +146,12 @@ namespace MinimalFirewall
                 else
                 {
                     Debug.WriteLine("[AdminTask ERROR] Process timed out or streams did not close.");
-                    if (!process.HasExited) process.Kill();
+                    try
+                    {
+                        if (!process.HasExited) process.Kill();
+                    }
+                    catch { /* Ignore errors if process already died */ }
+
                     Messenger.MessageBox("An administrative task timed out and may not have completed successfully.", "Execution Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -209,6 +218,7 @@ namespace MinimalFirewall
             if (string.IsNullOrEmpty(_taskName) || string.IsNullOrEmpty(_appPath)) return;
             string arguments = $"/query /tn \"{_taskName}\" /v /fo CSV /nh";
             Execute("schtasks.exe", arguments, out string? output, out string? error);
+
             if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(output))
             {
                 Debug.WriteLine($"[Startup] Could not query task '{_taskName}'. It might not exist. Error: {error}");
@@ -226,13 +236,16 @@ namespace MinimalFirewall
                         break;
                     }
                 }
+
                 if (string.IsNullOrEmpty(storedPath))
                 {
                     Debug.WriteLine($"[Startup] Could not parse executable path from schtasks output: {output}");
                     return;
                 }
+
                 string normalizedStoredPath = PathResolver.NormalizePath(storedPath);
                 string normalizedCurrentPath = PathResolver.NormalizePath(_appPath);
+
                 if (!normalizedStoredPath.Equals(normalizedCurrentPath, StringComparison.OrdinalIgnoreCase))
                 {
                     Debug.WriteLine($"[Startup] Mismatch detected. Stored: '{normalizedStoredPath}', Current: '{normalizedCurrentPath}'. Correcting task.");

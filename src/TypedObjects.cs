@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
+
 namespace MinimalFirewall.TypedObjects
 {
     public enum Actions : byte
@@ -23,7 +24,6 @@ namespace MinimalFirewall.TypedObjects
     [Flags]
     public enum InterfaceTypes : byte
     {
-
         All = RemoteAccess | Wireless | Lan,
         RemoteAccess = 1,
         Wireless = 2,
@@ -37,15 +37,10 @@ namespace MinimalFirewall.TypedObjects
         IPHTTPS
     }
 
-    public interface IFixedRange<TUnit>
+    public interface IFixedRange<out TUnit>
     {
-        TUnit
- Begin
-        { get; }
-        TUnit End
-        {
-            get;
-        }
+        TUnit Begin { get; }
+        TUnit End { get; }
     }
 
     [Serializable]
@@ -54,10 +49,7 @@ namespace MinimalFirewall.TypedObjects
         private readonly bool _isSinglePort;
         private readonly SpecificLocalPort? _specificLocalPort;
         public ushort Begin { get; }
-        public ushort End
-        {
-            get;
-        }
+        public ushort End { get; }
 
         public PortRange(ushort singlePort) : this(singlePort, singlePort) { }
 
@@ -90,10 +82,20 @@ namespace MinimalFirewall.TypedObjects
             range = null;
             if (string.IsNullOrWhiteSpace(rangeString)) return false;
 
-            if (Enum.TryParse<SpecificLocalPort>(rangeString.Replace("-", "_"), true, out var sp))
+
+            if (Enum.TryParse<SpecificLocalPort>(rangeString, true, out var sp))
             {
                 range = new PortRange(sp);
                 return true;
+            }
+            // Fallback for "RPC-EPMap" format
+            if (rangeString.Contains('-') && !char.IsDigit(rangeString[0]))
+            {
+                if (Enum.TryParse<SpecificLocalPort>(rangeString.Replace("-", "_"), true, out sp))
+                {
+                    range = new PortRange(sp);
+                    return true;
+                }
             }
 
             var parts = rangeString.Split('-');
@@ -118,7 +120,8 @@ namespace MinimalFirewall.TypedObjects
             return Begin == other.Begin && End == other.End;
         }
 
-        public override int GetHashCode() => ToString().GetHashCode();
+        public override int GetHashCode() => _specificLocalPort.HasValue ? _specificLocalPort.GetHashCode() : (Begin, End).GetHashCode();
+
         public override string ToString()
         {
             if (_specificLocalPort.HasValue) return _specificLocalPort.Value.ToString().Replace("_", "-");
@@ -130,28 +133,52 @@ namespace MinimalFirewall.TypedObjects
     [Serializable]
     public class IPAddressRange : IEnumerable<IPAddress>, IEquatable<IPAddressRange>, IFixedRange<IPAddress>
     {
+        private IPAddress _begin;
+        private IPAddress _end;
+
+        private byte[] _beginBytes;
+        private byte[] _endBytes;
+
         public IPAddress Begin
         {
-            get;
-            set;
+            get => _begin;
+            set
+            {
+                _begin = value ?? throw new ArgumentNullException(nameof(value));
+                _beginBytes = _begin.GetAddressBytes();
+            }
         }
+
         public IPAddress End
         {
-            get; set;
+            get => _end;
+            set
+            {
+                _end = value ?? throw new ArgumentNullException(nameof(value));
+                _endBytes = _end.GetAddressBytes();
+            }
         }
 
         public IPAddressRange(IPAddress singleAddress)
         {
             if (singleAddress == null) throw new ArgumentNullException(nameof(singleAddress));
-            Begin = End = singleAddress;
+            _begin = _end = singleAddress;
+            _beginBytes = _endBytes = singleAddress.GetAddressBytes();
         }
 
         public IPAddressRange(IPAddress begin, IPAddress end)
         {
             if (begin.AddressFamily != end.AddressFamily) throw new ArgumentException("Addresses must be of the same family.");
-            if (!Internal.Bits.GtECore(end.GetAddressBytes(), begin.GetAddressBytes())) throw new ArgumentException("Begin address must be smaller than End address.");
-            Begin = begin;
-            End = end;
+
+            var bBytes = begin.GetAddressBytes();
+            var eBytes = end.GetAddressBytes();
+
+            if (!Internal.Bits.GtECore(eBytes, bBytes)) throw new ArgumentException("Begin address must be smaller than End address.");
+
+            _begin = begin;
+            _end = end;
+            _beginBytes = bBytes;
+            _endBytes = eBytes;
         }
 
         public static IPAddressRange Parse(string ipRangeString)
@@ -197,12 +224,11 @@ namespace MinimalFirewall.TypedObjects
             return false;
         }
 
-
         public bool Contains(IPAddress ipaddress)
         {
             if (ipaddress.AddressFamily != Begin.AddressFamily) return false;
             var adrBytes = ipaddress.GetAddressBytes();
-            return Internal.Bits.LtECore(Begin.GetAddressBytes(), adrBytes) && Internal.Bits.GtECore(End.GetAddressBytes(), adrBytes);
+            return Internal.Bits.LtECore(_beginBytes, adrBytes) && Internal.Bits.GtECore(_endBytes, adrBytes);
         }
 
         public bool Equals(IPAddressRange? other)
@@ -214,8 +240,7 @@ namespace MinimalFirewall.TypedObjects
         public override int GetHashCode() => (Begin, End).GetHashCode();
         public override string ToString()
         {
-            return Begin.Equals(End) ?
- Begin.ToString() : $"{Begin}-{End}";
+            return Begin.Equals(End) ? Begin.ToString() : $"{Begin}-{End}";
         }
 
         public IEnumerator<IPAddress> GetEnumerator()
@@ -267,6 +292,9 @@ namespace MinimalFirewall.TypedObjects
         public bool Equals(ProtocolTypes other) => this.Value == other.Value;
         public override bool Equals(object? obj) => obj is ProtocolTypes other && Equals(other);
         public override int GetHashCode() => Value.GetHashCode();
+
+        public static bool operator ==(ProtocolTypes left, ProtocolTypes right) => left.Equals(right);
+        public static bool operator !=(ProtocolTypes left, ProtocolTypes right) => !left.Equals(right);
     }
 }
 
@@ -274,9 +302,38 @@ namespace MinimalFirewall.TypedObjects.Internal
 {
     internal static class Bits
     {
-        public static byte[] Not(byte[] bytes) => bytes.Select(b => (byte)~b).ToArray();
-        public static byte[] And(byte[] A, byte[] B) => A.Zip(B, (a, b) => (byte)(a & b)).ToArray();
-        public static byte[] Or(byte[] A, byte[] B) => A.Zip(B, (a, b) => (byte)(a | b)).ToArray();
+        public static byte[] Not(byte[] bytes)
+        {
+            byte[] result = new byte[bytes.Length];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                result[i] = (byte)~bytes[i];
+            }
+            return result;
+        }
+
+        public static byte[] And(byte[] A, byte[] B)
+        {
+            int length = Math.Min(A.Length, B.Length);
+            byte[] result = new byte[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = (byte)(A[i] & B[i]);
+            }
+            return result;
+        }
+
+        public static byte[] Or(byte[] A, byte[] B)
+        {
+            int length = Math.Min(A.Length, B.Length);
+            byte[] result = new byte[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = (byte)(A[i] | B[i]);
+            }
+            return result;
+        }
+
         public static bool GtECore(byte[] A, byte[] B, int offset = 0)
         {
             int length = Math.Min(A.Length, B.Length);
@@ -286,6 +343,7 @@ namespace MinimalFirewall.TypedObjects.Internal
             }
             return true;
         }
+
         public static bool LtECore(byte[] A, byte[] B, int offset = 0)
         {
             int length = Math.Min(A.Length, B.Length);
@@ -295,23 +353,42 @@ namespace MinimalFirewall.TypedObjects.Internal
             }
             return true;
         }
+
         public static byte[] GetBitMask(int sizeOfBuff, int bitLen)
         {
             var maskBytes = new byte[sizeOfBuff];
             int bytesLen = bitLen / 8;
             int bitsLen = bitLen % 8;
-            for (var i = 0; i < bytesLen; i++) maskBytes[i] = 0xff;
-            if (bitsLen > 0) maskBytes[bytesLen] = (byte)~(255 >> bitsLen);
+
+            for (var i = 0; i < bytesLen; i++)
+            {
+                maskBytes[i] = 0xff;
+            }
+
+            if (bitsLen > 0 && bytesLen < sizeOfBuff)
+            {
+                maskBytes[bytesLen] = (byte)~(255 >> bitsLen);
+            }
+
             return maskBytes;
         }
+
         public static byte[] Increment(byte[] bytes)
         {
-            var incrementIndex = Array.FindLastIndex(bytes, x => x < byte.MaxValue);
-            if (incrementIndex < 0) throw new OverflowException();
-            return bytes.Take(incrementIndex)
-                        .Concat(new byte[] { (byte)(bytes[incrementIndex] + 1) })
-                        .Concat(new byte[bytes.Length - incrementIndex - 1])
-                        .ToArray();
+
+            byte[] result = (byte[])bytes.Clone();
+
+            for (int i = result.Length - 1; i >= 0; i--)
+            {
+                if (result[i] < 255)
+                {
+                    result[i]++;
+                    return result; 
+                }
+                result[i] = 0;
+            }
+
+            throw new OverflowException();
         }
     }
 }

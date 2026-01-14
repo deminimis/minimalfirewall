@@ -15,7 +15,6 @@ using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace MinimalFirewall
 {
     public partial class SettingsControl : UserControl
@@ -62,67 +61,42 @@ namespace MinimalFirewall
 
             versionLabel.Text = version;
             loggingSwitch.CheckedChanged += new System.EventHandler(this.loggingSwitch_CheckedChanged);
-            coffeePictureBox.Image = _appImageList.Images["coffee.png"];
+
+            if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
+            {
+                coffeePictureBox.Image = _appImageList.Images["coffee.png"];
+            }
         }
 
         public void ApplyThemeFixes()
         {
             if (_dm == null) return;
-            deleteAllRulesButton.FlatAppearance.BorderSize = 1;
-            deleteAllRulesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            revertFirewallButton.FlatAppearance.BorderSize = 1;
-            revertFirewallButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            managePublishersButton.FlatAppearance.BorderSize = 1;
-            managePublishersButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            openFirewallButton.FlatAppearance.BorderSize = 1;
-            openFirewallButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            openAppDataButton.FlatAppearance.BorderSize = 1;
-            openAppDataButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            checkForUpdatesButton.FlatAppearance.BorderSize = 1;
-            checkForUpdatesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 1;
-            cleanUpOrphanedRulesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            exportRulesButton.FlatAppearance.BorderSize = 1;
-            exportRulesButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            importMergeButton.FlatAppearance.BorderSize = 1;
-            importMergeButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            importReplaceButton.FlatAppearance.BorderSize = 1;
-            importReplaceButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-            exportDiagnosticButton.FlatAppearance.BorderSize = 1;
-            exportDiagnosticButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
 
-            if (_dm.IsDarkMode)
+            // Helper function 
+            void StyleButton(Button btn)
             {
-                deleteAllRulesButton.ForeColor = Color.White;
-                revertFirewallButton.ForeColor = Color.White;
-                managePublishersButton.ForeColor = Color.White;
-                openFirewallButton.ForeColor = Color.White;
-                openAppDataButton.ForeColor = Color.White;
-                checkForUpdatesButton.ForeColor = Color.White;
-                cleanUpOrphanedRulesButton.ForeColor = Color.White;
-                exportRulesButton.ForeColor = Color.White;
-                importMergeButton.ForeColor = Color.White;
-                importReplaceButton.ForeColor = Color.White;
-                exportDiagnosticButton.ForeColor = Color.White;
+                btn.FlatAppearance.BorderSize = 1;
+                btn.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
+                btn.ForeColor = _dm.IsDarkMode ? Color.White : SystemColors.ControlText;
             }
-            else
-            {
-                deleteAllRulesButton.ForeColor = SystemColors.ControlText;
-                revertFirewallButton.ForeColor = SystemColors.ControlText;
-                managePublishersButton.ForeColor = SystemColors.ControlText;
-                openFirewallButton.ForeColor = SystemColors.ControlText;
-                openAppDataButton.ForeColor = SystemColors.ControlText;
-                checkForUpdatesButton.ForeColor = SystemColors.ControlText;
-                cleanUpOrphanedRulesButton.ForeColor = SystemColors.ControlText;
-                exportRulesButton.ForeColor = SystemColors.ControlText;
-                importMergeButton.ForeColor = SystemColors.ControlText;
-                importReplaceButton.ForeColor = SystemColors.ControlText;
-                exportDiagnosticButton.ForeColor = SystemColors.ControlText;
-            }
+
+            StyleButton(deleteAllRulesButton);
+            StyleButton(revertFirewallButton);
+            StyleButton(managePublishersButton);
+            StyleButton(openFirewallButton);
+            StyleButton(openAppDataButton);
+            StyleButton(checkForUpdatesButton);
+            StyleButton(cleanUpOrphanedRulesButton);
+            StyleButton(exportRulesButton);
+            StyleButton(importMergeButton);
+            StyleButton(importReplaceButton);
+            StyleButton(exportDiagnosticButton);
         }
 
         public void LoadSettingsToUI()
         {
+            if (_appSettings == null) return;
+
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
             darkModeSwitch.Checked = _appSettings.Theme == "Dark";
@@ -138,15 +112,19 @@ namespace MinimalFirewall
 
         public void SaveSettingsFromUI()
         {
+            if (_appSettings == null) return;
+
             _appSettings.CloseToTray = closeToTraySwitch.Checked;
             _appSettings.StartOnSystemStartup = startOnStartupSwitch.Checked;
             _appSettings.Theme = darkModeSwitch.Checked ? "Dark" : "Light";
             _appSettings.IsPopupsEnabled = popupsSwitch.Checked;
             _appSettings.IsLoggingEnabled = loggingSwitch.Checked;
+
             if (int.TryParse(autoRefreshTextBox.Text, out int val) && val >= 1)
             {
                 _appSettings.AutoRefreshIntervalMinutes = val;
             }
+
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
@@ -156,7 +134,7 @@ namespace MinimalFirewall
 
             if (!_appSettings.IsTrafficMonitorEnabled)
             {
-                _mainViewModel.TrafficMonitorViewModel.StopMonitoring();
+                _mainViewModel?.TrafficMonitorViewModel?.StopMonitoring();
             }
 
             IconVisibilityChanged?.Invoke();
@@ -165,33 +143,43 @@ namespace MinimalFirewall
 
         public void ApplyTheme(bool isDark, DarkModeCS dm)
         {
-            var linkColor = isDark ?
-                Color.SkyBlue : SystemColors.HotTrack;
+            var linkColor = isDark ? Color.SkyBlue : SystemColors.HotTrack;
+
             helpLink.LinkColor = linkColor;
             reportProblemLink.LinkColor = linkColor;
             forumLink.LinkColor = linkColor;
             coffeeLinkLabel.LinkColor = linkColor;
+
             helpLink.VisitedLinkColor = linkColor;
             reportProblemLink.VisitedLinkColor = linkColor;
             forumLink.VisitedLinkColor = linkColor;
             coffeeLinkLabel.VisitedLinkColor = linkColor;
 
-            Image? coffeeImage = _appImageList.Images["coffee.png"];
-            if (coffeeImage != null)
+            if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
             {
-                Color coffeeColor = isDark ?
-                    Color.LightGray : Color.Black;
-                Image? oldImage = coffeePictureBox.Image;
-                coffeePictureBox.Image = DarkModeCS.RecolorImage(coffeeImage, coffeeColor);
-                oldImage?.Dispose();
+                Image coffeeImage = _appImageList.Images["coffee.png"];
+                if (coffeeImage != null)
+                {
+                    Color coffeeColor = isDark ? Color.LightGray : Color.Black;
+                    Image? oldImage = coffeePictureBox.Image;
+                    coffeePictureBox.Image = DarkModeCS.RecolorImage(coffeeImage, coffeeColor);
+
+                    // Only dispose if it's not the original resource from ImageList
+                    if (oldImage != null && oldImage != coffeeImage)
+                    {
+                        oldImage.Dispose();
+                    }
+                }
             }
         }
 
         private void DarkModeSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            _appSettings.Theme = darkModeSwitch.Checked ?
-                "Dark" : "Light";
-            ThemeChanged?.Invoke();
+            if (_appSettings != null)
+            {
+                _appSettings.Theme = darkModeSwitch.Checked ? "Dark" : "Light";
+                ThemeChanged?.Invoke();
+            }
         }
 
         private void startOnStartupSwitch_CheckedChanged(object sender, EventArgs e)
@@ -222,14 +210,20 @@ namespace MinimalFirewall
 
         private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
-            TrafficMonitorSettingChanged?.Invoke();
+            if (_appSettings != null)
+            {
+                _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
+                TrafficMonitorSettingChanged?.Invoke();
+            }
         }
 
         private void ShowAppIconsSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
-            IconVisibilityChanged?.Invoke();
+            if (_appSettings != null)
+            {
+                _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
+                IconVisibilityChanged?.Invoke();
+            }
         }
 
         private void managePublishersButton_Click(object sender, EventArgs e)
@@ -249,7 +243,7 @@ namespace MinimalFirewall
                 };
                 Process.Start(startInfo);
             }
-            catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
+            catch (Exception ex)
             {
                 Messenger.MessageBox($"Could not open Windows Firewall console.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -276,58 +270,53 @@ namespace MinimalFirewall
 
         private void CheckForUpdatesButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                Process.Start(new ProcessStartInfo("https://github.com/deminimis/minimalfirewall/releases") { UseShellExecute = true });
-            }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
-            {
-                Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            OpenLink("https://github.com/deminimis/minimalfirewall/releases");
         }
 
         private void LinkLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             if (sender is not LinkLabel { Tag: string url }) return;
-            try
-            {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
-            {
-                Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            OpenLink(url);
         }
 
         private void CoffeeLink_Click(object sender, EventArgs e)
         {
+            OpenLink("https://www.buymeacoffee.com/deminimis");
+        }
+
+        private void OpenLink(string url)
+        {
             try
             {
-                Process.Start(new ProcessStartInfo("https://www.buymeacoffee.com/deminimis") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
-            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+            catch (Exception ex)
             {
                 Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void CoffeePictureBox_MouseEnter(object? sender, EventArgs e)
-        {
-        }
-
-        private void CoffeePictureBox_MouseLeave(object? sender, EventArgs e)
-        {
-        }
+        private void CoffeePictureBox_MouseEnter(object? sender, EventArgs e) { }
+        private void CoffeePictureBox_MouseLeave(object? sender, EventArgs e) { }
 
         private async void deleteAllRulesButton_Click(object sender, EventArgs e)
         {
             var result = Messenger.MessageBox("This will permanently delete all firewall rules created by this application. This action cannot be undone. Are you sure you want to continue?",
                 "Delete All Rules", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (result == DialogResult.Yes)
             {
-                _actionsService.DeleteAllMfwRules();
-                await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
-                Messenger.MessageBox("All Minimal Firewall rules have been deleted.", "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+                try
+                {
+                    _actionsService.DeleteAllMfwRules();
+                    await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
+                    Messenger.MessageBox("All Minimal Firewall rules have been deleted.", "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+                }
+                catch (Exception ex)
+                {
+                    _activityLogger?.LogException("DeleteAllRules", ex);
+                    Messenger.MessageBox($"Failed to delete rules: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -337,12 +326,21 @@ namespace MinimalFirewall
                 "All custom rules, including those not created by this application, will be deleted. This action is irreversible.\n\n" +
                 "Are you absolutely sure you want to continue?",
                 "Revert Windows Firewall Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (result == DialogResult.Yes)
             {
-                AdminTaskService.ResetFirewall();
-                await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
-                Messenger.MessageBox("Windows Firewall has been reset to its default settings. It is recommended to restart the application.",
-                    "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+                try
+                {
+                    AdminTaskService.ResetFirewall();
+                    await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
+                    Messenger.MessageBox("Windows Firewall has been reset to its default settings. It is recommended to restart the application.",
+                        "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
+                }
+                catch (Exception ex)
+                {
+                    _activityLogger?.LogException("RevertFirewall", ex);
+                    Messenger.MessageBox($"Failed to reset firewall: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -356,7 +354,15 @@ namespace MinimalFirewall
 
             if (result == DialogResult.Yes)
             {
-                await _mainViewModel.CleanUpOrphanedRulesAsync();
+                try
+                {
+                    await _mainViewModel.CleanUpOrphanedRulesAsync();
+                }
+                catch (Exception ex)
+                {
+                    _activityLogger?.LogException("CleanOrphanedRules", ex);
+                    Messenger.MessageBox($"Failed to clean rules: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -448,15 +454,29 @@ namespace MinimalFirewall
 
             try
             {
-                var lines = await File.ReadAllLinesAsync(filePath);
-                var lastNLines = lines.Skip(Math.Max(0, lines.Length - n));
-                return string.Join(Environment.NewLine, lastNLines);
+                var lineQueue = new Queue<string>(n);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(fileStream))
+                {
+                    string? line;
+                    while ((line = await reader.ReadLineAsync()) != null)
+                    {
+                        if (lineQueue.Count >= n)
+                        {
+                            lineQueue.Dequeue();
+                        }
+                        lineQueue.Enqueue(line);
+                    }
+                }
+                return string.Join(Environment.NewLine, lineQueue);
             }
             catch (Exception ex)
             {
                 return $"Error reading {Path.GetFileName(filePath)}: {ex.Message}";
             }
         }
+
         private async void exportDiagnosticButton_Click(object sender, EventArgs e)
         {
             using var saveDialog = new SaveFileDialog
@@ -471,15 +491,14 @@ namespace MinimalFirewall
                 string zipPath = saveDialog.FileName;
                 var statusForm = new StatusForm("Gathering diagnostic data...", _appSettings);
                 statusForm.Show(this.FindForm());
-                Application.DoEvents();
+                Application.DoEvents(); 
 
                 try
                 {
-
                     if (File.Exists(zipPath)) File.Delete(zipPath);
+
                     using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
                     {
-
                         statusForm.UpdateStatus("Adding configuration files...");
                         var configFiles = new List<string>
                         {
@@ -502,17 +521,16 @@ namespace MinimalFirewall
                         }
                         statusForm.UpdateProgress(20);
 
-
                         statusForm.UpdateStatus("Adding debug log...");
                         string debugLogPath = ConfigPathManager.GetConfigPath("debug_log.txt");
                         string logContent = await ReadLastNLinesAsync(debugLogPath, 1500);
+
                         var logEntry = archive.CreateEntry("debug_log_last1500.txt");
                         using (var writer = new StreamWriter(logEntry.Open()))
                         {
                             await writer.WriteAsync(logContent);
                         }
                         statusForm.UpdateProgress(40);
-
 
                         statusForm.UpdateStatus("Exporting current rules...");
                         string rulesJson = await _actionsService.ExportAllMfwRulesAsync();
@@ -523,14 +541,12 @@ namespace MinimalFirewall
                         }
                         statusForm.UpdateProgress(60);
 
-
                         statusForm.UpdateStatus("Gathering system info...");
                         var sysInfo = new StringBuilder();
                         sysInfo.AppendLine($"OS Version: {Environment.OSVersion}");
                         sysInfo.AppendLine($".NET Runtime: {RuntimeInformation.FrameworkDescription}");
                         sysInfo.AppendLine($"App Version: {Assembly.GetExecutingAssembly().GetName()?.Version}");
                         sysInfo.AppendLine($"Timestamp: {DateTime.Now}");
-
 
                         var sysInfoEntry = archive.CreateEntry("system_info.txt");
                         using (var writer = new StreamWriter(sysInfoEntry.Open()))

@@ -8,11 +8,16 @@ namespace MinimalFirewall
 {
     internal static class Program
     {
-        private const string AppGuid = "6326C497-403B-F991-2F6A-A5FBA67C364C";
+        // ensure single instance across all sessions
+        private const string AppGuid = "Global\\6326C497-403B-F991-2F6A-A5FBA67C364C";
 
         [STAThread]
         static void Main()
         {
+            // Setup Global Error Handling
+            Application.ThreadException += (s, e) => HandleException(e.Exception);
+            AppDomain.CurrentDomain.UnhandledException += (s, e) => HandleException(e.ExceptionObject as Exception);
+
             using (Mutex mutex = new Mutex(true, AppGuid, out bool createdNew))
             {
                 if (createdNew)
@@ -35,6 +40,11 @@ namespace MinimalFirewall
                     MessageBox.Show("Minimal Firewall is already running.", "Application Already Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
+        }
+
+        private static void HandleException(Exception? ex)
+        {
+            MessageBox.Show($"An unexpected error occurred: {ex?.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 }

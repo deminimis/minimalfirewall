@@ -42,6 +42,7 @@ namespace MinimalFirewall
             this.programListLabel.Size = new System.Drawing.Size(454, 50);
             this.programListLabel.TabIndex = 0;
             this.programListLabel.Text = "Program List";
+            this.programListLabel.AutoEllipsis = true;
 
             this.actionGroupBox.Controls.Add(this.blockDirectionCombo);
             this.actionGroupBox.Controls.Add(this.allowDirectionCombo);

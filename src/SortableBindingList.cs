@@ -54,7 +54,6 @@ namespace MinimalFirewall
                 var sortedList = new List<T>(Items);
                 sortedList.Sort(comparer);
 
-                // Suspend events to prevent flickering during reload
                 bool oldRaise = RaiseListChangedEvents;
                 RaiseListChangedEvents = false;
                 try
@@ -87,19 +86,31 @@ namespace MinimalFirewall
 
     public class PropertyComparer<T> : IComparer<T>
     {
-        private readonly PropertyDescriptor _prop;
         private readonly ListSortDirection _direction;
+        private readonly List<PropertyInfo> _propertyChain = new List<PropertyInfo>();
 
         public PropertyComparer(PropertyDescriptor prop, ListSortDirection direction)
         {
-            _prop = prop;
             _direction = direction;
+
+            // Parse the property path once during initialization
+            if (prop != null)
+            {
+                Type currentType = typeof(T);
+                foreach (var part in prop.Name.Split('.'))
+                {
+                    PropertyInfo? info = currentType.GetProperty(part);
+                    if (info == null) break;
+                    _propertyChain.Add(info);
+                    currentType = info.PropertyType;
+                }
+            }
         }
 
         public int Compare(T? x, T? y)
         {
-            object? valueX = GetNestedPropertyValue(x, _prop.Name);
-            object? valueY = GetNestedPropertyValue(y, _prop.Name);
+            object? valueX = GetValue(x);
+            object? valueY = GetValue(y);
 
             int result;
 
@@ -123,20 +134,17 @@ namespace MinimalFirewall
             return _direction == ListSortDirection.Ascending ? result : -result;
         }
 
-        private static object? GetNestedPropertyValue(object? obj, string propertyName)
+        private object? GetValue(object? obj)
         {
-            if (obj == null || string.IsNullOrEmpty(propertyName)) return null;
+            if (obj == null || _propertyChain.Count == 0) return null;
 
-            object? currentObject = obj;
-            foreach (string part in propertyName.Split('.'))
+            object? current = obj;
+            foreach (var propInfo in _propertyChain)
             {
-                if (currentObject == null) return null;
-                Type type = currentObject.GetType();
-                PropertyInfo? info = type.GetProperty(part);
-                if (info == null) return null;
-                currentObject = info.GetValue(currentObject, null);
+                current = propInfo.GetValue(current, null);
+                if (current == null) return null;
             }
-            return currentObject;
+            return current;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -9,6 +10,9 @@ namespace DarkModeForms
 {
     public class FlatTabControl : TabControl
     {
+        // Cache recolored icons 
+        private Dictionary<string, Image> _iconCache = new Dictionary<string, Image>();
+
         [Description("Color for a decorative line"), Category("Appearance")]
         public Color LineColor { get; set; } = SystemColors.Highlight;
 
@@ -18,8 +22,18 @@ namespace DarkModeForms
         [Description("Back color for selected Tab"), Category("Appearance")]
         public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
 
+        private Color _selectedForeColor = SystemColors.HighlightText;
         [Description("Fore Color for Selected Tab"), Category("Appearance")]
-        public Color SelectedForeColor { get; set; } = SystemColors.HighlightText;
+        public Color SelectedForeColor
+        {
+            get => _selectedForeColor;
+            set
+            {
+                _selectedForeColor = value;
+                _iconCache.Clear(); // Invalidate cache when colors change
+                Invalidate();
+            }
+        }
 
         [Description("Back Color for un-selected tabs"), Category("Appearance")]
         public Color TabColor { get; set; } = SystemColors.ControlLight;
@@ -81,20 +95,18 @@ namespace DarkModeForms
             Rectangle tabRect = this.GetTabRect(nIndex);
             bool isSelected = (this.SelectedIndex == nIndex);
 
-            bool isDarkModeText = (SelectedForeColor.R + SelectedForeColor.G + SelectedForeColor.B) > 382;
+            bool isDarkModeText = (0.299 * SelectedForeColor.R + 0.587 * SelectedForeColor.G + 0.114 * SelectedForeColor.B) > 128;
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
             if (this.Alignment == TabAlignment.Left)
             {
-
                 Color tabBackColor = isSelected ? SelectTabColor : this.TabColor;
                 using (Brush b = new SolidBrush(tabBackColor))
                 {
                     g.FillRectangle(b, tabRect);
                 }
-
 
                 using (Pen p = new Pen(this.BorderColor))
                 {
@@ -102,7 +114,7 @@ namespace DarkModeForms
                     g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - offset);
                 }
 
-                Rectangle textRect = tabRect; 
+                Rectangle textRect = tabRect;
                 TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
 
                 if (this.ImageList != null && customTabPage.ImageIndex >= 0 && customTabPage.ImageIndex < this.ImageList.Images.Count)
@@ -113,17 +125,18 @@ namespace DarkModeForms
                         int iconW = this.ImageList.ImageSize.Width;
                         int iconH = this.ImageList.ImageSize.Height;
 
-
                         int iconX = tabRect.X + (tabRect.Width - iconW) / 2;
                         int iconY = tabRect.Y + Scale(15, g);
 
-
                         if (isDarkModeText && customTabPage.ImageKey != "locked.png")
                         {
-                            using (Image whiteIcon = RecolorImage(originalIcon, SelectedForeColor))
+                            // Use cached image 
+                            string cacheKey = $"{customTabPage.ImageIndex}-{SelectedForeColor.ToArgb()}";
+                            if (!_iconCache.ContainsKey(cacheKey))
                             {
-                                g.DrawImage(whiteIcon, new Rectangle(iconX, iconY, iconW, iconH));
+                                _iconCache[cacheKey] = RecolorImage(originalIcon, SelectedForeColor);
                             }
+                            g.DrawImage(_iconCache[cacheKey], new Rectangle(iconX, iconY, iconW, iconH));
                         }
                         else
                         {
@@ -156,7 +169,6 @@ namespace DarkModeForms
             }
             else
             {
-                // Fallback for Top/Bottom tabs 
                 int scaled3 = Scale(3, g);
                 Point[] points = new[]
                 {
@@ -212,6 +224,16 @@ namespace DarkModeForms
                 }
             }
             return newBitmap;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var img in _iconCache.Values) img.Dispose();
+                _iconCache.Clear();
+            }
+            base.Dispose(disposing);
         }
     }
 }

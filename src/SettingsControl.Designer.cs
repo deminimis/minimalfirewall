@@ -9,7 +9,6 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
-                exportDiagnosticButton?.Dispose();
             }
             base.Dispose(disposing);
         }
