@@ -538,8 +538,8 @@ namespace MinimalFirewall
                     else _wizardProtocol = ProtocolAny;
 
                     ruleNameTextBox.Text = string.IsNullOrEmpty(_wizardAppPath)
-                        ? $"Allow Port {_wizardPorts}"
-                        : $"Allow {Path.GetFileNameWithoutExtension(_wizardAppPath)} Port {_wizardPorts}";
+                        ? $"Port {_wizardPorts}"
+                        : $"{Path.GetFileNameWithoutExtension(_wizardAppPath)} Port {_wizardPorts}";
                     GoForwardTo(WizardStep.GetName);
                     break;
 
@@ -677,7 +677,7 @@ namespace MinimalFirewall
 
             var programVm = new AdvancedRuleViewModel
             {
-                Name = $"{actionStr} {progName}",
+                Name = progName,
                 Description = $"Rule created via Wizard for {progName}",
                 IsEnabled = true,
                 Status = actionStr,
@@ -733,7 +733,7 @@ namespace MinimalFirewall
         {
             var fileShareVm = new AdvancedRuleViewModel
             {
-                Name = $"Allow File Sharing from {_wizardRemoteIP}",
+                Name = $"File Sharing from {_wizardRemoteIP}",
                 Description = "Allows inbound file sharing (SMB)",
                 IsEnabled = true,
                 Status = "Allow",
@@ -755,7 +755,7 @@ namespace MinimalFirewall
         {
             var blockDeviceVm = new AdvancedRuleViewModel
             {
-                Name = $"Block Inbound from {_wizardRemoteIP}",
+                Name = $"Inbound from {_wizardRemoteIP}",
                 Description = "Blocks all inbound traffic from a specific local IP",
                 IsEnabled = true,
                 Status = "Block",
@@ -778,7 +778,7 @@ namespace MinimalFirewall
             string appName = Path.GetFileNameWithoutExtension(_wizardAppPath);
             var allowLocalVm = new AdvancedRuleViewModel
             {
-                Name = $"{appName} - Allow Local Network",
+                Name = $"{appName} - Local Network Only",
                 Description = "Allows communication only within the local network. This rule only works as intended if Lockdown Mode is active.",
                 IsEnabled = true,
                 Status = "Allow",

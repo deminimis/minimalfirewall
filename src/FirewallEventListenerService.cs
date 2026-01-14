@@ -7,6 +7,9 @@ using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms; 
+using System;
 
 namespace MinimalFirewall
 {
@@ -20,7 +23,6 @@ namespace MinimalFirewall
         private const string DirectionOutboundCode = "%%14593";
         private const string DirectionInbound = "Incoming";
         private const string DirectionOutbound = "Outgoing";
-
         private readonly FirewallDataService _dataService;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly Func<bool> _isLockdownEnabled;
@@ -37,7 +39,6 @@ namespace MinimalFirewall
 
         public FirewallActionsService? ActionsService { get; set; }
         public event Action<PendingConnectionViewModel>? PendingConnectionDetected;
-
         public FirewallEventListenerService(
             FirewallDataService dataService,
             WildcardRuleService wildcardRuleService,
@@ -70,12 +71,10 @@ namespace MinimalFirewall
                 return;
             }
 
-            EnsureWfpAuditingEnabled();
 
             try
             {
                 var query = new EventLogQuery(SecurityLogName, PathType.LogName, $"*[System[(EventID={BlockedConnectionEventId})]]");
-
                 _eventWatcher = new EventLogWatcher(query);
                 _eventWatcher.EventRecordWritten += OnEventRecordWritten;
                 _eventWatcher.Enabled = true;
@@ -98,12 +97,25 @@ namespace MinimalFirewall
                 _eventWatcher = null;
                 _logAction("[EventListener] Event watcher stopped and disposed.");
             }
+
+            DisableWfpAuditing();
         }
+
+
+        public void EnableAuditing()
+        {
+            EnsureWfpAuditingEnabled();
+        }
+
+        public void DisableAuditing()
+        {
+            DisableWfpAuditing();
+        }
+
 
         private void OnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
         {
             if (e.EventRecord == null) return;
-
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
@@ -129,11 +141,9 @@ namespace MinimalFirewall
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
-
                 string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
 
                 if (IsNetworkNoise(remoteAddress)) return;
-
                 if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase)) return;
 
                 appPath = ResolveAppPath(rawAppPath);
@@ -142,7 +152,6 @@ namespace MinimalFirewall
 
                 string notificationKey = $"{appPath}|{direction}";
                 if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
-
                 // Logic Check (Snoozed or Lockdown)
                 if (!ShouldProcessEvent(appPath))
                 {
@@ -151,7 +160,6 @@ namespace MinimalFirewall
                 }
 
                 serviceName = ResolveServiceName(appPath, serviceName, pidStr);
-
                 // Ignore Noisy Services
                 if (IsNoisyService(serviceName))
                 {
@@ -160,7 +168,6 @@ namespace MinimalFirewall
                 }
 
                 MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, direction);
-
                 if (existingRuleStatus == MfwRuleStatus.MfwBlock)
                 {
                     ClearPendingNotification(appPath, direction);
@@ -171,6 +178,7 @@ namespace MinimalFirewall
                 {
                     if (filterId == "0")
                     {
+
                         _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
                     }
@@ -194,15 +202,16 @@ namespace MinimalFirewall
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
-                    Direction = direction,
+                    Direction =
+                    direction,
                     ServiceName = serviceName,
                     Protocol = protocol,
                     RemotePort = remotePort,
                     RemoteAddress = remoteAddress,
+
                     FilterId = filterId,
                     LayerId = layerId
                 };
-
                 PendingConnectionDetected?.Invoke(pendingVm);
             }
             catch (Exception ex)
@@ -240,7 +249,6 @@ namespace MinimalFirewall
         private string ResolveServiceName(string appPath, string currentService, string pid)
         {
             if (!string.IsNullOrEmpty(currentService)) return currentService;
-
             if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) &&
                 !string.IsNullOrEmpty(pid) &&
                 pid != "0")
@@ -277,21 +285,27 @@ namespace MinimalFirewall
         private async Task<bool> CheckAutoAllowTrustedAsync(string appPath, string direction)
         {
             if (!_appSettings.AutoAllowSystemTrusted) return false;
-
             return await Task.Run(() =>
             {
                 if (File.Exists(appPath) &&
                     SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) &&
                     !string.IsNullOrEmpty(trustedPublisherName))
                 {
+
                     if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
                     {
                         string allowAction = $"Allow ({direction})";
-                        var appPayload = new ApplyApplicationRulePayload { AppPaths = new List<string> { appPath }, Action = allowAction };
+                        var appPayload = new ApplyApplicationRulePayload
+                        {
+                            AppPaths = new List<string>
+                        { appPath },
+                            Action = allowAction
+                        };
                         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
                     }
                     return true;
                 }
+
                 return false;
             });
         }
@@ -311,11 +325,13 @@ namespace MinimalFirewall
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "auditpol.exe",
+                    FileName =
+                    "auditpol.exe",
                     Arguments = $"/set /subcategory:\"{WfpAuditSubcategoryGuid}\" /success:disable /failure:enable",
                     CreateNoWindow = true,
                     UseShellExecute = false,
                     WindowStyle = ProcessWindowStyle.Hidden
+
                 };
                 using var p = Process.Start(psi);
                 p?.WaitForExit(1000);
@@ -323,6 +339,29 @@ namespace MinimalFirewall
             catch (Exception ex)
             {
                 _logAction($"[EventListener] Failed to set audit policy: {ex.Message}");
+            }
+        }
+
+        private void DisableWfpAuditing()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "auditpol.exe",
+                    // Disable both success and failure to "clean up" the policy
+                    Arguments = $"/set /subcategory:\"{WfpAuditSubcategoryGuid}\" /success:disable /failure:disable",
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden
+                };
+                using var p = Process.Start(psi);
+                p?.WaitForExit(1000);
+                _logAction($"[EventListener] Audit policy disabled (Cleaned up).");
+            }
+            catch (Exception ex)
+            {
+                _logAction($"[EventListener] Failed to clean up audit policy: {ex.Message}");
             }
         }
 
@@ -363,7 +402,6 @@ namespace MinimalFirewall
         private bool ShouldProcessEvent(string appPath)
         {
             if (string.IsNullOrEmpty(appPath)) return false;
-
             if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil))
             {
                 if (DateTime.UtcNow < snoozeUntil) return false;
@@ -379,7 +417,8 @@ namespace MinimalFirewall
             {
                 DirectionInboundCode => DirectionInbound,
                 DirectionOutboundCode => DirectionOutbound,
-                _ => rawDirection,
+                _ =>
+                rawDirection,
             };
         }
 
@@ -394,9 +433,11 @@ namespace MinimalFirewall
                     if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "Data")
                     {
                         if (xmlReader.GetAttribute("Name") == elementName)
+
                         {
                             if (xmlReader.IsEmptyElement)
                             {
+
                                 return string.Empty;
                             }
                             xmlReader.Read();

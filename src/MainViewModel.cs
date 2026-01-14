@@ -81,6 +81,7 @@ namespace MinimalFirewall
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
 
+
         public void ClearRulesCache()
         {
             _dataService.InvalidateRuleCache();
@@ -304,6 +305,21 @@ namespace MinimalFirewall
             }
 
             DashboardActionProcessed?.Invoke(pending);
+        }
+
+        public void ToggleLockdownMode()
+        {
+            _actionsService.ToggleLockdown();
+
+            if (IsLockedDown)
+            {
+                _eventListenerService.EnableAuditing();
+                _eventListenerService.Start();
+            }
+            else
+            {
+                _eventListenerService.Stop();
+            }
         }
 
         public void ProcessTemporaryDashboardAction(PendingConnectionViewModel pending, string decision, TimeSpan duration)
@@ -600,13 +616,15 @@ namespace MinimalFirewall
 
             var vm = new AdvancedRuleViewModel
             {
-                Name = $"Allow {pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
+                Name = $"{pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
                 Description = "Granular rule created by Minimal Firewall popup.",
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
                 Status = "Allow",
-                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ? Directions.Incoming : Directions.Outgoing,
-                Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
+                Direction = pending.Direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase) ?
+                    Directions.Incoming : Directions.Outgoing,
+                Protocol = int.TryParse(pending.Protocol, out int proto) ?
+                    proto : 256,
                 ApplicationName = pending.AppPath,
                 RemotePorts = pending.RemotePort,
                 RemoteAddresses = pending.RemoteAddress,
@@ -615,6 +633,7 @@ namespace MinimalFirewall
                 Profiles = "All",
                 Type = RuleType.Advanced
             };
+
             var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload, $"Creating rule for {pending.FileName}"));
 
@@ -625,8 +644,10 @@ namespace MinimalFirewall
                 Description = vm.Description,
                 Grouping = vm.Grouping,
                 IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
+                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ?
+                    vm.Status : "N/A",
+                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ?
+                    vm.Status : "N/A",
                 ProtocolName = vm.ProtocolName,
                 LocalPorts = vm.LocalPorts,
                 RemotePorts = vm.RemotePorts,
