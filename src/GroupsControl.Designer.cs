@@ -82,7 +82,7 @@ namespace MinimalFirewall
             this.groupsDataGridView.ShowCellToolTips = true;
             this.groupsDataGridView.Size = new System.Drawing.Size(800, 600);
             this.groupsDataGridView.TabIndex = 1;
-            this.groupsDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.groupsDataGridView_CellContentClick);
+            this.groupsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.groupsDataGridView_CellClick);
             this.groupsDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.groupsDataGridView_CellMouseDown);
             this.groupsDataGridView.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.groupsDataGridView_CellPainting);
             this.groupsDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.groupsDataGridView_ColumnHeaderMouseClick);

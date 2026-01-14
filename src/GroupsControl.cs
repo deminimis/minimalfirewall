@@ -116,7 +116,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void groupsDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private void groupsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
             {
@@ -128,7 +128,6 @@ namespace MinimalFirewall
                     var payload = new SetGroupEnabledStatePayload { GroupName = group.Name, IsEnabled = newState };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.SetGroupEnabledState, payload));
 
-                    // Force immediate repaint 
                     groupsDataGridView.InvalidateCell(e.ColumnIndex, e.RowIndex);
                 }
             }
