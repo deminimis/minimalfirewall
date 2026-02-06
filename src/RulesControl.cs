@@ -86,7 +86,6 @@ namespace MinimalFirewall
                null,
                rulesDataGridView,
                new object[] { true });
-
             rulesDataGridView.VirtualMode = true;
             rulesDataGridView.AutoGenerateColumns = false;
 
@@ -97,13 +96,14 @@ namespace MinimalFirewall
 
             rulesDataGridView.DataSource = null;
             rulesDataGridView.CellValueNeeded += RulesDataGridView_CellValueNeeded;
-
             _mainViewModel.RulesListUpdated += OnRulesListUpdated;
 
             programFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
             serviceFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
             uwpFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
             wildcardFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+
+            rulesDataGridView.MouseDown += RulesDataGridView_MouseDown;
         }
 
         private void OnRulesListUpdated()
@@ -492,23 +492,20 @@ namespace MinimalFirewall
                 e.CellStyle.BackColor = Color.FromArgb(255, 204, 204); // Block (Light Red)
             }
 
-            // Ensure text is black for readability on pastel colors
             if (hasAllow || hasBlock)
             {
                 e.CellStyle.ForeColor = Color.Black;
             }
 
-            // Custom Selection Logic
+            // Selection color
             if (rulesDataGridView.Rows[e.RowIndex].Selected)
             {
-                // CHANGE: Use a pastel blue for selection instead of SystemColors.Highlight
                 e.CellStyle.SelectionBackColor = Color.FromArgb(189, 222, 255);
-                // CHANGE: Force black text on selection for better contrast with pastel
                 e.CellStyle.SelectionForeColor = Color.Black;
             }
             else
             {
-                // Restore default when not selected (sync selection style with normal style)
+                // Restore default when not selected 
                 e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
                 e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
             }
@@ -567,6 +564,15 @@ namespace MinimalFirewall
             _appSettings.Save();
 
             OnRulesListUpdated();
+        }
+
+        private void RulesDataGridView_MouseDown(object sender, MouseEventArgs e)
+        {
+            var hit = rulesDataGridView.HitTest(e.X, e.Y);
+            if (hit.Type == DataGridViewHitTestType.None)
+            {
+                rulesDataGridView.ClearSelection();
+            }
         }
     }
 }
