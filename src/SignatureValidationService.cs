@@ -51,7 +51,7 @@ namespace MinimalFirewall
                     publisherName = cert.Subject;
                     if (string.IsNullOrEmpty(publisherName)) return false;
 
-                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online; 
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck; 
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
                     return chain.Build(cert);

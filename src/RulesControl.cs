@@ -470,39 +470,45 @@ namespace MinimalFirewall
         private void rulesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= _currentRuleList.Count) return;
-
             var rule = _currentRuleList[e.RowIndex];
 
             // Color coding logic for Allow/Block
-            bool hasAllow = (rule.InboundStatus != null && rule.InboundStatus.Contains("Allow")) || (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Allow"));
-            bool hasBlock = (rule.InboundStatus != null && rule.InboundStatus.Contains("Block")) || (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Block"));
+            bool hasAllow = (rule.InboundStatus != null && rule.InboundStatus.Contains("Allow")) ||
+                            (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Allow"));
+            bool hasBlock = (rule.InboundStatus != null && rule.InboundStatus.Contains("Block")) ||
+                            (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Block"));
 
+            // Define base row colors
             if (hasAllow && hasBlock)
             {
-                e.CellStyle.BackColor = Color.FromArgb(255, 255, 204); // Mixed
+                e.CellStyle.BackColor = Color.FromArgb(255, 255, 204); // Mixed (Light Yellow)
             }
             else if (hasAllow)
             {
-                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204); // Allow (Greenish)
+                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204); // Allow (Light Green)
             }
             else if (hasBlock)
             {
-                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204); // Block (Reddish)
+                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204); // Block (Light Red)
             }
 
+            // Ensure text is black for readability on pastel colors
             if (hasAllow || hasBlock)
             {
                 e.CellStyle.ForeColor = Color.Black;
             }
 
-            // Maintain highlight contrast on selection
+            // Custom Selection Logic
             if (rulesDataGridView.Rows[e.RowIndex].Selected)
             {
-                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
-                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+                // CHANGE: Use a pastel blue for selection instead of SystemColors.Highlight
+                e.CellStyle.SelectionBackColor = Color.FromArgb(189, 222, 255);
+                // CHANGE: Force black text on selection for better contrast with pastel
+                e.CellStyle.SelectionForeColor = Color.Black;
             }
             else
             {
+                // Restore default when not selected (sync selection style with normal style)
                 e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
                 e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
             }
