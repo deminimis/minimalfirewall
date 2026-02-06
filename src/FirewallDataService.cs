@@ -63,10 +63,6 @@ namespace MinimalFirewall
                 try
                 {
                     var mfwRules = allRules
-                        .Where(rule =>
-                            !string.IsNullOrEmpty(rule.Grouping) &&
-                            (rule.Grouping == MFWConstants.MainRuleGroup || rule.Grouping == MFWConstants.WildcardRuleGroup || rule.Grouping.EndsWith(MFWConstants.MfwRuleSuffix))
-                        )
                         .Select(CreateAdvancedRuleViewModel)
                         .ToList();
 
@@ -75,6 +71,7 @@ namespace MinimalFirewall
                         return [];
                     }
                     return mfwRules;
+
                 }
                 finally
                 {
