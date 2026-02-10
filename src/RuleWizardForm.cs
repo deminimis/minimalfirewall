@@ -711,7 +711,7 @@ namespace MinimalFirewall
                 Direction = Directions.Incoming | Directions.Outgoing,
                 Protocol = (short)_wizardProtocol,
                 LocalPorts = _wizardPorts,
-                ApplicationName = string.IsNullOrEmpty(_wizardAppPath) ? "*" : _wizardAppPath,
+                ApplicationName = string.IsNullOrEmpty(_wizardAppPath) ? string.Empty : _wizardAppPath,
                 Grouping = MFWConstants.MainRuleGroup,
                 RemotePorts = "*",
                 LocalAddresses = "*",
@@ -719,6 +719,7 @@ namespace MinimalFirewall
                 Profiles = "All",
                 Type = RuleType.Advanced
             };
+
             var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload));
         }

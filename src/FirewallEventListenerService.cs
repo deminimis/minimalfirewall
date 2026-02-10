@@ -270,8 +270,13 @@ namespace MinimalFirewall
         private bool IsValidAppPath(string path)
         {
             if (string.IsNullOrEmpty(path)) return false;
-            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return false;
-            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return false;
+
+            // Allow "System" (PID 4) traffic 
+            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return true;
+
+            // Allow Unsolicited Traffic
+            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return true;
+
             return true;
         }
 
@@ -292,9 +297,9 @@ namespace MinimalFirewall
         private bool IsNoisyService(string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName)) return false;
-            return serviceName.Equals("Dhcp", StringComparison.OrdinalIgnoreCase) ||
-                   serviceName.Equals("Dnscache", StringComparison.OrdinalIgnoreCase) ||
-                   serviceName.Equals("Ssdpsrv", StringComparison.OrdinalIgnoreCase);
+
+            // Do NOT ignore Dhcp or Dnscache. 
+            return serviceName.Equals("Ssdpsrv", StringComparison.OrdinalIgnoreCase);
         }
 
         private bool CheckWildcardMatch(string appPath, string serviceName)

@@ -346,7 +346,7 @@ namespace MinimalFirewall
         }
 
         // Consolidated helper for System Rules (Crypto/DHCP)
-        private void ManageSystemRule(string ruleName, string description, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
+        private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
         {
             INetFwRule2? rule = null;
             try
@@ -358,16 +358,32 @@ namespace MinimalFirewall
                     {
                         if (FwRuleType == null) throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
                         var newRule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
-                        newRule.WithName(ruleName)
-                               .WithDescription(description)
-                               .ForService(serviceName)
-                               .WithDirection(Directions.Outgoing)
-                               .WithAction(Actions.Allow)
-                               .WithProtocol(protocol)
-                               .WithRemotePorts(remotePorts)
-                               .WithLocalPorts(localPorts)
-                               .WithGrouping(MFWConstants.MainRuleGroup)
-                               .IsEnabled();
+
+                        newRule.Name = ruleName;
+                        newRule.Description = description;
+                        newRule.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT;
+                        newRule.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+                        newRule.Grouping = MFWConstants.MainRuleGroup;
+                        newRule.Enabled = true;
+                        newRule.InterfaceTypes = "All"; 
+                        newRule.Protocol = protocol;
+
+                        if (protocol == 6 || protocol == 17)
+                        {
+                            newRule.RemotePorts = remotePorts;
+                            newRule.LocalPorts = localPorts;
+                        }
+
+                        if (!string.IsNullOrEmpty(applicationName))
+                        {
+                            newRule.ApplicationName = applicationName;
+                        }
+
+                        if (!string.IsNullOrEmpty(serviceName))
+                        {
+                            newRule.serviceName = serviceName;
+                        }
+
                         firewallService.CreateRule(newRule);
                         activityLogger.LogDebug($"Created system rule: {ruleName}");
                     }
@@ -381,7 +397,6 @@ namespace MinimalFirewall
                 {
                     if (rule != null)
                     {
-                        // Clean removal is safer than just disabling to prevent clutter
                         firewallService.DeleteRulesByName(new List<string> { ruleName });
                         activityLogger.LogDebug($"Disabled/Deleted system rule: {ruleName}");
                     }
@@ -402,6 +417,7 @@ namespace MinimalFirewall
             ManageSystemRule(
                 CryptoRuleName,
                 "Allows Windows to check for certificate revocation online. Essential for the 'auto-allow trusted' feature in Lockdown Mode.",
+                "svchost.exe",
                 "CryptSvc",
                 ProtocolTypes.TCP.Value,
                 "80,443", // Remote
@@ -415,6 +431,7 @@ namespace MinimalFirewall
             ManageSystemRule(
                 DhcpRuleName,
                 "Allows the DHCP Client (Dhcp) service to get an IP address from your router. Essential for network connectivity in Lockdown Mode.",
+                "svchost.exe",
                 "Dhcp",
                 ProtocolTypes.UDP.Value,
                 "67",  // Remote
@@ -454,6 +471,9 @@ namespace MinimalFirewall
 
             ManageCryptoServiceRule(newLockdownState);
             ManageDhcpClientRule(newLockdownState);
+
+
+            ManageWslRules(newLockdownState);
 
             if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
             {
@@ -505,6 +525,43 @@ namespace MinimalFirewall
                 ReenableMfwRules();
                 activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
             }
+        }
+
+
+        private void ManageWslRules(bool enable)
+        {
+            // SharedAccess (ICS) 
+            ManageSystemRule(
+                "Minimal Firewall System - WSL Relay (ICS)",
+                "Allows Internet Connection Sharing for WSL2/Hyper-V.",
+                "svchost.exe",
+                "SharedAccess",
+                256, 
+                "*", "*", 
+                enable
+            );
+
+            // System (PID 4)
+            ManageSystemRule(
+                "Minimal Firewall System - Kernel/Hyper-V",
+                "Allows the System process (PID 4) for WSL2 vSwitch traffic.",
+                "System",
+                "", // No Service
+                256, 
+                "*", "*",
+                enable
+            );
+
+            // DNS Client (Dnscache)
+            ManageSystemRule(
+                "Minimal Firewall System - DNS Client",
+                "Allows Windows to resolve domain names (Essential for WSL).",
+                "svchost.exe",
+                "Dnscache",
+                17, 
+                "53", "*", 
+                enable
+            );
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
