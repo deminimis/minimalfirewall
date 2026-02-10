@@ -6,9 +6,10 @@ namespace MinimalFirewall
     internal static class ConfigPathManager
     {
         private static readonly string _exeDirectory = Path.GetDirectoryName(Environment.ProcessPath)!;
-        private static readonly string _standardAppDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MinimalFirewall");
 
-        // Logic to look for settigns files
+        private static readonly string _standardAppDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MinimalFirewall");
+
+        // read/write settings logic
         private static readonly string _activeRootDirectory = DetermineActivePath();
 
         private static string DetermineActivePath()
@@ -16,9 +17,13 @@ namespace MinimalFirewall
             string exeSettings = Path.Combine(_exeDirectory, "settings.json");
             string appDataSettings = Path.Combine(_standardAppDataDirectory, "settings.json");
 
+            // Portable Mode. If settings exist next to the EXE, always use that.
             if (File.Exists(exeSettings)) return _exeDirectory;
+
+            // Installed Mode. If settings exist in AppData, use that.
             if (File.Exists(appDataSettings)) return _standardAppDataDirectory;
 
+            // Default for new users.
             return _exeDirectory;
         }
 
@@ -37,7 +42,10 @@ namespace MinimalFirewall
         {
             try
             {
-                Directory.CreateDirectory(_activeRootDirectory);
+                if (!Directory.Exists(_activeRootDirectory))
+                {
+                    Directory.CreateDirectory(_activeRootDirectory);
+                }
             }
             catch (Exception ex)
             {
@@ -57,7 +65,9 @@ namespace MinimalFirewall
 
         public static string GetExeDirectory() => _exeDirectory;
         public static string GetStandardAppDataDirectory() => _standardAppDataDirectory;
+
         public static bool IsPortableMode() => string.Equals(_activeRootDirectory, _exeDirectory, StringComparison.OrdinalIgnoreCase);
+
         public static List<string> GetManagedConfigFileNames() => _managedConfigFiles;
     }
 }
