@@ -312,7 +312,7 @@
             this.restrictToProgramCheckBox.Name = "restrictToProgramCheckBox";
             this.restrictToProgramCheckBox.Size = new System.Drawing.Size(217, 19);
             this.restrictToProgramCheckBox.TabIndex = 2;
-            this.restrictToProgramCheckBox.Text = "Also restrict this rule to a program?";
+            this.restrictToProgramCheckBox.Text = "Restrict rule to program";
             this.restrictToProgramCheckBox.UseVisualStyleBackColor = true;
             this.restrictToProgramCheckBox.CheckedChanged += new System.EventHandler(this.restrictToProgramCheckBox_CheckedChanged);
             // 
