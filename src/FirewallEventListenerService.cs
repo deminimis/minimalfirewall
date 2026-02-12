@@ -154,8 +154,6 @@ namespace MinimalFirewall
             try
             {
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-
-                // Use raw code if available (Culture Invariant), otherwise fallback to parsing the XML string
                 if (rawDirectionCode.HasValue)
                 {
                     direction = ParseDirectionFromCode(rawDirectionCode.Value);
@@ -172,19 +170,24 @@ namespace MinimalFirewall
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
-                string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ? string.Empty : xmlServiceName;
 
+                // filter noise (e.g. broadcasts, multicasts)
                 if (IsNetworkNoise(remoteAddress)) return;
+
+                string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ?
+                                     string.Empty : xmlServiceName;
+
                 if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase)) return;
 
                 appPath = ResolveAppPath(rawAppPath);
 
+                // Filter system
                 if (!IsValidAppPath(appPath)) return;
 
                 string notificationKey = $"{appPath}|{direction}";
                 if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
 
-                // Logic Check (Snoozed or Lockdown)
+                // check if snoozed/locked down
                 if (!ShouldProcessEvent(appPath))
                 {
                     ClearPendingNotification(appPath, direction);
@@ -192,6 +195,15 @@ namespace MinimalFirewall
                 }
 
                 serviceName = ResolveServiceName(appPath, serviceName, pidStr);
+
+                //  ignore svchost if it has no service
+                if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) &&
+                    string.IsNullOrEmpty(serviceName))
+                {
+                    ClearPendingNotification(appPath, direction);
+                    return;
+                }
+
                 // Ignore Noisy Services
                 if (IsNoisyService(serviceName))
                 {
@@ -229,7 +241,6 @@ namespace MinimalFirewall
                     return;
                 }
 
-                //  Notify UI
                 var pendingVm = new PendingConnectionViewModel
                 {
                     AppPath = appPath,
@@ -271,12 +282,13 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(path)) return false;
 
-            // Allow "System" (PID 4) traffic 
-            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return true;
+            // Block  (PID 4) traffic 
+            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return false;
 
-            // Allow Unsolicited Traffic
-            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return true;
+            // Block Unsolicited Traffic 
+            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return false;
 
+            // Allow everything else 
             return true;
         }
 
@@ -346,9 +358,16 @@ namespace MinimalFirewall
         private bool IsNetworkNoise(string remoteIp)
         {
             if (string.IsNullOrEmpty(remoteIp)) return false;
+
+            // Filter out Broadcasts 
             if (remoteIp == "255.255.255.255") return true;
+
+            // Filter out Multicasts
             if (remoteIp.StartsWith("224.") || remoteIp.StartsWith("239.")) return true;
+
+            // Filter out IPv6 Multicasts 
             if (remoteIp.StartsWith("ff", StringComparison.OrdinalIgnoreCase)) return true;
+
             return false;
         }
 
