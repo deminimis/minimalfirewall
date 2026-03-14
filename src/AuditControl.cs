@@ -251,16 +251,9 @@ namespace MinimalFirewall
 
         private bool TryGetSelectedAppContext(out string? appPath)
         {
-            appPath = null;
-            if (systemChangesDataGridView.SelectedRows.Count == 0)
-            {
-                return false;
-            }
-
-            if (systemChangesDataGridView.SelectedRows[0].DataBoundItem is FirewallRuleChange change)
-            {
-                appPath = change.ApplicationName;
-            }
+            appPath = systemChangesDataGridView.SelectedRows.Count > 0 &&
+                      systemChangesDataGridView.SelectedRows[0].DataBoundItem is FirewallRuleChange change
+                      ? change.ApplicationName : null;
 
             return !string.IsNullOrEmpty(appPath);
         }
@@ -284,10 +277,11 @@ namespace MinimalFirewall
             {
                 if (row.DataBoundItem is FirewallRuleChange change && change.Rule != null)
                 {
-                    if (change.Rule.IsEnabled)
-                        hasEnabledItems = true;
-                    else
-                        hasDisabledItems = true;
+                    if (change.Rule.IsEnabled) hasEnabledItems = true;
+                    else hasDisabledItems = true;
+
+                    // Stop iterating if we already know we have both types
+                    if (hasEnabledItems && hasDisabledItems) break;
                 }
             }
 
@@ -309,52 +303,39 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || Directory.Exists(appPath));
         }
 
-        private void archiveSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ProcessSelectedChanges(Action<FirewallRuleChange, int> action)
         {
             if (systemChangesDataGridView.SelectedRows.Count == 0) return;
-            var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
-                .Select(r => r.DataBoundItem as FirewallRuleChange)
-                .Where(c => c != null)
-                .ToList();
-            foreach (var change in rows)
+            foreach (DataGridViewRow row in systemChangesDataGridView.SelectedRows)
             {
-                _viewModel.AcceptForeignRule(change!);
+                if (row.DataBoundItem is FirewallRuleChange change)
+                {
+                    action(change, row.Index);
+                }
             }
+        }
+
+        private void archiveSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ProcessSelectedChanges((change, index) => _viewModel.AcceptForeignRule(change));
         }
 
         private void enableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
-            var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
-                .Where(r => r.DataBoundItem is FirewallRuleChange)
-                .ToList();
-
-            foreach (var row in rows)
+            ProcessSelectedChanges((change, index) =>
             {
-                if (row.DataBoundItem is FirewallRuleChange change)
-                {
-                    _viewModel.EnableForeignRule(change);
-                    systemChangesDataGridView.InvalidateRow(row.Index);
-                }
-            }
+                _viewModel.EnableForeignRule(change);
+                systemChangesDataGridView.InvalidateRow(index);
+            });
         }
 
         private void disableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
-
-            var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
-                .Where(r => r.DataBoundItem is FirewallRuleChange)
-                .ToList();
-
-            foreach (var row in rows)
+            ProcessSelectedChanges((change, index) =>
             {
-                if (row.DataBoundItem is FirewallRuleChange change)
-                {
-                    _viewModel.DisableForeignRule(change);
-                    systemChangesDataGridView.InvalidateRow(row.Index);
-                }
-            }
+                _viewModel.DisableForeignRule(change);
+                systemChangesDataGridView.InvalidateRow(index);
+            });
         }
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -419,20 +400,15 @@ namespace MinimalFirewall
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (systemChangesDataGridView.SelectedRows.Count > 0)
-            {
-                var result = DarkModeForms.Messenger.MessageBox($"Are you sure you want to permanently delete {systemChangesDataGridView.SelectedRows.Count} rule(s)?", "Confirm Delete", MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-                if (result != DialogResult.Yes) return;
+            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
 
-                var rows = systemChangesDataGridView.SelectedRows.Cast<DataGridViewRow>()
-                   .Select(r => r.DataBoundItem as FirewallRuleChange)
-                   .Where(c => c != null)
-                   .ToList();
-                foreach (var change in rows)
-                {
-                    _viewModel.DeleteForeignRule(change!);
-                }
+            var result = DarkModeForms.Messenger.MessageBox(
+                $"Are you sure you want to permanently delete {systemChangesDataGridView.SelectedRows.Count} rule(s)?",
+                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                ProcessSelectedChanges((change, index) => _viewModel.DeleteForeignRule(change));
             }
         }
 
@@ -443,16 +419,15 @@ namespace MinimalFirewall
 
             if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
 
-            Color rowBackColor;
             Color foreColor = Color.Black;
             string pub = change.Publisher ?? string.Empty;
-            bool isMicrosoft = pub.Contains("Microsoft", StringComparison.OrdinalIgnoreCase);
-            if (string.IsNullOrEmpty(pub))
-                rowBackColor = Color.FromArgb(255, 220, 220);
-            else if (isMicrosoft)
-                rowBackColor = Color.FromArgb(220, 255, 220);
-            else
-                rowBackColor = Color.FromArgb(255, 255, 220);
+
+            Color rowBackColor = pub switch
+            {
+                "" => Color.FromArgb(255, 220, 220),
+                _ when pub.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) => Color.FromArgb(220, 255, 220),
+                _ => Color.FromArgb(255, 255, 220)
+            };
 
             if (change.Rule is { IsEnabled: false })
             {
@@ -555,26 +530,18 @@ namespace MinimalFirewall
         private void ShowDiff(FirewallRuleChange change)
         {
             diffRichTextBox.Clear();
-            if (_dm != null && _dm.IsDarkMode)
-            {
-                diffRichTextBox.BackColor = _dm.OScolors.Surface;
-                diffRichTextBox.ForeColor = _dm.OScolors.TextActive;
-            }
-            else
-            {
-                diffRichTextBox.BackColor = Color.White;
-                diffRichTextBox.ForeColor = Color.Black;
-            }
+
+            bool isDark = _dm?.IsDarkMode == true;
+
+            diffRichTextBox.BackColor = isDark ? _dm!.OScolors.Surface : Color.White;
+            diffRichTextBox.ForeColor = isDark ? _dm!.OScolors.TextActive : Color.Black;
 
             Font boldFont = new(diffRichTextBox.Font, FontStyle.Bold);
             Font regFont = diffRichTextBox.Font;
-            Color oldColor = Color.Red;
-            Color newColor = Color.Green;
-            if (_dm != null && _dm.IsDarkMode)
-            {
-                oldColor = Color.FromArgb(255, 100, 100);
-                newColor = Color.LightGreen;
-            }
+
+            Color oldColor = isDark ? Color.FromArgb(255, 100, 100) : Color.Red;
+            Color newColor = isDark ? Color.LightGreen : Color.Green;
+            Color labelColor = isDark ? Color.White : Color.Black;
 
             if (change.Type == ChangeType.New && change.Rule != null)
             {
@@ -623,9 +590,9 @@ namespace MinimalFirewall
             {
                 if (!string.Equals(oldVal, newVal, StringComparison.OrdinalIgnoreCase))
                 {
-                    AppendText(diffRichTextBox, $"{label}: ", _dm?.IsDarkMode == true ? Color.White : Color.Black, boldFont);
+                    AppendText(diffRichTextBox, $"{label}: ", labelColor, boldFont);
                     AppendText(diffRichTextBox, oldVal, oldColor, new Font(regFont, FontStyle.Strikeout));
-                    AppendText(diffRichTextBox, " -> ", _dm?.IsDarkMode == true ? Color.White : Color.Black, regFont);
+                    AppendText(diffRichTextBox, " -> ", labelColor, regFont);
                     AppendText(diffRichTextBox, newVal, newColor, boldFont);
                     diffRichTextBox.AppendText(Environment.NewLine);
                 }
