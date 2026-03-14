@@ -9,8 +9,6 @@ namespace MinimalFirewall
         private const int E_ACCESSDENIED = unchecked((int)0x80070005);
         private const int HRESULT_FROM_WIN32_ERROR_FILE_NOT_FOUND = unchecked((int)0x80070002);
         private const int HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS = unchecked((int)0x800700B7);
-
-        // Optimization: Cache the COM Type lookup to avoid repeated reflection calls
         private static readonly Lazy<Type?> _firewallPolicyType = new(() => Type.GetTypeFromProgID("HNetCfg.FwPolicy2"));
 
         public FirewallRuleService()
@@ -26,68 +24,74 @@ namespace MinimalFirewall
             return (INetFwPolicy2)Activator.CreateInstance(_firewallPolicyType.Value)!;
         }
 
-        /// <summary>
-        /// Helper to iterate rules, extract names based on a condition, and immediately release COM objects.
-        /// Reduces memory overhead and code duplication for Delete operations.
-        /// </summary>
-        private List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
+        public List<T> GetAllRulesMapped<T>(Func<INetFwRule2, T> mapper)
         {
-            var matchedNames = new List<string>();
-            var allRules = GetAllRules();
-
-            foreach (var rule in allRules)
-            {
-                try
-                {
-                    if (rule != null && predicate(rule))
-                    {
-                        matchedNames.Add(rule.Name);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[WARN] Error checking rule predicate: {ex.Message}");
-                }
-                finally
-                {
-                    // Always release the COM object immediately after inspection
-                    if (rule != null) Marshal.ReleaseComObject(rule);
-                }
-            }
-            return matchedNames;
-        }
-
-        public List<INetFwRule2> GetAllRules()
-        {
+            var mappedList = new List<T>();
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return [];
+            if (firewallPolicy?.Rules == null) return mappedList;
 
-            var rulesList = new List<INetFwRule2>();
             var comRules = firewallPolicy.Rules;
-
             try
             {
                 foreach (INetFwRule2 rule in comRules)
                 {
-                    rulesList.Add(rule);
+                    if (rule == null) continue;
+                    try
+                    {
+                        mappedList.Add(mapper(rule));
+                    }
+                    catch
+                    {
+                        // Ignore rules that fail to map
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(rule);
+                    }
                 }
-                return rulesList;
-            }
-            catch (COMException ex)
-            {
-                Debug.WriteLine($"[ERROR] GetAllRules: Failed to retrieve firewall rules. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-                // If retrieval fails halfway, release what we collected
-                foreach (var rule in rulesList)
-                {
-                    Marshal.ReleaseComObject(rule);
-                }
-                return [];
             }
             finally
             {
                 if (comRules != null) Marshal.ReleaseComObject(comRules);
                 if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
+            return mappedList;
+        }
+
+        private List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
+        {
+            var matchedNames = new List<string>();
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return matchedNames;
+
+            var comRules = firewallPolicy.Rules;
+            try
+            {
+                foreach (INetFwRule2 rule in comRules)
+                {
+                    try
+                    {
+                        if (rule != null && predicate(rule))
+                        {
+                            matchedNames.Add(rule.Name);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[WARN] Error checking rule predicate: {ex.Message}");
+                    }
+                    finally
+                    {
+                        if (rule != null) Marshal.ReleaseComObject(rule);
+                    }
+                }
+            }
+            finally
+            {
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+            return matchedNames;
         }
 
         public INetFwRule2? GetRuleByName(string name)
