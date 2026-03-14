@@ -46,9 +46,19 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox systemFilterCheckBox;
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                if (_mainViewModel != null)
+                {
+                    _mainViewModel.RulesListUpdated -= OnRulesListUpdated;
+                }
+
+                _searchDebounceTimer?.Dispose();
+
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }

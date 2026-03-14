@@ -13,12 +13,13 @@ namespace MinimalFirewall
     {
         public static void ResetFirewall()
         {
+            INetFwMgr fwMgr = null;
             try
             {
                 Type fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
                 if (fwMgrType != null)
                 {
-                    INetFwMgr fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);
+                    fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);
                     fwMgr.RestoreDefaults();
                     Debug.WriteLine("[AdminTask] Firewall reset to defaults using COM interface.");
                 }
@@ -27,6 +28,13 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[AdminTask ERROR] Firewall reset failed: {ex.Message}");
                 Messenger.MessageBox($"Could not reset Windows Firewall.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                if (fwMgr != null && Marshal.IsComObject(fwMgr))
+                {
+                    Marshal.ReleaseComObject(fwMgr);
+                }
             }
         }
 
@@ -40,7 +48,7 @@ namespace MinimalFirewall
             foreach (var guid in guids)
             {
                 string arguments = $"/set /subcategory:{guid} /failure:{(enable ? "enable" : "disable")}";
-                Execute(arguments, "auditpol.exe", out _);
+                Execute(arguments, Path.Combine(Environment.SystemDirectory, "auditpol.exe"), out _);
             }
         }
 
@@ -260,10 +268,11 @@ namespace MinimalFirewall
 
         private void Execute(string fileName, string arguments, out string output, out string error)
         {
-            Debug.WriteLine($"[Startup] Executing: {fileName} {arguments}");
+            string safePath = Path.IsPathRooted(fileName) ? fileName : Path.Combine(Environment.SystemDirectory, fileName);
+            Debug.WriteLine($"[Startup] Executing: {safePath} {arguments}");
             var startInfo = new ProcessStartInfo()
             {
-                FileName = fileName,
+                FileName = safePath,
                 Arguments = arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true,
