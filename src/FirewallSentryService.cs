@@ -72,14 +72,19 @@ namespace MinimalFirewall
         public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker, IProgress<int>? progress = null, CancellationToken token = default)
         {
             var changes = new List<FirewallRuleChange>();
-            var allRules = firewallService.GetAllRules();
-
-            // Snapshot of rules currently in the system
             var currentScan = new Dictionary<string, AdvancedRuleViewModel>(StringComparer.OrdinalIgnoreCase);
+
+            Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+            if (policyType == null) return changes;
+
+            NetFwTypeLib.INetFwPolicy2? firewallPolicy = (NetFwTypeLib.INetFwPolicy2?)Activator.CreateInstance(policyType);
+            if (firewallPolicy?.Rules == null) return changes;
+
+            var comRules = firewallPolicy.Rules;
 
             try
             {
-                int totalRules = allRules.Count;
+                int totalRules = comRules.Count;
                 if (totalRules == 0)
                 {
                     progress?.Report(100);
@@ -87,7 +92,7 @@ namespace MinimalFirewall
                 }
 
                 int processedRules = 0;
-                foreach (var rule in allRules)
+                foreach (NetFwTypeLib.INetFwRule2 rule in comRules)
                 {
                     if (token.IsCancellationRequested) return new List<FirewallRuleChange>();
 
@@ -96,73 +101,68 @@ namespace MinimalFirewall
 
                     if (rule == null) continue;
 
-                    string ruleName = rule.Name;
-                    string ruleGrouping = rule.Grouping;
-
-                    if (string.IsNullOrEmpty(ruleName)) continue;
-
-                    // Pass the cached string instead of the COM object
-                    if (IsMfwRule(ruleGrouping)) continue;
-
-                    var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
-
-                    // Use the cached ruleName for dictionary lookups
-                    currentScan[ruleName] = ruleVm;
-
-                    bool isAcknowledged = acknowledgedTracker.IsAcknowledged(ruleName);
-                    bool existsInCache = _ruleCache.TryGetValue(ruleName, out var cachedRule);
-
-                    FirewallRuleChange? changeObj = null;
-
-                    // DETECTION LOGIC
-                    if (existsInCache)
+                    try
                     {
-                        if (!ruleVm.HasSameSettings(cachedRule))
+                        string ruleName = rule.Name;
+                        string ruleGrouping = rule.Grouping;
+
+                        if (string.IsNullOrEmpty(ruleName)) continue;
+                        if (IsMfwRule(ruleGrouping)) continue;
+
+                        var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
+                        currentScan[ruleName] = ruleVm;
+
+                        bool isAcknowledged = acknowledgedTracker.IsAcknowledged(ruleName);
+                        bool existsInCache = _ruleCache.TryGetValue(ruleName, out var cachedRule);
+
+                        FirewallRuleChange? changeObj = null;
+
+                        // DETECTION LOGIC
+                        if (existsInCache)
                         {
-                            changeObj = new FirewallRuleChange
+                            if (!ruleVm.HasSameSettings(cachedRule))
                             {
-                                Type = ChangeType.Modified,
-                                Rule = ruleVm,
-                                OldRule = cachedRule
-                            };
-                        }
-                        else
-                        {
-                            if (!isAcknowledged)
+                                changeObj = new FirewallRuleChange
+                                {
+                                    Type = ChangeType.Modified,
+                                    Rule = ruleVm,
+                                    OldRule = cachedRule
+                                };
+                            }
+                            else if (!isAcknowledged)
                             {
                                 changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
                             }
                         }
-                    }
-                    else
-                    {
-                        if (!isAcknowledged)
+                        else if (!isAcknowledged)
                         {
                             changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
                         }
-                    }
 
-                    if (changeObj != null)
+                        if (changeObj != null)
+                        {
+                            EnrichWithPublisher(changeObj, ruleVm.ApplicationName);
+                            changes.Add(changeObj);
+                        }
+                    }
+                    finally
                     {
-                        EnrichWithPublisher(changeObj, rule.ApplicationName);
-                        changes.Add(changeObj);
+                        // Release COM objects immediately inside the loop 
+                        Marshal.ReleaseComObject(rule);
                     }
                 }
 
-                // Check for deletions
+
                 foreach (var kvp in _ruleCache)
                 {
-                    if (!currentScan.ContainsKey(kvp.Key))
+                    if (!currentScan.ContainsKey(kvp.Key) && !acknowledgedTracker.IsAcknowledged(kvp.Key))
                     {
-                        if (!acknowledgedTracker.IsAcknowledged(kvp.Key))
+                        changes.Add(new FirewallRuleChange
                         {
-                            changes.Add(new FirewallRuleChange
-                            {
-                                Type = ChangeType.Deleted,
-                                Rule = kvp.Value,
-                                OldRule = kvp.Value
-                            });
-                        }
+                            Type = ChangeType.Deleted,
+                            Rule = kvp.Value,
+                            OldRule = kvp.Value
+                        });
                     }
                 }
 
@@ -170,14 +170,8 @@ namespace MinimalFirewall
             }
             finally
             {
-                foreach (var rule in allRules)
-                {
-                    if (rule != null)
-                    {
-                        try { Marshal.ReleaseComObject(rule); }
-                        catch { /* Ignore release errors to prevent loop crash */ }
-                    }
-                }
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
             return changes;
         }

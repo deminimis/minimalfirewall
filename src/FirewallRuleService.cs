@@ -58,6 +58,37 @@ namespace MinimalFirewall
             return mappedList;
         }
 
+        public List<INetFwRule2> GetAllRules()
+        {
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return [];
+
+            var rulesList = new List<INetFwRule2>();
+            var comRules = firewallPolicy.Rules;
+            try
+            {
+                foreach (INetFwRule2 rule in comRules)
+                {
+                    rulesList.Add(rule);
+                }
+                return rulesList;
+            }
+            catch (COMException ex)
+            {
+                Debug.WriteLine($"[ERROR] GetAllRules: Failed to retrieve firewall rules. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                foreach (var rule in rulesList)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+                return [];
+            }
+            finally
+            {
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+        }
+
         private List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
         {
             var matchedNames = new List<string>();
@@ -165,34 +196,38 @@ namespace MinimalFirewall
             if (string.IsNullOrEmpty(appPath)) return [];
             string normalizedAppPath = PathResolver.NormalizePath(appPath);
             var matchingRules = new List<INetFwRule2>();
-            var allRules = GetAllRules();
 
-            // Rules that we inspect but don't return need to be released
-            var rulesToRelease = new List<INetFwRule2>();
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return matchingRules;
 
+            var comRules = firewallPolicy.Rules;
             try
             {
-                foreach (var rule in allRules)
+                foreach (INetFwRule2 rule in comRules)
                 {
-                    if (rule != null &&
-                        !string.IsNullOrEmpty(rule.ApplicationName) &&
-                         string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
-                        rule.Direction == direction)
+                    if (rule == null) continue;
+                    bool keep = false;
+                    try
                     {
-                        matchingRules.Add(rule);
+                        if (!string.IsNullOrEmpty(rule.ApplicationName) &&
+                            string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase) &&
+                            rule.Direction == direction)
+                        {
+                            matchingRules.Add(rule);
+                            keep = true;
+                        }
                     }
-                    else if (rule != null)
+                    catch { }
+                    finally
                     {
-                        rulesToRelease.Add(rule);
+                        if (!keep) Marshal.ReleaseComObject(rule);
                     }
                 }
             }
             finally
             {
-                foreach (var rule in rulesToRelease)
-                {
-                    Marshal.ReleaseComObject(rule);
-                }
+                if (comRules != null) Marshal.ReleaseComObject(comRules);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
             return matchingRules;
         }
