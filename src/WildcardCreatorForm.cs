@@ -182,18 +182,7 @@ namespace MinimalFirewall
 
         // --- Non-Blocking Validation Events ---
 
-        private void localPortsTextBox_Validating(object sender, CancelEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
-                    errorProvider1.SetError(textBox, errorMessage);
-                else
-                    errorProvider1.SetError(textBox, string.Empty);
-            }
-        }
-
-        private void remotePortsTextBox_Validating(object sender, CancelEventArgs e)
+        private void ValidatePortTextBox_Validating(object sender, CancelEventArgs e)
         {
             if (sender is TextBox textBox)
             {

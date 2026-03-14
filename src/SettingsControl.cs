@@ -80,17 +80,17 @@ namespace MinimalFirewall
                 btn.ForeColor = _dm.IsDarkMode ? Color.White : SystemColors.ControlText;
             }
 
-            StyleButton(deleteAllRulesButton);
-            StyleButton(revertFirewallButton);
-            StyleButton(managePublishersButton);
-            StyleButton(openFirewallButton);
-            StyleButton(openAppDataButton);
-            StyleButton(checkForUpdatesButton);
-            StyleButton(cleanUpOrphanedRulesButton);
-            StyleButton(exportRulesButton);
-            StyleButton(importMergeButton);
-            StyleButton(importReplaceButton);
-            StyleButton(exportDiagnosticButton);
+            var buttonsToStyle = new[] {
+                deleteAllRulesButton, revertFirewallButton, managePublishersButton,
+                openFirewallButton, openAppDataButton, checkForUpdatesButton,
+                cleanUpOrphanedRulesButton, exportRulesButton, importMergeButton,
+                importReplaceButton, exportDiagnosticButton
+            };
+
+            foreach (var btn in buttonsToStyle)
+            {
+                StyleButton(btn);
+            }
         }
 
         public void LoadSettingsToUI()
