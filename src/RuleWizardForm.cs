@@ -645,6 +645,11 @@ namespace MinimalFirewall
 
         #region Rule Creation Logic
 
+        private void EnqueueAdvancedRuleTask(AdvancedRuleViewModel viewModel)
+        {
+            var payload = new CreateAdvancedRulePayload { ViewModel = viewModel, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
+            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+        }
         private void CreateRule()
         {
             switch (_selectedTemplate)
@@ -704,8 +709,7 @@ namespace MinimalFirewall
                 IcmpTypesAndCodes = ""
             };
 
-            var progPayload = new CreateAdvancedRulePayload { ViewModel = programVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, progPayload));
+            EnqueueAdvancedRuleTask(programVm);
         }
 
         private void CreatePortRule()
@@ -727,8 +731,7 @@ namespace MinimalFirewall
                 Type = RuleType.Advanced
             };
 
-            var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload));
+            EnqueueAdvancedRuleTask(vm);
         }
 
         private void CreateServiceRule()
@@ -755,8 +758,7 @@ namespace MinimalFirewall
                 LocalAddresses = "*",
                 Profiles = "All"
             };
-            var fileSharePayload = new CreateAdvancedRulePayload { ViewModel = fileShareVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, fileSharePayload));
+            EnqueueAdvancedRuleTask(fileShareVm);
         }
 
         private void CreateBlockDeviceRule()
@@ -777,8 +779,7 @@ namespace MinimalFirewall
                 LocalAddresses = "*",
                 Profiles = "All"
             };
-            var blockDevicePayload = new CreateAdvancedRulePayload { ViewModel = blockDeviceVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, blockDevicePayload));
+            EnqueueAdvancedRuleTask(blockDeviceVm);
         }
 
         private void CreateRestrictAppRule()
@@ -801,8 +802,7 @@ namespace MinimalFirewall
                 LocalAddresses = "*",
                 Profiles = "All"
             };
-            var allowPayload = new CreateAdvancedRulePayload { ViewModel = allowLocalVm, InterfaceTypes = "All", IcmpTypesAndCodes = "" };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, allowPayload));
+            EnqueueAdvancedRuleTask(allowLocalVm);
         }
 
         #endregion
