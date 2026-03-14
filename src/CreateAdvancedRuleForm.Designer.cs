@@ -37,6 +37,7 @@
         private System.Windows.Forms.Label labelRemoteAddress;
         private System.Windows.Forms.TextBox localAddressTextBox;
         private System.Windows.Forms.Label labelLocalAddress;
+        private System.Windows.Forms.Label labelScopeExample;
         private System.Windows.Forms.GroupBox profilesGroupBox;
         private System.Windows.Forms.CheckBox publicCheckBox;
         private System.Windows.Forms.CheckBox privateCheckBox;
@@ -108,6 +109,7 @@
             this.labelRemoteAddress = new System.Windows.Forms.Label();
             this.localAddressTextBox = new System.Windows.Forms.TextBox();
             this.labelLocalAddress = new System.Windows.Forms.Label();
+            this.labelScopeExample = new System.Windows.Forms.Label();
             this.profilesGroupBox = new System.Windows.Forms.GroupBox();
             this.publicCheckBox = new System.Windows.Forms.CheckBox();
             this.privateCheckBox = new System.Windows.Forms.CheckBox();
@@ -488,13 +490,14 @@
             // 
             this.scopeGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.scopeGroupBox.Controls.Add(this.labelScopeExample);
             this.scopeGroupBox.Controls.Add(this.remoteAddressTextBox);
             this.scopeGroupBox.Controls.Add(this.labelRemoteAddress);
             this.scopeGroupBox.Controls.Add(this.localAddressTextBox);
             this.scopeGroupBox.Controls.Add(this.labelLocalAddress);
             this.scopeGroupBox.Location = new System.Drawing.Point(15, 519);
             this.scopeGroupBox.Name = "scopeGroupBox";
-            this.scopeGroupBox.Size = new System.Drawing.Size(757, 90);
+            this.scopeGroupBox.Size = new System.Drawing.Size(757, 115);
             this.scopeGroupBox.TabIndex = 11;
             this.scopeGroupBox.TabStop = false;
             this.scopeGroupBox.Text = "Scope (Addresses)";
@@ -538,6 +541,16 @@
             this.labelLocalAddress.Size = new System.Drawing.Size(101, 20);
             this.labelLocalAddress.TabIndex = 0;
             this.labelLocalAddress.Text = "Local Address";
+            // 
+            // labelScopeExample
+            // 
+            this.labelScopeExample.AutoSize = true;
+            this.labelScopeExample.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.labelScopeExample.Location = new System.Drawing.Point(102, 85);
+            this.labelScopeExample.Name = "labelScopeExample";
+            this.labelScopeExample.Size = new System.Drawing.Size(400, 20);
+            this.labelScopeExample.TabIndex = 4;
+            this.labelScopeExample.Text = "Keywords: LocalSubnet, DNS, DHCP, WINS, DefaultGateway";
             // 
             // profilesGroupBox
             // 
