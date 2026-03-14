@@ -41,10 +41,10 @@ namespace MinimalFirewall
                 {
                     foreach (INetFwRule2 rule in allRules)
                     {
-                        if (token.IsCancellationRequested) break;
-
                         try
                         {
+                            if (token.IsCancellationRequested) break;
+
                             string name = rule.Name ?? string.Empty;
 
                             // Fast check to skip non-UWP rules before Regex

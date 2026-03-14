@@ -59,8 +59,36 @@ namespace MinimalFirewall
 
         public void UpdateRule(WildcardRule oldRule, WildcardRule newRule)
         {
-            RemoveRule(oldRule);
-            AddRule(newRule);
+            _lock.EnterWriteLock();
+            try
+            {
+                var ruleToRemove = _rules.FirstOrDefault(r =>
+                    r.FolderPath.Equals(oldRule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                    r.ExeName.Equals(oldRule.ExeName, StringComparison.OrdinalIgnoreCase) &&
+                    r.Action.Equals(oldRule.Action, StringComparison.OrdinalIgnoreCase) &&
+                    r.Protocol == oldRule.Protocol &&
+                    r.LocalPorts.Equals(oldRule.LocalPorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemotePorts.Equals(oldRule.RemotePorts, StringComparison.OrdinalIgnoreCase) &&
+                    r.RemoteAddresses.Equals(oldRule.RemoteAddresses, StringComparison.OrdinalIgnoreCase));
+
+                if (ruleToRemove != null)
+                {
+                    _rules.Remove(ruleToRemove);
+                    _regexCache.Remove(ruleToRemove);
+                }
+
+                if (!_rules.Any(r => r.FolderPath.Equals(newRule.FolderPath, StringComparison.OrdinalIgnoreCase) &&
+                                     r.ExeName.Equals(newRule.ExeName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _rules.Add(newRule);
+                    UpdateCacheForRule(newRule);
+                }
+                SaveRules();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
         public void RemoveRule(WildcardRule rule)

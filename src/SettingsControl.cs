@@ -273,7 +273,12 @@ namespace MinimalFirewall
                     Directory.CreateDirectory(standardAppDataPath);
                 }
 
-                Process.Start("explorer.exe", standardAppDataPath);
+                Process.Start(new ProcessStartInfo()
+                {
+                    FileName = standardAppDataPath,
+                    UseShellExecute = true,
+                    Verb = "open"
+                });
             }
             catch (Exception ex)
             {

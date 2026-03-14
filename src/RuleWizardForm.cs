@@ -207,16 +207,23 @@ namespace MinimalFirewall
                 var services = SystemDiscoveryService.GetServicesWithExePaths()
                                     .OrderBy(s => s.DisplayName).ToList();
 
-                this.Invoke(new Action(() =>
+                if (this.IsDisposed || !this.IsHandleCreated) return;
+
+                try
                 {
-                    if (this.IsDisposed) return;
-                    serviceListBox.Items.Clear();
-                    foreach (var service in services)
+                    this.Invoke(new Action(() =>
                     {
-                        serviceListBox.Items.Add($"{service.DisplayName} ({service.ServiceName})");
-                    }
-                    serviceListBox.Enabled = true;
-                }));
+                        if (this.IsDisposed) return;
+                        serviceListBox.Items.Clear();
+                        foreach (var service in services)
+                        {
+                            serviceListBox.Items.Add($"{service.DisplayName} ({service.ServiceName})");
+                        }
+                        serviceListBox.Enabled = true;
+                    }));
+                }
+                catch (ObjectDisposedException) { /* ignore if closed during invoke */ }
+                catch (InvalidOperationException) { }
             });
         }
 
