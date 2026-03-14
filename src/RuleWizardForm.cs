@@ -57,7 +57,11 @@ namespace MinimalFirewall
 
             this.AcceptButton = nextButton;
             this.CancelButton = cancelButton;
+        }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
             GoToStep(WizardStep.Selection);
         }
 
@@ -252,47 +256,19 @@ namespace MinimalFirewall
 
         #region Event Handlers - Selection Buttons
 
-        private void programRuleButton_Click(object sender, EventArgs e)
+        private void StartWizardTemplate(RuleTemplate template, WizardStep step)
         {
-            _selectedTemplate = RuleTemplate.ProgramRule;
-            GoForwardTo(WizardStep.GetAction);
+            _selectedTemplate = template;
+            GoForwardTo(step);
         }
 
-        private void batchProgramRuleButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.BatchProgramRule;
-            GoForwardTo(WizardStep.GetFolder);
-        }
-
-        private void portRuleButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.PortRule;
-            GoForwardTo(WizardStep.GetPorts);
-        }
-
-        private void blockServiceButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.BlockService;
-            GoForwardTo(WizardStep.GetService);
-        }
-
-        private void allowFileShareButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.AllowFileShare;
-            GoForwardTo(WizardStep.GetFileShareIP);
-        }
-
-        private void blockDeviceButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.BlockDevice;
-            GoForwardTo(WizardStep.GetBlockDeviceIP);
-        }
-
-        private void restrictAppButton_Click(object sender, EventArgs e)
-        {
-            _selectedTemplate = RuleTemplate.RestrictApp;
-            GoForwardTo(WizardStep.GetRestrictApp);
-        }
+        private void programRuleButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.ProgramRule, WizardStep.GetAction);
+        private void batchProgramRuleButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.BatchProgramRule, WizardStep.GetFolder);
+        private void portRuleButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.PortRule, WizardStep.GetPorts);
+        private void blockServiceButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.BlockService, WizardStep.GetService);
+        private void allowFileShareButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.AllowFileShare, WizardStep.GetFileShareIP);
+        private void blockDeviceButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.BlockDevice, WizardStep.GetBlockDeviceIP);
+        private void restrictAppButton_Click(object sender, EventArgs e) => StartWizardTemplate(RuleTemplate.RestrictApp, WizardStep.GetRestrictApp);
 
         private void wildcardRuleButton_Click(object sender, EventArgs e)
         {
@@ -368,6 +344,20 @@ namespace MinimalFirewall
 
         #region Validation Logic
 
+        private bool ShowError(string message, string title)
+        {
+            Messenger.MessageBox(message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+
+        private bool ValidateFile(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(Environment.ExpandEnvironmentVariables(path)))
+                return ShowError("Please select a valid program file.", "Invalid File");
+
+            return true;
+        }
+
         private bool ValidatePortString(string portString, out string errorMessage)
         {
             errorMessage = string.Empty;
@@ -406,41 +396,21 @@ namespace MinimalFirewall
             {
                 case WizardStep.GetFolder:
                     if (string.IsNullOrWhiteSpace(batchFolderPathTextBox.Text) || !Directory.Exists(Environment.ExpandEnvironmentVariables(batchFolderPathTextBox.Text)))
-                    {
-                        Messenger.MessageBox("Please select a valid folder.", "Invalid Folder", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                        return ShowError("Please select a valid folder.", "Invalid Folder");
                     if (!exeCheckBox.Checked && !dllCheckBox.Checked)
-                    {
-                        Messenger.MessageBox("Please select at least one file type to apply rules to (.exe or .dll).", "No File Type Selected", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                        return ShowError("Please select at least one file type to apply rules to (.exe or .dll).", "No File Type Selected");
                     break;
                 case WizardStep.GetProgram:
-                    if (string.IsNullOrWhiteSpace(programPathTextBox.Text) || !File.Exists(Environment.ExpandEnvironmentVariables(programPathTextBox.Text)))
-                    {
-                        Messenger.MessageBox("Please select a valid program file.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                    if (!ValidateFile(programPathTextBox.Text)) return false;
                     break;
                 case WizardStep.GetPorts:
                     if (!ValidatePortString(portsTextBox.Text, out string portError))
-                    {
-                        Messenger.MessageBox(portError, "Invalid Port", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-                    if (restrictToProgramCheckBox.Checked && (string.IsNullOrWhiteSpace(portsProgramPathTextBox.Text) || !File.Exists(Environment.ExpandEnvironmentVariables(portsProgramPathTextBox.Text))))
-                    {
-                        Messenger.MessageBox("Please select a valid program file.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                        return ShowError(portError, "Invalid Port");
+                    if (restrictToProgramCheckBox.Checked && !ValidateFile(portsProgramPathTextBox.Text)) return false;
                     break;
                 case WizardStep.GetName:
                     if (string.IsNullOrWhiteSpace(ruleNameTextBox.Text))
-                    {
-                        Messenger.MessageBox("Please enter a name for the rule.", "Invalid Name", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                        return ShowError("Please enter a name for the rule.", "Invalid Name");
                     break;
                 case WizardStep.GetService:
                     string serviceName = serviceNameTextBox.Text;
@@ -449,44 +419,28 @@ namespace MinimalFirewall
                         string selected = serviceListBox.SelectedItem.ToString()!;
                         serviceName = selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
                     }
-
                     if (string.IsNullOrWhiteSpace(serviceName))
-                    {
-                        Messenger.MessageBox("Please select a service from the list or enter a service name.", "No Service Selected", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                        return ShowError("Please select a service from the list or enter a service name.", "No Service Selected");
 
                     if (serviceListBox.Items.Count > 0 && serviceListBox.Enabled)
                     {
                         var services = SystemDiscoveryService.GetServicesWithExePaths();
                         if (!services.Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            Messenger.MessageBox($"Service '{serviceName}' not found on this system.", "Invalid Service", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return false;
-                        }
+                            return ShowError($"Service '{serviceName}' not found on this system.", "Invalid Service");
                     }
                     break;
                 case WizardStep.GetFileShareIP:
                 case WizardStep.GetBlockDeviceIP:
-                    string ipToCheck = _currentStep == WizardStep.GetFileShareIP ? fileShareIpTextBox.Text : blockDeviceIpTextBox.Text;
-                    if (string.IsNullOrWhiteSpace(ipToCheck) || !IPAddress.TryParse(ipToCheck, out _))
-                    {
-                        Messenger.MessageBox("Please enter a valid IP address.", "Invalid IP Address", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-                    break;
-                case WizardStep.GetRestrictApp:
-                    if (string.IsNullOrWhiteSpace(restrictAppPathTextBox.Text) || !File.Exists(Environment.ExpandEnvironmentVariables(restrictAppPathTextBox.Text)))
-                    {
-                        Messenger.MessageBox("Please select a valid program file.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
+                    _wizardRemoteIP = _currentStep == WizardStep.GetFileShareIP ? fileShareIpTextBox.Text : blockDeviceIpTextBox.Text;
+                    GoForwardTo(WizardStep.Summary);
                     break;
             }
             return true;
         }
 
         #endregion
+
+
 
         #region Step Processing Logic
 
@@ -664,6 +618,30 @@ namespace MinimalFirewall
             }
         }
 
+        private AdvancedRuleViewModel CreateBaseViewModel(string name, string status, Directions direction, int protocol, string description = "")
+        {
+            return new AdvancedRuleViewModel
+            {
+                Name = name,
+                Description = description,
+                IsEnabled = true,
+                Status = status,
+                Direction = direction,
+                Protocol = (short)protocol,
+                LocalPorts = "*",
+                RemotePorts = "*",
+                LocalAddresses = "*",
+                RemoteAddresses = "*",
+                ApplicationName = string.Empty,
+                ServiceName = string.Empty,
+                Grouping = MFWConstants.MainRuleGroup,
+                Profiles = "All",
+                Type = RuleType.Advanced,
+                InterfaceTypes = "All",
+                IcmpTypesAndCodes = ""
+            };
+        }
+
         private void CreateBatchProgramRule()
         {
             var searchPatterns = new List<string>();
@@ -687,49 +665,19 @@ namespace MinimalFirewall
             string progName = Path.GetFileNameWithoutExtension(_wizardAppPath);
             string actionStr = _wizardAction == Actions.Allow ? "Allow" : "Block";
 
-            var programVm = new AdvancedRuleViewModel
-            {
-                Name = progName,
-                Description = $"Rule created via Wizard for {progName}",
-                IsEnabled = true,
-                Status = actionStr,
-                Direction = _wizardDirection,
-                Protocol = ProtocolAny,
-                ProtocolName = "Any",
-                LocalPorts = "*",
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                RemoteAddresses = "*",
-                ApplicationName = _wizardAppPath,
-                ServiceName = "",
-                Grouping = MFWConstants.MainRuleGroup,
-                Profiles = "All",
-                Type = RuleType.Program,
-                InterfaceTypes = "All",
-                IcmpTypesAndCodes = ""
-            };
+            var programVm = CreateBaseViewModel(progName, actionStr, _wizardDirection, ProtocolAny, $"Rule created via Wizard for {progName}");
+            programVm.ProtocolName = "Any";
+            programVm.ApplicationName = _wizardAppPath;
+            programVm.Type = RuleType.Program;
 
             EnqueueAdvancedRuleTask(programVm);
         }
 
         private void CreatePortRule()
         {
-            var vm = new AdvancedRuleViewModel
-            {
-                Name = _wizardRuleName,
-                IsEnabled = true,
-                Status = "Allow",
-                Direction = Directions.Incoming | Directions.Outgoing,
-                Protocol = (short)_wizardProtocol,
-                LocalPorts = _wizardPorts,
-                ApplicationName = string.IsNullOrEmpty(_wizardAppPath) ? string.Empty : _wizardAppPath,
-                Grouping = MFWConstants.MainRuleGroup,
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                RemoteAddresses = "*",
-                Profiles = "All",
-                Type = RuleType.Advanced
-            };
+            var vm = CreateBaseViewModel(_wizardRuleName, "Allow", Directions.Incoming | Directions.Outgoing, _wizardProtocol);
+            vm.LocalPorts = _wizardPorts;
+            vm.ApplicationName = string.IsNullOrEmpty(_wizardAppPath) ? string.Empty : _wizardAppPath;
 
             EnqueueAdvancedRuleTask(vm);
         }
@@ -742,66 +690,28 @@ namespace MinimalFirewall
 
         private void CreateFileShareRule()
         {
-            var fileShareVm = new AdvancedRuleViewModel
-            {
-                Name = $"File Sharing from {_wizardRemoteIP}",
-                Description = "Allows inbound file sharing (SMB)",
-                IsEnabled = true,
-                Status = "Allow",
-                Direction = Directions.Incoming,
-                Protocol = ProtocolTCP,
-                LocalPorts = "445",
-                RemoteAddresses = _wizardRemoteIP,
-                Grouping = MFWConstants.MainRuleGroup,
-                Type = RuleType.Advanced,
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                Profiles = "All"
-            };
+            var fileShareVm = CreateBaseViewModel($"File Sharing from {_wizardRemoteIP}", "Allow", Directions.Incoming, ProtocolTCP, "Allows inbound file sharing (SMB)");
+            fileShareVm.LocalPorts = "445";
+            fileShareVm.RemoteAddresses = _wizardRemoteIP;
+
             EnqueueAdvancedRuleTask(fileShareVm);
         }
 
         private void CreateBlockDeviceRule()
         {
-            var blockDeviceVm = new AdvancedRuleViewModel
-            {
-                Name = $"Inbound from {_wizardRemoteIP}",
-                Description = "Blocks all inbound traffic from a specific local IP",
-                IsEnabled = true,
-                Status = "Block",
-                Direction = Directions.Incoming,
-                Protocol = ProtocolAny,
-                RemoteAddresses = _wizardRemoteIP,
-                Grouping = MFWConstants.MainRuleGroup,
-                Type = RuleType.Advanced,
-                LocalPorts = "*",
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                Profiles = "All"
-            };
+            var blockDeviceVm = CreateBaseViewModel($"Inbound from {_wizardRemoteIP}", "Block", Directions.Incoming, ProtocolAny, "Blocks all inbound traffic from a specific local IP");
+            blockDeviceVm.RemoteAddresses = _wizardRemoteIP;
+
             EnqueueAdvancedRuleTask(blockDeviceVm);
         }
 
         private void CreateRestrictAppRule()
         {
             string appName = Path.GetFileNameWithoutExtension(_wizardAppPath);
-            var allowLocalVm = new AdvancedRuleViewModel
-            {
-                Name = $"{appName} - Local Network Only",
-                Description = "Allows communication only within the local network. This rule only works as intended if Lockdown Mode is active.",
-                IsEnabled = true,
-                Status = "Allow",
-                Direction = Directions.Incoming | Directions.Outgoing,
-                ApplicationName = _wizardAppPath,
-                Protocol = ProtocolAny,
-                RemoteAddresses = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,LocalSubnet",
-                Grouping = MFWConstants.MainRuleGroup,
-                Type = RuleType.Advanced,
-                LocalPorts = "*",
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                Profiles = "All"
-            };
+            var allowLocalVm = CreateBaseViewModel($"{appName} - Local Network Only", "Allow", Directions.Incoming | Directions.Outgoing, ProtocolAny, "Allows communication only within the local network. This rule only works as intended if Lockdown Mode is active.");
+            allowLocalVm.ApplicationName = _wizardAppPath;
+            allowLocalVm.RemoteAddresses = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,LocalSubnet";
+
             EnqueueAdvancedRuleTask(allowLocalVm);
         }
 
