@@ -18,8 +18,10 @@ namespace MinimalFirewall
         {
             InitializeComponent();
             dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
-            dm.ApplyTheme(appSettings.Theme == "Dark");
+            bool isAuto = appSettings.Theme == "Auto";
+            bool isDark = isAuto ? DarkModeCS.isDarkMode() : appSettings.Theme == "Dark";
+            dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
+            dm.ApplyTheme(isDark);
 
             this.Text = title;
             this.statusLabel.Text = title;

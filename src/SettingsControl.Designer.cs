@@ -40,6 +40,7 @@
             this.loggingSwitch = new System.Windows.Forms.CheckBox();
             this.popupsSwitch = new System.Windows.Forms.CheckBox();
             this.darkModeSwitch = new System.Windows.Forms.CheckBox();
+            this.autoThemeSwitch = new System.Windows.Forms.CheckBox();
             this.startOnStartupSwitch = new System.Windows.Forms.CheckBox();
             this.closeToTraySwitch = new System.Windows.Forms.CheckBox();
             this.mainSettingsPanel = new System.Windows.Forms.Panel();
@@ -325,6 +326,18 @@
             this.darkModeSwitch.UseVisualStyleBackColor = true;
             this.darkModeSwitch.CheckedChanged += new System.EventHandler(this.DarkModeSwitch_CheckedChanged);
             // 
+            // autoThemeSwitch
+            // 
+            this.autoThemeSwitch.AutoSize = true;
+            this.autoThemeSwitch.Location = new System.Drawing.Point(145, 153);
+            this.autoThemeSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.autoThemeSwitch.Name = "autoThemeSwitch";
+            this.autoThemeSwitch.Size = new System.Drawing.Size(115, 24);
+            this.autoThemeSwitch.TabIndex = 33;
+            this.autoThemeSwitch.Text = "Auto Theme";
+            this.autoThemeSwitch.UseVisualStyleBackColor = true;
+            this.autoThemeSwitch.CheckedChanged += new System.EventHandler(this.AutoThemeSwitch_CheckedChanged);
+            // 
             // startOnStartupSwitch
             // 
             this.startOnStartupSwitch.AutoSize = true;
@@ -379,6 +392,7 @@
             this.mainSettingsPanel.Controls.Add(this.loggingSwitch);
             this.mainSettingsPanel.Controls.Add(this.popupsSwitch);
             this.mainSettingsPanel.Controls.Add(this.darkModeSwitch);
+            this.mainSettingsPanel.Controls.Add(this.autoThemeSwitch);
             this.mainSettingsPanel.Controls.Add(this.startOnStartupSwitch);
             this.mainSettingsPanel.Controls.Add(this.closeToTraySwitch);
             this.mainSettingsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -492,6 +506,7 @@
         private System.Windows.Forms.CheckBox loggingSwitch;
         private System.Windows.Forms.CheckBox popupsSwitch;
         private System.Windows.Forms.CheckBox darkModeSwitch;
+        private System.Windows.Forms.CheckBox autoThemeSwitch;
         private System.Windows.Forms.CheckBox startOnStartupSwitch;
         private System.Windows.Forms.CheckBox closeToTraySwitch;
         private System.Windows.Forms.Panel mainSettingsPanel;

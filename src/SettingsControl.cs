@@ -99,7 +99,9 @@ namespace MinimalFirewall
 
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
-            darkModeSwitch.Checked = _appSettings.Theme == "Dark";
+            autoThemeSwitch.Checked = _appSettings.Theme == "Auto";
+            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && DarkModeCS.isDarkMode());
+            darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;
             autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
@@ -138,6 +140,7 @@ namespace MinimalFirewall
             }
 
             IconVisibilityChanged?.Invoke();
+            AutoRefreshTimerChanged?.Invoke();
             _appSettings.Save();
         }
 
@@ -173,9 +176,19 @@ namespace MinimalFirewall
             }
         }
 
+        private void AutoThemeSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
+            if (_appSettings != null)
+            {
+                _appSettings.Theme = autoThemeSwitch.Checked ? "Auto" : (darkModeSwitch.Checked ? "Dark" : "Light");
+                ThemeChanged?.Invoke();
+            }
+        }
+
         private void DarkModeSwitch_CheckedChanged(object sender, EventArgs e)
         {
-            if (_appSettings != null)
+            if (_appSettings != null && !autoThemeSwitch.Checked)
             {
                 _appSettings.Theme = darkModeSwitch.Checked ? "Dark" : "Light";
                 ThemeChanged?.Invoke();
