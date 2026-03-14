@@ -34,12 +34,19 @@ namespace MinimalFirewall
         {
             return await Task.Run(() =>
             {
-                var allRules = _firewallRuleService.GetAllRules();
                 var uwpApps = new Dictionary<string, UwpApp>(StringComparer.OrdinalIgnoreCase);
+
+                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                if (policyType == null) return new List<UwpApp>();
+
+                INetFwPolicy2? firewallPolicy = (INetFwPolicy2?)Activator.CreateInstance(policyType);
+                if (firewallPolicy?.Rules == null) return new List<UwpApp>();
+
+                var comRules = firewallPolicy.Rules;
 
                 try
                 {
-                    foreach (INetFwRule2 rule in allRules)
+                    foreach (INetFwRule2 rule in comRules)
                     {
                         try
                         {
@@ -47,7 +54,7 @@ namespace MinimalFirewall
 
                             string name = rule.Name ?? string.Empty;
 
-                            // Fast check to skip non-UWP rules before Regex
+                            // skip non-UWP rules before Regex
                             if (name.StartsWith("@{"))
                             {
                                 var match = _pfnRegex.Match(name);
@@ -59,7 +66,7 @@ namespace MinimalFirewall
                                     {
                                         uwpApps[pfn] = new UwpApp
                                         {
-                                            Name = name, // Note: You might want to sanitize this name later
+                                            Name = name, 
                                             PackageFamilyName = pfn,
                                             Publisher = ""
                                         };
@@ -83,10 +90,8 @@ namespace MinimalFirewall
                 }
                 finally
                 {
-                    if (allRules != null && Marshal.IsComObject(allRules))
-                    {
-                        Marshal.ReleaseComObject(allRules);
-                    }
+                    if (comRules != null) Marshal.ReleaseComObject(comRules);
+                    if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
                 }
             }, token).ConfigureAwait(false);
         }

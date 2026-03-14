@@ -59,27 +59,14 @@ namespace MinimalFirewall
         {
             return Task.Run(() =>
             {
-                var allRules = _firewallRuleService.GetAllRules().ToList();
-                try
-                {
-                    var mfwRules = allRules
-                        .Select(CreateAdvancedRuleViewModel)
-                        .ToList();
+                // process and immediately destroys the COM object.
+                var mfwRules = _firewallRuleService.GetAllRulesMapped(CreateAdvancedRuleViewModel);
 
-                    if (token.IsCancellationRequested)
-                    {
-                        return [];
-                    }
-                    return mfwRules;
-
-                }
-                finally
+                if (token.IsCancellationRequested)
                 {
-                    foreach (var rule in allRules)
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
+                    return [];
                 }
+                return mfwRules;
             }, token);
         }
 
