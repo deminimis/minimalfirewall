@@ -69,18 +69,9 @@ namespace MinimalFirewall
                : this(actionsService, appSettings)
         {
             programPathTextBox.Text = appPath;
-            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
-            {
-                inboundRadioButton.Checked = true;
-            }
-            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
-            {
-                outboundRadioButton.Checked = true;
-            }
-            else
-            {
-                bothDirRadioButton.Checked = true;
-            }
+            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase)) inboundRadioButton.Checked = true;
+            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase)) outboundRadioButton.Checked = true;
+            else bothDirRadioButton.Checked = true;
         }
 
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit, AppSettings appSettings)
@@ -245,29 +236,12 @@ namespace MinimalFirewall
             }
 
             // Calculate values directly to avoid redundant assignment
-            string finalLocalPorts;
-            string finalRemotePorts;
-            string finalIcmp;
+            bool isTcpOrUdp = selectedProtocol.Value == ProtocolTcp || selectedProtocol.Value == ProtocolUdp;
+            string finalLocalPorts = isTcpOrUdp ? (string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text) : "";
+            string finalRemotePorts = isTcpOrUdp ? (string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text) : "";
 
-            if (selectedProtocol.Value == ProtocolTcp || selectedProtocol.Value == ProtocolUdp)
-            {
-                finalLocalPorts = string.IsNullOrWhiteSpace(localPortsTextBox.Text) ? "*" : localPortsTextBox.Text;
-                finalRemotePorts = string.IsNullOrWhiteSpace(remotePortsTextBox.Text) ? "*" : remotePortsTextBox.Text;
-            }
-            else
-            {
-                finalLocalPorts = "";
-                finalRemotePorts = "";
-            }
-
-            if (selectedProtocol.Value == ProtocolIcmpV4 || selectedProtocol.Value == ProtocolIcmpV6)
-            {
-                finalIcmp = icmpTypesAndCodesTextBox.Text;
-            }
-            else
-            {
-                finalIcmp = "";
-            }
+            bool isIcmp = selectedProtocol.Value == ProtocolIcmpV4 || selectedProtocol.Value == ProtocolIcmpV6;
+            string finalIcmp = isIcmp ? icmpTypesAndCodesTextBox.Text : "";
 
             var rule = new AdvancedRuleViewModel
             {
@@ -300,12 +274,7 @@ namespace MinimalFirewall
             Close();
         }
 
-        private Directions GetDirection()
-        {
-            if (inboundRadioButton.Checked) return Directions.Incoming;
-            if (outboundRadioButton.Checked) return Directions.Outgoing;
-            return Directions.Incoming | Directions.Outgoing;
-        }
+        private Directions GetDirection() => inboundRadioButton.Checked ? Directions.Incoming : outboundRadioButton.Checked ? Directions.Outgoing : Directions.Incoming | Directions.Outgoing;
 
         private string GetProfileString()
         {
@@ -391,11 +360,13 @@ namespace MinimalFirewall
             }
         }
 
-        private void ValidatePortTextBox_Validating(object sender, CancelEventArgs e)
+        private delegate bool ValidationDelegate(string input, out string errorMessage);
+
+        private void ValidateTextBox(object sender, CancelEventArgs e, ValidationDelegate validationMethod)
         {
             if (sender is TextBox textBox)
             {
-                if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                if (!validationMethod(textBox.Text, out string errorMessage))
                 {
                     errorProvider1.SetError(textBox, errorMessage);
                     e.Cancel = true;
@@ -407,53 +378,9 @@ namespace MinimalFirewall
             }
         }
 
-
-        private void localAddressTextBox_Validating(object sender, CancelEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
-                {
-                    errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
-                else
-                {
-                    errorProvider1.SetError(textBox, string.Empty);
-                }
-            }
-        }
-
-        private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
-                {
-                    errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
-                else
-                {
-                    errorProvider1.SetError(textBox, string.Empty);
-                }
-            }
-        }
-
-        private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                if (!ValidationUtility.ValidateIcmpString(textBox.Text, out string errorMessage))
-                {
-                    errorProvider1.SetError(textBox, errorMessage);
-                    e.Cancel = true;
-                }
-                else
-                {
-                    errorProvider1.SetError(textBox, string.Empty);
-                }
-            }
-        }
+        private void ValidatePortTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidatePortString);
+        private void localAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
+        private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
+        private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateIcmpString);
     }
 }
