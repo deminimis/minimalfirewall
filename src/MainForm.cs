@@ -117,7 +117,7 @@ namespace MinimalFirewall
             settingsControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(true);
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
             settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
-
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
 
             lockdownButton.BringToFront();
@@ -185,8 +185,17 @@ namespace MinimalFirewall
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
             _cachedArrowPen?.Dispose();
             base.OnFormClosed(e);
+        }
+
+        private void SystemEvents_UserPreferenceChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs e)
+        {
+            if (e.Category == Microsoft.Win32.UserPreferenceCategory.General && _appSettings.Theme == "Auto")
+            {
+                SafeInvoke(() => UpdateThemeAndColors());
+            }
         }
 
 
@@ -364,9 +373,10 @@ namespace MinimalFirewall
         private void UpdateThemeAndColors()
         {
             this.SuspendLayout();
-            bool isDark = _appSettings.Theme == "Dark";
+            bool isAuto = _appSettings.Theme == "Auto";
+            bool isDark = isAuto ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
 
-            dm.ColorMode = isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
 
             _cachedArrowPen?.Dispose();
@@ -474,7 +484,8 @@ namespace MinimalFirewall
                 _isPopupVisible = true;
                 var pending = _popupQueue.Dequeue();
 
-                var notifier = new NotifierForm(pending, _appSettings.Theme == "Dark");
+                bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+                var notifier = new NotifierForm(pending, isDark);
                 notifier.FormClosed += Notifier_FormClosed;
                 notifier.TopMost = true;
                 notifier.Show();
@@ -1185,7 +1196,8 @@ namespace MinimalFirewall
         {
             if (_cachedArrowPen == null)
             {
-                Color arrowColor = (_appSettings.Theme == "Dark") ? Color.White : Color.Black;
+                bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+                Color arrowColor = isDark ? Color.White : Color.Black;
                 _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
             }
 
@@ -1251,10 +1263,11 @@ namespace MinimalFirewall
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
             Image? imageToDraw = null;
+            bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
             if (button.Name == "lockdownButton")
             {
                 imageToDraw = _mainViewModel.IsLockedDown ?
-                              _lockedGreenIcon : ((_appSettings.Theme == "Dark") ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
+                    _lockedGreenIcon : (isDark ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
             }
             else if (button.Name == "rescanButton")
             {
@@ -1263,8 +1276,7 @@ namespace MinimalFirewall
                     TextRenderer.DrawText(e.Graphics, "...", button.Font, button.ClientRectangle, button.ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                     return;
                 }
-                imageToDraw = (_appSettings.Theme == "Dark") ?
-                              _refreshWhiteIcon : appImageList.Images["refresh.png"];
+                imageToDraw = isDark ? _refreshWhiteIcon : appImageList.Images["refresh.png"];
             }
 
             if (imageToDraw != null)
