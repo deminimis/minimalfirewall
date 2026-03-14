@@ -274,13 +274,7 @@ namespace DarkModeForms
         {
             if (ColorMode == pColorMode) return;
             ColorMode = pColorMode;
-            _IsDarkMode = isDarkMode();
-            if (ColorMode != DisplayMode.SystemDefault)
-            {
-                _IsDarkMode = ColorMode == DisplayMode.DarkMode;
-            }
-
-            ApplyTheme(_IsDarkMode);
+            ApplyTheme(ColorMode == DisplayMode.SystemDefault ? isDarkMode() : ColorMode == DisplayMode.DarkMode);
         }
 
         private void ListView_DrawColumnHeader(object? sender, DrawListViewColumnHeaderEventArgs e)
@@ -446,48 +440,26 @@ namespace DarkModeForms
                 }
                 pictureBox.BorderStyle = BorderStyle.None;
             }
-            else if (control is CheckBox checkBox && checkBox.Parent != null)
+            else if (control is ButtonBase btnBase && (control is CheckBox || control is RadioButton) && btnBase.Parent != null)
             {
-                checkBox.BackColor = checkBox.Parent.BackColor;
-                checkBox.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
-                checkBox.Paint -= CheckBox_Paint;
-                checkBox.Paint += CheckBox_Paint;
-            }
-            else if (control is RadioButton radioButton && radioButton.Parent != null)
-            {
-                radioButton.BackColor = radioButton.Parent.BackColor;
-                radioButton.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
-                radioButton.Paint -= RadioButton_Paint;
-                radioButton.Paint += RadioButton_Paint;
-            }
-            else if (control is MenuStrip menuStrip)
-            {
-                menuStrip.RenderMode = ToolStripRenderMode.Professional;
-                menuStrip.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons)
-                {
-                    MyColors = OScolors
-                };
+                btnBase.BackColor = btnBase.Parent.BackColor;
+                btnBase.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
+                btnBase.Paint -= CheckBoxAndRadio_Paint;
+                btnBase.Paint += CheckBoxAndRadio_Paint;
             }
             else if (control is ToolStrip toolStrip)
             {
                 toolStrip.RenderMode = ToolStripRenderMode.Professional;
                 toolStrip.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons) { MyColors = OScolors };
+                if (toolStrip is ToolStripDropDown dropDown)
+                {
+                    dropDown.Opening -= Tsdd_Opening;
+                    dropDown.Opening += Tsdd_Opening;
+                }
             }
             else if (control is ToolStripPanel toolStripPanel && toolStripPanel.Parent != null)
             {
                 toolStripPanel.BackColor = toolStripPanel.Parent.BackColor;
-            }
-            else if (control is ToolStripDropDown dropDown)
-            {
-                dropDown.Opening -= Tsdd_Opening;
-                dropDown.Opening += Tsdd_Opening;
-            }
-            else if (control is ContextMenuStrip contextMenu)
-            {
-                contextMenu.RenderMode = ToolStripRenderMode.Professional;
-                contextMenu.Renderer = new MyRenderer(new CustomColorTable(OScolors), ColorizeIcons) { MyColors = OScolors };
-                contextMenu.Opening -= Tsdd_Opening;
-                contextMenu.Opening += Tsdd_Opening;
             }
             else if (control is MdiClient mdiClient)
             {
@@ -594,13 +566,7 @@ namespace DarkModeForms
                 TabPage tabPage = tab.TabPages[i];
                 if (tabPage.Tag == null)
                 {
-                    tabPage.BackColor = OScolors.Surface;
                     tabPage.BorderStyle = BorderStyle.FixedSingle;
-                    foreach (Control child in tabPage.Controls)
-                    {
-                        ThemeControl(child);
-                    }
-                    tabPage.ControlAdded += (_s, _e) => { if (_e.Control != null) ThemeControl(_e.Control); };
                     tabPage.Tag = "themed";
                 }
                 Rectangle tabRect = tab.GetTabRect(i);
@@ -664,18 +630,11 @@ namespace DarkModeForms
             }
         }
 
-        private void CheckBox_Paint(object? sender, PaintEventArgs e)
+        private void CheckBoxAndRadio_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not CheckBox chkBox || !(!chkBox.Enabled && IsDarkMode)) return;
-            using Brush B = new SolidBrush(chkBox.ForeColor);
-            e.Graphics.DrawString(chkBox.Text, chkBox.Font, B, new PointF(16, 0));
-        }
-
-        private void RadioButton_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is not RadioButton rdoBtn || !(!rdoBtn.Enabled && IsDarkMode)) return;
-            using Brush B = new SolidBrush(rdoBtn.ForeColor);
-            e.Graphics.DrawString(rdoBtn.Text, rdoBtn.Font, B, new PointF(16, 0));
+            if (sender is not ButtonBase btn || !(!btn.Enabled && IsDarkMode)) return;
+            using Brush B = new SolidBrush(btn.ForeColor);
+            e.Graphics.DrawString(btn.Text, btn.Font, B, new PointF(16, 0));
         }
 
         private void DataGridView_Paint(object? sender, PaintEventArgs e)
@@ -886,39 +845,15 @@ namespace DarkModeForms
 
         private static int WindowsVersion()
         {
-            // Try parsed version first
-            try
-            {
-                var major = Environment.OSVersion.Version.Major;
-                if (major >= 10) return major;
-            }
-            catch { }
-
-            // Fallback to Registry CurrentMajorVersionNumber 
+            if (Environment.OSVersion.Version.Major >= 10) return Environment.OSVersion.Version.Major;
             try
             {
                 using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
-                if (key != null)
-                {
-                    var majorObj = key.GetValue("CurrentMajorVersionNumber");
-                    if (majorObj is int majorInt) return majorInt;
-                }
+                if (key?.GetValue("CurrentMajorVersionNumber") is int majorInt) return majorInt;
+                if (key?.GetValue("ProductName")?.ToString().Contains("Windows 1") == true) return 10;
             }
             catch { }
-
-            // Last resort fallback to string parsing (legacy method)
-            try
-            {
-                using var reg = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
-                string? productName = reg?.GetValue("ProductName")?.ToString();
-                if (!string.IsNullOrEmpty(productName))
-                {
-                    if (productName.Contains("Windows 1")) return 10;
-                }
-            }
-            catch { }
-
-            return 10; // Default to 10 to ensure Dark Mode attempts to load
+            return 10;
         }
 
         private static Color GetReadableColor(Color backgroundColor)
