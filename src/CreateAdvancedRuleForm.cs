@@ -59,6 +59,10 @@ namespace MinimalFirewall
             LoadFirewallGroups();
             _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
             _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
+
+            string addressTooltip = "Supports IPs, Subnets, Ranges, and keywords:\nLocalSubnet\nDNS\nDHCP\nWINS\nDefaultGateway";
+            _toolTip.SetToolTip(localAddressTextBox, addressTooltip);
+            _toolTip.SetToolTip(remoteAddressTextBox, addressTooltip);
         }
 
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, string appPath, string direction, AppSettings appSettings)
@@ -142,8 +146,8 @@ namespace MinimalFirewall
             localPortsTextBox.Text = rule.LocalPorts;
             remotePortsTextBox.Text = rule.RemotePorts;
 
-            localAddressTextBox.Text = rule.LocalAddresses;
-            remoteAddressTextBox.Text = rule.RemoteAddresses;
+            localAddressTextBox.Text = rule.LocalAddresses?.Replace("/255.255.255.255", "");
+            remoteAddressTextBox.Text = rule.RemoteAddresses?.Replace("/255.255.255.255", "");
 
             domainCheckBox.Checked = rule.Profiles.Contains("Domain") || rule.Profiles == "All";
             privateCheckBox.Checked = rule.Profiles.Contains("Private") || rule.Profiles == "All";
