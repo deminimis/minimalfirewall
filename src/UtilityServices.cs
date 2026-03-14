@@ -268,9 +268,19 @@ namespace MinimalFirewall
 
         private void Execute(string fileName, string arguments, out string output, out string error)
         {
+            ProcessHelper.RunHiddenCommand(fileName, arguments, out output, out error);
+            if (!string.IsNullOrEmpty(error)) Debug.WriteLine($"[Startup ERROR]: {error}");
+        }
+    }
+
+    public static class ProcessHelper
+    {
+        public static void RunHiddenCommand(string fileName, string arguments, out string output, out string error)
+        {
             string safePath = Path.IsPathRooted(fileName) ? fileName : Path.Combine(Environment.SystemDirectory, fileName);
-            Debug.WriteLine($"[Startup] Executing: {safePath} {arguments}");
-            var startInfo = new ProcessStartInfo()
+            Debug.WriteLine($"[ProcessHelper] Executing: {safePath} {arguments}");
+
+            var startInfo = new ProcessStartInfo
             {
                 FileName = safePath,
                 Arguments = arguments,
@@ -281,6 +291,7 @@ namespace MinimalFirewall
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
             };
+
             try
             {
                 using var process = Process.Start(startInfo);
@@ -289,13 +300,6 @@ namespace MinimalFirewall
                     output = process.StandardOutput.ReadToEnd();
                     error = process.StandardError.ReadToEnd();
                     process.WaitForExit(5000);
-
-                    if (process.ExitCode != 0)
-                    {
-                        Debug.WriteLine($"[Startup ERROR] Process exited with code {process.ExitCode}.");
-                        if (!string.IsNullOrEmpty(output)) Debug.WriteLine($"[Startup ERROR] STDOUT: {output}");
-                        if (!string.IsNullOrEmpty(error)) Debug.WriteLine($"[Startup ERROR] STDERR: {error}");
-                    }
                 }
                 else
                 {
@@ -307,7 +311,7 @@ namespace MinimalFirewall
             {
                 output = string.Empty;
                 error = ex.Message;
-                Debug.WriteLine($"[Startup FATAL ERROR] {ex.Message}");
+                Debug.WriteLine($"[ProcessHelper FATAL ERROR] {ex.Message}");
             }
         }
     }

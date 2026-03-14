@@ -408,7 +408,7 @@
             this.remotePortsTextBox.Size = new System.Drawing.Size(657, 27);
             this.remotePortsTextBox.TabIndex = 3;
             this.remotePortsTextBox.Text = "*";
-            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remotePortsTextBox_Validating);
+            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
             // 
             // labelRemotePorts
             // 
@@ -428,7 +428,7 @@
             this.localPortsTextBox.Size = new System.Drawing.Size(657, 27);
             this.localPortsTextBox.TabIndex = 1;
             this.localPortsTextBox.Text = "*";
-            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localPortsTextBox_Validating);
+            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
             // 
             // labelLocalPorts
             // 

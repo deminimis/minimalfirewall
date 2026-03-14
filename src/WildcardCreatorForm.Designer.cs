@@ -244,7 +244,7 @@ namespace MinimalFirewall
             this.remotePortsTextBox.Size = new System.Drawing.Size(306, 27);
             this.remotePortsTextBox.TabIndex = 5;
             this.remotePortsTextBox.Text = "*";
-            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remotePortsTextBox_Validating);
+            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
             // 
             // labelRemotePorts
             // 
@@ -262,7 +262,7 @@ namespace MinimalFirewall
             this.localPortsTextBox.Size = new System.Drawing.Size(306, 27);
             this.localPortsTextBox.TabIndex = 3;
             this.localPortsTextBox.Text = "*";
-            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localPortsTextBox_Validating);
+            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
             // 
             // labelLocalPorts
             // 
