@@ -411,8 +411,10 @@ namespace MinimalFirewall
 
                         if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
                         {
+                            // Sanitize quotes 
+                            string safePath = appPath.Replace("\"", "");
                             // "explorer.exe /select, path" opens folder and highlights file
-                            Process.Start("explorer.exe", $"/select, \"{appPath}\"");
+                            Process.Start("explorer.exe", $"/select, \"{safePath}\"");
                         }
                         else
                         {

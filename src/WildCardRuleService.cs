@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace MinimalFirewall
 {
-    public class WildcardRuleService
+    public class WildcardRuleService : IDisposable
     {
         private readonly string _configPath;
         private List<WildcardRule> _rules = [];
@@ -289,6 +289,12 @@ namespace MinimalFirewall
             }
 
             return null;
+        }
+
+        public void Dispose()
+        {
+            _lock?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
