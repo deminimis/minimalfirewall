@@ -300,6 +300,12 @@ namespace DarkModeForms
             }
         }
 
+        private void ApplyThemeToHandle(IntPtr handle, string themeClass)
+        {
+            string mode = IsDarkMode ? $"DarkMode_{themeClass}" : $"ClearMode_{themeClass}";
+            SetWindowTheme(handle, mode, null);
+        }
+
         public void ThemeControl(Control control)
         {
             var info = controlStatusStorage.GetControlStatusInfo(control);
@@ -322,10 +328,8 @@ namespace DarkModeForms
                     ThemeControl(e.Control);
                 }
             };
-            control.ControlAdded -= controlControlAdded;
             control.ControlAdded += controlControlAdded;
-            string Mode = IsDarkMode ? "DarkMode_Explorer" : "ClearMode_Explorer";
-            SetWindowTheme(control.Handle, Mode, null);
+            ApplyThemeToHandle(control.Handle, "Explorer");
 
             control.BackColor = OScolors.Control;
             control.ForeColor = OScolors.TextActive;
@@ -349,9 +353,7 @@ namespace DarkModeForms
             }
             else if (control is NumericUpDown)
             {
-                Mode = IsDarkMode ?
-                    "DarkMode_ItemsView" : "ClearMode_ItemsView";
-                SetWindowTheme(control.Handle, Mode, null);
+                ApplyThemeToHandle(control.Handle, "ItemsView");
             }
             else if (control is Button button)
             {
@@ -388,9 +390,7 @@ namespace DarkModeForms
                     comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
                 }
 
-                Mode = IsDarkMode ?
-                    "DarkMode_CFD" : "ClearMode_CFD";
-                SetWindowTheme(control.Handle, Mode, null);
+                ApplyThemeToHandle(control.Handle, "CFD");
             }
             else if (control is TabPage tabPage)
             {
@@ -512,9 +512,7 @@ namespace DarkModeForms
 
                 if (!lView.OwnerDraw)
                 {
-                    Mode = IsDarkMode ?
-                        "DarkMode_Explorer" : "ClearMode_Explorer";
-                    SetWindowTheme(control.Handle, Mode, null);
+                    ApplyThemeToHandle(control.Handle, "Explorer");
                 }
             }
             else if (control is TreeView)
@@ -742,18 +740,8 @@ namespace DarkModeForms
 
         public static Color GetWindowsAccentOpaqueColor()
         {
-            DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
-            DwmGetColorizationParameters(ref colors);
-            if (IsWindows10orGreater())
-            {
-                var color = colors.ColorizationColor;
-                var colorValue = long.Parse(color.ToString(), System.Globalization.NumberStyles.HexNumber);
-                var red = (colorValue >> 16) & 0xFF;
-                var green = (colorValue >> 8) & 0xFF;
-                var blue = (colorValue >> 0) & 0xFF;
-                return Color.FromArgb(255, (int)red, (int)green, (int)blue);
-            }
-            return Color.CadetBlue;
+            Color c = GetWindowsAccentColor();
+            return Color.FromArgb(255, c.R, c.G, c.B);
         }
 
         public static OSThemeColors GetSystemColors(int ColorMode = 0)
@@ -1089,48 +1077,41 @@ namespace DarkModeForms
             g.DrawLine(BordersPencil, bounds.X, bounds.Y, bounds.X, bounds.Height - 1);
         }
 
-        protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
+        private void DrawGradientItemBackground(Graphics g, ToolStripItem item, Rectangle bounds, bool drawOnlyOnInteraction)
         {
-            Rectangle bounds = new(Point.Empty, e.Item.Size);
             Color gradientBegin = MyColors.Background;
             Color gradientEnd = MyColors.Background;
+            bool interacted = false;
 
-            if (e.Item.Pressed)
+            if (item.Pressed)
             {
                 gradientBegin = MyColors.Control;
                 gradientEnd = MyColors.Control;
+                interacted = true;
             }
-            else if (e.Item.Selected)
+            else if (item.Selected)
             {
                 gradientBegin = MyColors.Accent;
                 gradientEnd = MyColors.Accent;
+                interacted = true;
             }
 
-            using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
-            e.Graphics.FillRectangle(b, bounds);
+            if (!drawOnlyOnInteraction || interacted)
+            {
+                using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
+                g.FillRectangle(b, bounds);
+            }
+        }
+
+        protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
+        {
+            DrawGradientItemBackground(e.Graphics, e.Item, new Rectangle(Point.Empty, e.Item.Size), false);
         }
 
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
         {
             Rectangle bounds = new(Point.Empty, e.Item.Size);
-            Color gradientBegin = MyColors.Background;
-            Color gradientEnd = MyColors.Background;
-
-            if (e.Item.Pressed)
-            {
-                gradientBegin = MyColors.Control;
-                gradientEnd = MyColors.Control;
-            }
-            else if (e.Item.Selected)
-            {
-                gradientBegin = MyColors.Accent;
-                gradientEnd = MyColors.Accent;
-            }
-
-            using (Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical))
-            {
-                e.Graphics.FillRectangle(b, bounds);
-            }
+            DrawGradientItemBackground(e.Graphics, e.Item, bounds, false);
 
             int Padding = 2;
             Size cSize = new(8, 4);
@@ -1172,28 +1153,7 @@ namespace DarkModeForms
                 return;
             }
 
-            Rectangle bounds = new(Point.Empty, e.Item.Size);
-            Color gradientBegin = MyColors.Background;
-            Color gradientEnd = MyColors.Background;
-            bool DrawIt = false;
-            if (e.Item.Pressed)
-            {
-                gradientBegin = MyColors.Control;
-                gradientEnd = MyColors.Control;
-                DrawIt = true;
-            }
-            else if (e.Item.Selected)
-            {
-                gradientBegin = MyColors.Accent;
-                gradientEnd = MyColors.Accent;
-                DrawIt = true;
-            }
-
-            if (DrawIt)
-            {
-                using Brush b = new LinearGradientBrush(bounds, gradientBegin, gradientEnd, LinearGradientMode.Vertical);
-                e.Graphics.FillRectangle(b, bounds);
-            }
+            DrawGradientItemBackground(e.Graphics, e.Item, new Rectangle(Point.Empty, e.Item.Size), true);
         }
 
         protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e)
