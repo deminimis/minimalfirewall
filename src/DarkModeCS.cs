@@ -708,6 +708,7 @@ namespace DarkModeForms
             OSThemeColors _ret = new();
             if (ColorMode <= 0)
             {
+                // Dark Mode
                 _ret.Background = Color.FromArgb(32, 32, 32);
                 _ret.BackgroundDark = Color.FromArgb(18, 18, 18);
                 _ret.BackgroundLight = ControlPaint.Light(_ret.Background);
@@ -721,6 +722,24 @@ namespace DarkModeForms
                 _ret.ControlDark = ControlPaint.Dark(_ret.Control);
                 _ret.ControlLight = Color.FromArgb(67, 67, 67);
                 _ret.Primary = Color.FromArgb(3, 218, 198);
+                _ret.Secondary = Color.MediumSlateBlue;
+            }
+            else
+            {
+                // Light Mode
+                _ret.Background = Color.FromArgb(244, 240, 235);
+                _ret.BackgroundDark = Color.FromArgb(225, 219, 213);
+                _ret.BackgroundLight = Color.FromArgb(250, 248, 245);
+                _ret.Surface = Color.FromArgb(250, 248, 245);
+                _ret.SurfaceLight = Color.White;
+                _ret.SurfaceDark = Color.FromArgb(230, 225, 219);
+                _ret.TextActive = Color.FromArgb(40, 38, 37); 
+                _ret.TextInactive = Color.FromArgb(115, 110, 106);
+                _ret.TextInAccent = Color.White;
+                _ret.Control = Color.FromArgb(235, 230, 224);
+                _ret.ControlDark = Color.FromArgb(205, 200, 194);
+                _ret.ControlLight = Color.FromArgb(250, 248, 245);
+                _ret.Primary = Color.FromArgb(0, 120, 215); 
                 _ret.Secondary = Color.MediumSlateBlue;
             }
 
