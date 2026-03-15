@@ -254,23 +254,11 @@ namespace MinimalFirewall
 
         private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action || rulesDataGridView.SelectedRows.Count == 0) return;
+            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action) return;
 
-            var items = new List<AggregatedRuleViewModel>();
-            foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
+            foreach (var item in GetSelectedRules())
             {
-                if (row.Index < _currentRuleList.Count)
-                {
-                    items.Add(_currentRuleList[row.Index]);
-                }
-            }
-
-            if (items.Count > 0)
-            {
-                foreach (var item in items)
-                {
-                    _mainViewModel.ApplyRuleChange(item, action);
-                }
+                _mainViewModel.ApplyRuleChange(item, action);
             }
         }
 
@@ -280,12 +268,10 @@ namespace MinimalFirewall
             {
                 if (rulesDataGridView.SelectedRows.Count == 1)
                 {
-                    int index = rulesDataGridView.SelectedRows[0].Index;
-                    if (index >= _currentRuleList.Count) return;
+                    var aggRule = GetFirstSelectedRule();
+                    if (aggRule == null) return;
 
-                    var aggRule = _currentRuleList[index];
                     var originalRule = aggRule.UnderlyingRules?.FirstOrDefault();
-
                     if (originalRule == null)
                     {
                         DarkModeForms.Messenger.MessageBox("Cannot edit this rule as it has no underlying rule definition.", "Edit Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -322,17 +308,7 @@ namespace MinimalFirewall
 
         private void DeleteRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesDataGridView.SelectedRows.Count == 0) return;
-            var items = new List<AggregatedRuleViewModel>();
-
-            foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
-            {
-                if (row.Index < _currentRuleList.Count)
-                {
-                    items.Add(_currentRuleList[row.Index]);
-                }
-            }
-
+            var items = GetSelectedRules();
             if (items.Count > 0)
             {
                 var result = DarkModeForms.Messenger.MessageBox($"Are you sure you want to delete the {items.Count} selected rule(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -372,16 +348,12 @@ namespace MinimalFirewall
 
         private void rulesContextMenu_Opening(object sender, CancelEventArgs e)
         {
-            if (rulesDataGridView.SelectedRows.Count == 0)
+            var rule = GetFirstSelectedRule();
+            if (rule == null)
             {
                 e.Cancel = true;
                 return;
             }
-
-            int index = rulesDataGridView.SelectedRows[0].Index;
-            if (index >= _currentRuleList.Count) return;
-
-            var rule = _currentRuleList[index];
 
             string? appPath = rule.ApplicationName;
             openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && File.Exists(appPath);
@@ -389,7 +361,7 @@ namespace MinimalFirewall
             var firstUnderlyingRule = rule.UnderlyingRules.FirstOrDefault();
             bool isEditableType = rule.Type == RuleType.Program || rule.Type == RuleType.Service || rule.Type == RuleType.Advanced;
 
-            // Only allow editing if there is a concrete target (not a wildcard catch-all)
+            // don't allow editing of wildcards
             bool hasTarget = firstUnderlyingRule != null &&
                              ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
                               !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
@@ -401,15 +373,12 @@ namespace MinimalFirewall
         {
             try
             {
-                if (rulesDataGridView.SelectedRows.Count > 0)
+                var rule = GetFirstSelectedRule();
+                if (rule != null)
                 {
-                    int index = rulesDataGridView.SelectedRows[0].Index;
-                    if (index < _currentRuleList.Count)
-                    {
-                        var rule = _currentRuleList[index];
-                        string? appPath = rule.ApplicationName;
+                    string? appPath = rule.ApplicationName;
 
-                        if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
+                    if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
                         {
                             // Sanitize quotes 
                             string safePath = appPath.Replace("\"", "");
@@ -421,7 +390,7 @@ namespace MinimalFirewall
                             DarkModeForms.Messenger.MessageBox("The path for this item is not available or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         }
                     }
-                }
+                
             }
             catch (Exception ex)
             {
@@ -431,35 +400,31 @@ namespace MinimalFirewall
 
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (rulesDataGridView.SelectedRows.Count > 0)
+            var selectedRules = GetSelectedRules();
+            if (selectedRules.Count > 0)
             {
                 var details = new System.Text.StringBuilder();
-
-                foreach (DataGridViewRow row in rulesDataGridView.SelectedRows)
+                foreach (var rule in selectedRules)
                 {
-                    if (row.Index < _currentRuleList.Count)
+                    if (details.Length > 0)
                     {
-                        var rule = _currentRuleList[row.Index];
-                        if (details.Length > 0)
-                        {
-                            details.AppendLine().AppendLine();
-                        }
-
-                        details.AppendLine($"Rule Name: {rule.Name}");
-                        details.AppendLine($"Type: {rule.Type}");
-                        details.AppendLine($"Inbound: {rule.InboundStatus}");
-                        details.AppendLine($"Outbound: {rule.OutboundStatus}");
-                        details.AppendLine($"Application: {rule.ApplicationName}");
-                        details.AppendLine($"Service: {rule.ServiceName}");
-                        details.AppendLine($"Protocol: {rule.ProtocolName}");
-                        details.AppendLine($"Local Ports: {rule.LocalPorts}");
-                        details.AppendLine($"Remote Ports: {rule.RemotePorts}");
-                        details.AppendLine($"Local Addresses: {rule.LocalAddresses}");
-                        details.AppendLine($"Remote Addresses: {rule.RemoteAddresses}");
-                        details.AppendLine($"Profiles: {rule.Profiles}");
-                        details.AppendLine($"Group: {rule.Grouping}");
-                        details.AppendLine($"Description: {rule.Description}");
+                        details.AppendLine().AppendLine();
                     }
+
+                    details.AppendLine($"Rule Name: {rule.Name}");
+                    details.AppendLine($"Type: {rule.Type}");
+                    details.AppendLine($"Inbound: {rule.InboundStatus}");
+                    details.AppendLine($"Outbound: {rule.OutboundStatus}");
+                    details.AppendLine($"Application: {rule.ApplicationName}");
+                    details.AppendLine($"Service: {rule.ServiceName}");
+                    details.AppendLine($"Protocol: {rule.ProtocolName}");
+                    details.AppendLine($"Local Ports: {rule.LocalPorts}");
+                    details.AppendLine($"Remote Ports: {rule.RemotePorts}");
+                    details.AppendLine($"Local Addresses: {rule.LocalAddresses}");
+                    details.AppendLine($"Remote Addresses: {rule.RemoteAddresses}");
+                    details.AppendLine($"Profiles: {rule.Profiles}");
+                    details.AppendLine($"Group: {rule.Grouping}");
+                    details.AppendLine($"Description: {rule.Description}");
                 }
 
                 if (details.Length > 0)
@@ -575,6 +540,25 @@ namespace MinimalFirewall
             {
                 rulesDataGridView.ClearSelection();
             }
+        }
+
+        private List<AggregatedRuleViewModel> GetSelectedRules()
+        {
+            return rulesDataGridView.SelectedRows.Cast<DataGridViewRow>()
+                .Where(r => r.Index >= 0 && r.Index < _currentRuleList.Count)
+                .Select(r => _currentRuleList[r.Index])
+                .ToList();
+        }
+
+        private AggregatedRuleViewModel? GetFirstSelectedRule()
+        {
+            if (rulesDataGridView.SelectedRows.Count > 0)
+            {
+                int index = rulesDataGridView.SelectedRows[0].Index;
+                if (index >= 0 && index < _currentRuleList.Count)
+                    return _currentRuleList[index];
+            }
+            return null;
         }
     }
 }

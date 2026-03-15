@@ -148,15 +148,11 @@ namespace MinimalFirewall
         {
             var linkColor = isDark ? Color.SkyBlue : SystemColors.HotTrack;
 
-            helpLink.LinkColor = linkColor;
-            reportProblemLink.LinkColor = linkColor;
-            forumLink.LinkColor = linkColor;
-            coffeeLinkLabel.LinkColor = linkColor;
-
-            helpLink.VisitedLinkColor = linkColor;
-            reportProblemLink.VisitedLinkColor = linkColor;
-            forumLink.VisitedLinkColor = linkColor;
-            coffeeLinkLabel.VisitedLinkColor = linkColor;
+            foreach (var link in new[] { helpLink, reportProblemLink, forumLink, coffeeLinkLabel })
+            {
+                link.LinkColor = linkColor;
+                link.VisitedLinkColor = linkColor;
+            }
 
             if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
             {
@@ -247,43 +243,15 @@ namespace MinimalFirewall
 
         private void OpenFirewallButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                string wfPath = Path.Combine(Environment.SystemDirectory, "wf.msc");
-                var startInfo = new ProcessStartInfo(wfPath)
-                {
-                    UseShellExecute = true
-                };
-                Process.Start(startInfo);
-            }
-            catch (Exception ex)
-            {
-                Messenger.MessageBox($"Could not open Windows Firewall console.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            string wfPath = Path.Combine(Environment.SystemDirectory, "wf.msc");
+            OpenLink(wfPath, "Windows Firewall console");
         }
 
         private void openAppDataButton_Click(object sender, EventArgs e)
         {
-            try
-            {
-                string standardAppDataPath = ConfigPathManager.GetStandardAppDataDirectory();
-
-                if (!Directory.Exists(standardAppDataPath))
-                {
-                    Directory.CreateDirectory(standardAppDataPath);
-                }
-
-                Process.Start(new ProcessStartInfo()
-                {
-                    FileName = standardAppDataPath,
-                    UseShellExecute = true,
-                    Verb = "open"
-                });
-            }
-            catch (Exception ex)
-            {
-                Messenger.MessageBox($"Could not open %AppData% folder.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            string standardAppDataPath = ConfigPathManager.GetStandardAppDataDirectory();
+            if (!Directory.Exists(standardAppDataPath)) Directory.CreateDirectory(standardAppDataPath);
+            OpenLink(standardAppDataPath, "%AppData% folder");
         }
 
         private void CheckForUpdatesButton_Click(object sender, EventArgs e)
@@ -302,15 +270,15 @@ namespace MinimalFirewall
             OpenLink("https://www.buymeacoffee.com/deminimis");
         }
 
-        private void OpenLink(string url)
+        private void OpenLink(string target, string errorContext = "the link")
         {
             try
             {
-                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
             }
             catch (Exception ex)
             {
-                Messenger.MessageBox($"Could not open the link.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox($"Could not open {errorContext}.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -408,12 +376,12 @@ namespace MinimalFirewall
             }
         }
 
-        private async void importMergeButton_Click(object sender, EventArgs e)
+        private async Task ProcessRuleImportAsync(bool replace)
         {
             using var openDialog = new OpenFileDialog
             {
                 Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-                Title = "Import and Add Rules"
+                Title = replace ? "Import and Replace Rules" : "Import and Add Rules"
             };
 
             if (openDialog.ShowDialog() == DialogResult.OK)
@@ -421,15 +389,22 @@ namespace MinimalFirewall
                 try
                 {
                     string jsonContent = await File.ReadAllTextAsync(openDialog.FileName);
-                    await _actionsService.ImportRulesAsync(jsonContent, replace: false);
+                    await _actionsService.ImportRulesAsync(jsonContent, replace);
                     await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
-                    Messenger.MessageBox("Rules have been successfully imported and added.", "Import Complete", MessageBoxButtons.OK, MsgIcon.Success);
+
+                    string successMsg = replace ? "All rules have been replaced successfully." : "Rules have been successfully imported and added.";
+                    Messenger.MessageBox(successMsg, "Import Complete", MessageBoxButtons.OK, MsgIcon.Success);
                 }
                 catch (Exception ex)
                 {
                     Messenger.MessageBox($"An error occurred during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private async void importMergeButton_Click(object sender, EventArgs e)
+        {
+            await ProcessRuleImportAsync(replace: false);
         }
 
         private async void importReplaceButton_Click(object sender, EventArgs e)
@@ -440,26 +415,7 @@ namespace MinimalFirewall
 
             if (confirmResult == DialogResult.Yes)
             {
-                using var openDialog = new OpenFileDialog
-                {
-                    Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
-                    Title = "Import and Replace Rules"
-                };
-
-                if (openDialog.ShowDialog() == DialogResult.OK)
-                {
-                    try
-                    {
-                        string jsonContent = await File.ReadAllTextAsync(openDialog.FileName);
-                        await _actionsService.ImportRulesAsync(jsonContent, replace: true);
-                        await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
-                        Messenger.MessageBox("All rules have been replaced successfully.", "Import Complete", MessageBoxButtons.OK, MsgIcon.Success);
-                    }
-                    catch (Exception ex)
-                    {
-                        Messenger.MessageBox($"An error occurred during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
+                await ProcessRuleImportAsync(replace: true);
             }
         }
 
