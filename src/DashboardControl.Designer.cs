@@ -25,6 +25,9 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator9;
+        private System.Windows.Forms.ToolStripMenuItem copyHashToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem checkVirusTotalToolStripMenuItem;
         private System.Windows.Forms.DataGridView dashboardDataGridView;
         private System.Windows.Forms.DataGridViewImageColumn dashIconColumn;
         private System.Windows.Forms.DataGridViewButtonColumn allowButtonColumn;
@@ -88,6 +91,9 @@ namespace MinimalFirewall
             this.showBlockingRuleInfoToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
+            this.copyHashToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.checkVirusTotalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dashboardDataGridView = new System.Windows.Forms.DataGridView();
             this.dashIconColumn = new System.Windows.Forms.DataGridViewImageColumn();
             this.allowButtonColumn = new System.Windows.Forms.DataGridViewButtonColumn();
@@ -127,7 +133,10 @@ namespace MinimalFirewall
             this.toolStripSeparator8,
             this.showBlockingRuleInfoToolStripMenuItem,
             this.toolStripSeparator6,
-            this.copyDetailsToolStripMenuItem});
+            this.copyDetailsToolStripMenuItem,
+            this.toolStripSeparator9,
+            this.copyHashToolStripMenuItem,
+            this.checkVirusTotalToolStripMenuItem});
             this.dashboardContextMenu.Name = "dashboardContextMenu";
             this.dashboardContextMenu.Size = new System.Drawing.Size(228, 290);
             this.dashboardContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.ContextMenu_Opening);
@@ -285,6 +294,25 @@ namespace MinimalFirewall
             this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
             this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator9
+            // 
+            this.toolStripSeparator9.Name = "toolStripSeparator9";
+            this.toolStripSeparator9.Size = new System.Drawing.Size(224, 6);
+            // 
+            // copyHashToolStripMenuItem
+            // 
+            this.copyHashToolStripMenuItem.Name = "copyHashToolStripMenuItem";
+            this.copyHashToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.copyHashToolStripMenuItem.Text = "Copy File Hash (SHA-256)";
+            this.copyHashToolStripMenuItem.Click += new System.EventHandler(this.copyHashToolStripMenuItem_Click);
+            // 
+            // checkVirusTotalToolStripMenuItem
+            // 
+            this.checkVirusTotalToolStripMenuItem.Name = "checkVirusTotalToolStripMenuItem";
+            this.checkVirusTotalToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
+            this.checkVirusTotalToolStripMenuItem.Text = "Check on VirusTotal";
+            this.checkVirusTotalToolStripMenuItem.Click += new System.EventHandler(this.checkVirusTotalToolStripMenuItem_Click);
             //
             // dashboardDataGridView
             //
