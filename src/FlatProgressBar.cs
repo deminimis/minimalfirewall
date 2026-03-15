@@ -64,10 +64,8 @@ namespace DarkModeForms
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
 
             // Background
-            using (Brush backBrush = new SolidBrush(this.BackColor))
-            {
-                g.FillRectangle(backBrush, this.ClientRectangle);
-            }
+            using Brush backBrush = new SolidBrush(this.BackColor);
+            g.FillRectangle(backBrush, this.ClientRectangle);
 
             // Foreground Bar
             using (SolidBrush brush = new SolidBrush(BarColor))
@@ -81,9 +79,7 @@ namespace DarkModeForms
                 }
                 else
                 {
-                    float percent = (float)(val - min) / (float)(max - min);
-                    if (percent > 1) percent = 1;
-                    if (percent < 0) percent = 0;
+                    float percent = Math.Clamp((float)(val - min) / (max - min), 0f, 1f);
 
                     Rectangle rect = this.ClientRectangle;
                     rect.Width = (int)((float)rect.Width * percent);
@@ -101,8 +97,8 @@ namespace DarkModeForms
             set
             {
                 min = value;
-                if (min > max) max = min;
-                if (val < min) val = min;
+                max = Math.Max(max, min);
+                val = Math.Max(val, min);
 
                 base.Minimum = min;
                 Invalidate();
@@ -115,8 +111,8 @@ namespace DarkModeForms
             set
             {
                 max = value;
-                if (max < min) min = max;
-                if (val > max) val = max;
+                min = Math.Min(min, max);
+                val = Math.Min(val, max);
 
                 base.Maximum = max;
                 Invalidate();
@@ -129,9 +125,7 @@ namespace DarkModeForms
             set
             {
                 int oldValue = val;
-                val = value;
-                if (val < min) val = min;
-                if (val > max) val = max;
+                val = Math.Clamp(value, min, max);
 
                 base.Value = val;
                 if (val != oldValue) Invalidate();
@@ -140,7 +134,7 @@ namespace DarkModeForms
 
         private void Draw3DBorder(Graphics g)
         {
-            int penWidth = (int)(1 * (g.DpiX / 96f));
+            int penWidth = UIHelpers.Scale(1, g);
             if (penWidth < 1) penWidth = 1;
 
             using (Pen pen = new Pen(Color.DarkGray, penWidth))

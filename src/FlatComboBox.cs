@@ -44,24 +44,18 @@ namespace DarkModeForms
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
 
-        private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
-
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == 0xF && DropDownStyle != ComboBoxStyle.Simple)
             {
                 base.WndProc(ref m);
-
                 using (Graphics g = Graphics.FromHwnd(Handle))
                 {
-                    g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    g.CompositingQuality = CompositingQuality.HighQuality;
-                    g.SmoothingMode = SmoothingMode.AntiAlias;
+                    UIHelpers.SetHighQualityGraphics(g);
 
                     var clientRect = ClientRectangle;
                     var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
-
-                    if (dropDownButtonWidth < Scale(12, g)) dropDownButtonWidth = Scale(16, g);
+                    if (dropDownButtonWidth < UIHelpers.Scale(12, g)) dropDownButtonWidth = UIHelpers.Scale(16, g);
 
                     var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
 
@@ -74,14 +68,14 @@ namespace DarkModeForms
 
                     #region Chevron
                     Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
-                    Size cSize = new Size(Scale(8, g), Scale(4, g));
+                    Size cSize = new Size(UIHelpers.Scale(8, g), UIHelpers.Scale(4, g));
                     var chevron = new Point[]
                     {
                         new Point(middle.X - (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
                         new Point(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
                         new Point(middle.X, middle.Y + (cSize.Height / 2))
                     };
-                    using (var chevronPen = new Pen(BorderColor, Scale(2, g)))
+                    using (var chevronPen = new Pen(BorderColor, UIHelpers.Scale(2, g)))
                     {
                         g.DrawLine(chevronPen, chevron[0], chevron[2]);
                         g.DrawLine(chevronPen, chevron[1], chevron[2]);
@@ -89,7 +83,7 @@ namespace DarkModeForms
                     #endregion
 
                     #region Borders
-                    using (var p = new Pen(Enabled ? BorderColor : SystemColors.ControlDark, Scale(1, g)))
+                    using (var p = new Pen(Enabled ? BorderColor : SystemColors.ControlDark, UIHelpers.Scale(1, g)))
                     {
                         Rectangle borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
                         g.DrawRectangle(p, borderRect);
@@ -102,6 +96,18 @@ namespace DarkModeForms
             }
 
             base.WndProc(ref m);
+        }
+    }
+
+    internal static class UIHelpers
+    {
+        public static int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
+
+        public static void SetHighQualityGraphics(Graphics g)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.CompositingQuality = CompositingQuality.HighQuality;
         }
     }
 }
