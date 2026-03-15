@@ -10,7 +10,8 @@ namespace MinimalFirewall
     public static class SystemDiscoveryService
     {
         private static bool _wmiQueryFailedMessageShown = false;
-        private static readonly MemoryCache _cmdLineCache = new(new MemoryCacheOptions());
+        public record ProcessExtendedDetails(string CommandLine, string ParentProcessId, string ParentProcessName, string ProcessOwner);
+        private static readonly MemoryCache _processDetailsCache = new(new MemoryCacheOptions());
 
         public static List<ServiceViewModel> GetServicesWithExePaths()
         {
@@ -56,46 +57,80 @@ namespace MinimalFirewall
             return services;
         }
 
-        public static string GetCommandLineByPID(string processId)
+        public static ProcessExtendedDetails GetExtendedProcessDetailsByPID(string processId)
         {
             if (string.IsNullOrEmpty(processId) || processId == "0" || !uint.TryParse(processId, out _))
             {
-                return string.Empty;
+                return new ProcessExtendedDetails(string.Empty, string.Empty, string.Empty, string.Empty);
             }
 
-            // check cache
-            string cacheKey = $"cmdline_{processId}";
-            if (_cmdLineCache.TryGetValue(cacheKey, out string? cachedCmdLine) && cachedCmdLine != null)
+            string cacheKey = $"procdetails_{processId}";
+            if (_processDetailsCache.TryGetValue(cacheKey, out ProcessExtendedDetails? cachedDetails) && cachedDetails != null)
             {
-                return cachedCmdLine;
+                return cachedDetails;
             }
 
-            // wmi query
             string commandLine = string.Empty;
+            string parentPid = string.Empty;
+            string parentName = string.Empty;
+            string owner = string.Empty;
+
             try
             {
-                var query = new ObjectQuery($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {processId}");
+                var query = new ObjectQuery($"SELECT CommandLine, ParentProcessId FROM Win32_Process WHERE ProcessId = {processId}");
                 using var searcher = new ManagementObjectSearcher(query);
                 using var results = searcher.Get();
+
                 foreach (ManagementBaseObject processBaseObject in results)
                 {
                     using (var process = (ManagementObject)processBaseObject)
                     {
                         commandLine = process["CommandLine"]?.ToString() ?? string.Empty;
-                        break; // Stop iterating once found
+                        parentPid = process["ParentProcessId"]?.ToString() ?? string.Empty;
+
+                        // retrieve process owner
+                        try
+                        {
+                            var ownerResult = process.InvokeMethod("GetOwner", null, null);
+                            if (ownerResult != null && (uint)ownerResult["returnValue"] == 0)
+                            {
+                                string user = ownerResult["User"]?.ToString() ?? string.Empty;
+                                string domain = ownerResult["Domain"]?.ToString() ?? string.Empty;
+                                owner = string.IsNullOrEmpty(domain) ? user : $"{domain}\\{user}";
+                            }
+                        }
+                        catch { /* Ignore errors if lacking permissions */ }
+
+                        break;
+                    }
+                }
+
+                // name query for parent PID
+                if (!string.IsNullOrEmpty(parentPid))
+                {
+                    var parentQuery = new ObjectQuery($"SELECT Name FROM Win32_Process WHERE ProcessId = {parentPid}");
+                    using var parentSearcher = new ManagementObjectSearcher(parentQuery);
+                    using var parentResults = parentSearcher.Get();
+                    foreach (ManagementBaseObject parentObj in parentResults)
+                    {
+                        using (var pObj = (ManagementObject)parentObj)
+                        {
+                            parentName = pObj["Name"]?.ToString() ?? string.Empty;
+                            break;
+                        }
                     }
                 }
             }
             catch (Exception ex) when (ex is ManagementException or System.Runtime.InteropServices.COMException)
             {
-                Debug.WriteLine($"WMI Query for CommandLine failed: {ex.Message}");
+                Debug.WriteLine($"WMI Query for Process Details failed: {ex.Message}");
             }
 
-            // store in cache for 5 min
+            var details = new ProcessExtendedDetails(commandLine, parentPid, parentName, owner);
             var cacheOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
-            _cmdLineCache.Set(cacheKey, commandLine, cacheOptions);
+            _processDetailsCache.Set(cacheKey, details, cacheOptions);
 
-            return commandLine;
+            return details;
         }
 
         public static string GetServicesByPID(string processId)

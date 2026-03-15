@@ -95,6 +95,13 @@ namespace MinimalFirewall
             AppendLine("Application", pending.FileName);
             AppendLine("Path", pending.AppPath);
             AppendLine("PID", pending.ProcessId);
+            if (!string.IsNullOrEmpty(pending.ProcessOwner))
+                AppendLine("Owner", pending.ProcessOwner);
+            if (!string.IsNullOrEmpty(pending.ParentProcessId))
+            {
+                string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
+                AppendLine("Parent Process", parentDisplay);
+            }
             AppendLine("Service", string.IsNullOrEmpty(pending.ServiceName) ? "N/A" : pending.ServiceName);
             AppendLine("Direction", pending.Direction);
             string remote = string.IsNullOrEmpty(pending.RemoteAddress) ? "N/A" : $"{pending.RemoteAddress}:{pending.RemotePort}";
@@ -369,6 +376,13 @@ namespace MinimalFirewall
                 details.AppendLine($"Application: {pending.FileName}");
                 details.AppendLine($"Path: {pending.AppPath}");
                 details.AppendLine($"PID: {pending.ProcessId}");
+                if (!string.IsNullOrEmpty(pending.ProcessOwner))
+                    details.AppendLine($"Owner: {pending.ProcessOwner}");
+                if (!string.IsNullOrEmpty(pending.ParentProcessId))
+                {
+                    string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
+                    details.AppendLine($"Parent Process: {parentDisplay}");
+                }
                 details.AppendLine($"Service: {pending.ServiceName}");
                 details.AppendLine($"Direction: {pending.Direction}");
                 if (!string.IsNullOrEmpty(pending.CommandLine))
