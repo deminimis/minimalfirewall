@@ -1,14 +1,16 @@
-﻿// File: SystemDiscoveryService.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using System.IO;
 using System.Management;
 using System.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
+using System;
 
 namespace MinimalFirewall
 {
     public static class SystemDiscoveryService
     {
         private static bool _wmiQueryFailedMessageShown = false;
+        private static readonly MemoryCache _cmdLineCache = new(new MemoryCacheOptions());
 
         public static List<ServiceViewModel> GetServicesWithExePaths()
         {
@@ -61,6 +63,15 @@ namespace MinimalFirewall
                 return string.Empty;
             }
 
+            // check cache
+            string cacheKey = $"cmdline_{processId}";
+            if (_cmdLineCache.TryGetValue(cacheKey, out string? cachedCmdLine) && cachedCmdLine != null)
+            {
+                return cachedCmdLine;
+            }
+
+            // wmi query
+            string commandLine = string.Empty;
             try
             {
                 var query = new ObjectQuery($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {processId}");
@@ -70,7 +81,8 @@ namespace MinimalFirewall
                 {
                     using (var process = (ManagementObject)processBaseObject)
                     {
-                        return process["CommandLine"]?.ToString() ?? string.Empty;
+                        commandLine = process["CommandLine"]?.ToString() ?? string.Empty;
+                        break; // Stop iterating once found
                     }
                 }
             }
@@ -78,7 +90,12 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"WMI Query for CommandLine failed: {ex.Message}");
             }
-            return string.Empty;
+
+            // store in cache for 5 min
+            var cacheOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
+            _cmdLineCache.Set(cacheKey, commandLine, cacheOptions);
+
+            return commandLine;
         }
 
         public static string GetServicesByPID(string processId)
