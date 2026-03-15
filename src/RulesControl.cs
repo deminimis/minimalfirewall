@@ -139,7 +139,6 @@ namespace MinimalFirewall
             var rule = _currentRuleList[e.RowIndex];
             var col = rulesDataGridView.Columns[e.ColumnIndex];
 
-            // Modern switch expression for cleaner column mapping
             e.Value = col switch
             {
                 _ when col == advIconColumn => GetIconForRule(rule),

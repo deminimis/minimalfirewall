@@ -681,8 +681,7 @@ namespace DarkModeForms
 
                 if (IsWindows10orGreater())
                 {
-                    var color = colors.ColorizationColor;
-                    var colorValue = long.Parse(color.ToString(), System.Globalization.NumberStyles.HexNumber);
+                    var colorValue = colors.ColorizationColor;
                     var transparency = (colorValue >> 24) & 0xFF;
                     var red = (colorValue >> 16) & 0xFF;
                     var green = (colorValue >> 8) & 0xFF;
