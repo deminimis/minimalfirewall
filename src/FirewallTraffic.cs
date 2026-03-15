@@ -190,7 +190,7 @@ namespace Firewall.Traffic
 
 namespace Firewall.Traffic.ViewModels
 {
-    public class TcpConnectionViewModel : INotifyPropertyChanged
+    public class TcpConnectionViewModel
     {
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
 
@@ -272,8 +272,6 @@ namespace Firewall.Traffic.ViewModels
 
             MessageBox.Show($"Firewall rule queued to block all traffic to/from {RemoteAddress}.", "Rule Queued", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
     }
 
     public class TrafficMonitorViewModel : INotifyPropertyChanged
