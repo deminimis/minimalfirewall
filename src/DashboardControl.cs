@@ -27,15 +27,15 @@ namespace MinimalFirewall
         public DashboardControl()
         {
             InitializeComponent();
-
             this.DoubleBuffered = true;
 
-            // FORCE Double Buffering on the DataGridView 
             if (dashboardDataGridView != null)
             {
                 typeof(Control).InvokeMember("DoubleBuffered",
                     BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
                     null, dashboardDataGridView, new object[] { true });
+
+                dashboardDataGridView.CellMouseDown += dashboardDataGridView_CellMouseDown;
             }
         }
 
@@ -180,6 +180,17 @@ namespace MinimalFirewall
             if (e.RowIndex >= 0)
             {
                 dashboardDataGridView.InvalidateRow(e.RowIndex);
+            }
+        }
+
+        private void dashboardDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            // If it's a right-click on a valid row, update the selection before the context menu opens
+            if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                dashboardDataGridView.ClearSelection();
+                dashboardDataGridView.Rows[e.RowIndex].Selected = true;
+                dashboardDataGridView.CurrentCell = dashboardDataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex];
             }
         }
 
