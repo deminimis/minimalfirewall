@@ -15,6 +15,7 @@ namespace MinimalFirewall
         private MainViewModel _viewModel = null!;
         private AppSettings _appSettings = null!;
         private IconService _iconService = null!;
+        private DarkModeCS _dm = null!;
         private WildcardRuleService _wildcardRuleService = null!;
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
@@ -43,6 +44,7 @@ namespace MinimalFirewall
         {
             _viewModel = viewModel;
             _appSettings = appSettings;
+            _dm = dm;
             _iconService = iconService;
             _wildcardRuleService = wildcardRuleService;
             _actionsService = actionsService;
@@ -123,7 +125,6 @@ namespace MinimalFirewall
                         e.Value = _iconService.ImageList.Images[iconIndex];
                     }
                 }
-                return;
             }
 
             // Color Logic 
@@ -137,12 +138,28 @@ namespace MinimalFirewall
                 e.CellStyle.BackColor = BlockColor;
                 e.CellStyle.ForeColor = Color.Black;
             }
+            else if (e.ColumnIndex == ignoreButtonColumn.Index)
+            {
+                e.CellStyle.BackColor = _dm != null && _dm.IsDarkMode ? Color.FromArgb(85, 85, 85) : Color.FromArgb(200, 200, 200);
+            }
 
             // Selection Logic
             if (dashboardDataGridView.Rows[e.RowIndex].Selected)
             {
-                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
-                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+                // Prevent selection color from covering the action buttons
+                if (e.ColumnIndex == allowButtonColumn.Index ||
+                    e.ColumnIndex == blockButtonColumn.Index ||
+                    e.ColumnIndex == ignoreButtonColumn.Index)
+                {
+                    e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
+                    e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+                }
+                else
+                {
+                    // Custom light blue selection for all other cells
+                    e.CellStyle.SelectionBackColor = Color.FromArgb(189, 222, 255);
+                    e.CellStyle.SelectionForeColor = Color.Black;
+                }
             }
             else
             {
