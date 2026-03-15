@@ -70,6 +70,12 @@ namespace MinimalFirewall
             }, token);
         }
 
+        private static string MergeDistinct(IEnumerable<string> items)
+        {
+            var distinctItems = items.Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
+            return distinctItems.Count > 0 ? string.Join(", ", distinctItems) : "*";
+        }
+
         public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
         {
             var result = await _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
@@ -165,17 +171,10 @@ namespace MinimalFirewall
             aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "-");
             if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
 
-            var localPorts = group.Select(r => r.LocalPorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.LocalPorts = localPorts.Count > 0 ? string.Join(", ", localPorts) : "*";
-
-            var remotePorts = group.Select(r => r.RemotePorts).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.RemotePorts = remotePorts.Count > 0 ? string.Join(", ", remotePorts) : "*";
-
-            var localAddresses = group.Select(r => r.LocalAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.LocalAddresses = localAddresses.Count > 0 ? string.Join(", ", localAddresses) : "*";
-
-            var remoteAddresses = group.Select(r => r.RemoteAddresses).Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            aggRule.RemoteAddresses = remoteAddresses.Count > 0 ? string.Join(", ", remoteAddresses) : "*";
+            aggRule.LocalPorts = MergeDistinct(group.Select(r => r.LocalPorts));
+            aggRule.RemotePorts = MergeDistinct(group.Select(r => r.RemotePorts));
+            aggRule.LocalAddresses = MergeDistinct(group.Select(r => r.LocalAddresses));
+            aggRule.RemoteAddresses = MergeDistinct(group.Select(r => r.RemoteAddresses));
 
             return aggRule;
         }
@@ -235,6 +234,8 @@ namespace MinimalFirewall
             return RuleType.Advanced;
         }
 
+        private static string GetStr(string? val, string def) => string.IsNullOrEmpty(val) ? def : val;
+
         public async Task<MfwRuleStatus> CheckMfwRuleStatusAsync(string appPath, string serviceName, string direction)
         {
             if (!Enum.TryParse<Directions>(direction, true, out var dirEnum))
@@ -275,28 +276,12 @@ namespace MinimalFirewall
                 {
                     if (ruleHasService && serviceNamesSet!.Contains(rule.ServiceName))
                     {
-                        if (ruleHasApp)
-                        {
-                            if (eventHasApp && string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase))
-                            {
-                                match = true;
-                            }
-                        }
-                        else
-                        {
-                            match = true;
-                        }
+                        match = !ruleHasApp || (eventHasApp && string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase));
                     }
                 }
-                else
+                else if (!ruleHasService && ruleHasApp && eventHasApp)
                 {
-                    if (!ruleHasService && ruleHasApp && eventHasApp)
-                    {
-                        if (string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase))
-                        {
-                            match = true;
-                        }
-                    }
+                    match = string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase);
                 }
 
                 if (match)
@@ -342,13 +327,13 @@ namespace MinimalFirewall
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = (Directions)rule.Direction,
                 ApplicationName = appName == "*" ? "*" : PathResolver.NormalizePath(appName),
-                LocalPorts = string.IsNullOrEmpty(rule.LocalPorts) ? "*" : rule.LocalPorts,
-                RemotePorts = string.IsNullOrEmpty(rule.RemotePorts) ? "*" : rule.RemotePorts,
+                LocalPorts = GetStr(rule.LocalPorts, "*"),
+                RemotePorts = GetStr(rule.RemotePorts, "*"),
                 Protocol = (int)rawProtocol,
                 ProtocolName = GetProtocolName(rawProtocol),
-                ServiceName = (string.IsNullOrEmpty(rule.serviceName) || rule.serviceName == "*") ? string.Empty : rule.serviceName,
-                LocalAddresses = string.IsNullOrEmpty(rule.LocalAddresses) ? "*" : rule.LocalAddresses,
-                RemoteAddresses = string.IsNullOrEmpty(rule.RemoteAddresses) ? "*" : rule.RemoteAddresses,
+                ServiceName = GetStr(rule.serviceName, string.Empty) == "*" ? string.Empty : GetStr(rule.serviceName, string.Empty),
+                LocalAddresses = GetStr(rule.LocalAddresses, "*"),
+                RemoteAddresses = GetStr(rule.RemoteAddresses, "*"),
                 Profiles = GetProfileString(rule.Profiles),
                 Grouping = rule.Grouping ?? string.Empty,
                 InterfaceTypes = rule.InterfaceTypes ?? "All",
