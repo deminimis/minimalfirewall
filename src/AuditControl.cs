@@ -424,7 +424,7 @@ namespace MinimalFirewall
         private void systemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
-            var grid = (DataGridView)sender;
+            if (sender is not DataGridView grid) return;
 
             if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
 
@@ -474,7 +474,7 @@ namespace MinimalFirewall
 
         private void systemChangesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
-            var grid = (DataGridView)sender;
+            if (sender is not DataGridView grid) return;
             var row = grid.Rows[e.RowIndex];
 
             if (row.Selected) return;
@@ -493,7 +493,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                var grid = (DataGridView)sender;
+                if (sender is not DataGridView grid) return;
                 grid.InvalidateRow(e.RowIndex);
             }
         }
@@ -502,7 +502,7 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                var grid = (DataGridView)sender;
+                if (sender is not DataGridView grid) return;
                 grid.InvalidateRow(e.RowIndex);
             }
         }
@@ -511,7 +511,7 @@ namespace MinimalFirewall
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
-                var grid = (DataGridView)sender;
+                if (sender is not DataGridView grid) return;
                 var clickedRow = grid.Rows[e.RowIndex];
 
                 if (!clickedRow.Selected)
@@ -545,8 +545,8 @@ namespace MinimalFirewall
             diffRichTextBox.BackColor = isDark ? _dm!.OScolors.Surface : Color.White;
             diffRichTextBox.ForeColor = isDark ? _dm!.OScolors.TextActive : Color.Black;
 
-            Font boldFont = new(diffRichTextBox.Font, FontStyle.Bold);
-            Font regFont = diffRichTextBox.Font;
+            Font boldFont = new(diffRichTextBox.Font ?? Control.DefaultFont, FontStyle.Bold);
+            Font regFont = diffRichTextBox.Font ?? Control.DefaultFont;
 
             Color oldColor = isDark ? Color.FromArgb(255, 100, 100) : Color.Red;
             Color newColor = isDark ? Color.LightGreen : Color.Green;

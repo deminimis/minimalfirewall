@@ -26,7 +26,7 @@
 		<ServerGarbageCollection>false</ServerGarbageCollection>
 		<TieredCompilation>false</TieredCompilation>
 		<GenerateResourceWarnOnBinaryFormatterUse>false</GenerateResourceWarnOnBinaryFormatterUse>
-
+		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 		<PublishSingleFile>true</PublishSingleFile>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 	</PropertyGroup>
@@ -50,8 +50,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
-		<PackageReference Include="System.Management" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.5" />
+		<PackageReference Include="System.Management" Version="10.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

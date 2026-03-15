@@ -1,5 +1,4 @@
-﻿// File: BrowseServicesForm.cs
-using DarkModeForms;
+﻿using DarkModeForms;
 using System.Data;
 
 namespace MinimalFirewall
