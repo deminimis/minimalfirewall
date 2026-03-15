@@ -14,16 +14,20 @@ namespace DarkModeForms
         private Dictionary<string, Image> _iconCache = new Dictionary<string, Image>();
 
         [Description("Color for a decorative line"), Category("Appearance")]
+        [DefaultValue(typeof(Color), "Highlight")]
         public Color LineColor { get; set; } = SystemColors.Highlight;
 
         [Description("Color for all Borders"), Category("Appearance")]
+        [DefaultValue(typeof(Color), "ControlDark")]
         public Color BorderColor { get; set; } = SystemColors.ControlDark;
 
         [Description("Back color for selected Tab"), Category("Appearance")]
+        [DefaultValue(typeof(Color), "ControlLight")]
         public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
 
         private Color _selectedForeColor = SystemColors.HighlightText;
         [Description("Fore Color for Selected Tab"), Category("Appearance")]
+        [DefaultValue(typeof(Color), "HighlightText")]
         public Color SelectedForeColor
         {
             get => _selectedForeColor;
@@ -36,6 +40,7 @@ namespace DarkModeForms
         }
 
         [Description("Back Color for un-selected tabs"), Category("Appearance")]
+        [DefaultValue(typeof(Color), "ControlLight")]
         public Color TabColor { get; set; } = SystemColors.ControlLight;
 
         [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]

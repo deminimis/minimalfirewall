@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.ComponentModel;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -11,6 +12,7 @@ namespace DarkModeForms
         private int marqueePosition = 0;
         private ProgressBarStyle style = ProgressBarStyle.Blocks;
 
+        [DefaultValue(ProgressBarStyle.Blocks)]
         public new ProgressBarStyle Style
         {
             get { return style; }
@@ -50,6 +52,7 @@ namespace DarkModeForms
         private int min = 0;
         private int max = 100;
         private int val = 0;
+        [DefaultValue(typeof(Color), "Green")]
         public Color BarColor { get; set; } = Color.Green;
 
         protected override void OnResize(EventArgs e)
@@ -91,6 +94,7 @@ namespace DarkModeForms
             Draw3DBorder(g);
         }
 
+        [DefaultValue(0)]
         public new int Minimum
         {
             get => min;
@@ -105,6 +109,7 @@ namespace DarkModeForms
             }
         }
 
+        [DefaultValue(100)]
         public new int Maximum
         {
             get => max;
@@ -119,6 +124,7 @@ namespace DarkModeForms
             }
         }
 
+        [DefaultValue(0)]
         public new int Value
         {
             get => val;
