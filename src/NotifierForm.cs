@@ -239,12 +239,19 @@ namespace MinimalFirewall
                 details.AppendLine($"Application: {PendingConnection.FileName}");
                 details.AppendLine($"Path: {PendingConnection.AppPath}");
                 details.AppendLine($"PID: {PendingConnection.ProcessId}");
+                if (!string.IsNullOrEmpty(PendingConnection.ProcessOwner))
+                    details.AppendLine($"Owner: {PendingConnection.ProcessOwner}");
+                if (!string.IsNullOrEmpty(PendingConnection.ParentProcessId))
+                {
+                    string parentDisplay = string.IsNullOrEmpty(PendingConnection.ParentProcessName) ? PendingConnection.ParentProcessId : $"{PendingConnection.ParentProcessName} (PID: {PendingConnection.ParentProcessId})";
+                    details.AppendLine($"Parent Process: {parentDisplay}");
+                }
                 details.AppendLine($"Service: {PendingConnection.ServiceName}");
                 details.AppendLine($"Direction: {PendingConnection.Direction}");
                 if (!string.IsNullOrEmpty(PendingConnection.CommandLine))
                     details.AppendLine($"CMD: {PendingConnection.CommandLine}");
 
-                // Retry logic for clipboard 
+                // clipboard retry logic
                 for (int i = 0; i < 5; i++)
                 {
                     try
@@ -270,7 +277,6 @@ namespace MinimalFirewall
             }
             catch
             {
-                // Silently fail if clipboard is inaccessible
             }
         }
 

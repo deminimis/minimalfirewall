@@ -242,15 +242,26 @@ namespace MinimalFirewall
                 }
 
                 string commandLine = string.Empty;
+                string parentPid = string.Empty;
+                string parentName = string.Empty;
+                string owner = string.Empty;
+
                 if (!string.IsNullOrEmpty(pidStr) && pidStr != "0")
                 {
-                    commandLine = SystemDiscoveryService.GetCommandLineByPID(pidStr);
+                    var procDetails = SystemDiscoveryService.GetExtendedProcessDetailsByPID(pidStr);
+                    commandLine = procDetails.CommandLine;
+                    parentPid = procDetails.ParentProcessId;
+                    parentName = procDetails.ParentProcessName;
+                    owner = procDetails.ProcessOwner;
                 }
 
                 var pendingVm = new PendingConnectionViewModel
                 {
                     ProcessId = pidStr,
                     CommandLine = commandLine,
+                    ParentProcessId = parentPid,
+                    ParentProcessName = parentName,
+                    ProcessOwner = owner,
                     AppPath = appPath,
                     Direction = direction,
                     ServiceName = serviceName,

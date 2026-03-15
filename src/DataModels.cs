@@ -169,6 +169,9 @@ public class PendingConnectionViewModel
 {
     public string ProcessId { get; set; } = string.Empty;
     public string CommandLine { get; set; } = string.Empty;
+    public string ParentProcessId { get; set; } = string.Empty;
+    public string ParentProcessName { get; set; } = string.Empty;
+    public string ProcessOwner { get; set; } = string.Empty;
     public string AppPath { get; set; } = string.Empty;
     public string FileName => Path.GetFileName(AppPath);
     public string Direction { get; set; } = string.Empty;
