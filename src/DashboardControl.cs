@@ -20,7 +20,7 @@ namespace MinimalFirewall
         private WildcardRuleService _wildcardRuleService = null!;
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
-        private BindingSource _bindingSource;
+        private BindingSource _bindingSource = null!;
 
         private static readonly Color AllowColor = Color.FromArgb(204, 255, 204);
         private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
@@ -182,35 +182,34 @@ namespace MinimalFirewall
             dashboardDataGridView.ResumeLayout();
         }
 
-        private void dashboardDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        private void dashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
-
-            var grid = (DataGridView)sender;
+            if (sender is not DataGridView grid) return;
 
             if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
             {
-                if (e.ColumnIndex == allowButtonColumn.Index)
+                if (allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index)
                 {
                     _viewModel.ProcessDashboardAction(pending, "Allow");
                 }
-                else if (e.ColumnIndex == blockButtonColumn.Index)
+                else if (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index)
                 {
                     _viewModel.ProcessDashboardAction(pending, "Block");
                 }
-                else if (e.ColumnIndex == ignoreButtonColumn.Index)
+                else if (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index)
                 {
                     _viewModel.ProcessDashboardAction(pending, "Ignore");
                 }
             }
         }
 
-        private void dashboardDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        private void dashboardDataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
 
             // Icon Column Logic
-            if (e.ColumnIndex == dashIconColumn.Index)
+            if (dashIconColumn != null && e.ColumnIndex == dashIconColumn.Index)
             {
                 if (_appSettings.ShowAppIcons &&
                     dashboardDataGridView.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
@@ -218,7 +217,7 @@ namespace MinimalFirewall
                     int iconIndex = _iconService.GetIconIndex(pending.AppPath);
                     if (iconIndex != -1 && _iconService.ImageList != null)
                     {
-                        if (!_gridIconCache.TryGetValue(iconIndex, out Image cachedIcon))
+                        if (!_gridIconCache.TryGetValue(iconIndex, out Image? cachedIcon) || cachedIcon == null)
                         {
                             cachedIcon = _iconService.ImageList.Images[iconIndex];
                             _gridIconCache[iconIndex] = cachedIcon;
@@ -229,28 +228,29 @@ namespace MinimalFirewall
             }
 
             // Color Logic 
-            if (e.ColumnIndex == allowButtonColumn.Index)
+            if (allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index)
             {
                 e.CellStyle.BackColor = AllowColor;
                 e.CellStyle.ForeColor = Color.Black;
             }
-            else if (e.ColumnIndex == blockButtonColumn.Index)
+            else if (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index)
             {
                 e.CellStyle.BackColor = BlockColor;
                 e.CellStyle.ForeColor = Color.Black;
             }
-            else if (e.ColumnIndex == ignoreButtonColumn.Index)
+            else if (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index)
             {
-                e.CellStyle.BackColor = _dm != null && _dm.IsDarkMode ? Color.FromArgb(85, 85, 85) : Color.FromArgb(200, 200, 200);
+                e.CellStyle.BackColor = _dm != null && _dm.IsDarkMode ?
+                    Color.FromArgb(85, 85, 85) : Color.FromArgb(200, 200, 200);
             }
 
             // Selection Logic
             if (dashboardDataGridView.Rows[e.RowIndex].Selected)
             {
                 // Prevent selection color from covering the action buttons
-                if (e.ColumnIndex == allowButtonColumn.Index ||
-                    e.ColumnIndex == blockButtonColumn.Index ||
-                    e.ColumnIndex == ignoreButtonColumn.Index)
+                if ((allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index) ||
+                    (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index) ||
+                    (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index))
                 {
                     e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
                     e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
@@ -269,10 +269,9 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        private void dashboardDataGridView_RowPostPaint(object? sender, DataGridViewRowPostPaintEventArgs e)
         {
-            var grid = (DataGridView)sender;
-
+            if (sender is not DataGridView grid) return;
             if (grid.Rows[e.RowIndex].Selected) return;
 
             var clientPoint = grid.PointToClient(MousePosition);
@@ -284,7 +283,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        private void dashboardDataGridView_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -292,7 +291,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        private void dashboardDataGridView_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -300,7 +299,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        private void dashboardDataGridView_CellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
         {
             // If it's a right-click on a valid row, update the selection before the context menu opens
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)

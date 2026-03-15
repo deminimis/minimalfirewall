@@ -138,7 +138,7 @@ namespace MinimalFirewall
             if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
             {
                 e.PaintBackground(e.CellBounds, true);
-                if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group)
+                if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group && e.Graphics != null)
                 {
                     DrawToggleSwitch(e.Graphics, e.CellBounds, group.IsEnabled);
                 }
