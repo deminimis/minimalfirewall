@@ -335,13 +335,13 @@ namespace MinimalFirewall
             this.dashboardDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dashboardDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.dashIconColumn,
-            this.allowButtonColumn,
-            this.blockButtonColumn,
-            this.ignoreButtonColumn,
             this.dashAppColumn,
             this.dashServiceColumn,
             this.dashDirectionColumn,
-            this.dashPathColumn});
+            this.dashPathColumn,
+            this.allowButtonColumn,
+            this.blockButtonColumn,
+            this.ignoreButtonColumn});
             this.dashboardDataGridView.ContextMenuStrip = this.dashboardContextMenu;
             this.dashboardDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dashboardDataGridView.EnableHeadersVisualStyles = false;
