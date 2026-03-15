@@ -120,19 +120,20 @@ namespace MinimalFirewall
                 {
                     if (rule == null) continue;
 
-                    // Optimize: Check cheap properties first before string manipulation
-                    if (rule.Action == NET_FW_ACTION_.NET_FW_ACTION_BLOCK &&
-                        rule.Protocol == 256 && // Any
-                        IsMfwRule(rule))
+                    // assign to local variables to avoid reading COM
+                    if (rule.Protocol != 256) continue;
+                    if (rule.Action != NET_FW_ACTION_.NET_FW_ACTION_BLOCK) continue;
+
+                    // Do this ONLY if the primitive types match.
+                    if (!IsMfwRule(rule)) continue;
+
+                    if (rule.LocalPorts != "*") continue;
+                    if (rule.RemotePorts != "*") continue;
+
+                    string appName = rule.ApplicationName;
+                    if (string.Equals(PathResolver.NormalizePath(appName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
                     {
-                        // Ports check (accessing property is costly, do strictly if needed)
-                        if (rule.LocalPorts == "*" && rule.RemotePorts == "*")
-                        {
-                            if (string.Equals(PathResolver.NormalizePath(rule.ApplicationName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
-                            {
-                                rulesToDelete.Add(rule.Name);
-                            }
-                        }
+                        rulesToDelete.Add(rule.Name);
                     }
                 }
             }

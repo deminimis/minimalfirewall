@@ -24,8 +24,9 @@ namespace MinimalFirewall
 
         private static readonly Color AllowColor = Color.FromArgb(204, 255, 204);
         private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
-        private static readonly Color HighlightOverlay = Color.FromArgb(25, Color.Black);
+        private readonly SolidBrush _highlightOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
+        private readonly Dictionary<int, Image> _gridIconCache = new Dictionary<int, Image>();
 
         public DashboardControl()
         {
@@ -162,7 +163,14 @@ namespace MinimalFirewall
 
         private void LoadDashboardItems()
         {
+            dashboardDataGridView.SuspendLayout();
+            var prevAutoSize = dashboardDataGridView.AutoSizeColumnsMode;
+            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
             _bindingSource.ResetBindings(false);
+
+            dashboardDataGridView.AutoSizeColumnsMode = prevAutoSize;
+            dashboardDataGridView.ResumeLayout();
         }
 
         private void dashboardDataGridView_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -201,7 +209,12 @@ namespace MinimalFirewall
                     int iconIndex = _iconService.GetIconIndex(pending.AppPath);
                     if (iconIndex != -1 && _iconService.ImageList != null)
                     {
-                        e.Value = _iconService.ImageList.Images[iconIndex];
+                        if (!_gridIconCache.TryGetValue(iconIndex, out Image cachedIcon))
+                        {
+                            cachedIcon = _iconService.ImageList.Images[iconIndex];
+                            _gridIconCache[iconIndex] = cachedIcon;
+                        }
+                        e.Value = cachedIcon;
                     }
                 }
             }
@@ -258,8 +271,7 @@ namespace MinimalFirewall
 
             if (e.RowIndex == hitTest.RowIndex)
             {
-                using var overlayBrush = new SolidBrush(HighlightOverlay);
-                e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
+                e.Graphics.FillRectangle(_highlightOverlayBrush, e.RowBounds);
             }
         }
 
