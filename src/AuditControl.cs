@@ -139,19 +139,27 @@ namespace MinimalFirewall
             }
         }
 
-        public void ApplySearchFilter()
+        public async void ApplySearchFilter()
         {
             if (systemChangesDataGridView is null || _viewModel?.SystemChanges is null) return;
             string searchText = auditSearchTextBox.Text;
 
             try
             {
-                var filteredChanges = string.IsNullOrWhiteSpace(searchText) ?
-                    _viewModel.SystemChanges : _viewModel.SystemChanges.Where(c =>
+                _bindingSource.RaiseListChangedEvents = false;
+
+                var changesCopy = _viewModel.SystemChanges.ToList();
+
+                var filteredChanges = await Task.Run(() =>
+                {
+                    return string.IsNullOrWhiteSpace(searchText) ? changesCopy : changesCopy.Where(c =>
                           (c.Name != null && c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.Description != null && c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.ApplicationName != null && c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
-                          (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+                          (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase))).ToList();
+                });
+
+                if (this.IsDisposed) return;
 
                 var bindableList = new SortableBindingList<FirewallRuleChange>([.. filteredChanges]);
 
@@ -175,6 +183,7 @@ namespace MinimalFirewall
 
                 _bindingSource.DataSource = bindableList;
                 _bindingSource.ResetBindings(false);
+                _bindingSource.RaiseListChangedEvents = true;
                 systemChangesDataGridView.Refresh();
 
                 foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
