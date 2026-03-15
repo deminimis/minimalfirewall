@@ -30,6 +30,7 @@ namespace MinimalFirewall
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, AppSettings appSettings)
         {
             InitializeComponent();
+            this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             _appSettings = appSettings;
 
 
