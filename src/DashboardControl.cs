@@ -183,10 +183,34 @@ namespace MinimalFirewall
             }
         }
 
+        private PendingConnectionViewModel? GetSelectedPendingConnection()
+        {
+            return dashboardDataGridView.SelectedRows.Count > 0
+                ? dashboardDataGridView.SelectedRows[0].DataBoundItem as PendingConnectionViewModel
+                : null;
+        }
+
+        private void ProcessActionForSelected(string action, bool trustPublisher = false)
+        {
+            if (GetSelectedPendingConnection() is { } pending)
+            {
+                _viewModel.ProcessDashboardAction(pending, action, trustPublisher);
+            }
+        }
+
+        
+
+        private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e) => ProcessActionForSelected("Allow");
+
+        private void AllowAndTrustPublisherToolStripMenuItem_Click(object sender, EventArgs e) => ProcessActionForSelected("Allow", trustPublisher: true);
+
+        private void PermanentBlockToolStripMenuItem_Click(object sender, EventArgs e) => ProcessActionForSelected("Block");
+
+        private void IgnoreToolStripMenuItem_Click(object sender, EventArgs e) => ProcessActionForSelected("Ignore");
+
         private void TempAllowMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
+            if (GetSelectedPendingConnection() is { } pending &&
                 sender is ToolStripMenuItem menuItem &&
                 int.TryParse(menuItem.Tag?.ToString(), out int minutes))
             {
@@ -194,82 +218,36 @@ namespace MinimalFirewall
             }
         }
 
-        private void PermanentAllowToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
-            {
-                _viewModel.ProcessDashboardAction(pending, "Allow");
-            }
-        }
-
-        private void AllowAndTrustPublisherToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
-            {
-                _viewModel.ProcessDashboardAction(pending, "Allow", trustPublisher: true);
-            }
-        }
-
-        private void PermanentBlockToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
-            {
-                _viewModel.ProcessDashboardAction(pending, "Block");
-            }
-        }
-
-        private void IgnoreToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
-            {
-                _viewModel.ProcessDashboardAction(pending, "Ignore");
-            }
-        }
-
         private void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
+            if (GetSelectedPendingConnection() is { } pending)
             {
                 using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath, _appSettings);
                 if (wildcardDialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    var newRule = wildcardDialog.NewRule;
-                    _viewModel.CreateWildcardRule(pending, newRule);
+                    _viewModel.CreateWildcardRule(pending, wildcardDialog.NewRule);
                 }
             }
         }
 
         private void ContextMenu_Opening(object sender, CancelEventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count == 0)
+            var pending = GetSelectedPendingConnection();
+            if (pending == null)
             {
                 e.Cancel = true;
                 return;
             }
 
-            if (dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
-            {
-                if (!string.IsNullOrEmpty(pending.AppPath) && File.Exists(pending.AppPath))
-                {
-                    bool isSigned = SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
-                    allowAndTrustPublisherToolStripMenuItem.Visible = isSigned;
-                }
-                else
-                {
-                    allowAndTrustPublisherToolStripMenuItem.Visible = false;
-                }
-            }
+            allowAndTrustPublisherToolStripMenuItem.Visible =
+                !string.IsNullOrEmpty(pending.AppPath) &&
+                File.Exists(pending.AppPath) &&
+                SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
         }
 
         private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
+            if (GetSelectedPendingConnection() is { } pending)
             {
                 using var dialog = new CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
                 dialog.ShowDialog(this.FindForm());
@@ -278,9 +256,7 @@ namespace MinimalFirewall
 
         private void openFileLocationToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending &&
-                !string.IsNullOrEmpty(pending.AppPath))
+            if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
             {
                 if (!File.Exists(pending.AppPath) && !Directory.Exists(pending.AppPath))
                 {
@@ -302,11 +278,9 @@ namespace MinimalFirewall
                 DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
         private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
+            if (GetSelectedPendingConnection() is { } pending)
             {
                 var details = new System.Text.StringBuilder();
                 details.AppendLine($"Type: Pending Connection");
@@ -320,8 +294,7 @@ namespace MinimalFirewall
 
         private void showBlockingRuleInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (dashboardDataGridView.SelectedRows.Count > 0 &&
-                dashboardDataGridView.SelectedRows[0].DataBoundItem is PendingConnectionViewModel pending)
+            if (GetSelectedPendingConnection() is { } pending)
             {
                 string filterId = string.IsNullOrEmpty(pending.FilterId) ? "N/A" : pending.FilterId;
                 string layerId = string.IsNullOrEmpty(pending.LayerId) ? "N/A" : pending.LayerId;
@@ -331,7 +304,8 @@ namespace MinimalFirewall
                                  $"Remote: {pending.RemoteAddress}:{pending.RemotePort}\n\n" +
                                  $"Blocking Filter ID: {filterId}\n" +
                                  $"Blocking Layer ID: {layerId}\n\n" +
-                                 "You can use these IDs to search within the advanced 'Windows Defender Firewall' console (wf.msc) or with PowerShell's Get-NetFirewallRule / Get-NetFirewallFilter commands to find the specific rule/filter.";
+                                 "You can use these IDs to search within the advanced 'Windows Defender Firewall' console (wf.msc) or with PowerShell's " +
+                                 "Get-NetFirewallRule / Get-NetFirewallFilter commands to find the specific rule/filter.";
 
                 DarkModeForms.Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
             }
