@@ -868,7 +868,7 @@ namespace DarkModeForms
             {
                 using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
                 if (key?.GetValue("CurrentMajorVersionNumber") is int majorInt) return majorInt;
-                if (key?.GetValue("ProductName")?.ToString().Contains("Windows 1") == true) return 10;
+                if (key?.GetValue("ProductName")?.ToString()?.Contains("Windows 1") == true) return 10;
             }
             catch { }
             return 10;
@@ -1058,11 +1058,13 @@ namespace DarkModeForms
 
         protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
         {
+            if (e.Item == null) return;
             DrawGradientItemBackground(e.Graphics, e.Item, new Rectangle(Point.Empty, e.Item.Size), false);
         }
 
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
         {
+            if (e.Item == null) return;
             Rectangle bounds = new(Point.Empty, e.Item.Size);
             DrawGradientItemBackground(e.Graphics, e.Item, bounds, false);
 

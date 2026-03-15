@@ -132,7 +132,7 @@ namespace MinimalFirewall
                 protocolComboBox.SelectedItem = ProtocolTypes.Any;
             }
 
-            _viewModel.SelectedProtocol = (ProtocolTypes)protocolComboBox.SelectedItem;
+            _viewModel.SelectedProtocol = protocolComboBox.SelectedItem is ProtocolTypes selectedPt ? selectedPt : ProtocolTypes.Any;
 
             localPortsTextBox.Text = rule.LocalPorts;
             remotePortsTextBox.Text = rule.RemotePorts;
