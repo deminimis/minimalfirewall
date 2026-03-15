@@ -409,5 +409,69 @@ namespace MinimalFirewall
                 DarkModeForms.Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
             }
         }
+
+        private async void copyHashToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
+            {
+                if (!File.Exists(pending.AppPath))
+                {
+                    DarkModeForms.Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                copyHashToolStripMenuItem.Text = "Calculating...";
+                copyHashToolStripMenuItem.Enabled = false;
+
+                string hash = await SystemDiscoveryService.CalculateSHA256Async(pending.AppPath);
+
+                if (!string.IsNullOrEmpty(hash))
+                {
+                    Clipboard.SetText(hash);
+                    copyHashToolStripMenuItem.Text = "Copied!";
+                    await Task.Delay(1500);
+                }
+                else
+                {
+                    DarkModeForms.Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                copyHashToolStripMenuItem.Text = "Copy File Hash (SHA-256)";
+                copyHashToolStripMenuItem.Enabled = true;
+            }
+        }
+
+        private async void checkVirusTotalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
+            {
+                if (!File.Exists(pending.AppPath))
+                {
+                    DarkModeForms.Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                checkVirusTotalToolStripMenuItem.Text = "Calculating Hash...";
+                checkVirusTotalToolStripMenuItem.Enabled = false;
+
+                string hash = await SystemDiscoveryService.CalculateSHA256Async(pending.AppPath);
+
+                checkVirusTotalToolStripMenuItem.Text = "Check on VirusTotal";
+                checkVirusTotalToolStripMenuItem.Enabled = true;
+
+                if (!string.IsNullOrEmpty(hash))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = $"https://www.virustotal.com/gui/file/{hash}",
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    DarkModeForms.Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
     }
 }

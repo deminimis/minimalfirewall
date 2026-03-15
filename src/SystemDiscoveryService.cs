@@ -4,6 +4,7 @@ using System.Management;
 using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using System;
+using System.Security.Cryptography;
 
 namespace MinimalFirewall
 {
@@ -199,6 +200,23 @@ namespace MinimalFirewall
                 }
             }
             return files;
+        }
+
+        public static async Task<string> CalculateSHA256Async(string filePath)
+        {
+            if (!File.Exists(filePath)) return string.Empty;
+            try
+            {
+                using var sha256 = SHA256.Create();
+                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                byte[] hash = await sha256.ComputeHashAsync(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to hash file: {ex.Message}");
+                return string.Empty;
+            }
         }
     }
 }
