@@ -6,6 +6,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.ComponentModel;
 
 namespace MinimalFirewall
 {
@@ -13,6 +14,8 @@ namespace MinimalFirewall
     {
         // Enums and Properties
         public enum NotifierResult { Ignore, Allow, Block, TemporaryAllow, CreateWildcard }
+
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public NotifierResult Result { get; set; } = NotifierResult.Ignore;
         public PendingConnectionViewModel PendingConnection { get; private set; }
         public TimeSpan TemporaryDuration { get; private set; }

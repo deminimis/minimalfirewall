@@ -42,6 +42,7 @@ namespace MinimalFirewall
         private const uint SHGFI_SMALLICON = 0x000000001;
         #endregion
 
+        [DefaultValue(null)]
         public ImageList? ImageList
         {
             get => _imageList;
