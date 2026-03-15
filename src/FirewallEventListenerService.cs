@@ -241,8 +241,16 @@ namespace MinimalFirewall
                     return;
                 }
 
+                string commandLine = string.Empty;
+                if (!string.IsNullOrEmpty(pidStr) && pidStr != "0")
+                {
+                    commandLine = SystemDiscoveryService.GetCommandLineByPID(pidStr);
+                }
+
                 var pendingVm = new PendingConnectionViewModel
                 {
+                    ProcessId = pidStr,
+                    CommandLine = commandLine,
                     AppPath = appPath,
                     Direction = direction,
                     ServiceName = serviceName,

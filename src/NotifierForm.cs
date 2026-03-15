@@ -238,8 +238,11 @@ namespace MinimalFirewall
                 details.AppendLine($"Type: Pending Connection");
                 details.AppendLine($"Application: {PendingConnection.FileName}");
                 details.AppendLine($"Path: {PendingConnection.AppPath}");
+                details.AppendLine($"PID: {PendingConnection.ProcessId}");
                 details.AppendLine($"Service: {PendingConnection.ServiceName}");
                 details.AppendLine($"Direction: {PendingConnection.Direction}");
+                if (!string.IsNullOrEmpty(PendingConnection.CommandLine))
+                    details.AppendLine($"CMD: {PendingConnection.CommandLine}");
 
                 // Retry logic for clipboard 
                 for (int i = 0; i < 5; i++)

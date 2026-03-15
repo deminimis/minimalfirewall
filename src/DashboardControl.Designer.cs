@@ -36,6 +36,9 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn dashPathColumn;
         private System.Windows.Forms.ToolStripMenuItem showBlockingRuleInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
+        private System.Windows.Forms.SplitContainer splitContainer;
+        private System.Windows.Forms.RichTextBox detailsRichTextBox;
+        private System.Windows.Forms.Label detailsLabel;
 
 
         protected override void Dispose(bool disposing)
@@ -94,8 +97,15 @@ namespace MinimalFirewall
             this.dashServiceColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashDirectionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashPathColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.splitContainer = new System.Windows.Forms.SplitContainer();
+            this.detailsRichTextBox = new System.Windows.Forms.RichTextBox();
+            this.detailsLabel = new System.Windows.Forms.Label();
             this.dashboardContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dashboardDataGridView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
+            this.splitContainer.Panel1.SuspendLayout();
+            this.splitContainer.Panel2.SuspendLayout();
+            this.splitContainer.SuspendLayout();
             this.SuspendLayout();
             //
             // dashboardContextMenu
@@ -417,18 +427,66 @@ namespace MinimalFirewall
             this.dashPathColumn.HeaderText = "Path";
             this.dashPathColumn.Name = "dashPathColumn";
             this.dashPathColumn.ReadOnly = true;
-            //
+            // 
+            // splitContainer
+            // 
+            this.splitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
+            this.splitContainer.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer.Name = "splitContainer";
+            this.splitContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer.Panel1
+            // 
+            this.splitContainer.Panel1.Controls.Add(this.dashboardDataGridView);
+            // 
+            // splitContainer.Panel2
+            // 
+            this.splitContainer.Panel2.Controls.Add(this.detailsRichTextBox);
+            this.splitContainer.Panel2.Controls.Add(this.detailsLabel);
+            this.splitContainer.Panel2MinSize = 100;
+            this.splitContainer.Size = new System.Drawing.Size(800, 600);
+            this.splitContainer.SplitterDistance = 450;
+            this.splitContainer.TabIndex = 3;
+            // 
+            // detailsLabel
+            // 
+            this.detailsLabel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.detailsLabel.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.detailsLabel.Location = new System.Drawing.Point(0, 0);
+            this.detailsLabel.Name = "detailsLabel";
+            this.detailsLabel.Padding = new System.Windows.Forms.Padding(5, 5, 0, 0);
+            this.detailsLabel.Size = new System.Drawing.Size(800, 25);
+            this.detailsLabel.TabIndex = 1;
+            this.detailsLabel.Text = "Connection Details:";
+            // 
+            // detailsRichTextBox
+            // 
+            this.detailsRichTextBox.BackColor = System.Drawing.Color.White;
+            this.detailsRichTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.detailsRichTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.detailsRichTextBox.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.detailsRichTextBox.Location = new System.Drawing.Point(0, 25);
+            this.detailsRichTextBox.Name = "detailsRichTextBox";
+            this.detailsRichTextBox.ReadOnly = true;
+            this.detailsRichTextBox.Size = new System.Drawing.Size(800, 121);
+            this.detailsRichTextBox.TabIndex = 2;
+            this.detailsRichTextBox.Text = "";
+            // 
             // DashboardControl
-            //
+            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.dashboardDataGridView);
+            this.Controls.Add(this.splitContainer);
             this.Name = "DashboardControl";
             this.Size = new System.Drawing.Size(800, 600);
             this.dashboardContextMenu.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dashboardDataGridView)).EndInit();
+            this.splitContainer.Panel1.ResumeLayout(false);
+            this.splitContainer.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
+            this.splitContainer.ResumeLayout(false);
             this.ResumeLayout(false);
-
         }
         #endregion
     }

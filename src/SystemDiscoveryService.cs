@@ -54,6 +54,33 @@ namespace MinimalFirewall
             return services;
         }
 
+        public static string GetCommandLineByPID(string processId)
+        {
+            if (string.IsNullOrEmpty(processId) || processId == "0" || !uint.TryParse(processId, out _))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var query = new ObjectQuery($"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {processId}");
+                using var searcher = new ManagementObjectSearcher(query);
+                using var results = searcher.Get();
+                foreach (ManagementBaseObject processBaseObject in results)
+                {
+                    using (var process = (ManagementObject)processBaseObject)
+                    {
+                        return process["CommandLine"]?.ToString() ?? string.Empty;
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is ManagementException or System.Runtime.InteropServices.COMException)
+            {
+                Debug.WriteLine($"WMI Query for CommandLine failed: {ex.Message}");
+            }
+            return string.Empty;
+        }
+
         public static string GetServicesByPID(string processId)
         {
             if (string.IsNullOrEmpty(processId) || processId == "0" || !uint.TryParse(processId, out _))

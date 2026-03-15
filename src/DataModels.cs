@@ -167,6 +167,8 @@ public class RuleFilterViewModel : INotifyPropertyChanged
 
 public class PendingConnectionViewModel
 {
+    public string ProcessId { get; set; } = string.Empty;
+    public string CommandLine { get; set; } = string.Empty;
     public string AppPath { get; set; } = string.Empty;
     public string FileName => Path.GetFileName(AppPath);
     public string Direction { get; set; } = string.Empty;
