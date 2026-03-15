@@ -374,7 +374,7 @@ namespace MinimalFirewall
         {
             this.SuspendLayout();
             bool isAuto = _appSettings.Theme == "Auto";
-            bool isDark = isAuto ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+            bool isDark = IsDarkModeEnabled;
 
             dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
@@ -484,7 +484,7 @@ namespace MinimalFirewall
                 _isPopupVisible = true;
                 var pending = _popupQueue.Dequeue();
 
-                bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+                bool isDark = IsDarkModeEnabled;
                 var notifier = new NotifierForm(pending, isDark);
                 notifier.FormClosed += Notifier_FormClosed;
                 notifier.TopMost = true;
@@ -675,15 +675,8 @@ namespace MinimalFirewall
                 this.Size = _appSettings.WindowSize;
             }
 
-            bool isVisible = false;
-            foreach (Screen screen in Screen.AllScreens)
-            {
-                if (screen.WorkingArea.Contains(_appSettings.WindowLocation))
-                {
-                    isVisible = true;
-                    break;
-                }
-            }
+            bool isVisible = Screen.AllScreens.Any(screen => screen.WorkingArea.Contains(_appSettings.WindowLocation));
+
             if (isVisible)
             {
                 this.Location = _appSettings.WindowLocation;
@@ -731,24 +724,10 @@ namespace MinimalFirewall
 
         private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            if (this.WindowState == FormWindowState.Maximized)
-            {
-                _appSettings.WindowLocation = this.RestoreBounds.Location;
-                _appSettings.WindowSize = this.RestoreBounds.Size;
-                _appSettings.WindowState = (int)FormWindowState.Maximized;
-            }
-            else if (this.WindowState == FormWindowState.Normal)
-            {
-                _appSettings.WindowLocation = this.Location;
-                _appSettings.WindowSize = this.Size;
-                _appSettings.WindowState = (int)FormWindowState.Normal;
-            }
-            else
-            {
-                _appSettings.WindowLocation = this.RestoreBounds.Location;
-                _appSettings.WindowSize = this.RestoreBounds.Size;
-                _appSettings.WindowState = (int)FormWindowState.Normal;
-            }
+            bool isNormal = this.WindowState == FormWindowState.Normal;
+            _appSettings.WindowLocation = isNormal ? this.Location : this.RestoreBounds.Location;
+            _appSettings.WindowSize = isNormal ? this.Size : this.RestoreBounds.Size;
+            _appSettings.WindowState = this.WindowState == FormWindowState.Maximized ? (int)FormWindowState.Maximized : (int)FormWindowState.Normal;
 
             settingsControl1.SaveSettingsFromUI();
             bool isExiting = !(_appSettings.CloseToTray && e.CloseReason == CloseReason.UserClosing);
@@ -841,12 +820,18 @@ namespace MinimalFirewall
                         wildcardRulesControl1.LoadRules();
                         break;
                     case "systemChangesTabPage":
+                        if (!_isSentryServiceStarted)
+                        {
+                            _firewallSentryService.Start();
+                            _isSentryServiceStarted = true;
+                        }
                         await ScanForSystemChangesAsync(true);
                         break;
                     case "groupsTabPage":
                         await groupsControl1.OnTabSelectedAsync();
                         break;
                     case "liveConnectionsTabPage":
+                        liveConnectionsControl1.UpdateEnabledState();
                         await LoadLiveConnectionsAsync();
                         break;
                 }
@@ -859,13 +844,7 @@ namespace MinimalFirewall
         {
             if (_isRefreshingData) return;
 
-            if (_scanCts != null)
-            {
-                _scanCts.Cancel();
-                _scanCts.Dispose();
-            }
-            _scanCts = new CancellationTokenSource();
-            var token = _scanCts.Token;
+            var token = ResetScanToken();
 
             StatusForm? statusForm = null;
             try
@@ -879,7 +858,7 @@ namespace MinimalFirewall
                 }
 
                 var progress = new Progress<int>(p => statusForm?.UpdateProgress(p));
-                UpdateUIForRefresh(showStatus);
+                UpdateUIForRefresh();
                 _iconService.ClearCache();
 
                 await rulesControl1.RefreshDataAsync(forceUwpScan, progress, token);
@@ -898,7 +877,7 @@ namespace MinimalFirewall
                     statusForm.Close();
                 }
                 _isRefreshingData = false;
-                UpdateUIAfterRefresh(showStatus);
+                UpdateUIAfterRefresh();
             }
         }
 
@@ -916,7 +895,7 @@ namespace MinimalFirewall
             catch (OperationCanceledException) { }
         }
 
-        private void UpdateUIForRefresh(bool showStatus)
+        private void UpdateUIForRefresh()
         {
             SafeInvoke(() =>
             {
@@ -926,7 +905,7 @@ namespace MinimalFirewall
             });
         }
 
-        private void UpdateUIAfterRefresh(bool showStatus)
+        private void UpdateUIAfterRefresh()
         {
             SafeInvoke(() =>
             {
@@ -940,14 +919,7 @@ namespace MinimalFirewall
         {
             if (token == default)
             {
-           
-                if (_scanCts != null)
-                {
-                    _scanCts.Cancel();
-                    _scanCts.Dispose();
-                }
-                _scanCts = new CancellationTokenSource();
-                token = _scanCts.Token;
+                token = ResetScanToken();
             }
 
             try
@@ -985,13 +957,7 @@ namespace MinimalFirewall
 
             if (_isRefreshingData) return;
 
-            if (_scanCts != null)
-            {
-                _scanCts.Cancel();
-                _scanCts.Dispose();
-            }
-            _scanCts = new CancellationTokenSource();
-            var token = _scanCts.Token;
+            var token = ResetScanToken();
 
             StatusForm? statusForm = null;
             try
@@ -1005,7 +971,7 @@ namespace MinimalFirewall
                 }
 
                 var progress = new Progress<int>(p => statusForm?.UpdateProgress(p));
-                UpdateUIForRefresh(true);
+                UpdateUIForRefresh();
 
                 await _mainViewModel.RefreshLiveConnectionsAsync(token, progress);
                 liveConnectionsControl1.UpdateLiveConnectionsView();
@@ -1020,7 +986,7 @@ namespace MinimalFirewall
                     statusForm.Close();
                 }
                 _isRefreshingData = false;
-                UpdateUIAfterRefresh(true);
+                UpdateUIAfterRefresh();
             }
         }
         #endregion
@@ -1037,41 +1003,7 @@ namespace MinimalFirewall
                 _tabUnloadTimers.Remove(selectedTab.Name);
             }
 
-            if (selectedTab != liveConnectionsTabPage)
-            {
-                liveConnectionsControl1.OnTabDeselected();
-            }
-
-            try
-            {
-                switch (selectedTab.Name)
-                {
-                    case "dashboardTabPage":
-                        break;
-                    case "rulesTabPage":
-                        await ForceDataRefreshAsync(true);
-                        break;
-                    case "wildcardRulesTabPage":
-                        wildcardRulesControl1.LoadRules();
-                        break;
-                    case "systemChangesTabPage":
-                        if (!_isSentryServiceStarted)
-                        {
-                            _firewallSentryService.Start();
-                            _isSentryServiceStarted = true;
-                        }
-                        await ScanForSystemChangesAsync(true);
-                        break;
-                    case "groupsTabPage":
-                        await groupsControl1.OnTabSelectedAsync();
-                        break;
-                    case "liveConnectionsTabPage":
-                        liveConnectionsControl1.UpdateEnabledState();
-                        await LoadLiveConnectionsAsync();
-                        break;
-                }
-            }
-            catch (OperationCanceledException) { }
+            await DisplayCurrentTabData();
         }
 
         private void MainTabControl_Deselecting(object sender, TabControlCancelEventArgs e)
@@ -1196,7 +1128,7 @@ namespace MinimalFirewall
         {
             if (_cachedArrowPen == null)
             {
-                bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+                bool isDark = IsDarkModeEnabled;
                 Color arrowColor = isDark ? Color.White : Color.Black;
                 _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
             }
@@ -1211,24 +1143,9 @@ namespace MinimalFirewall
             e.Graphics.DrawBezier(_cachedArrowPen, startPoint, controlPoint1, controlPoint2, endPoint);
         }
 
-        private void LockdownButton_MouseEnter(object? sender, EventArgs e)
+        private void OwnerDrawnButton_MouseEnterLeave(object? sender, EventArgs e)
         {
-            lockdownButton.Invalidate();
-        }
-
-        private void LockdownButton_MouseLeave(object? sender, EventArgs e)
-        {
-            lockdownButton.Invalidate();
-        }
-
-        private void RescanButton_MouseEnter(object? sender, EventArgs e)
-        {
-            rescanButton.Invalidate();
-        }
-
-        private void RescanButton_MouseLeave(object? sender, EventArgs e)
-        {
-            rescanButton.Invalidate();
+            (sender as Control)?.Invalidate();
         }
 
         private static Image RecolorImage(Image sourceImage, Color newColor)
@@ -1263,7 +1180,7 @@ namespace MinimalFirewall
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
             Image? imageToDraw = null;
-            bool isDark = _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+            bool isDark = IsDarkModeEnabled;
             if (button.Name == "lockdownButton")
             {
                 imageToDraw = _mainViewModel.IsLockedDown ?
@@ -1295,6 +1212,19 @@ namespace MinimalFirewall
         #endregion
 
         #region Helpers
+
+        private CancellationToken ResetScanToken()
+        {
+            if (_scanCts != null)
+            {
+                _scanCts.Cancel();
+                _scanCts.Dispose();
+            }
+            _scanCts = new CancellationTokenSource();
+            return _scanCts.Token;
+        }
+
+        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
 
         private void SafeInvoke(Action action)
         {

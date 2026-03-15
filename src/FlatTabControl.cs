@@ -54,20 +54,16 @@ namespace DarkModeForms
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-
             // High DPI Scaling Logic
-            float scale = this.DeviceDpi / 96f;
+            float scaleFactor = this.DeviceDpi / 96f;
             int baseWidth = 70;
             int baseHeight = 120;
-            Size scaledSize = new Size((int)(baseWidth * scale), (int)(baseHeight * scale));
-
+            Size scaledSize = new Size((int)(baseWidth * scaleFactor), (int)(baseHeight * scaleFactor));
             if (this.ItemSize.Width < scaledSize.Width)
             {
                 this.ItemSize = scaledSize;
             }
         }
-
-        private int Scale(int value, Graphics g) => (int)(value * (g.DpiX / 96f));
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -96,9 +92,7 @@ namespace DarkModeForms
             bool isSelected = (this.SelectedIndex == nIndex);
 
             bool isDarkModeText = (0.299 * SelectedForeColor.R + 0.587 * SelectedForeColor.G + 0.114 * SelectedForeColor.B) > 128;
-
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            UIHelpers.SetHighQualityGraphics(g);
 
             if (this.Alignment == TabAlignment.Left)
             {
@@ -110,7 +104,7 @@ namespace DarkModeForms
 
                 using (Pen p = new Pen(this.BorderColor))
                 {
-                    int offset = Scale(1, g);
+                    int offset = UIHelpers.Scale(1, g);
                     g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - offset);
                 }
 
@@ -126,7 +120,7 @@ namespace DarkModeForms
                         int iconH = this.ImageList.ImageSize.Height;
 
                         int iconX = tabRect.X + (tabRect.Width - iconW) / 2;
-                        int iconY = tabRect.Y + Scale(15, g);
+                        int iconY = tabRect.Y + UIHelpers.Scale(15, g);
 
                         if (isDarkModeText && customTabPage.ImageKey != "locked.png")
                         {
@@ -143,24 +137,23 @@ namespace DarkModeForms
                             g.DrawImage(originalIcon, new Rectangle(iconX, iconY, iconW, iconH));
                         }
 
-                        int textPadding = Scale(5, g);
+                        int textPadding = UIHelpers.Scale(5, g);
                         int textTop = iconY + iconH + textPadding;
                         textRect = new Rectangle(
                             tabRect.X,
                             textTop,
                             tabRect.Width,
-                            tabRect.Bottom - textTop - Scale(5, g)
+                            tabRect.Bottom - textTop - UIHelpers.Scale(5, g)
                         );
-
                         textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
                     }
                 }
 
                 if (isSelected)
                 {
-                    using (Pen p = new Pen(this.LineColor, Scale(3, g)))
+                    using (Pen p = new Pen(this.LineColor, UIHelpers.Scale(3, g)))
                     {
-                        g.DrawLine(p, tabRect.Right - Scale(1, g), tabRect.Top, tabRect.Right - Scale(1, g), tabRect.Bottom - Scale(1, g));
+                        g.DrawLine(p, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Top, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Bottom - UIHelpers.Scale(1, g));
                     }
                 }
 
@@ -169,7 +162,7 @@ namespace DarkModeForms
             }
             else
             {
-                int scaled3 = Scale(3, g);
+                int scaled3 = UIHelpers.Scale(3, g);
                 Point[] points = new[]
                 {
                     new Point(tabRect.Left, tabRect.Bottom),
@@ -191,7 +184,7 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    g.DrawLine(new Pen(SelectTabColor, Scale(2, g)), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
+                    g.DrawLine(new Pen(SelectTabColor, UIHelpers.Scale(2, g)), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
                 }
 
                 TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);

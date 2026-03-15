@@ -334,8 +334,8 @@ namespace MinimalFirewall
             lockdownButton.TabIndex = 3;
             lockdownButton.UseVisualStyleBackColor = false;
             lockdownButton.Click += ToggleLockdownButton_Click;
-            lockdownButton.MouseEnter += LockdownButton_MouseEnter;
-            lockdownButton.MouseLeave += LockdownButton_MouseLeave;
+            lockdownButton.MouseEnter += OwnerDrawnButton_MouseEnterLeave;
+            lockdownButton.MouseLeave += OwnerDrawnButton_MouseEnterLeave;
             // 
             // rescanButton
             // 
@@ -350,8 +350,8 @@ namespace MinimalFirewall
             rescanButton.TabIndex = 1;
             rescanButton.UseVisualStyleBackColor = false;
             rescanButton.Click += RescanButton_Click;
-            rescanButton.MouseEnter += RescanButton_MouseEnter;
-            rescanButton.MouseLeave += RescanButton_MouseLeave;
+            rescanButton.MouseEnter += OwnerDrawnButton_MouseEnterLeave;
+            rescanButton.MouseLeave += OwnerDrawnButton_MouseEnterLeave;
             // 
             // appIconList
             // 
