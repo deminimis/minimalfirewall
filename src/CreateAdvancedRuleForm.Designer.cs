@@ -407,7 +407,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remotePortsTextBox.Location = new System.Drawing.Point(90, 53);
             this.remotePortsTextBox.Name = "remotePortsTextBox";
-            this.remotePortsTextBox.Size = new System.Drawing.Size(657, 27);
+            this.remotePortsTextBox.Size = new System.Drawing.Size(627, 27);
             this.remotePortsTextBox.TabIndex = 3;
             this.remotePortsTextBox.Text = "*";
             this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
@@ -427,7 +427,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localPortsTextBox.Location = new System.Drawing.Point(90, 22);
             this.localPortsTextBox.Name = "localPortsTextBox";
-            this.localPortsTextBox.Size = new System.Drawing.Size(657, 27);
+            this.localPortsTextBox.Size = new System.Drawing.Size(627, 27);
             this.localPortsTextBox.TabIndex = 1;
             this.localPortsTextBox.Text = "*";
             this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
@@ -462,7 +462,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.icmpTypesAndCodesTextBox.Location = new System.Drawing.Point(110, 22);
             this.icmpTypesAndCodesTextBox.Name = "icmpTypesAndCodesTextBox";
-            this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(637, 27);
+            this.icmpTypesAndCodesTextBox.Size = new System.Drawing.Size(607, 27);
             this.icmpTypesAndCodesTextBox.TabIndex = 1;
             this.icmpTypesAndCodesTextBox.Text = "*";
             this.icmpTypesAndCodesTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.icmpTypesAndCodesTextBox_Validating);
@@ -508,7 +508,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.remoteAddressTextBox.Location = new System.Drawing.Point(105, 53);
             this.remoteAddressTextBox.Name = "remoteAddressTextBox";
-            this.remoteAddressTextBox.Size = new System.Drawing.Size(642, 27);
+            this.remoteAddressTextBox.Size = new System.Drawing.Size(612, 27);
             this.remoteAddressTextBox.TabIndex = 3;
             this.remoteAddressTextBox.Text = "*";
             this.remoteAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remoteAddressTextBox_Validating);
@@ -528,7 +528,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.localAddressTextBox.Location = new System.Drawing.Point(105, 22);
             this.localAddressTextBox.Name = "localAddressTextBox";
-            this.localAddressTextBox.Size = new System.Drawing.Size(642, 27);
+            this.localAddressTextBox.Size = new System.Drawing.Size(612, 27);
             this.localAddressTextBox.TabIndex = 1;
             this.localAddressTextBox.Text = "*";
             this.localAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.localAddressTextBox_Validating);
