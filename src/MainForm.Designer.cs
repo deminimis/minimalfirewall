@@ -34,6 +34,7 @@ namespace MinimalFirewall
 
             if (disposing)
             {
+                _trayBlinkTimer?.Dispose();
                 _autoRefreshTimer?.Dispose();
                 _backgroundTaskService?.Dispose();
                 _lockedGreenIcon?.Dispose();

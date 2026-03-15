@@ -57,6 +57,8 @@ namespace MinimalFirewall
         private readonly bool _startMinimized;
         private StatusForm? _auditStatusForm = null;
         private CancellationTokenSource? _scanCts = null;
+        private System.Windows.Forms.Timer? _trayBlinkTimer;
+        private bool _trayBlinkState = false;
         #endregion
 
         #region Native Methods
@@ -106,6 +108,7 @@ namespace MinimalFirewall
             // Event Subscriptions
             _backgroundTaskService.QueueCountChanged += OnQueueCountChanged;
             _backgroundTaskService.WildcardRulesChanged += OnWildcardRulesChanged;
+            _mainViewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             _mainViewModel.PopupRequired += OnPopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
             _mainViewModel.SystemChangesUpdated += () => {
@@ -122,6 +125,9 @@ namespace MinimalFirewall
 
             lockdownButton.BringToFront();
             rescanButton.BringToFront();
+
+            _trayBlinkTimer = new System.Windows.Forms.Timer { Interval = 500 };
+            _trayBlinkTimer.Tick += TrayBlinkTimer_Tick;
         }
 
         private void InitializeServices()
@@ -407,6 +413,43 @@ namespace MinimalFirewall
         #endregion
 
         #region Core Logic and Backend Event Handlers
+        private void PendingConnections_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            SafeInvoke(() =>
+            {
+                if (_mainViewModel.PendingConnections.Count > 0)
+                {
+                    if (_trayBlinkTimer == null)
+                    {
+                        _trayBlinkTimer = new System.Windows.Forms.Timer { Interval = 500 };
+                        _trayBlinkTimer.Tick += TrayBlinkTimer_Tick;
+                    }
+                    if (!_trayBlinkTimer.Enabled)
+                    {
+                        _trayBlinkTimer.Start();
+                    }
+                }
+                else
+                {
+                    if (_trayBlinkTimer != null && _trayBlinkTimer.Enabled)
+                    {
+                        _trayBlinkTimer.Stop();
+                        UpdateTrayStatus(); // Reverts to the static correct icon
+                    }
+                }
+            });
+        }
+
+        private void TrayBlinkTimer_Tick(object? sender, EventArgs e)
+        {
+            if (notifyIcon != null)
+            {
+                _trayBlinkState = !_trayBlinkState;
+                // alternate icons to flash
+                notifyIcon.Icon = _trayBlinkState ? _unlockedTrayIcon : _defaultTrayIcon;
+            }
+        }
+
         private void UpdateTrayStatus()
         {
             bool locked = _mainViewModel.IsLockedDown;
@@ -750,6 +793,7 @@ namespace MinimalFirewall
                     timer.Dispose();
                 }
                 _tabUnloadTimers.Clear();
+                _mainViewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
                 _mainViewModel.PopupRequired -= OnPopupRequired;
                 _backgroundTaskService.QueueCountChanged -= OnQueueCountChanged;
                 _backgroundTaskService.WildcardRulesChanged -= OnWildcardRulesChanged;
