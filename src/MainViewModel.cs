@@ -288,28 +288,13 @@ namespace MinimalFirewall
             if (decision == "Allow" || decision == "Block")
             {
                 string action = $"{decision} ({pending.Direction})";
-                FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection); 
+                FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
 
-                var newAggregatedRule = new AggregatedRuleViewModel
-                {
-                    Name = pending.FileName,
-                    ApplicationName = pending.AppPath,
-                    InboundStatus = parsedDirection == Directions.Incoming?
-                        parsedAction.ToString() : "N/A", 
-                    OutboundStatus = parsedDirection == Directions.Outgoing?
-                        parsedAction.ToString() : "N/A",
-                    Type = RuleType.Program,
-                    IsEnabled = true,
-                    Grouping = MFWConstants.MainRuleGroup,
-                    Profiles = "All",
-                    ProtocolName = "Any",
-                    InterfaceTypes = "All"
-                }
-            ;
-            AddRuleAndRefresh(newAggregatedRule);
+                var newAggregatedRule = CreateStandardProgramRule(pending.FileName, pending.AppPath, parsedDirection, parsedAction);
+                AddRuleAndRefresh(newAggregatedRule);
             }
 
-        DashboardActionProcessed?.Invoke(pending);
+            DashboardActionProcessed?.Invoke(pending);
         }
 
         public void ToggleLockdownMode()
@@ -515,31 +500,35 @@ namespace MinimalFirewall
             };
         }
 
+        private AggregatedRuleViewModel CreateStandardProgramRule(string name, string appPath, Directions direction, Actions action)
+        {
+            return new AggregatedRuleViewModel
+            {
+                Name = name,
+                ApplicationName = appPath,
+                InboundStatus = direction.HasFlag(Directions.Incoming) ? action.ToString() : "N/A",
+                OutboundStatus = direction.HasFlag(Directions.Outgoing) ? action.ToString() : "N/A",
+                Type = RuleType.Program,
+                IsEnabled = true,
+                Grouping = MFWConstants.MainRuleGroup,
+                Profiles = "All",
+                ProtocolName = "Any",
+                LocalPorts = "Any",
+                RemotePorts = "Any",
+                LocalAddresses = "Any",
+                RemoteAddresses = "Any",
+                InterfaceTypes = "All",
+                Description = "N/A",
+                ServiceName = "N/A"
+            };
+        }
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
             var payload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = interfaceTypes, IcmpTypesAndCodes = icmpTypesAndCodes };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload, $"Creating rule: {vm.Name}"));
 
-            var newAggregatedRule = new AggregatedRuleViewModel
-            {
-                Name = vm.Name,
-                ApplicationName = vm.ApplicationName,
-                ServiceName = vm.ServiceName,
-                Description = vm.Description,
-                Grouping = vm.Grouping,
-                IsEnabled = vm.IsEnabled,
-                InboundStatus = vm.Direction.HasFlag(Directions.Incoming) ? vm.Status : "N/A",
-                OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing) ? vm.Status : "N/A",
-                ProtocolName = vm.ProtocolName,
-                LocalPorts = vm.LocalPorts,
-                RemotePorts = vm.RemotePorts,
-                LocalAddresses = vm.LocalAddresses,
-                RemoteAddresses = vm.RemoteAddresses,
-                Profiles = vm.Profiles,
-                Type = vm.Type,
-                UnderlyingRules = [vm]
-            };
+            var newAggregatedRule = CreateAggregatedRuleFromAdvancedRule(vm);
             AddRuleAndRefresh(newAggregatedRule);
         }
 
@@ -551,24 +540,8 @@ namespace MinimalFirewall
             }
 
             FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
-            var newAggregatedRule = new AggregatedRuleViewModel
-            {
-                Name = Path.GetFileName(appPath),
-                ApplicationName = appPath,
-                InboundStatus = parsedDirection.HasFlag(Directions.Incoming) ? parsedAction.ToString() : "N/A",
-                OutboundStatus = parsedDirection.HasFlag(Directions.Outgoing) ? parsedAction.ToString() : "N/A",
-                Type = RuleType.Program,
-                IsEnabled = true,
-                Grouping = MFWConstants.MainRuleGroup,
-                Profiles = "All",
-                ProtocolName = "Any",
-                LocalPorts = "Any",
-                RemotePorts = "Any",
-                LocalAddresses = "Any",
-                RemoteAddresses = "Any",
-                Description = "N/A",
-                ServiceName = "N/A"
-            };
+
+            var newAggregatedRule = CreateStandardProgramRule(Path.GetFileName(appPath), appPath, parsedDirection, parsedAction);
             AddRuleAndRefresh(newAggregatedRule);
 
             var payload = new ApplyApplicationRulePayload { AppPaths = [appPath], Action = action };
@@ -641,35 +614,12 @@ namespace MinimalFirewall
             };
 
          var advPayload = new CreateAdvancedRulePayload { ViewModel = vm, InterfaceTypes = "All", IcmpTypesAndCodes = "" }; 
-         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload, $"Creating rule for {pending.FileName}")); 
+         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, advPayload, $"Creating rule for {pending.FileName}"));
 
-        var newAggregatedRule = new AggregatedRuleViewModel
-        {
-            Name = vm.Name,
-            ApplicationName = vm.ApplicationName,
-            Description = vm.Description,
-            Grouping = vm.Grouping,
-            IsEnabled = vm.IsEnabled,
-            InboundStatus = vm.Direction.HasFlag(Directions.Incoming)?
-                vm.Status : "N/A",
-           
+            var newAggregatedRule = CreateAggregatedRuleFromAdvancedRule(vm);
+            AddRuleAndRefresh(newAggregatedRule);
 
-            OutboundStatus = vm.Direction.HasFlag(Directions.Outgoing)?
-                vm.Status : "N/A",
-           
-
-            ProtocolName = vm.ProtocolName,
-            LocalPorts = vm.LocalPorts,
-            RemotePorts = vm.RemotePorts,
-            LocalAddresses = vm.LocalAddresses,
-            RemoteAddresses = vm.RemoteAddresses,
-            Profiles = vm.Profiles,
-            Type = vm.Type,
-            UnderlyingRules = [vm]
-        };
-         AddRuleAndRefresh(newAggregatedRule); 
-
-        DashboardActionProcessed?.Invoke(pending);
+            DashboardActionProcessed?.Invoke(pending);
         }
 
         public void CreateWildcardRule(PendingConnectionViewModel pending, WildcardRule newRule)
