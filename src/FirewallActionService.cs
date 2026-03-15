@@ -210,6 +210,22 @@ namespace MinimalFirewall
             }
         }
 
+        private void ProcessTcpAndUdpRules(Directions parsedDirection, Action<Directions, int, string> ruleCreationAction)
+        {
+            var protocols = new[] { (Code: 6, Suffix: " - TCP"), (Code: 17, Suffix: " - UDP") };
+            foreach (var protocol in protocols)
+            {
+                if (parsedDirection.HasFlag(Directions.Incoming))
+                {
+                    ruleCreationAction(Directions.Incoming, protocol.Code, protocol.Suffix);
+                }
+                if (parsedDirection.HasFlag(Directions.Outgoing))
+                {
+                    ruleCreationAction(Directions.Outgoing, protocol.Code, protocol.Suffix);
+                }
+            }
+        }
+
         public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
         {
             if (string.IsNullOrEmpty(serviceName)) return;
@@ -229,22 +245,11 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
-            var protocolsToCreate = new List<int> { 6, 17 };
-            foreach (var protocol in protocolsToCreate)
+            ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
             {
-                string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
-
-                if (parsedDirection.HasFlag(Directions.Incoming))
-                {
-                    string inName = $"{serviceName} - In{protocolSuffix}";
-                    CreateServiceRule(inName, serviceName, Directions.Incoming, parsedAction, protocol, appPath);
-                }
-                if (parsedDirection.HasFlag(Directions.Outgoing))
-                {
-                    string outName = $"{serviceName} - Out{protocolSuffix}";
-                    CreateServiceRule(outName, serviceName, Directions.Outgoing, parsedAction, protocol, appPath);
-                }
-            }
+                string dirStr = dir == Directions.Incoming ? "In" : "Out";
+                CreateServiceRule($"{serviceName} - {dirStr}{suffix}", serviceName, dir, parsedAction, proto, appPath);
+            });
 
             if (rulesToRemove.Any())
             {
@@ -288,19 +293,28 @@ namespace MinimalFirewall
             }
         }
 
-        public void DeleteApplicationRules(List<string> appPaths)
+        private void ExecuteRuleDeletion(List<string> items, Action<List<string>> deleteAction, string logPrefix)
         {
-            if (appPaths.Count == 0) return;
+            if (items.Count == 0) return;
             try
             {
-                firewallService.DeleteRulesByPath(appPaths);
-                foreach (var path in appPaths) activityLogger.LogChange("Rule Deleted", path);
+                deleteAction(items);
+                foreach (var item in items) activityLogger.LogChange($"{logPrefix} Deleted", item);
             }
             catch (COMException ex)
             {
-                activityLogger.LogException($"DeleteApplicationRules for {string.Join(",", appPaths)}", ex);
+                activityLogger.LogException($"Delete{logPrefix.Replace(" ", "")}s for {string.Join(",", items)}", ex);
             }
         }
+
+        public void DeleteApplicationRules(List<string> appPaths) =>
+            ExecuteRuleDeletion(appPaths, items => { firewallService.DeleteRulesByPath(items); }, "Rule");
+
+        public void DeleteUwpRules(List<string> packageFamilyNames) =>
+            ExecuteRuleDeletion(packageFamilyNames, items => { firewallService.DeleteUwpRules(items); }, "UWP Rule");
+
+        public void DeleteAdvancedRules(List<string> ruleNames) =>
+            ExecuteRuleDeletion(ruleNames, items => { firewallService.DeleteRulesByName(items); }, "Advanced Rule");
 
         public void DeleteRulesForWildcard(WildcardRule wildcard)
         {
@@ -317,33 +331,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void DeleteUwpRules(List<string> packageFamilyNames)
-        {
-            if (packageFamilyNames.Count == 0) return;
-            try
-            {
-                firewallService.DeleteUwpRules(packageFamilyNames);
-                foreach (var pfn in packageFamilyNames) activityLogger.LogChange("UWP Rule Deleted", pfn);
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"DeleteUwpRules for {string.Join(",", packageFamilyNames)}", ex);
-            }
-        }
 
-        public void DeleteAdvancedRules(List<string> ruleNames)
-        {
-            if (ruleNames.Count == 0) return;
-            try
-            {
-                firewallService.DeleteRulesByName(ruleNames);
-                foreach (var name in ruleNames) activityLogger.LogChange("Advanced Rule Deleted", name);
-            }
-            catch (COMException ex)
-            {
-                activityLogger.LogException($"DeleteAdvancedRules for {string.Join(",", ruleNames)}", ex);
-            }
-        }
 
         // Consolidated helper for System Rules (Crypto/DHCP)
         private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
@@ -676,26 +664,14 @@ namespace MinimalFirewall
 
             if (!string.IsNullOrEmpty(serviceName))
             {
-                var protocolsToCreate = new List<int> { 6, 17 };
-                foreach (var protocol in protocolsToCreate)
+                ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
                 {
-                    string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
-                    string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-                    if (parsedDirection.HasFlag(Directions.Incoming))
-                    {
-                        string ruleName = $"Temp Allow - {baseName} - In - {guid}{protocolSuffix}";
-                        CreateServiceRule(ruleName, serviceName, Directions.Incoming, parsedAction, protocol, appPath);
-                        _temporaryRuleManager.Add(ruleName, expiry);
-                        SetupRuleTimer(ruleName, duration);
-                    }
-                    if (parsedDirection.HasFlag(Directions.Outgoing))
-                    {
-                        string ruleName = $"Temp Allow - {baseName} - Out - {guid}{protocolSuffix}";
-                        CreateServiceRule(ruleName, serviceName, Directions.Outgoing, parsedAction, protocol, appPath);
-                        _temporaryRuleManager.Add(ruleName, expiry);
-                        SetupRuleTimer(ruleName, duration);
-                    }
-                }
+                    string dirStr = dir == Directions.Incoming ? "In" : "Out";
+                    string ruleName = $"Temp Allow - {baseName} - {dirStr} - {guid}{suffix}";
+                    CreateServiceRule(ruleName, serviceName, dir, parsedAction, proto, appPath);
+                    _temporaryRuleManager.Add(ruleName, expiry);
+                    SetupRuleTimer(ruleName, duration);
+                });
                 activityLogger.LogChange("Temporary Rule Created", $"Allowed {baseName} (service) for {duration.TotalMinutes} minutes.");
             }
             else
@@ -709,44 +685,30 @@ namespace MinimalFirewall
             }
         }
 
-        public void AcceptForeignRule(FirewallRuleChange change)
+        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction, bool acknowledge = true)
         {
             if (change.Rule?.Name is not null)
             {
-                firewallService.EnableRuleByName(change.Rule.Name);
-                foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
-                activityLogger.LogChange("Foreign Rule Accepted", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Accepted and Enabled foreign rule '{change.Rule.Name}'");
-            }
-        }
+                if (enable) firewallService.EnableRuleByName(change.Rule.Name);
+                else firewallService.DisableRuleByName(change.Rule.Name);
 
-        public void EnableForeignRule(FirewallRuleChange change, bool acknowledge = true)
-        {
-            if (change.Rule?.Name is not null)
-            {
-                firewallService.EnableRuleByName(change.Rule.Name);
                 if (acknowledge)
                 {
                     foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
                 }
-                activityLogger.LogChange("Foreign Rule Enabled", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Enabled foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
+                activityLogger.LogChange($"Foreign Rule {logAction}", change.Rule.Name);
+                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
             }
         }
 
-        public void DisableForeignRule(FirewallRuleChange change, bool acknowledge = true)
-        {
-            if (change.Rule?.Name is not null)
-            {
-                firewallService.DisableRuleByName(change.Rule.Name);
-                if (acknowledge)
-                {
-                    foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
-                }
-                activityLogger.LogChange("Foreign Rule Disabled", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Disabled foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
-            }
-        }
+        public void AcceptForeignRule(FirewallRuleChange change) =>
+            ProcessForeignRule(change, true, "Accepted");
+
+        public void EnableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
+            ProcessForeignRule(change, true, "Enabled", acknowledge);
+
+        public void DisableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
+            ProcessForeignRule(change, false, "Disabled", acknowledge);
 
         // Quarantine Logic 
         public void QuarantineForeignRule(FirewallRuleChange change)
@@ -1067,87 +1029,49 @@ namespace MinimalFirewall
             }
         }
 
-        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
+        private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType)
         {
-            activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
-
             var vm = new AdvancedRuleViewModel
             {
                 Name = name,
                 Description = description,
                 IsEnabled = true,
-                Grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix, StringComparison.OrdinalIgnoreCase)) ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup,
+                Grouping = grouping,
                 Status = action == Actions.Allow ? "Allow" : "Block",
                 Direction = direction,
                 Protocol = protocol,
-                ApplicationName = appPath,
-                ServiceName = "",
+                ApplicationName = appPath ?? "",
+                ServiceName = serviceName ?? "",
                 LocalPorts = "*",
                 RemotePorts = "*",
                 LocalAddresses = "*",
                 RemoteAddresses = "*",
                 Profiles = "All",
-                Type = RuleType.Program,
+                Type = ruleType,
                 InterfaceTypes = "All",
                 IcmpTypesAndCodes = ""
             };
-
             CreateSingleAdvancedRule(vm, "All", "");
+        }
+
+        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
+        {
+            activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
+            string grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix, StringComparison.OrdinalIgnoreCase))
+                ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup;
+            BuildAndCreateRule(name, description, grouping, direction, action, protocol, appPath, "", RuleType.Program);
         }
 
         private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string? appPath = null)
         {
             activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with AppPath: '{appPath ?? "null"}'");
-
-            var vm = new AdvancedRuleViewModel
-            {
-                Name = name,
-                Description = "",
-                IsEnabled = true,
-                Grouping = MFWConstants.MainRuleGroup,
-                Status = action == Actions.Allow ? "Allow" : "Block",
-                Direction = direction,
-                Protocol = protocol,
-                ApplicationName = appPath ?? "",
-                ServiceName = serviceName,
-                LocalPorts = "*",
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                RemoteAddresses = "*",
-                Profiles = "All",
-                Type = RuleType.Service,
-                InterfaceTypes = "All",
-                IcmpTypesAndCodes = ""
-            };
-
-            CreateSingleAdvancedRule(vm, "All", "");
+            BuildAndCreateRule(name, "", MFWConstants.MainRuleGroup, direction, action, protocol, appPath!, serviceName, RuleType.Service);
         }
 
         private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
         {
             activityLogger.LogDebug($"Creating UWP Rule: '{name}' for PFN '{packageFamilyName}'");
-
-            var vm = new AdvancedRuleViewModel
-            {
-                Name = name,
-                Description = MFWConstants.UwpDescriptionPrefix + packageFamilyName,
-                IsEnabled = true,
-                Grouping = MFWConstants.MainRuleGroup,
-                Status = action == Actions.Allow ? "Allow" : "Block",
-                Direction = direction,
-                Protocol = protocol,
-                ApplicationName = "",
-                ServiceName = "",
-                LocalPorts = "*",
-                RemotePorts = "*",
-                LocalAddresses = "*",
-                RemoteAddresses = "*",
-                Profiles = "All",
-                Type = RuleType.UWP,
-                InterfaceTypes = "All",
-                IcmpTypesAndCodes = ""
-            };
-            CreateSingleAdvancedRule(vm, "All", "");
+            BuildAndCreateRule(name, MFWConstants.UwpDescriptionPrefix + packageFamilyName, MFWConstants.MainRuleGroup, direction, action, protocol, "", "", RuleType.UWP);
         }
 
         public async Task DeleteGroupAsync(string groupName)
@@ -1284,19 +1208,11 @@ namespace MinimalFirewall
                 if (rule.Protocol == ProtocolTypes.Any.Value)
                 {
                     string actionStr = parsedAction == Actions.Allow ? "" : "Block ";
-                    var protocolsToCreate = new List<int> { 6, 17 };
-                    foreach (var protocol in protocolsToCreate)
+                    ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
                     {
-                        string protocolSuffix = (protocol == 6) ? " - TCP" : " - UDP";
-                        if (parsedDirection.HasFlag(Directions.Incoming))
-                        {
-                            createRule($"{ruleNameBase} - {actionStr}In{protocolSuffix}", Directions.Incoming, parsedAction, protocol, sName);
-                        }
-                        if (parsedDirection.HasFlag(Directions.Outgoing))
-                        {
-                            createRule($"{ruleNameBase} - {actionStr}Out{protocolSuffix}", Directions.Outgoing, parsedAction, protocol, sName);
-                        }
-                    }
+                        string dirStr = dir == Directions.Incoming ? "In" : "Out";
+                        createRule($"{ruleNameBase} - {actionStr}{dirStr}{suffix}", dir, parsedAction, proto, sName);
+                    });
                 }
                 else
                 {
