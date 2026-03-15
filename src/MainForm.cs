@@ -417,7 +417,7 @@ namespace MinimalFirewall
         {
             SafeInvoke(() =>
             {
-                if (_mainViewModel.PendingConnections.Count > 0)
+                if (_mainViewModel.PendingConnections.Count > 0 && _mainViewModel.IsLockedDown)
                 {
                     if (_trayBlinkTimer == null)
                     {
@@ -434,7 +434,8 @@ namespace MinimalFirewall
                     if (_trayBlinkTimer != null && _trayBlinkTimer.Enabled)
                     {
                         _trayBlinkTimer.Stop();
-                        UpdateTrayStatus(); // Reverts to the static correct icon
+                        UpdateTrayStatus();
+                        // Reverts to the static correct icon
                     }
                 }
             });
@@ -457,6 +458,24 @@ namespace MinimalFirewall
             dashboardControl1.Visible = locked;
 
             lockdownButton.Invalidate();
+
+            // flash based on status
+            if (!locked && _trayBlinkTimer != null && _trayBlinkTimer.Enabled)
+            {
+                _trayBlinkTimer.Stop();
+            }
+            else if (locked && _mainViewModel.PendingConnections.Count > 0)
+            {
+                if (_trayBlinkTimer == null)
+                {
+                    _trayBlinkTimer = new System.Windows.Forms.Timer { Interval = 500 };
+                    _trayBlinkTimer.Tick += TrayBlinkTimer_Tick;
+                }
+                if (!_trayBlinkTimer.Enabled)
+                {
+                    _trayBlinkTimer.Start();
+                }
+            }
 
             if (notifyIcon != null)
             {
