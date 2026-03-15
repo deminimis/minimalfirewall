@@ -265,58 +265,50 @@ namespace MinimalFirewall
             }
         }
 
+        private List<string> ExecuteDeleteAndReturnNames(Func<INetFwRule2, bool> predicate)
+        {
+            var rulesToRemove = GetRuleNamesAndRelease(predicate);
+            DeleteRulesByName(rulesToRemove);
+            return rulesToRemove;
+        }
+
         public List<string> DeleteRulesByPath(List<string> appPaths)
         {
             if (appPaths.Count == 0) return [];
-
             var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
 
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+            return ExecuteDeleteAndReturnNames(rule =>
                 !string.IsNullOrEmpty(rule.ApplicationName) &&
                 pathSet.Contains(PathResolver.NormalizePath(rule.ApplicationName))
             );
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
         }
 
         public List<string> DeleteRulesByServiceName(string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName)) return [];
-
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
-                string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase)
-            );
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
+            return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase));
         }
 
         public List<string> DeleteConflictingServiceRules(string serviceName, NET_FW_ACTION_ newAction, NET_FW_RULE_DIRECTION_ newDirection)
         {
             if (string.IsNullOrEmpty(serviceName)) return [];
-
             NET_FW_ACTION_ conflictingAction = (newAction == NET_FW_ACTION_.NET_FW_ACTION_ALLOW)
                 ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
                 : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
 
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+            return ExecuteDeleteAndReturnNames(rule =>
                 string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase) &&
                 (rule.Direction == newDirection || rule.Direction == NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_MAX) &&
                 rule.Action == conflictingAction
             );
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
         }
 
         public List<string> DeleteUwpRules(List<string> packageFamilyNames)
         {
             if (packageFamilyNames.Count == 0) return [];
-
             var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
 
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
+            return ExecuteDeleteAndReturnNames(rule =>
             {
                 if (rule.Description?.StartsWith(MFWConstants.UwpDescriptionPrefix, StringComparison.Ordinal) == true)
                 {
@@ -325,9 +317,6 @@ namespace MinimalFirewall
                 }
                 return false;
             });
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
         }
 
         public void DeleteRulesByName(List<string> ruleNames)
@@ -429,25 +418,13 @@ namespace MinimalFirewall
         public List<string> DeleteRulesByDescription(string description)
         {
             if (string.IsNullOrEmpty(description)) return [];
-
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
-                string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase)
-            );
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
+            return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase));
         }
 
         public List<string> DeleteRulesByGroup(string groupName)
         {
             if (string.IsNullOrEmpty(groupName)) return [];
-
-            var rulesToRemove = GetRuleNamesAndRelease(rule =>
-                string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase)
-            );
-
-            DeleteRulesByName(rulesToRemove);
-            return rulesToRemove;
+            return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase));
         }
 
         public void DeleteAllMfwRules()
@@ -468,7 +445,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void DisableRuleByName(string ruleName)
+        private void SetRuleEnabledState(string ruleName, bool isEnabled, string callerName)
         {
             if (string.IsNullOrEmpty(ruleName)) return;
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
@@ -478,17 +455,17 @@ namespace MinimalFirewall
             {
                 if (firewallPolicy.Rules.Item(ruleName) is INetFwRule2 rule)
                 {
-                    rule.Enabled = false;
+                    rule.Enabled = isEnabled;
                     Marshal.ReleaseComObject(rule);
                 }
             }
             catch (FileNotFoundException)
             {
-                Debug.WriteLine($"[WARN] DisableRuleByName: Rule '{ruleName}' not found.");
+                Debug.WriteLine($"[WARN] {callerName}: Rule '{ruleName}' not found.");
             }
             catch (COMException ex)
             {
-                Debug.WriteLine($"[ERROR] DisableRuleByName ('{ruleName}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                Debug.WriteLine($"[ERROR] {callerName} ('{ruleName}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
             }
             finally
             {
@@ -496,32 +473,8 @@ namespace MinimalFirewall
             }
         }
 
-        public void EnableRuleByName(string ruleName)
-        {
-            if (string.IsNullOrEmpty(ruleName)) return;
-            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return;
+        public void DisableRuleByName(string ruleName) => SetRuleEnabledState(ruleName, false, nameof(DisableRuleByName));
 
-            try
-            {
-                if (firewallPolicy.Rules.Item(ruleName) is INetFwRule2 rule)
-                {
-                    rule.Enabled = true;
-                    Marshal.ReleaseComObject(rule);
-                }
-            }
-            catch (FileNotFoundException)
-            {
-                Debug.WriteLine($"[WARN] EnableRuleByName: Rule '{ruleName}' not found.");
-            }
-            catch (COMException ex)
-            {
-                Debug.WriteLine($"[ERROR] EnableRuleByName ('{ruleName}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-            }
-            finally
-            {
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
-            }
-        }
+        public void EnableRuleByName(string ruleName) => SetRuleEnabledState(ruleName, true, nameof(EnableRuleByName));
     }
 }
