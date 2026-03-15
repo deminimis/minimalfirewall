@@ -900,6 +900,7 @@ namespace MinimalFirewall
             }
 
             var firewallRule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
+            bool ownershipTransferred = false;
 
             try
             {
@@ -963,6 +964,7 @@ namespace MinimalFirewall
                 }
 
                 firewallService.CreateRule(firewallRule);
+                ownershipTransferred = true;
 
                 activityLogger.LogChange("Advanced Rule Created", vm.Name);
             }
@@ -973,7 +975,7 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+                if (!ownershipTransferred && firewallRule != null) Marshal.ReleaseComObject(firewallRule);
             }
         }
 
@@ -1226,80 +1228,84 @@ namespace MinimalFirewall
         public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             var orphanedRuleNames = new List<string>();
-            var mfwRules = new List<INetFwRule2>();
+            var mfwRulesData = new List<(string Name, string ApplicationName)>();
             var allRules = firewallService.GetAllRules();
 
             try
             {
                 foreach (var rule in allRules)
                 {
-                    if (IsMfwRule(rule))
-                    {
-                        mfwRules.Add(rule);
-                    }
-                    else
-                    {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
-                    }
-                }
-
-                int total = mfwRules.Count;
-                if (total == 0)
-                {
-                    progress?.Report(100);
-                    return orphanedRuleNames;
-                }
-
-                int processed = 0;
-                await Task.Run(() =>
-                {
-                    foreach (var rule in mfwRules)
-                    {
-                        if (token.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        string appPath = rule.ApplicationName;
-
-                        if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
-                        {
-                            string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
-                            if (!File.Exists(expandedPath))
-                            {
-                                orphanedRuleNames.Add(rule.Name);
-                                activityLogger.LogDebug($"Found orphaned rule '{rule.Name}' for path: {expandedPath}");
-                            }
-                        }
-
-                        processed++;
-                        progress?.Report((processed * 100) / total);
-                    }
-                }, token);
-                if (token.IsCancellationRequested)
-                {
-                    return new List<string>();
-                }
-
-                if (orphanedRuleNames.Any())
-                {
-                    activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
                     try
                     {
-                        firewallService.DeleteRulesByName(orphanedRuleNames);
-                        activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
+                        if (IsMfwRule(rule))
+                        {
+                            mfwRulesData.Add((rule.Name, rule.ApplicationName));
+                        }
                     }
-                    catch (COMException ex)
+                    catch { /* Ignore localized COM property read failures */ }
+                    finally
                     {
-                        activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
+                        if (rule != null) Marshal.ReleaseComObject(rule);
                     }
                 }
             }
             finally
             {
-                foreach (var rule in mfwRules)
+                // allRules items were completely evaluated and released in the loop
+            }
+
+            int total = mfwRulesData.Count;
+            if (total == 0)
+            {
+                progress?.Report(100);
+                return orphanedRuleNames;
+            }
+
+            int processed = 0;
+
+            // Execute safe, COM-free validation on the background thread
+            await Task.Run(() =>
+            {
+                foreach (var ruleData in mfwRulesData)
                 {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    string appPath = ruleData.ApplicationName;
+
+                    if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
+                    {
+                        string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
+                        if (!File.Exists(expandedPath))
+                        {
+                            orphanedRuleNames.Add(ruleData.Name);
+                            activityLogger.LogDebug($"Found orphaned rule '{ruleData.Name}' for path: {expandedPath}");
+                        }
+                    }
+
+                    processed++;
+                    progress?.Report((processed * 100) / total);
+                }
+            }, token);
+
+            if (token.IsCancellationRequested)
+            {
+                return new List<string>();
+            }
+
+            if (orphanedRuleNames.Any())
+            {
+                activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
+                try
+                {
+                    firewallService.DeleteRulesByName(orphanedRuleNames);
+                    activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
+                }
+                catch (COMException ex)
+                {
+                    activityLogger.LogException("CleanUpOrphanedRulesAsync (Deletion)", ex);
                 }
             }
 

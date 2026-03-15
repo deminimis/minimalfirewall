@@ -129,9 +129,11 @@ namespace MinimalFirewall
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy == null) return null;
+            INetFwRules? rulesCollection = null;
             try
             {
-                if (firewallPolicy.Rules.Item(name) is INetFwRule2 rule)
+                rulesCollection = firewallPolicy.Rules;
+                if (rulesCollection.Item(name) is INetFwRule2 rule)
                 {
                     return rule;
                 }
@@ -148,6 +150,7 @@ namespace MinimalFirewall
             }
             finally
             {
+                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
                 if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
         }
@@ -449,11 +452,15 @@ namespace MinimalFirewall
         {
             if (string.IsNullOrEmpty(ruleName)) return;
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return;
+            if (firewallPolicy == null) return;
 
+            INetFwRules? rulesCollection = null;
             try
             {
-                if (firewallPolicy.Rules.Item(ruleName) is INetFwRule2 rule)
+                rulesCollection = firewallPolicy.Rules;
+                if (rulesCollection == null) return;
+
+                if (rulesCollection.Item(ruleName) is INetFwRule2 rule)
                 {
                     rule.Enabled = isEnabled;
                     Marshal.ReleaseComObject(rule);
@@ -469,6 +476,7 @@ namespace MinimalFirewall
             }
             finally
             {
+                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
                 if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
             }
         }
