@@ -35,10 +35,9 @@ namespace MinimalFirewall
 
             dm = new DarkModeCS(this)
             {
-                ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+                ColorMode = appSettings.Theme == "Dark" ?
+                    DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
             };
-            dm.ApplyTheme(appSettings.Theme == "Dark");
-
             _actionsService = actionsService;
             _groupManager = new FirewallGroupManager();
             _toolTip = new ToolTip();
@@ -85,7 +84,7 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
+            dm.ApplyTheme(_appSettings.Theme == "Dark");
             var workingArea = Screen.FromControl(this).WorkingArea;
             if (this.Height > workingArea.Height)
             {

@@ -44,11 +44,9 @@ namespace MinimalFirewall
         public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
         {
             InitializeComponent();
-
             // Initialize Dark Mode theme
             dm = new DarkModeCS(this);
             dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
-            dm.ApplyTheme(appSettings.Theme == "Dark");
 
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;
@@ -62,6 +60,7 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            dm.ApplyTheme(_appSettings.Theme == "Dark");
             GoToStep(WizardStep.Selection);
         }
 
