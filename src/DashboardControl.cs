@@ -35,8 +35,8 @@ namespace MinimalFirewall
                 typeof(Control).InvokeMember("DoubleBuffered",
                     BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
                     null, dashboardDataGridView, new object[] { true });
-
                 dashboardDataGridView.CellMouseDown += dashboardDataGridView_CellMouseDown;
+                dashboardDataGridView.SelectionChanged += DashboardDataGridView_SelectionChanged;
             }
         }
 
@@ -56,6 +56,60 @@ namespace MinimalFirewall
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
+
+            if (_dm != null && detailsRichTextBox != null)
+            {
+                bool isDark = _dm.IsDarkMode;
+                detailsRichTextBox.BackColor = isDark ? _dm.OScolors.Surface : Color.White;
+                detailsRichTextBox.ForeColor = isDark ? _dm.OScolors.TextActive : Color.Black;
+                detailsLabel.ForeColor = isDark ? Color.White : Color.Black;
+            }
+        }
+
+        private void DashboardDataGridView_SelectionChanged(object? sender, EventArgs e)
+        {
+            if (detailsRichTextBox == null) return;
+            detailsRichTextBox.Clear();
+
+            var pending = GetSelectedPendingConnection();
+            if (pending == null) return;
+
+            bool isDark = _dm?.IsDarkMode == true;
+            Color labelColor = isDark ? Color.LightSkyBlue : Color.Blue;
+            Color valColor = isDark ? _dm!.OScolors.TextActive : Color.Black;
+            Font boldFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
+
+            void AppendLine(string label, string value)
+            {
+                detailsRichTextBox.SelectionStart = detailsRichTextBox.TextLength;
+                detailsRichTextBox.SelectionLength = 0;
+                detailsRichTextBox.SelectionColor = labelColor;
+                detailsRichTextBox.SelectionFont = boldFont;
+                detailsRichTextBox.AppendText(label + ": ");
+
+                detailsRichTextBox.SelectionColor = valColor;
+                detailsRichTextBox.SelectionFont = detailsRichTextBox.Font;
+                detailsRichTextBox.AppendText(value + Environment.NewLine);
+            }
+
+            AppendLine("Application", pending.FileName);
+            AppendLine("Path", pending.AppPath);
+            AppendLine("PID", pending.ProcessId);
+            AppendLine("Service", string.IsNullOrEmpty(pending.ServiceName) ? "N/A" : pending.ServiceName);
+            AppendLine("Direction", pending.Direction);
+            string remote = string.IsNullOrEmpty(pending.RemoteAddress) ? "N/A" : $"{pending.RemoteAddress}:{pending.RemotePort}";
+            AppendLine("Remote Address", remote);
+
+            AppendLine("Protocol", pending.Protocol);
+            if (SignatureValidationService.GetPublisherInfo(pending.AppPath, out string publisherName) && !string.IsNullOrEmpty(publisherName))
+            {
+                AppendLine("Publisher", publisherName);
+            }
+
+            if (!string.IsNullOrEmpty(pending.CommandLine))
+            {
+                AppendLine("CMD", pending.CommandLine);
+            }
         }
 
         public void SetIconColumnVisibility(bool visible)
@@ -314,8 +368,11 @@ namespace MinimalFirewall
                 details.AppendLine($"Type: Pending Connection");
                 details.AppendLine($"Application: {pending.FileName}");
                 details.AppendLine($"Path: {pending.AppPath}");
+                details.AppendLine($"PID: {pending.ProcessId}");
                 details.AppendLine($"Service: {pending.ServiceName}");
                 details.AppendLine($"Direction: {pending.Direction}");
+                if (!string.IsNullOrEmpty(pending.CommandLine))
+                    details.AppendLine($"CMD: {pending.CommandLine}");
                 Clipboard.SetText(details.ToString());
             }
         }
