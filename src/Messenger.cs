@@ -125,68 +125,7 @@ namespace DarkModeForms
 
                 string CurrentLanguage = GetCurrentLanguage();
                 var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-
-                List<Button> CmdButtons = new List<Button>();
-
-                // Helper to create standardized buttons
-                Button CreateBtn(DialogResult result, string textKey, bool isFlat = true)
-                {
-                    return new Button
-                    {
-                        Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                        DialogResult = result,
-                        Text = ButtonTranslations.ContainsKey(textKey) ? ButtonTranslations[textKey] : textKey,
-                        Height = fontHeight + 10,
-                        FlatStyle = isFlat ? FlatStyle.System : FlatStyle.Standard
-                    };
-                }
-
-                switch (buttons)
-                {
-                    case MessageBoxButtons.OK:
-                        CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) { form.Close(); } };
-                        form.FormClosed += (s, e) => { form.DialogResult = DialogResult.OK; };
-                        break;
-
-                    case MessageBoxButtons.OKCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-
-                    case MessageBoxButtons.AbortRetryIgnore:
-                        CmdButtons.Add(CreateBtn(DialogResult.Abort, "Abort", false));
-                        CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry", false));
-                        CmdButtons.Add(CreateBtn(DialogResult.Ignore, "Ignore", false));
-                        form.AcceptButton = CmdButtons[0];
-                        form.ControlBox = false;
-                        break;
-
-                    case MessageBoxButtons.YesNoCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes", false));
-                        CmdButtons.Add(CreateBtn(DialogResult.No, "No", false));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel", false));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[2];
-                        break;
-
-                    case MessageBoxButtons.YesNo:
-                        CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes", false));
-                        CmdButtons.Add(CreateBtn(DialogResult.No, "No", false));
-                        form.AcceptButton = CmdButtons[0];
-                        form.ControlBox = false;
-                        break;
-
-                    case MessageBoxButtons.RetryCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel", false));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-                }
+                List<Button> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, fontHeight);
 
                 int Padding = 4;
                 int LastPos = form.ClientSize.Width;
@@ -330,48 +269,7 @@ namespace DarkModeForms
 
                 string CurrentLanguage = GetCurrentLanguage();
                 var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-                List<Button> CmdButtons = new List<Button>();
-
-                Button CreateBtn(DialogResult res, string txt) => new Button { Anchor = AnchorStyles.Top | AnchorStyles.Right, DialogResult = res, Text = ButtonTranslations.ContainsKey(txt) ? ButtonTranslations[txt] : txt };
-
-                switch (buttons)
-                {
-                    case MessageBoxButtons.OK:
-                        CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
-                        form.AcceptButton = CmdButtons[0];
-                        break;
-                    case MessageBoxButtons.OKCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-                    case MessageBoxButtons.AbortRetryIgnore:
-                        CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Abort, "Abort"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-                    case MessageBoxButtons.YesNoCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes"));
-                        CmdButtons.Add(CreateBtn(DialogResult.No, "No"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[2];
-                        break;
-                    case MessageBoxButtons.YesNo:
-                        CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes"));
-                        CmdButtons.Add(CreateBtn(DialogResult.No, "No"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-                    case MessageBoxButtons.RetryCancel:
-                        CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry"));
-                        CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel"));
-                        form.AcceptButton = CmdButtons[0];
-                        form.CancelButton = CmdButtons[1];
-                        break;
-                }
+                List<Button> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, SystemFonts.DefaultFont.Height);
 
                 int Padding = 4;
                 int LastPos = form.ClientSize.Width;
@@ -441,38 +339,19 @@ namespace DarkModeForms
                     switch (field.ValueType)
                     {
                         case ValueTypes.String:
-                            {
-                                var txtBox = new TextBox { Text = field.Value, Dock = DockStyle.Fill, TextAlign = HorizontalAlignment.Center };
-                                txtBox.TextChanged += (sender, args) =>
-                                {
-                                    AddTextChangedDelay(txtBox, ChangeDelayMS, text =>
-                                    {
-                                        field.Value = ((TextBox)sender!).Text;
-                                        ((TextBox)sender!).Text = Convert.ToString(field.Value);
-                                        Err.SetError(txtBox, field.ErrorText);
-                                    });
-                                };
-                                field_Control = txtBox;
-                            }
-                            break;
                         case ValueTypes.Multiline:
-                            {
-                                var txtBox = new TextBox { Text = field.Value, Dock = DockStyle.Fill, TextAlign = HorizontalAlignment.Left, Multiline = true, ScrollBars = ScrollBars.Vertical };
-                                txtBox.TextChanged += (sender, args) =>
-                                {
-                                    AddTextChangedDelay(txtBox, ChangeDelayMS, text =>
-                                    {
-                                        field.Value = ((TextBox)sender!).Text;
-                                        ((TextBox)sender!).Text = Convert.ToString(field.Value);
-                                        Err.SetError(txtBox, field.ErrorText);
-                                    });
-                                };
-                                field_Control = txtBox;
-                            }
-                            break;
                         case ValueTypes.Password:
                             {
-                                var txtBox = new TextBox { Text = field.Value, Dock = DockStyle.Fill, UseSystemPasswordChar = true, TextAlign = HorizontalAlignment.Center };
+                                bool isMulti = field.ValueType == ValueTypes.Multiline;
+                                var txtBox = new TextBox
+                                {
+                                    Text = field.Value,
+                                    Dock = DockStyle.Fill,
+                                    TextAlign = isMulti ? HorizontalAlignment.Left : HorizontalAlignment.Center,
+                                    Multiline = isMulti,
+                                    ScrollBars = isMulti ? ScrollBars.Vertical : ScrollBars.None,
+                                    UseSystemPasswordChar = field.ValueType == ValueTypes.Password
+                                };
                                 txtBox.TextChanged += (sender, args) =>
                                 {
                                     AddTextChangedDelay(txtBox, ChangeDelayMS, text =>
@@ -486,23 +365,19 @@ namespace DarkModeForms
                             }
                             break;
                         case ValueTypes.Integer:
-                            {
-                                var num = new NumericUpDown { Minimum = int.MinValue, Maximum = int.MaxValue, TextAlign = HorizontalAlignment.Center, Value = Convert.ToInt32(field.Value, CultureInfo.InvariantCulture), ThousandsSeparator = true, Dock = DockStyle.Fill, DecimalPlaces = 0 };
-                                num.ValueChanged += (sender, args) =>
-                                {
-                                    AddTextChangedDelay(num, ChangeDelayMS, text =>
-                                    {
-                                        field.Value = num.Value.ToString(CultureInfo.InvariantCulture);
-                                        num.Value = Convert.ToInt32(field.Value, CultureInfo.InvariantCulture);
-                                        Err.SetError(num, field.ErrorText);
-                                    });
-                                };
-                                field_Control = num;
-                            }
-                            break;
                         case ValueTypes.Decimal:
                             {
-                                var num = new NumericUpDown { Minimum = int.MinValue, Maximum = int.MaxValue, TextAlign = HorizontalAlignment.Center, Value = Convert.ToDecimal(field.Value, CultureInfo.InvariantCulture), ThousandsSeparator = false, Dock = DockStyle.Fill, DecimalPlaces = 2 };
+                                bool isDec = field.ValueType == ValueTypes.Decimal;
+                                var num = new NumericUpDown
+                                {
+                                    Minimum = int.MinValue,
+                                    Maximum = int.MaxValue,
+                                    TextAlign = HorizontalAlignment.Center,
+                                    Value = Convert.ToDecimal(field.Value, CultureInfo.InvariantCulture),
+                                    ThousandsSeparator = !isDec,
+                                    Dock = DockStyle.Fill,
+                                    DecimalPlaces = isDec ? 2 : 0
+                                };
                                 num.ValueChanged += (sender, args) =>
                                 {
                                     AddTextChangedDelay(num, ChangeDelayMS, text =>
@@ -516,21 +391,22 @@ namespace DarkModeForms
                             }
                             break;
                         case ValueTypes.Date:
-                            {
-                                var dt = new DateTimePicker { Value = Convert.ToDateTime(field.Value, CultureInfo.InvariantCulture), Dock = DockStyle.Fill, Format = DateTimePickerFormat.Short, CalendarForeColor = DMode.OScolors.TextActive, CalendarMonthBackground = DMode.OScolors.Control, CalendarTitleBackColor = DMode.OScolors.Surface, CalendarTitleForeColor = DMode.OScolors.TextActive };
-                                dt.ValueChanged += (sender, args) =>
-                                {
-                                    field.Value = dt.Value.ToString("o");
-                                    dt.Value = Convert.ToDateTime(field.Value, CultureInfo.InvariantCulture);
-                                    Err.SetError(dt, field.ErrorText);
-                                    Err.SetIconAlignment(dt, ErrorIconAlignment.MiddleLeft);
-                                };
-                                field_Control = dt;
-                            }
-                            break;
                         case ValueTypes.Time:
                             {
-                                var dt = new DateTimePicker { Value = Convert.ToDateTime(field.Value, CultureInfo.InvariantCulture), Dock = DockStyle.Fill, Format = DateTimePickerFormat.Time };
+                                bool isDate = field.ValueType == ValueTypes.Date;
+                                var dt = new DateTimePicker
+                                {
+                                    Value = Convert.ToDateTime(field.Value, CultureInfo.InvariantCulture),
+                                    Dock = DockStyle.Fill,
+                                    Format = isDate ? DateTimePickerFormat.Short : DateTimePickerFormat.Time
+                                };
+                                if (isDate)
+                                {
+                                    dt.CalendarForeColor = DMode.OScolors.TextActive;
+                                    dt.CalendarMonthBackground = DMode.OScolors.Control;
+                                    dt.CalendarTitleBackColor = DMode.OScolors.Surface;
+                                    dt.CalendarTitleForeColor = DMode.OScolors.TextActive;
+                                }
                                 dt.ValueChanged += (sender, args) =>
                                 {
                                     field.Value = dt.Value.ToString("o");
@@ -669,6 +545,67 @@ namespace DarkModeForms
             control.Disposed += disposedHandler;
             timer.Start();
             timers.Add(control, (timer, disposedHandler));
+        }
+
+        private static List<Button> GenerateDialogButtons(Form form, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
+        {
+            List<Button> CmdButtons = new List<Button>();
+
+            Button CreateBtn(DialogResult result, string textKey, bool isFlat = true)
+            {
+                return new Button
+                {
+                    Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                    DialogResult = result,
+                    Text = translations.TryGetValue(textKey, out string? translated) ? translated : textKey,
+                    Height = fontHeight + 10,
+                    FlatStyle = isFlat ? FlatStyle.System : FlatStyle.Standard
+                };
+            }
+
+            switch (buttons)
+            {
+                case MessageBoxButtons.OK:
+                    CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
+                    form.AcceptButton = CmdButtons[0];
+                    form.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) { form.Close(); } };
+                    form.FormClosed += (s, e) => { form.DialogResult = DialogResult.OK; };
+                    break;
+                case MessageBoxButtons.OKCancel:
+                    CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
+                    CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel"));
+                    form.AcceptButton = CmdButtons[0];
+                    form.CancelButton = CmdButtons[1];
+                    break;
+                case MessageBoxButtons.AbortRetryIgnore:
+                    CmdButtons.Add(CreateBtn(DialogResult.Abort, "Abort", false));
+                    CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry", false));
+                    CmdButtons.Add(CreateBtn(DialogResult.Ignore, "Ignore", false));
+                    form.AcceptButton = CmdButtons[0];
+                    form.ControlBox = false;
+                    break;
+                case MessageBoxButtons.YesNoCancel:
+                    CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes", false));
+                    CmdButtons.Add(CreateBtn(DialogResult.No, "No", false));
+                    CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel", false));
+                    form.AcceptButton = CmdButtons[0];
+                    form.CancelButton = CmdButtons[2];
+                    break;
+                case MessageBoxButtons.YesNo:
+                    CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes", false));
+                    CmdButtons.Add(CreateBtn(DialogResult.No, "No", false));
+                    form.AcceptButton = CmdButtons[0];
+                    form.ControlBox = false;
+                    break;
+                case MessageBoxButtons.RetryCancel:
+                    CmdButtons.Add(CreateBtn(DialogResult.Retry, "Retry"));
+                    CmdButtons.Add(CreateBtn(DialogResult.Cancel, "Cancel", false));
+                    form.AcceptButton = CmdButtons[0];
+                    form.CancelButton = CmdButtons[1];
+                    break;
+            }
+
+            return CmdButtons;
         }
 
         public static string GetCurrentLanguage(string pDefault = "en")
@@ -842,31 +779,17 @@ namespace DarkModeForms
             set => this._Icons = value;
         }
 
-        public Image? GetIcon(string pName)
-        {
-            if (_Icons != null && _Icons.Count > 0)
-            {
-                var Found = _Icons.Find(x => x.Name == pName);
-                if (Found != null) return Found.Image;
-            }
-            return null;
-        }
+        public Image? GetIcon(string pName) => _Icons?.Find(x => x.Name == pName)?.Image;
 
         public Image? GetIcon(MsgIcon pIcon) => GetIcon(pIcon.ToString());
 
         public bool AddIcon(string pName, string pFilePath)
         {
-            if (!string.IsNullOrEmpty(pFilePath) && File.Exists(pFilePath))
-            {
-                var _icon = File.ReadAllBytes(pFilePath);
-                if (_icon != null)
-                {
-                    if (_Icons is null) _Icons = new List<Base64Image>();
-                    _Icons.Add(new Base64Image(pName, Convert.ToBase64String(_icon)));
-                    return true;
-                }
-            }
-            return false;
+            if (string.IsNullOrEmpty(pFilePath) || !File.Exists(pFilePath)) return false;
+
+            _Icons ??= new List<Base64Image>();
+            _Icons.Add(new Base64Image(pName, Convert.ToBase64String(File.ReadAllBytes(pFilePath))));
+            return true;
         }
     }
 }
