@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Text.Json;
 
 namespace MinimalFirewall
 {
@@ -24,6 +25,7 @@ namespace MinimalFirewall
         private static readonly Color AllowColor = Color.FromArgb(204, 255, 204);
         private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
         private static readonly Color HighlightOverlay = Color.FromArgb(25, Color.Black);
+        private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
 
         public DashboardControl()
         {
@@ -56,6 +58,22 @@ namespace MinimalFirewall
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
+
+            try
+            {
+                if (File.Exists(_layoutSettingsPath))
+                {
+                    string json = File.ReadAllText(_layoutSettingsPath);
+                    var settings = JsonSerializer.Deserialize<DashboardLayoutSettings>(json);
+                    if (settings != null && settings.SplitterDistance > 0 && settings.SplitterDistance < splitContainer.Height)
+                    {
+                        splitContainer.SplitterDistance = settings.SplitterDistance;
+                    }
+                }
+            }
+            catch { }
+
+            splitContainer.SplitterMoved += SplitContainer_SplitterMoved;
 
             if (_dm != null && detailsRichTextBox != null)
             {
@@ -472,6 +490,22 @@ namespace MinimalFirewall
                     DarkModeForms.Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void SplitContainer_SplitterMoved(object? sender, SplitterEventArgs e)
+        {
+            try
+            {
+                var settings = new DashboardLayoutSettings { SplitterDistance = splitContainer.SplitterDistance };
+                string json = JsonSerializer.Serialize(settings);
+                File.WriteAllText(_layoutSettingsPath, json);
+            }
+            catch { }
+        }
+
+        public class DashboardLayoutSettings
+        {
+            public int SplitterDistance { get; set; }
         }
     }
 }
