@@ -82,6 +82,14 @@ namespace MinimalFirewall
             }
         }
 
+        private Panel SetupStepUI(Panel panel, string title, string headerText, string nextBtnText = "Next")
+        {
+            this.Text = title;
+            mainHeaderLabel.Text = headerText;
+            nextButton.Text = nextBtnText;
+            return panel;
+        }
+
         private void GoToStep(WizardStep newStep)
         {
             _currentStep = newStep;
@@ -104,91 +112,47 @@ namespace MinimalFirewall
             switch (_currentStep)
             {
                 case WizardStep.Selection:
-                    activePanel = pnlSelection;
-                    this.Text = "Create New Rule";
-                    mainHeaderLabel.Text = "What would you like to do?";
+                    activePanel = SetupStepUI(pnlSelection, "Create New Rule", "What would you like to do?");
                     backButton.Enabled = false;
                     nextButton.Visible = false;
                     break;
-
                 case WizardStep.GetFolder:
-                    activePanel = pnlGetFolder;
-                    this.Text = "Step 1: Select a Folder";
-                    mainHeaderLabel.Text = "Select a folder to apply rules to all programs within it";
+                    activePanel = SetupStepUI(pnlGetFolder, "Step 1: Select a Folder", "Select a folder to apply rules to all programs within it");
                     break;
-
                 case WizardStep.GetAction:
-                    activePanel = pnlGetAction;
-                    this.Text = _selectedTemplate == RuleTemplate.BatchProgramRule ? "Step 2: Choose Action" : "Step 1: Choose Action";
-                    mainHeaderLabel.Text = "Do you want to allow or block the program(s)?";
+                    activePanel = SetupStepUI(pnlGetAction, _selectedTemplate == RuleTemplate.BatchProgramRule ? "Step 2: Choose Action" : "Step 1: Choose Action", "Do you want to allow or block the program(s)?");
                     break;
-
                 case WizardStep.GetProgram:
-                    activePanel = pnlGetProgram;
-                    this.Text = "Step 2: Select a Program";
-                    mainHeaderLabel.Text = "Select the program's main executable file (.exe)";
+                    activePanel = SetupStepUI(pnlGetProgram, "Step 2: Select a Program", "Select the program's main executable file (.exe)");
                     break;
-
                 case WizardStep.GetDirection:
-                    activePanel = pnlGetDirection;
-                    this.Text = "Step 3: Choose Direction";
-                    mainHeaderLabel.Text = "Apply this rule to which connection direction?";
-                    nextButton.Text = "Finish";
+                    activePanel = SetupStepUI(pnlGetDirection, "Step 3: Choose Direction", "Apply this rule to which connection direction?", "Finish");
                     break;
-
                 case WizardStep.GetPorts:
-                    activePanel = pnlGetPorts;
-                    this.Text = "Step 1: Enter Ports";
-                    mainHeaderLabel.Text = "What port or port range is needed?";
+                    activePanel = SetupStepUI(pnlGetPorts, "Step 1: Enter Ports", "What port or port range is needed?");
                     break;
-
                 case WizardStep.GetProtocol:
-                    activePanel = pnlGetProtocol;
-                    this.Text = "Step 2: Select Protocol";
-                    mainHeaderLabel.Text = "What protocol does it use?";
+                    activePanel = SetupStepUI(pnlGetProtocol, "Step 2: Select Protocol", "What protocol does it use?");
                     break;
-
                 case WizardStep.GetName:
-                    activePanel = pnlGetName;
-                    this.Text = "Step 3: Name Your Rule";
-                    mainHeaderLabel.Text = "Give your new rule a descriptive name.";
-                    nextButton.Text = "Finish";
+                    activePanel = SetupStepUI(pnlGetName, "Step 3: Name Your Rule", "Give your new rule a descriptive name.", "Finish");
                     break;
-
                 case WizardStep.GetService:
-                    activePanel = pnlGetService;
-                    this.Text = "Step 1: Select a Service";
-                    mainHeaderLabel.Text = "Select a Windows Service to block";
-                    LoadServicesAsync(); 
+                    activePanel = SetupStepUI(pnlGetService, "Step 1: Select a Service", "Select a Windows Service to block");
+                    LoadServicesAsync();
                     break;
-
                 case WizardStep.GetFileShareIP:
-                    activePanel = pnlGetFileShareIP;
-                    this.Text = "Step 1: Enter IP Address";
-                    mainHeaderLabel.Text = "Enter the local IP of the trusted computer";
-                    nextButton.Text = "Finish";
+                    activePanel = SetupStepUI(pnlGetFileShareIP, "Step 1: Enter IP Address", "Enter the local IP of the trusted computer", "Finish");
                     break;
-
                 case WizardStep.GetBlockDeviceIP:
-                    activePanel = pnlGetBlockDeviceIP;
-                    this.Text = "Step 1: Enter IP Address";
-                    mainHeaderLabel.Text = "Enter the local IP of the device to block";
-                    nextButton.Text = "Finish";
+                    activePanel = SetupStepUI(pnlGetBlockDeviceIP, "Step 1: Enter IP Address", "Enter the local IP of the device to block", "Finish");
                     break;
-
                 case WizardStep.GetRestrictApp:
-                    activePanel = pnlGetRestrictApp;
-                    this.Text = "Step 1: Select a Program";
-                    mainHeaderLabel.Text = "Select the program to restrict to your local network";
-                    nextButton.Text = "Finish";
+                    activePanel = SetupStepUI(pnlGetRestrictApp, "Step 1: Select a Program", "Select the program to restrict to your local network", "Finish");
                     break;
-
                 case WizardStep.Summary:
-                    activePanel = pnlSummary;
-                    this.Text = "Summary";
-                    mainHeaderLabel.Text = "The following rule will be created:";
+                    activePanel = SetupStepUI(pnlSummary, "Summary", "The following rule will be created:", "Finish");
                     BuildSummary();
-                    nextButton.Text = "Finish";
                     break;
             }
 
@@ -344,6 +308,15 @@ namespace MinimalFirewall
 
         #region Validation Logic
 
+        private string GetSelectedServiceName()
+        {
+            if (serviceListBox.SelectedItem != null)
+            {
+                string selected = serviceListBox.SelectedItem.ToString()!;
+                return selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
+            }
+            return serviceNameTextBox.Text;
+        }
         private bool ShowError(string message, string title)
         {
             Messenger.MessageBox(message, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -413,15 +386,9 @@ namespace MinimalFirewall
                         return ShowError("Please enter a name for the rule.", "Invalid Name");
                     break;
                 case WizardStep.GetService:
-                    string serviceName = serviceNameTextBox.Text;
-                    if (serviceListBox.SelectedItem != null)
-                    {
-                        string selected = serviceListBox.SelectedItem.ToString()!;
-                        serviceName = selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
-                    }
+                    string serviceName = GetSelectedServiceName();
                     if (string.IsNullOrWhiteSpace(serviceName))
                         return ShowError("Please select a service from the list or enter a service name.", "No Service Selected");
-
                     if (serviceListBox.Items.Count > 0 && serviceListBox.Enabled)
                     {
                         var services = SystemDiscoveryService.GetServicesWithExePaths();
@@ -430,9 +397,12 @@ namespace MinimalFirewall
                     }
                     break;
                 case WizardStep.GetFileShareIP:
+                    if (!IPAddress.TryParse(fileShareIpTextBox.Text, out _))
+                        return ShowError("Please enter a valid IP address.", "Invalid IP");
+                    break;
                 case WizardStep.GetBlockDeviceIP:
-                    _wizardRemoteIP = _currentStep == WizardStep.GetFileShareIP ? fileShareIpTextBox.Text : blockDeviceIpTextBox.Text;
-                    GoForwardTo(WizardStep.Summary);
+                    if (!IPAddress.TryParse(blockDeviceIpTextBox.Text, out _))
+                        return ShowError("Please enter a valid IP address.", "Invalid IP");
                     break;
             }
             return true;
@@ -510,15 +480,7 @@ namespace MinimalFirewall
                     break;
 
                 case WizardStep.GetService:
-                    if (serviceListBox.SelectedItem != null)
-                    {
-                        string selected = serviceListBox.SelectedItem.ToString()!;
-                        _wizardServiceName = selected.Substring(selected.LastIndexOf('(') + 1).TrimEnd(')');
-                    }
-                    else
-                    {
-                        _wizardServiceName = serviceNameTextBox.Text;
-                    }
+                    _wizardServiceName = GetSelectedServiceName();
                     GoForwardTo(WizardStep.Summary);
                     break;
 
