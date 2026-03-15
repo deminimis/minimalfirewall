@@ -150,13 +150,13 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (result.RequiresCacheInvalidation)
+                if (result.RequiresCacheInvalidation && _taskQueue.Count == 0)
                 {
                     _dataService.InvalidateRuleCache();
-                    _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task: {task.TaskType}");
+                    _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task batch completed.");
                 }
 
-                if (result.RequiresWildcardRefresh)
+                if (result.RequiresWildcardRefresh && _taskQueue.Count == 0)
                 {
                     SafeInvoke(WildcardRulesChanged);
                 }

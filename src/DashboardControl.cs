@@ -85,7 +85,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void DashboardDataGridView_SelectionChanged(object? sender, EventArgs e)
+        private async void DashboardDataGridView_SelectionChanged(object? sender, EventArgs e)
         {
             if (detailsRichTextBox == null) return;
             detailsRichTextBox.Clear();
@@ -114,8 +114,7 @@ namespace MinimalFirewall
             AppendLine("Application", pending.FileName);
             AppendLine("Path", pending.AppPath);
             AppendLine("PID", pending.ProcessId);
-            if (!string.IsNullOrEmpty(pending.ProcessOwner))
-                AppendLine("Owner", pending.ProcessOwner);
+            if (!string.IsNullOrEmpty(pending.ProcessOwner)) AppendLine("Owner", pending.ProcessOwner);
             if (!string.IsNullOrEmpty(pending.ParentProcessId))
             {
                 string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
@@ -125,16 +124,26 @@ namespace MinimalFirewall
             AppendLine("Direction", pending.Direction);
             string remote = string.IsNullOrEmpty(pending.RemoteAddress) ? "N/A" : $"{pending.RemoteAddress}:{pending.RemotePort}";
             AppendLine("Remote Address", remote);
-
             AppendLine("Protocol", pending.Protocol);
-            if (SignatureValidationService.GetPublisherInfo(pending.AppPath, out string publisherName) && !string.IsNullOrEmpty(publisherName))
-            {
-                AppendLine("Publisher", publisherName);
-            }
 
             if (!string.IsNullOrEmpty(pending.CommandLine))
             {
                 AppendLine("CMD", pending.CommandLine);
+            }
+
+            string appPathToVerify = pending.AppPath;
+            if (!string.IsNullOrEmpty(appPathToVerify))
+            {
+                string pubName = await Task.Run(() =>
+                {
+                    SignatureValidationService.GetPublisherInfo(appPathToVerify, out string name);
+                    return name;
+                });
+
+                if (!this.IsDisposed && GetSelectedPendingConnection() == pending && !string.IsNullOrEmpty(pubName))
+                {
+                    AppendLine("Publisher", pubName);
+                }
             }
         }
 
