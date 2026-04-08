@@ -78,6 +78,8 @@ namespace MinimalFirewall
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
 
             _backgroundTaskService.StatusChanged += (text) => StatusTextChanged?.Invoke(text);
+
+            DebouncedSentryRefresh(null);
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
