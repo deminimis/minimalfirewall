@@ -92,16 +92,17 @@ namespace MinimalFirewall
             quarantineCheckBox.Checked = _appSettings.QuarantineMode;
 
             toolTip1.SetToolTip(rebuildBaselineButton, "Unarchives all hidden rules, making them visible again in this list.");
-
             // Initialize cached font based on grid default
             _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font, FontStyle.Bold);
+
+            ApplySearchFilter();
         }
 
         private void OnSystemChangesUpdated()
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(OnSystemChangesUpdated);
+                this.Invoke(new Action(OnSystemChangesUpdated));
                 return;
             }
             ApplySearchFilter();
@@ -182,8 +183,8 @@ namespace MinimalFirewall
                 }
 
                 _bindingSource.DataSource = bindableList;
-                _bindingSource.ResetBindings(false);
-                _bindingSource.RaiseListChangedEvents = true;
+                _bindingSource.RaiseListChangedEvents = true; 
+                _bindingSource.ResetBindings(false); 
                 systemChangesDataGridView.Refresh();
 
                 foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
