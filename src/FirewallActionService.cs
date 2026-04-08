@@ -193,6 +193,11 @@ namespace MinimalFirewall
                     }
                 }
 
+                if (rulesToRemove.Any())
+                {
+                    firewallService.DeleteRulesByName(rulesToRemove);
+                }
+
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string baseName, Directions dir, Actions act)
                 {
@@ -202,10 +207,6 @@ namespace MinimalFirewall
                 }
 
                 ApplyRuleAction(appName, action, createRule);
-                if (rulesToRemove.Any())
-                {
-                    firewallService.DeleteRulesByName(rulesToRemove);
-                }
 
                 activityLogger.LogChange("Rule Changed", action + " for " + appPath);
             }
@@ -246,16 +247,16 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
+            if (rulesToRemove.Any())
+            {
+                firewallService.DeleteRulesByName(rulesToRemove);
+            }
+
             ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
             {
                 string dirStr = dir == Directions.Incoming ? "In" : "Out";
                 CreateServiceRule($"{serviceName} - {dirStr}{suffix}", serviceName, dir, parsedAction, proto, appPath);
             });
-
-            if (rulesToRemove.Any())
-            {
-                firewallService.DeleteRulesByName(rulesToRemove);
-            }
 
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
         }
@@ -1019,16 +1020,15 @@ namespace MinimalFirewall
                 return;
             }
 
-            string inName = appName;
-            string outName = appName;
+            bool bothDirs = parsedDirection.HasFlag(Directions.Incoming) && parsedDirection.HasFlag(Directions.Outgoing);
 
             if (parsedDirection.HasFlag(Directions.Incoming))
             {
-                createRule(inName, Directions.Incoming, parsedAction);
+                createRule(bothDirs ? $"{appName} - Inbound" : appName, Directions.Incoming, parsedAction);
             }
             if (parsedDirection.HasFlag(Directions.Outgoing))
             {
-                createRule(outName, Directions.Outgoing, parsedAction);
+                createRule(bothDirs ? $"{appName} - Outbound" : appName, Directions.Outgoing, parsedAction);
             }
         }
 
