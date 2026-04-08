@@ -286,6 +286,9 @@ namespace MinimalFirewall
         {
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
 
+            // Release the lock 
+            _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
+
             var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, TrustPublisher = trustPublisher };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing: {decision} {pending.FileName}"));
             PendingConnections.Remove(pending);
@@ -328,6 +331,9 @@ namespace MinimalFirewall
 
         public void ProcessTemporaryDashboardAction(PendingConnectionViewModel pending, string decision, TimeSpan duration)
         {
+            _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, duration);
+            _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
+
             var payload = new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = decision, Duration = duration };
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing Temp: {pending.FileName}"));
             PendingConnections.Remove(pending);
@@ -617,6 +623,8 @@ namespace MinimalFirewall
         public void ProcessSpecificAllow(PendingConnectionViewModel pending)
         {
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
+            _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
+            PendingConnections.Remove(pending); 
 
             var vm = new AdvancedRuleViewModel
             {
@@ -651,6 +659,7 @@ namespace MinimalFirewall
         public void CreateWildcardRule(PendingConnectionViewModel pending, WildcardRule newRule)
         {
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
+            _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
 
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
 

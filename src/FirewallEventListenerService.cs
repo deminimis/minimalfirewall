@@ -104,9 +104,10 @@ namespace MinimalFirewall
                 _logAction("[EventListener] Event watcher stopped and disposed.");
             }
 
+            // Release all locks so the next lockdown session is clean
+            _pendingNotifications.Clear();
             DisableWfpAuditing();
         }
-
 
         public void EnableAuditing()
         {
@@ -127,7 +128,6 @@ namespace MinimalFirewall
                 string xmlContent = e.EventRecord.ToXml();
 
                 // Culture-Invariant - Extract raw Direction integer from properties
-                // Standard WFP 5157 Property Order: [0]ProcessId, [1]Application, [2]Direction, ...
                 int? rawDirectionCode = null;
                 if (e.EventRecord.Properties != null && e.EventRecord.Properties.Count > 2)
                 {
@@ -154,20 +154,18 @@ namespace MinimalFirewall
             try
             {
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-                if (rawDirectionCode.HasValue)
-                {
-                    direction = ParseDirectionFromCode(rawDirectionCode.Value);
-                }
-                else
-                {
-                    direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                }
+                string layerId = GetValueFromXml(xmlContent, "LayerId");
+
+                // Reliable Direction extraction using LayerId (bypasses OS language localization issues)
+                if (layerId == "48" || layerId == "50") direction = DirectionOutbound;
+                else if (layerId == "44" || layerId == "46") direction = DirectionInbound;
+                else if (rawDirectionCode.HasValue) direction = ParseDirectionFromCode(rawDirectionCode.Value);
+                else direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
 
                 string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
                 string remotePort = GetValueFromXml(xmlContent, "RemotePort");
                 string protocol = GetValueFromXml(xmlContent, "Protocol");
                 string filterId = GetValueFromXml(xmlContent, "FilterId");
-                string layerId = GetValueFromXml(xmlContent, "LayerId");
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
 
@@ -178,7 +176,6 @@ namespace MinimalFirewall
                                      string.Empty : xmlServiceName;
 
                 if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase)) return;
-
                 appPath = ResolveAppPath(rawAppPath);
 
                 // Filter system
@@ -271,6 +268,7 @@ namespace MinimalFirewall
                     FilterId = filterId,
                     LayerId = layerId
                 };
+
                 PendingConnectionDetected?.Invoke(pendingVm);
             }
             catch (Exception ex)
@@ -300,14 +298,7 @@ namespace MinimalFirewall
         private bool IsValidAppPath(string path)
         {
             if (string.IsNullOrEmpty(path)) return false;
-
-            // Block  (PID 4) traffic 
-            if (path.Equals("System", StringComparison.OrdinalIgnoreCase)) return false;
-
-            // Block Unsolicited Traffic 
             if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return false;
-
-            // Allow everything else 
             return true;
         }
 
@@ -492,13 +483,15 @@ namespace MinimalFirewall
 
         private static string ParseDirection(string rawDirection)
         {
-            // fallback - checks for XML resource codes
-            return rawDirection switch
-            {
-                DirectionInboundCode => DirectionInbound,
-                DirectionOutboundCode => DirectionOutbound,
-                _ => rawDirection,
-            };
+            if (string.IsNullOrEmpty(rawDirection)) return "Unknown";
+
+            if (rawDirection.Contains("14592") || rawDirection.Equals("Incoming", StringComparison.OrdinalIgnoreCase) || rawDirection.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+                return DirectionInbound;
+
+            if (rawDirection.Contains("14593") || rawDirection.Equals("Outgoing", StringComparison.OrdinalIgnoreCase) || rawDirection.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+                return DirectionOutbound;
+
+            return rawDirection; 
         }
 
         private static string GetValueFromXml(string xml, string elementName)
