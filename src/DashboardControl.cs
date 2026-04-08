@@ -377,7 +377,11 @@ namespace MinimalFirewall
             if (GetSelectedPendingConnection() is { } pending)
             {
                 using var dialog = new CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
-                dialog.ShowDialog(this.FindForm());
+                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                {
+                    // Clean up the alert from dashbaord
+                    _viewModel.ProcessDashboardAction(pending, "Ignore");
+                }
             }
         }
 

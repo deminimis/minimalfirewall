@@ -241,7 +241,7 @@
             this.openAppDataButton.Name = "openAppDataButton";
             this.openAppDataButton.Size = new System.Drawing.Size(183, 37);
             this.openAppDataButton.TabIndex = 32;
-            this.openAppDataButton.Text = "Open %AppData%";
+            this.openAppDataButton.Text = "Open %LocalAppData%";
             this.openAppDataButton.UseVisualStyleBackColor = true;
             this.openAppDataButton.Click += new System.EventHandler(this.openAppDataButton_Click);
             // 

@@ -33,6 +33,8 @@ namespace MinimalFirewall
         private readonly ConcurrentDictionary<uint, (string Name, string Path, string ServiceName)> _processCache = new();
 
         private readonly System.Threading.Timer? _sentryRefreshDebounceTimer;
+        private readonly System.Threading.SynchronizationContext? _uiContext;
+
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
@@ -73,6 +75,7 @@ namespace MinimalFirewall
 
             _snapshotService = new FirewallSnapshotService();
             _sentryRefreshDebounceTimer = new System.Threading.Timer(DebouncedSentryRefresh, null, Timeout.Infinite, Timeout.Infinite);
+            _uiContext = System.Threading.SynchronizationContext.Current;
 
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
@@ -302,7 +305,6 @@ namespace MinimalFirewall
         public void ToggleLockdownMode()
         {
             _actionsService.ToggleLockdown();
-
             if (IsLockedDown)
             {
                 _eventListenerService.EnableAuditing();
@@ -311,6 +313,16 @@ namespace MinimalFirewall
             else
             {
                 _eventListenerService.Stop();
+
+                // Clear pending notifications when unlocked
+                if (_uiContext != null)
+                {
+                    _uiContext.Post(_ => PendingConnections.Clear(), null);
+                }
+                else
+                {
+                    PendingConnections.Clear();
+                }
             }
         }
 
@@ -576,17 +588,29 @@ namespace MinimalFirewall
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
-            bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
-            if (alreadyPending)
+            Action processDetection = () =>
             {
-                _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (already in dashboard list)");
-                return;
-            }
+                bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+                if (alreadyPending)
+                {
+                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (already in dashboard list)");
+                    return;
+                }
 
-            AddPendingConnection(pending);
-            if (_appSettings.IsPopupsEnabled)
+                AddPendingConnection(pending);
+                if (_appSettings.IsPopupsEnabled)
+                {
+                    PopupRequired?.Invoke(pending);
+                }
+            };
+
+            if (_uiContext != null)
             {
-                PopupRequired?.Invoke(pending);
+                _uiContext.Post(_ => processDetection(), null);
+            }
+            else
+            {
+                processDetection();
             }
         }
 
