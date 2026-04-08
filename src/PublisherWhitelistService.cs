@@ -26,17 +26,21 @@ namespace MinimalFirewall
                     if (File.Exists(_configPath))
                     {
                         string json = File.ReadAllText(_configPath);
-                        if (string.IsNullOrWhiteSpace(json))
-                            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (string.IsNullOrWhiteSpace(json)) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                        return JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString)
-                               ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var loaded = JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString);
+
+                        // Re-wrap the loaded data in a case-insensitive HashSet
+                        return loaded != null
+                            ? new HashSet<string>(loaded, StringComparer.OrdinalIgnoreCase)
+                            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     }
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"[ERROR] Failed to load publisher whitelist: {ex.Message}");
                 }
+
                 return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
         }
