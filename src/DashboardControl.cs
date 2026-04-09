@@ -26,7 +26,6 @@ namespace MinimalFirewall
         private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
         private readonly SolidBrush _highlightOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
-        private readonly Dictionary<int, Image> _gridIconCache = new Dictionary<int, Image>();
 
         public DashboardControl()
         {
@@ -211,18 +210,16 @@ namespace MinimalFirewall
             // Icon Column Logic
             if (dashIconColumn != null && e.ColumnIndex == dashIconColumn.Index)
             {
+                e.Value = null;
+
                 if (_appSettings.ShowAppIcons &&
                     dashboardDataGridView.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
                 {
                     int iconIndex = _iconService.GetIconIndex(pending.AppPath);
-                    if (iconIndex != -1 && _iconService.ImageList != null)
+
+                    if (iconIndex != -1 && _iconService.ImageList != null && iconIndex < _iconService.ImageList.Images.Count)
                     {
-                        if (!_gridIconCache.TryGetValue(iconIndex, out Image? cachedIcon) || cachedIcon == null)
-                        {
-                            cachedIcon = _iconService.ImageList.Images[iconIndex];
-                            _gridIconCache[iconIndex] = cachedIcon;
-                        }
-                        e.Value = cachedIcon;
+                        e.Value = _iconService.ImageList.Images[iconIndex];
                     }
                 }
             }
