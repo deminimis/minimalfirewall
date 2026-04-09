@@ -16,7 +16,7 @@ or install with <b>Winget</b> (<i>may be a version behind while waiting to be ap
 </br>
 
 #### Prerequisites
-If you don't have .net 8 installed, you can download the desktop runtime from Microsoft [here](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.9`
+If you don't have .net 10 installed, you can download the desktop runtime from Microsoft [here](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.9`
 
 ## User Guide
 
@@ -120,7 +120,7 @@ By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoi
 
 ## Technical Architecture
 
-Minimal Firewall is a **Windows Forms** application written in **C#** on the **.NET 8** platform. It serves as a user-friendly management layer for the native **Windows Firewall with Advanced Security**.
+Minimal Firewall is a **Windows Forms** application written in **C#** on the **.NET 10** platform. It serves as a user-friendly management layer for the native **Windows Firewall with Advanced Security**.
 
 - **Core Interaction:** It uses the `NetFwTypeLib` COM Interop library to interact with the `INetFwPolicy2` interface, which is the standard API for managing Windows Firewall rules and policies.
     
