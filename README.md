@@ -16,7 +16,7 @@ or install with <b>Winget</b> (<i>may be a version behind while waiting to be ap
 </br>
 
 #### Prerequisites
-If you don't have .net 10 installed, you can download the desktop runtime from Microsoft [here](https://dotnet.microsoft.com/en-us/download/dotnet/8.0), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.9`
+If you don't have .net 10 installed, you can download the desktop runtime from Microsoft [here]([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)) (the .NET Desktop Runtime x64), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.10`
 
 ## User Guide
 
