@@ -191,23 +191,11 @@ namespace MinimalFirewall
                 return;
             }
 
-            var keysToRemove = new List<string>();
-            foreach (var key in _iconCache.Keys)
-            {
-                if (key != "default" && key != "system_icon")
-                {
-                    keysToRemove.Add(key);
-                }
-            }
-
-            foreach (var key in keysToRemove)
-            {
-                if (_imageList.Images.ContainsKey(key))
-                {
-                    _imageList.Images.RemoveByKey(key);
-                }
-            }
             _iconCache.Clear();
+            _imageList.Images.Clear();
+
+            AddDefaultIcon();
+            AddSystemIcon();
         }
     }
 }
