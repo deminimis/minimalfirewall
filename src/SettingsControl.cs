@@ -67,7 +67,8 @@ namespace MinimalFirewall
             // the property here is sufficient to both update in-memory state (consumed by
             // services like FirewallEventListenerService) and persist to disk.
             closeToTraySwitch.CheckedChanged += new System.EventHandler(this.closeToTraySwitch_CheckedChanged);
-            autoAllowSystemTrustedCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemTrustedCheck_CheckedChanged);
+            autoAllowWhitelistedPublishersCheck.CheckedChanged += new System.EventHandler(this.autoAllowWhitelistedPublishersCheck_CheckedChanged);
+            autoAllowSystemSignedAppsCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemSignedAppsCheck_CheckedChanged);
             auditAlertsSwitch.CheckedChanged += new System.EventHandler(this.auditAlertsSwitch_CheckedChanged);
             autoRefreshTextBox.Leave += new System.EventHandler(this.autoRefreshTextBox_Leave);
 
@@ -93,7 +94,8 @@ namespace MinimalFirewall
                 deleteAllRulesButton, revertFirewallButton, managePublishersButton,
                 openFirewallButton, openAppDataButton, checkForUpdatesButton,
                 cleanUpOrphanedRulesButton, exportRulesButton, importMergeButton,
-                importReplaceButton, exportDiagnosticButton
+                importReplaceButton, exportDiagnosticButton, viewTrustedCertsButton,
+                excludedFoldersButton
             };
 
             foreach (var btn in buttonsToStyle)
@@ -116,7 +118,8 @@ namespace MinimalFirewall
             autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
             trafficMonitorSwitch.Checked = _appSettings.IsTrafficMonitorEnabled;
             showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
-            autoAllowSystemTrustedCheck.Checked = _appSettings.AutoAllowSystemTrusted;
+            autoAllowWhitelistedPublishersCheck.Checked = _appSettings.AutoAllowWhitelistedPublishers;
+            autoAllowSystemSignedAppsCheck.Checked = _appSettings.AutoAllowSystemSignedApps;
             auditAlertsSwitch.Checked = _appSettings.AlertOnForeignRules;
             managePublishersButton.Enabled = true;
         }
@@ -140,7 +143,8 @@ namespace MinimalFirewall
 
             _appSettings.IsTrafficMonitorEnabled = trafficMonitorSwitch.Checked;
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
-            _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
+            _appSettings.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
+            _appSettings.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
@@ -228,39 +232,6 @@ namespace MinimalFirewall
             }
         }
 
-        private void closeToTraySwitch_CheckedChanged(object sender, EventArgs e)
-        {
-            if (_appSettings != null)
-            {
-                _appSettings.CloseToTray = closeToTraySwitch.Checked;
-            }
-        }
-
-        private void autoAllowSystemTrustedCheck_CheckedChanged(object sender, EventArgs e)
-        {
-            if (_appSettings != null)
-            {
-                _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
-            }
-        }
-
-        private void auditAlertsSwitch_CheckedChanged(object sender, EventArgs e)
-        {
-            if (_appSettings != null)
-            {
-                _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
-            }
-        }
-
-        private void autoRefreshTextBox_Leave(object sender, EventArgs e)
-        {
-            if (_appSettings != null && int.TryParse(autoRefreshTextBox.Text, out int val) && val >= 1)
-            {
-                _appSettings.AutoRefreshIntervalMinutes = val;
-                AutoRefreshTimerChanged?.Invoke();
-            }
-        }
-
         private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
         {
             if (_appSettings != null)
@@ -279,9 +250,72 @@ namespace MinimalFirewall
             }
         }
 
+        private void closeToTraySwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.CloseToTray = closeToTraySwitch.Checked;
+            }
+        }
+
+        private void autoAllowWhitelistedPublishersCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
+            }
+        }
+
+        private void autoAllowSystemSignedAppsCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
+            }
+        }
+
+        private void auditAlertsSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
+            }
+        }
+
+        private void autoRefreshTextBox_Leave(object sender, EventArgs e)
+        {
+            if (_appSettings == null) return;
+
+            if (int.TryParse(autoRefreshTextBox.Text, out int val) && val >= 1)
+            {
+                if (val != _appSettings.AutoRefreshIntervalMinutes)
+                {
+                    _appSettings.AutoRefreshIntervalMinutes = val;
+                    AutoRefreshTimerChanged?.Invoke();
+                }
+            }
+            else
+            {
+                // Invalid input — revert the UI to the stored value.
+                autoRefreshTextBox.Text = _appSettings.AutoRefreshIntervalMinutes.ToString();
+            }
+        }
+
         private void managePublishersButton_Click(object sender, EventArgs e)
         {
             using var form = new ManagePublishersForm(_whitelistService, _appSettings);
+            form.ShowDialog(this.FindForm());
+        }
+
+        private void viewTrustedCertsButton_Click(object sender, EventArgs e)
+        {
+            using var form = new TrustedCertificatesForm(_appSettings);
+            form.ShowDialog(this.FindForm());
+        }
+
+        private void excludedFoldersButton_Click(object sender, EventArgs e)
+        {
+            using var form = new ExcludedFoldersForm(_appSettings);
             form.ShowDialog(this.FindForm());
         }
 

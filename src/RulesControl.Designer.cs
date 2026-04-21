@@ -1,4 +1,4 @@
-﻿// File: RulesControl.Designer.cs
+// File: RulesControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class RulesControl
@@ -116,8 +116,8 @@ namespace MinimalFirewall
             // rulesSearchTextBox
             // 
             this.rulesSearchTextBox.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.rulesSearchTextBox.Location = new System.Drawing.Point(714, 18);
-            this.rulesSearchTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.rulesSearchTextBox.Location = new System.Drawing.Point(714, 16);
+            this.rulesSearchTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 12, 4);
             this.rulesSearchTextBox.Name = "rulesSearchTextBox";
             this.rulesSearchTextBox.PlaceholderText = "Search rules...";
             this.rulesSearchTextBox.Size = new System.Drawing.Size(285, 27);
@@ -127,10 +127,10 @@ namespace MinimalFirewall
             // createRuleButton
             // 
             this.createRuleButton.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.createRuleButton.Location = new System.Drawing.Point(3, 7);
-            this.createRuleButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.createRuleButton.Location = new System.Drawing.Point(12, 8);
+            this.createRuleButton.Margin = new System.Windows.Forms.Padding(12, 8, 8, 8);
             this.createRuleButton.Name = "createRuleButton";
-            this.createRuleButton.Size = new System.Drawing.Size(180, 48);
+            this.createRuleButton.Size = new System.Drawing.Size(160, 44);
             this.createRuleButton.TabIndex = 9;
             this.createRuleButton.Text = "Create New Rule...";
             this.createRuleButton.UseVisualStyleBackColor = true;
@@ -304,7 +304,8 @@ namespace MinimalFirewall
             this.rulesDataGridView.ContextMenuStrip = this.rulesContextMenu;
             this.rulesDataGridView.EnableHeadersVisualStyles = false;
             this.rulesDataGridView.GridColor = System.Drawing.SystemColors.Control;
-            this.rulesDataGridView.Location = new System.Drawing.Point(3, 69);
+            this.rulesDataGridView.Location = new System.Drawing.Point(3, 66);
+            this.rulesDataGridView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 3);
             this.rulesDataGridView.Name = "rulesDataGridView";
             this.rulesDataGridView.ReadOnly = true;
             this.rulesDataGridView.RowHeadersVisible = false;
@@ -445,7 +446,8 @@ namespace MinimalFirewall
             this.filterPanel.Controls.Add(this.uwpFilterCheckBox);
             this.filterPanel.Controls.Add(this.wildcardFilterCheckBox);
             this.filterPanel.Controls.Add(this.systemFilterCheckBox);
-            this.filterPanel.Location = new System.Drawing.Point(189, 15);
+            this.filterPanel.Location = new System.Drawing.Point(188, 12);
+            this.filterPanel.Margin = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.filterPanel.Name = "filterPanel";
             this.filterPanel.Size = new System.Drawing.Size(421, 32);
             this.filterPanel.TabIndex = 19;
@@ -521,10 +523,11 @@ namespace MinimalFirewall
             this.topPanel.Controls.Add(this.filterPanel, 1, 0);
             this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.topPanel.Location = new System.Drawing.Point(0, 0);
+            this.topPanel.Margin = new System.Windows.Forms.Padding(0);
             this.topPanel.Name = "topPanel";
             this.topPanel.RowCount = 1;
             this.topPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.topPanel.Size = new System.Drawing.Size(1002, 63);
+            this.topPanel.Size = new System.Drawing.Size(1002, 60);
             this.topPanel.TabIndex = 20;
             // 
             // RulesControl

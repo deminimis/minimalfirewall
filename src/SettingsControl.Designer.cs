@@ -21,7 +21,10 @@
             this.revertFirewallButton = new System.Windows.Forms.Button();
             this.auditAlertsSwitch = new System.Windows.Forms.CheckBox();
             this.managePublishersButton = new System.Windows.Forms.Button();
-            this.autoAllowSystemTrustedCheck = new System.Windows.Forms.CheckBox();
+            this.autoAllowWhitelistedPublishersCheck = new System.Windows.Forms.CheckBox();
+            this.autoAllowSystemSignedAppsCheck = new System.Windows.Forms.CheckBox();
+            this.viewTrustedCertsButton = new System.Windows.Forms.Button();
+            this.excludedFoldersButton = new System.Windows.Forms.Button();
             this.showAppIconsSwitch = new System.Windows.Forms.CheckBox();
             this.trafficMonitorSwitch = new System.Windows.Forms.CheckBox();
             this.autoRefreshLabel1 = new System.Windows.Forms.Label();
@@ -58,7 +61,7 @@
             // 
             this.deleteAllRulesButton.FlatAppearance.BorderSize = 0;
             this.deleteAllRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.deleteAllRulesButton.Location = new System.Drawing.Point(29, 760);
+            this.deleteAllRulesButton.Location = new System.Drawing.Point(29, 785);
             this.deleteAllRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.deleteAllRulesButton.Name = "deleteAllRulesButton";
             this.deleteAllRulesButton.Size = new System.Drawing.Size(240, 37);
@@ -71,7 +74,7 @@
             // 
             this.revertFirewallButton.FlatAppearance.BorderSize = 0;
             this.revertFirewallButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.revertFirewallButton.Location = new System.Drawing.Point(280, 760);
+            this.revertFirewallButton.Location = new System.Drawing.Point(280, 785);
             this.revertFirewallButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.revertFirewallButton.Name = "revertFirewallButton";
             this.revertFirewallButton.Size = new System.Drawing.Size(240, 37);
@@ -95,25 +98,65 @@
             // 
             this.managePublishersButton.FlatAppearance.BorderSize = 0;
             this.managePublishersButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.managePublishersButton.Location = new System.Drawing.Point(29, 350);
+            this.managePublishersButton.Location = new System.Drawing.Point(350, 232);
             this.managePublishersButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.managePublishersButton.Name = "managePublishersButton";
-            this.managePublishersButton.Size = new System.Drawing.Size(200, 37);
+            this.managePublishersButton.Size = new System.Drawing.Size(200, 29);
             this.managePublishersButton.TabIndex = 23;
             this.managePublishersButton.Text = "Manage Trusted Publishers";
+            this.managePublishersButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.managePublishersButton.UseVisualStyleBackColor = true;
             this.managePublishersButton.Click += new System.EventHandler(this.managePublishersButton_Click);
             // 
-            // autoAllowSystemTrustedCheck
+            // autoAllowWhitelistedPublishersCheck
             // 
-            this.autoAllowSystemTrustedCheck.AutoSize = true;
-            this.autoAllowSystemTrustedCheck.Location = new System.Drawing.Point(350, 200);
-            this.autoAllowSystemTrustedCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.autoAllowSystemTrustedCheck.Name = "autoAllowSystemTrustedCheck";
-            this.autoAllowSystemTrustedCheck.Size = new System.Drawing.Size(276, 24);
-            this.autoAllowSystemTrustedCheck.TabIndex = 22;
-            this.autoAllowSystemTrustedCheck.Text = "Auto-allow apps trusted by Windows";
-            this.autoAllowSystemTrustedCheck.UseVisualStyleBackColor = true;
+            this.autoAllowWhitelistedPublishersCheck.AutoSize = true;
+            this.autoAllowWhitelistedPublishersCheck.Location = new System.Drawing.Point(350, 200);
+            this.autoAllowWhitelistedPublishersCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
+            this.autoAllowWhitelistedPublishersCheck.Size = new System.Drawing.Size(276, 24);
+            this.autoAllowWhitelistedPublishersCheck.TabIndex = 22;
+            this.autoAllowWhitelistedPublishersCheck.Text = "Auto-allow trusted publishers";
+            this.autoAllowWhitelistedPublishersCheck.UseVisualStyleBackColor = true;
+            // 
+            // autoAllowSystemSignedAppsCheck
+            // 
+            this.autoAllowSystemSignedAppsCheck.AutoSize = true;
+            this.autoAllowSystemSignedAppsCheck.Location = new System.Drawing.Point(350, 282);
+            this.autoAllowSystemSignedAppsCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
+            this.autoAllowSystemSignedAppsCheck.Size = new System.Drawing.Size(276, 24);
+            this.autoAllowSystemSignedAppsCheck.TabIndex = 36;
+            this.autoAllowSystemSignedAppsCheck.Text = "Auto-allow apps trusted by Windows";
+            this.autoAllowSystemSignedAppsCheck.UseVisualStyleBackColor = true;
+            // 
+            // viewTrustedCertsButton
+            // 
+            this.viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
+            this.viewTrustedCertsButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.viewTrustedCertsButton.Location = new System.Drawing.Point(350, 314);
+            this.viewTrustedCertsButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.viewTrustedCertsButton.Name = "viewTrustedCertsButton";
+            this.viewTrustedCertsButton.Size = new System.Drawing.Size(200, 29);
+            this.viewTrustedCertsButton.TabIndex = 34;
+            this.viewTrustedCertsButton.Text = "View Trusted CAs...";
+            this.viewTrustedCertsButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.viewTrustedCertsButton.UseVisualStyleBackColor = true;
+            this.viewTrustedCertsButton.Click += new System.EventHandler(this.viewTrustedCertsButton_Click);
+            // 
+            // excludedFoldersButton
+            // 
+            this.excludedFoldersButton.FlatAppearance.BorderSize = 0;
+            this.excludedFoldersButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.excludedFoldersButton.Location = new System.Drawing.Point(29, 350);
+            this.excludedFoldersButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.excludedFoldersButton.Name = "excludedFoldersButton";
+            this.excludedFoldersButton.Size = new System.Drawing.Size(183, 37);
+            this.excludedFoldersButton.TabIndex = 35;
+            this.excludedFoldersButton.Text = "Auto-Allow Exclusions";
+            this.excludedFoldersButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.excludedFoldersButton.UseVisualStyleBackColor = true;
+            this.excludedFoldersButton.Click += new System.EventHandler(this.excludedFoldersButton_Click);
             // 
             // showAppIconsSwitch
             // 
@@ -151,7 +194,7 @@
             // autoRefreshLabel2
             // 
             this.autoRefreshLabel2.AutoSize = true;
-            this.autoRefreshLabel2.Location = new System.Drawing.Point(251, 299);
+            this.autoRefreshLabel2.Location = new System.Drawing.Point(228, 299);
             this.autoRefreshLabel2.Name = "autoRefreshLabel2";
             this.autoRefreshLabel2.Size = new System.Drawing.Size(61, 20);
             this.autoRefreshLabel2.TabIndex = 19;
@@ -163,10 +206,10 @@
             this.coffeePanel.Controls.Add(this.coffeeLinkLabel);
             this.coffeePanel.Controls.Add(this.coffeePictureBox);
             this.coffeePanel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.coffeePanel.Location = new System.Drawing.Point(21, 630);
+            this.coffeePanel.Location = new System.Drawing.Point(21, 705);
             this.coffeePanel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.coffeePanel.Name = "coffeePanel";
-            this.coffeePanel.Size = new System.Drawing.Size(434, 107);
+            this.coffeePanel.Size = new System.Drawing.Size(434, 80);
             this.coffeePanel.TabIndex = 17;
             this.coffeePanel.Click += new System.EventHandler(this.CoffeeLink_Click);
             // 
@@ -202,7 +245,7 @@
             // 
             this.versionLabel.AutoSize = true;
             this.versionLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.versionLabel.Location = new System.Drawing.Point(223, 520);
+            this.versionLabel.Location = new System.Drawing.Point(223, 595);
             this.versionLabel.Name = "versionLabel";
             this.versionLabel.Size = new System.Drawing.Size(57, 20);
             this.versionLabel.TabIndex = 12;
@@ -212,7 +255,7 @@
             // 
             this.checkForUpdatesButton.FlatAppearance.BorderSize = 0;
             this.checkForUpdatesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.checkForUpdatesButton.Location = new System.Drawing.Point(29, 510);
+            this.checkForUpdatesButton.Location = new System.Drawing.Point(29, 585);
             this.checkForUpdatesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.checkForUpdatesButton.Name = "checkForUpdatesButton";
             this.checkForUpdatesButton.Size = new System.Drawing.Size(183, 37);
@@ -248,7 +291,7 @@
             // forumLink
             // 
             this.forumLink.AutoSize = true;
-            this.forumLink.Location = new System.Drawing.Point(29, 560);
+            this.forumLink.Location = new System.Drawing.Point(29, 630);
             this.forumLink.Name = "forumLink";
             this.forumLink.Size = new System.Drawing.Size(140, 20);
             this.forumLink.TabIndex = 9;
@@ -260,7 +303,7 @@
             // reportProblemLink
             // 
             this.reportProblemLink.AutoSize = true;
-            this.reportProblemLink.Location = new System.Drawing.Point(29, 580);
+            this.reportProblemLink.Location = new System.Drawing.Point(29, 653);
             this.reportProblemLink.Name = "reportProblemLink";
             this.reportProblemLink.Size = new System.Drawing.Size(126, 20);
             this.reportProblemLink.TabIndex = 8;
@@ -272,7 +315,7 @@
             // helpLink
             // 
             this.helpLink.AutoSize = true;
-            this.helpLink.Location = new System.Drawing.Point(29, 600);
+            this.helpLink.Location = new System.Drawing.Point(29, 676);
             this.helpLink.Name = "helpLink";
             this.helpLink.Size = new System.Drawing.Size(158, 20);
             this.helpLink.TabIndex = 7;
@@ -283,7 +326,7 @@
             // 
             // autoRefreshTextBox
             // 
-            this.autoRefreshTextBox.Location = new System.Drawing.Point(171, 293);
+            this.autoRefreshTextBox.Location = new System.Drawing.Point(155, 299);
             this.autoRefreshTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.autoRefreshTextBox.MaxLength = 3;
             this.autoRefreshTextBox.Name = "autoRefreshTextBox";
@@ -375,7 +418,10 @@
             this.mainSettingsPanel.Controls.Add(this.revertFirewallButton);
             this.mainSettingsPanel.Controls.Add(this.auditAlertsSwitch);
             this.mainSettingsPanel.Controls.Add(this.managePublishersButton);
-            this.mainSettingsPanel.Controls.Add(this.autoAllowSystemTrustedCheck);
+            this.mainSettingsPanel.Controls.Add(this.autoAllowWhitelistedPublishersCheck);
+            this.mainSettingsPanel.Controls.Add(this.autoAllowSystemSignedAppsCheck);
+            this.mainSettingsPanel.Controls.Add(this.viewTrustedCertsButton);
+            this.mainSettingsPanel.Controls.Add(this.excludedFoldersButton);
             this.mainSettingsPanel.Controls.Add(this.showAppIconsSwitch);
             this.mainSettingsPanel.Controls.Add(this.trafficMonitorSwitch);
             this.mainSettingsPanel.Controls.Add(this.autoRefreshLabel1);
@@ -457,7 +503,7 @@
             // 
             this.cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
             this.cleanUpOrphanedRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 760);
+            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 785);
             this.cleanUpOrphanedRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
             this.cleanUpOrphanedRulesButton.Size = new System.Drawing.Size(240, 37);
@@ -487,7 +533,10 @@
         private System.Windows.Forms.Button revertFirewallButton;
         private System.Windows.Forms.CheckBox auditAlertsSwitch;
         private System.Windows.Forms.Button managePublishersButton;
-        private System.Windows.Forms.CheckBox autoAllowSystemTrustedCheck;
+        private System.Windows.Forms.CheckBox autoAllowWhitelistedPublishersCheck;
+        private System.Windows.Forms.CheckBox autoAllowSystemSignedAppsCheck;
+        private System.Windows.Forms.Button viewTrustedCertsButton;
+        private System.Windows.Forms.Button excludedFoldersButton;
         private System.Windows.Forms.CheckBox showAppIconsSwitch;
         private System.Windows.Forms.CheckBox trafficMonitorSwitch;
         private System.Windows.Forms.Label autoRefreshLabel1;
