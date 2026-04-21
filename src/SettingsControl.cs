@@ -62,6 +62,15 @@ namespace MinimalFirewall
             versionLabel.Text = version;
             loggingSwitch.CheckedChanged += new System.EventHandler(this.loggingSwitch_CheckedChanged);
 
+            // Wire live-apply handlers for controls that the Designer does not already wire.
+            // AppSettings.SetField debounces a Save() on every property change, so assigning
+            // the property here is sufficient to both update in-memory state (consumed by
+            // services like FirewallEventListenerService) and persist to disk.
+            closeToTraySwitch.CheckedChanged += new System.EventHandler(this.closeToTraySwitch_CheckedChanged);
+            autoAllowSystemTrustedCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemTrustedCheck_CheckedChanged);
+            auditAlertsSwitch.CheckedChanged += new System.EventHandler(this.auditAlertsSwitch_CheckedChanged);
+            autoRefreshTextBox.Leave += new System.EventHandler(this.autoRefreshTextBox_Leave);
+
             if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
             {
                 coffeePictureBox.Image = _appImageList.Images["coffee.png"];
@@ -118,7 +127,9 @@ namespace MinimalFirewall
 
             _appSettings.CloseToTray = closeToTraySwitch.Checked;
             _appSettings.StartOnSystemStartup = startOnStartupSwitch.Checked;
-            _appSettings.Theme = darkModeSwitch.Checked ? "Dark" : "Light";
+            // Preserve "Auto" theme — the live AutoThemeSwitch_CheckedChanged handler already keeps
+            // _appSettings.Theme in sync; this line only runs on form close and must not clobber it.
+			_appSettings.Theme = autoThemeSwitch.Checked ? "Auto" : (darkModeSwitch.Checked ? "Dark" : "Light");
             _appSettings.IsPopupsEnabled = popupsSwitch.Checked;
             _appSettings.IsLoggingEnabled = loggingSwitch.Checked;
 
@@ -214,6 +225,39 @@ namespace MinimalFirewall
             {
                 _appSettings.IsLoggingEnabled = loggingSwitch.Checked;
                 _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
+            }
+        }
+
+        private void closeToTraySwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.CloseToTray = closeToTraySwitch.Checked;
+            }
+        }
+
+        private void autoAllowSystemTrustedCheck_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AutoAllowSystemTrusted = autoAllowSystemTrustedCheck.Checked;
+            }
+        }
+
+        private void auditAlertsSwitch_CheckedChanged(object sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
+            }
+        }
+
+        private void autoRefreshTextBox_Leave(object sender, EventArgs e)
+        {
+            if (_appSettings != null && int.TryParse(autoRefreshTextBox.Text, out int val) && val >= 1)
+            {
+                _appSettings.AutoRefreshIntervalMinutes = val;
+                AutoRefreshTimerChanged?.Invoke();
             }
         }
 
