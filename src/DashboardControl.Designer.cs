@@ -36,6 +36,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn dashAppColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dashServiceColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dashDirectionColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dashProtocolColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dashPathColumn;
         private System.Windows.Forms.ToolStripMenuItem showBlockingRuleInfoToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
@@ -102,6 +103,7 @@ namespace MinimalFirewall
             this.dashAppColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashServiceColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashDirectionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dashProtocolColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dashPathColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.detailsRichTextBox = new System.Windows.Forms.RichTextBox();
@@ -338,6 +340,7 @@ namespace MinimalFirewall
             this.dashAppColumn,
             this.dashServiceColumn,
             this.dashDirectionColumn,
+            this.dashProtocolColumn,
             this.dashPathColumn,
             this.allowButtonColumn,
             this.blockButtonColumn,
@@ -351,7 +354,7 @@ namespace MinimalFirewall
             this.dashboardDataGridView.Name = "dashboardDataGridView";
             this.dashboardDataGridView.ReadOnly = true;
             this.dashboardDataGridView.RowHeadersVisible = false;
-            this.dashboardDataGridView.RowTemplate.Height = 32;
+            this.dashboardDataGridView.RowTemplate.Height = 40;
             this.dashboardDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dashboardDataGridView.Size = new System.Drawing.Size(800, 600);
             this.dashboardDataGridView.TabIndex = 2;
@@ -378,49 +381,49 @@ namespace MinimalFirewall
             //
             this.allowButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.allowButtonColumn.DefaultCellStyle = dataGridViewCellStyle2;
-            this.allowButtonColumn.FillWeight = 15F;
+            this.allowButtonColumn.FillWeight = 12F;
             this.allowButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.allowButtonColumn.HeaderText = "Action";
-            this.allowButtonColumn.MinimumWidth = 70;
+            this.allowButtonColumn.HeaderText = "Actions";
+            this.allowButtonColumn.MinimumWidth = 90;
             this.allowButtonColumn.Name = "allowButtonColumn";
             this.allowButtonColumn.ReadOnly = true;
             this.allowButtonColumn.Text = "Allow";
             this.allowButtonColumn.UseColumnTextForButtonValue = true;
-            this.allowButtonColumn.Width = 70;
+            this.allowButtonColumn.Width = 90;
             //
             // blockButtonColumn
             //
             this.blockButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.blockButtonColumn.DefaultCellStyle = dataGridViewCellStyle3;
-            this.blockButtonColumn.FillWeight = 15F;
+            this.blockButtonColumn.FillWeight = 12F;
             this.blockButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.blockButtonColumn.HeaderText = "";
-            this.blockButtonColumn.MinimumWidth = 70;
+            this.blockButtonColumn.MinimumWidth = 90;
             this.blockButtonColumn.Name = "blockButtonColumn";
             this.blockButtonColumn.ReadOnly = true;
             this.blockButtonColumn.Text = "Block";
             this.blockButtonColumn.UseColumnTextForButtonValue = true;
-            this.blockButtonColumn.Width = 70;
+            this.blockButtonColumn.Width = 90;
             //
             // ignoreButtonColumn
             //
             this.ignoreButtonColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
             this.ignoreButtonColumn.DefaultCellStyle = dataGridViewCellStyle4;
-            this.ignoreButtonColumn.FillWeight = 15F;
+            this.ignoreButtonColumn.FillWeight = 12F;
             this.ignoreButtonColumn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ignoreButtonColumn.HeaderText = "";
-            this.ignoreButtonColumn.MinimumWidth = 70;
+            this.ignoreButtonColumn.MinimumWidth = 90;
             this.ignoreButtonColumn.Name = "ignoreButtonColumn";
             this.ignoreButtonColumn.ReadOnly = true;
             this.ignoreButtonColumn.Text = "Ignore";
             this.ignoreButtonColumn.UseColumnTextForButtonValue = true;
-            this.ignoreButtonColumn.Width = 70;
+            this.ignoreButtonColumn.Width = 90;
             //
             // dashAppColumn
             //
@@ -441,17 +444,25 @@ namespace MinimalFirewall
             // dashDirectionColumn
             //
             this.dashDirectionColumn.DataPropertyName = "Direction";
-            this.dashDirectionColumn.FillWeight = 20F;
+            this.dashDirectionColumn.FillWeight = 10F;
             this.dashDirectionColumn.HeaderText = "Direction";
             this.dashDirectionColumn.Name = "dashDirectionColumn";
             this.dashDirectionColumn.ReadOnly = true;
+            //
+            // dashProtocolColumn
+            //
+            this.dashProtocolColumn.DataPropertyName = "ProtocolDisplay";
+            this.dashProtocolColumn.FillWeight = 8F;
+            this.dashProtocolColumn.HeaderText = "Protocol";
+            this.dashProtocolColumn.Name = "dashProtocolColumn";
+            this.dashProtocolColumn.ReadOnly = true;
             //
             // dashPathColumn
             //
             this.dashPathColumn.DataPropertyName = "AppPath";
             dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
             this.dashPathColumn.DefaultCellStyle = dataGridViewCellStyle5;
-            this.dashPathColumn.FillWeight = 50F;
+            this.dashPathColumn.FillWeight = 42F;
             this.dashPathColumn.HeaderText = "Path";
             this.dashPathColumn.Name = "dashPathColumn";
             this.dashPathColumn.ReadOnly = true;

@@ -30,10 +30,31 @@ namespace MinimalFirewall
 
                         var loaded = JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString);
 
-                        // Re-wrap the loaded data in a case-insensitive HashSet
-                        return loaded != null
-                            ? new HashSet<string>(loaded, StringComparer.OrdinalIgnoreCase)
-                            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (loaded != null)
+                        {
+                            // Normalize: extract CN from full X.509 subjects for consistent matching
+                            var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            bool changed = false;
+                            foreach (var entry in loaded)
+                            {
+                                string norm = NormalizePublisherName(entry);
+                                if (norm != entry) changed = true;
+                                normalized.Add(norm);
+                            }
+
+                            var result = new HashSet<string>(normalized, StringComparer.OrdinalIgnoreCase);
+
+                            // Save back if we normalized any entries
+                            if (changed)
+                            {
+                                _trustedPublishers = result;
+                                Save();
+                            }
+
+                            return result;
+                        }
+
+                        return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     }
                 }
                 catch (Exception ex)
@@ -43,6 +64,23 @@ namespace MinimalFirewall
 
                 return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
+        }
+
+        private static string NormalizePublisherName(string subject)
+        {
+            if (string.IsNullOrEmpty(subject)) return subject;
+
+            const string cnPrefix = "CN=";
+            int cnStart = subject.IndexOf(cnPrefix, StringComparison.Ordinal);
+            if (cnStart < 0) return subject;
+
+            cnStart += cnPrefix.Length;
+            int cnEnd = subject.IndexOf(',', cnStart);
+            string cn = cnEnd < 0
+                ? subject.Substring(cnStart).Trim()
+                : subject.Substring(cnStart, cnEnd - cnStart).Trim();
+
+            return string.IsNullOrEmpty(cn) ? subject : cn;
         }
 
         private void Save()

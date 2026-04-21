@@ -329,9 +329,9 @@ namespace MinimalFirewall
             lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
             lockdownButton.FlatAppearance.BorderSize = 2;
             lockdownButton.FlatStyle = FlatStyle.Flat;
-            lockdownButton.Location = new Point(65, 652);
+            lockdownButton.Location = new Point(68, 648);
             lockdownButton.Name = "lockdownButton";
-            lockdownButton.Size = new Size(40, 36);
+            lockdownButton.Size = new Size(44, 44);
             lockdownButton.TabIndex = 3;
             lockdownButton.UseVisualStyleBackColor = false;
             lockdownButton.Click += ToggleLockdownButton_Click;
@@ -345,9 +345,9 @@ namespace MinimalFirewall
             rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
             rescanButton.FlatAppearance.BorderSize = 2;
             rescanButton.FlatStyle = FlatStyle.Flat;
-            rescanButton.Location = new Point(15, 652);
+            rescanButton.Location = new Point(16, 648);
             rescanButton.Name = "rescanButton";
-            rescanButton.Size = new Size(40, 36);
+            rescanButton.Size = new Size(44, 44);
             rescanButton.TabIndex = 1;
             rescanButton.UseVisualStyleBackColor = false;
             rescanButton.Click += RescanButton_Click;

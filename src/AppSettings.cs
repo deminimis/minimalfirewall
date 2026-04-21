@@ -18,7 +18,7 @@ namespace MinimalFirewall
 
         private CancellationTokenSource? _saveCts;
 
-        private bool _isPopupsEnabled = false;
+        private bool _isPopupsEnabled = true; // Default changed, was false
         private bool _isLoggingEnabled;
         private string _theme = "Dark";
         private bool _startOnSystemStartup;
@@ -27,6 +27,8 @@ namespace MinimalFirewall
         private bool _isTrafficMonitorEnabled = false;
         private bool _showAppIcons = true;
         private bool _autoAllowSystemTrusted = false;
+        private bool _autoAllowWhitelistedPublishers = false;
+        private bool _autoAllowSystemSignedApps = false;
         private bool _alertOnForeignRules = true;
         private bool _filterPrograms = true;
         private bool _filterServices = true;
@@ -42,6 +44,16 @@ namespace MinimalFirewall
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
         private bool _quarantineMode = false;
+        private List<string> _autoAllowExclusions = new List<string>
+        {
+            Path.GetTempPath(),
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads",
+            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Microsoft\Windows\Start Menu",
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Temp",
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Microsoft\Windows\INetCache",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"),
+        };
 
         private Point _windowLocation = new Point(100, 100);
         private Size _windowSize = new Size(1280, 800);
@@ -55,7 +67,10 @@ namespace MinimalFirewall
         public int AutoRefreshIntervalMinutes { get => _autoRefreshIntervalMinutes; set => SetField(ref _autoRefreshIntervalMinutes, value); }
         public bool IsTrafficMonitorEnabled { get => _isTrafficMonitorEnabled; set => SetField(ref _isTrafficMonitorEnabled, value); }
         public bool ShowAppIcons { get => _showAppIcons; set => SetField(ref _showAppIcons, value); }
+        // Legacy combined toggle — kept for one-time migration into the two split settings below.
         public bool AutoAllowSystemTrusted { get => _autoAllowSystemTrusted; set => SetField(ref _autoAllowSystemTrusted, value); }
+        public bool AutoAllowWhitelistedPublishers { get => _autoAllowWhitelistedPublishers; set => SetField(ref _autoAllowWhitelistedPublishers, value); }
+        public bool AutoAllowSystemSignedApps { get => _autoAllowSystemSignedApps; set => SetField(ref _autoAllowSystemSignedApps, value); }
         public bool AlertOnForeignRules { get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value); }
         public bool FilterPrograms { get => _filterPrograms; set => SetField(ref _filterPrograms, value); }
         public bool FilterServices { get => _filterServices; set => SetField(ref _filterServices, value); }
@@ -71,6 +86,7 @@ namespace MinimalFirewall
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
         public bool QuarantineMode { get => _quarantineMode; set => SetField(ref _quarantineMode, value); }
+        public List<string> AutoAllowExclusions { get => _autoAllowExclusions; set => SetField(ref _autoAllowExclusions, value); }
 
         public Point WindowLocation { get => _windowLocation; set => SetField(ref _windowLocation, value); }
         public Size WindowSize { get => _windowSize; set => SetField(ref _windowSize, value); }
@@ -135,7 +151,20 @@ namespace MinimalFirewall
                     if (File.Exists(_configPath))
                     {
                         string json = File.ReadAllText(_configPath);
-                        return JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+                        var settings = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings) ?? new AppSettings();
+
+                        // One-time migration: split legacy AutoAllowSystemTrusted into two independent toggles.
+                        // Existing users who had it enabled get whitelist auto-allow on (explicit trust)
+                        // and OS-CA auto-allow off (safer default).
+                        if (settings._autoAllowSystemTrusted)
+                        {
+                            settings._autoAllowWhitelistedPublishers = true;
+                            settings._autoAllowSystemSignedApps = false;
+                            settings._autoAllowSystemTrusted = false;
+                            settings.Save();
+                        }
+
+                        return settings;
                     }
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)

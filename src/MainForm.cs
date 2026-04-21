@@ -146,13 +146,14 @@ namespace MinimalFirewall
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
             var trafficMonitorViewModel = new TrafficMonitorViewModel();
 
-            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService, null!);
+            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
 
             _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
             _eventListenerService.ActionsService = _actionsService;
 
             _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService, _dataService);
             _actionsService.BackgroundTaskService = _backgroundTaskService;
+            _eventListenerService.BackgroundTaskService = _backgroundTaskService;
 
             _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
 
@@ -289,16 +290,22 @@ namespace MinimalFirewall
             using (var g = this.CreateGraphics())
             {
                 float dpiScale = g.DpiY / 96f;
-                int scaledSize = (int)(40 * dpiScale);
+                int scaledSize = (int)(44 * dpiScale);
 
                 lockdownButton.Size = new Size(scaledSize, scaledSize);
                 rescanButton.Size = new Size(scaledSize, scaledSize);
 
-                int rescanX = (int)(15 * dpiScale);
-                int lockdownX = (int)(65 * dpiScale);
+                // Consistent 8px spacing between buttons
+                int rescanX = (int)(16 * dpiScale);
+                int lockdownX = rescanX + scaledSize + (int)(8 * dpiScale);
 
                 rescanButton.Left = rescanX;
                 lockdownButton.Left = lockdownX;
+                
+                // Align bottom with same margin
+                int bottomMargin = (int)(8 * dpiScale);
+                rescanButton.Top = this.ClientSize.Height - scaledSize - bottomMargin;
+                lockdownButton.Top = rescanButton.Top;
             }
         }
 

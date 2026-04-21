@@ -559,14 +559,14 @@ namespace MinimalFirewall
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
             TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
-            if (trustPublisher && SignatureValidationService.IsSignatureTrusted(pending.AppPath, out var publisherName) && publisherName != null)
+            if (trustPublisher && SignatureValidationService.IsSignatureTrusted(pending.AppPath, out var publisherName) && !string.IsNullOrEmpty(publisherName))
             {
                 _whitelistService.Add(publisherName);
                 activityLogger.LogChange("Publisher Whitelisted", $"Publisher '{publisherName}' was added to the whitelist.");
             }
             else if (trustPublisher)
             {
-                activityLogger.LogDebug($"[Warning] Attempted to trust publisher for '{pending.AppPath}', but the signature was invalid or untrusted.");
+                activityLogger.LogDebug($"[Warning] Attempted to trust publisher for '{pending.AppPath}', but no publisher information could be extracted.");
             }
 
             eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
