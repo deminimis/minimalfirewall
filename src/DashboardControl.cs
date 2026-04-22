@@ -123,7 +123,7 @@ namespace MinimalFirewall
             AppendLine("Direction", pending.Direction);
             string remote = string.IsNullOrEmpty(pending.RemoteAddress) ? "N/A" : $"{pending.RemoteAddress}:{pending.RemotePort}";
             AppendLine("Remote Address", remote);
-            AppendLine("Protocol", pending.Protocol);
+            AppendLine("Protocol", pending.ProtocolDisplay);
 
             if (!string.IsNullOrEmpty(pending.CommandLine))
             {
@@ -366,7 +366,7 @@ namespace MinimalFirewall
             allowAndTrustPublisherToolStripMenuItem.Visible =
                 !string.IsNullOrEmpty(pending.AppPath) &&
                 File.Exists(pending.AppPath) &&
-                SignatureValidationService.GetPublisherInfo(pending.AppPath, out _);
+                SignatureValidationService.IsSignatureTrusted(pending.AppPath, out _);
         }
 
         private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)

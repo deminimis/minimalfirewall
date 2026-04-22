@@ -133,7 +133,7 @@ namespace MinimalFirewall
             {
                 string publisherName = null;
 
-                bool hasInfo = await Task.Run(() => SignatureValidationService.GetPublisherInfo(PendingConnection.AppPath, out publisherName));
+                bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
                 {
