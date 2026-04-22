@@ -177,6 +177,19 @@ public class PendingConnectionViewModel
     public string Direction { get; set; } = string.Empty;
     public string ServiceName { get; set; } = string.Empty;
     public string Protocol { get; set; } = string.Empty;
+
+    // Friendly name for the IANA protocol number reported by Event 5157.
+    // Falls back to the raw value if unrecognized.
+    public string ProtocolDisplay => Protocol switch
+    {
+        "1" => "ICMPv4",
+        "2" => "IGMP",
+        "6" => "TCP",
+        "17" => "UDP",
+        "58" => "ICMPv6",
+        _ => Protocol
+    };
+
     public string RemotePort { get; set; } = string.Empty;
     public string RemoteAddress { get; set; } = string.Empty;
     public string FilterId { get; set; } = string.Empty;

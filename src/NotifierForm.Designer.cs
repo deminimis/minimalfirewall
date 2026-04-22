@@ -98,10 +98,11 @@ namespace MinimalFirewall
             // createWildcardButton
             // 
             createWildcardButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            createWildcardButton.Location = new Point(4, 208);
+            createWildcardButton.FlatStyle = FlatStyle.Flat;
+            createWildcardButton.Location = new Point(8, 203);
             createWildcardButton.Margin = new Padding(4, 3, 4, 3);
             createWildcardButton.Name = "createWildcardButton";
-            createWildcardButton.Size = new Size(152, 32);
+            createWildcardButton.Size = new Size(165, 35);
             createWildcardButton.TabIndex = 4;
             createWildcardButton.Text = "Create Wildcard Rule...";
             createWildcardButton.UseVisualStyleBackColor = true;
@@ -123,7 +124,7 @@ namespace MinimalFirewall
             // 
             allowButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             allowButton.FlatStyle = FlatStyle.Flat;
-            allowButton.Location = new Point(4, 158);
+            allowButton.Location = new Point(8, 158);
             allowButton.Margin = new Padding(4, 3, 4, 3);
             allowButton.Name = "allowButton";
             allowButton.Size = new Size(98, 35);
@@ -135,7 +136,8 @@ namespace MinimalFirewall
             // tempAllowButton
             // 
             tempAllowButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            tempAllowButton.Location = new Point(169, 208);
+            tempAllowButton.FlatStyle = FlatStyle.Flat;
+            tempAllowButton.Location = new Point(192, 203);
             tempAllowButton.Margin = new Padding(4, 3, 4, 3);
             tempAllowButton.Name = "tempAllowButton";
             tempAllowButton.Size = new Size(165, 35);
@@ -148,7 +150,7 @@ namespace MinimalFirewall
             // 
             blockButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             blockButton.FlatStyle = FlatStyle.Flat;
-            blockButton.Location = new Point(107, 158);
+            blockButton.Location = new Point(114, 158);
             blockButton.Margin = new Padding(4, 3, 4, 3);
             blockButton.Name = "blockButton";
             blockButton.Size = new Size(98, 35);
@@ -160,7 +162,8 @@ namespace MinimalFirewall
             // ignoreButton
             // 
             ignoreButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            ignoreButton.Location = new Point(226, 158);
+            ignoreButton.FlatStyle = FlatStyle.Flat;
+            ignoreButton.Location = new Point(259, 158);
             ignoreButton.Margin = new Padding(4, 3, 4, 3);
             ignoreButton.Name = "ignoreButton";
             ignoreButton.Size = new Size(98, 35);

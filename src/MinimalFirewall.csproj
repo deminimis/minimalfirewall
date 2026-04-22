@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows8.0</TargetFramework>
+		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
+		<RootNamespace>MinimalFirewall</RootNamespace>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ApplicationIcon>logo.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<AssemblyVersion>2.7.2.0</AssemblyVersion>
+		<FileVersion>2.7.2.0</FileVersion>
+		<Company>Deminimis</Company>
+		<Product>Minimal Firewall</Product>
+		<PackageProjectUrl>https://github.com/deminimis/minimalfirewall</PackageProjectUrl>
+		<PackageTags>firewall, security, privacy</PackageTags>
+		<StartupObject>MinimalFirewall.Program</StartupObject>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>AnyCPU;x64</Platforms>
+		<ServerGarbageCollection>false</ServerGarbageCollection>
+		<TieredCompilation>false</TieredCompilation>
+		<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
+		<GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+		<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>false</SelfContained>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="logo.ico" />
+		<EmbeddedResource Include="logo.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<COMReference Include="NetFwTypeLib">
+			<WrapperTool>tlbimp</WrapperTool>
+			<VersionMinor>0</VersionMinor>
+			<VersionMajor>1</VersionMajor>
+			<Guid>58fbcf7c-e7a9-467c-80b3-fc65e8fcca08</Guid>
+			<Lcid>0</Lcid>
+			<Isolated>false</Isolated>
+			<EmbedInteropTypes>true</EmbedInteropTypes>
+		</COMReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.5" />
+		<PackageReference Include="System.Management" Version="10.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Properties\Settings.settings">
+			<Generator>SettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Properties\PublishProfiles\" />
+	</ItemGroup>
+</Project>

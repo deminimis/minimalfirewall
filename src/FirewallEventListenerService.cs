@@ -33,7 +33,7 @@ namespace MinimalFirewall
         private readonly Func<bool> _isLockdownEnabled;
         private readonly AppSettings _appSettings;
         private readonly PublisherWhitelistService _whitelistService;
-        private readonly BackgroundFirewallTaskService _backgroundTaskService;
+        public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
         private readonly Action<string> _logAction;
 
         private readonly ConcurrentDictionary<string, DateTime> _snoozedApps = new(StringComparer.OrdinalIgnoreCase);
@@ -51,8 +51,7 @@ namespace MinimalFirewall
             Func<bool> isLockdownEnabled,
             Action<string> logAction,
             AppSettings appSettings,
-            PublisherWhitelistService whitelistService,
-            BackgroundFirewallTaskService backgroundTaskService)
+            PublisherWhitelistService whitelistService)
         {
             _dataService = dataService;
             _wildcardRuleService = wildcardRuleService;
@@ -60,7 +59,6 @@ namespace MinimalFirewall
             _logAction = logAction;
             _appSettings = appSettings;
             _whitelistService = whitelistService;
-            _backgroundTaskService = backgroundTaskService;
 
             _currentAssemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name ?? "MinimalFirewall";
         }
@@ -340,29 +338,94 @@ namespace MinimalFirewall
 
         private async Task<bool> CheckAutoAllowTrustedAsync(string appPath, string direction)
         {
-            if (!_appSettings.AutoAllowSystemTrusted) return false;
+            bool checkWhitelist = _appSettings.AutoAllowWhitelistedPublishers;
+            bool checkOsTrust = _appSettings.AutoAllowSystemSignedApps;
+
+            if (!checkWhitelist && !checkOsTrust) return false;
+
             return await Task.Run(() =>
             {
-                if (File.Exists(appPath) &&
-                    SignatureValidationService.IsSignatureTrusted(appPath, out var trustedPublisherName) &&
-                    !string.IsNullOrEmpty(trustedPublisherName))
+                if (IsInExcludedFolder(appPath))
                 {
-
-                    if (_backgroundTaskService != null && !string.IsNullOrEmpty(appPath))
-                    {
-                        string allowAction = $"Allow ({direction})";
-                        var appPayload = new ApplyApplicationRulePayload
-                        {
-                            AppPaths = new List<string> { appPath },
-                            Action = allowAction
-                        };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
-                    }
-                    return true;
+                    _logAction($"[AutoAllow] Skipped (excluded folder): {appPath}");
+                    return false;
                 }
 
-                return false;
+                if (!File.Exists(appPath))
+                    return false;
+
+                string? matchedPublisher = null;
+                string? publisherName = null;
+                string? trustedPublisherName = null;
+
+                // Path 1: user-whitelisted publishers (gated by AutoAllowWhitelistedPublishers)
+                // Uses IsSignatureTrusted (not GetPublisherInfo) so that self-signed certs
+                // with spoofed CNs cannot bypass the whitelist.
+                if (checkWhitelist &&
+                    SignatureValidationService.IsSignatureTrusted(appPath, out publisherName) &&
+                    !string.IsNullOrEmpty(publisherName) &&
+                    _whitelistService.IsTrusted(publisherName))
+                {
+                    matchedPublisher = publisherName;
+                }
+
+                // Path 2: OS-CA signature trust (gated by AutoAllowSystemSignedApps)
+                if (matchedPublisher == null && checkOsTrust &&
+                    SignatureValidationService.IsSignatureTrusted(appPath, out trustedPublisherName) &&
+                    !string.IsNullOrEmpty(trustedPublisherName))
+                {
+                    matchedPublisher = trustedPublisherName;
+                }
+
+                if (matchedPublisher == null)
+                {
+                    _logAction($"[AutoAllow] Not trusted: {appPath} (publisher='{publisherName}', trustedPublisher='{trustedPublisherName}', whitelistCheck={checkWhitelist}, osTrustCheck={checkOsTrust})");
+                    return false;
+                }
+
+                // Must have background task service to create the rule — don't suppress popup if we can't
+                if (BackgroundTaskService == null)
+                {
+                    _logAction($"[AutoAllow] Cannot create rule (no BackgroundTaskService): {appPath}");
+                    return false;
+                }
+
+                _logAction($"[AutoAllow] Auto-allowing '{matchedPublisher}': {appPath}");
+                string allowAction = $"Allow ({direction})";
+                var appPayload = new ApplyApplicationRulePayload
+                {
+                    AppPaths = new List<string> { appPath },
+                    Action = allowAction
+                };
+                BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
+                return true;
             });
+        }
+
+        private bool IsInExcludedFolder(string appPath)
+        {
+            if (string.IsNullOrEmpty(appPath)) return false;
+
+            var excludedFolders = _appSettings.AutoAllowExclusions;
+            if (excludedFolders == null || excludedFolders.Count == 0) return false;
+
+            string? dir = Path.GetDirectoryName(appPath);
+            if (dir == null) return false;
+
+            foreach (var excludedFolder in excludedFolders)
+            {
+                if (string.IsNullOrEmpty(excludedFolder)) continue;
+
+                try
+                {
+                    string resolved = Environment.ExpandEnvironmentVariables(excludedFolder);
+                    if (dir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                catch { }
+            }
+
+            return false;
         }
 
         private bool IsNetworkNoise(string remoteIp)
