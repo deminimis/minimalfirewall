@@ -418,8 +418,10 @@ namespace MinimalFirewall
 
                 try
                 {
-                    string resolved = Environment.ExpandEnvironmentVariables(excludedFolder);
-                    if (dir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
+                    string resolved = Environment.ExpandEnvironmentVariables(excludedFolder).TrimEnd('\\') + "\\";
+                    string normalizedDir = dir.TrimEnd('\\') + "\\";
+
+                    if (normalizedDir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
                 catch { }
