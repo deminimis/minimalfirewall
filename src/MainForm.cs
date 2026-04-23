@@ -523,10 +523,13 @@ namespace MinimalFirewall
         {
             SafeInvoke(() =>
             {
-                bool alreadyInPopupQueue = _popupQueue.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+                bool alreadyInPopupQueue = _popupQueue.Any(p =>
+                    string.Equals(p.AppPath, pending?.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(p.Direction, pending?.Direction, StringComparison.OrdinalIgnoreCase));
+
                 if (alreadyInPopupQueue)
                 {
-                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (in popup queue)");
+                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending?.AppPath} (in popup queue)");
                     return;
                 }
 
@@ -534,7 +537,7 @@ namespace MinimalFirewall
                 {
                     lock (_popupLock)
                     {
-                        _popupQueue.Enqueue(pending);
+                        _popupQueue.Enqueue(pending!);
                     }
                     BeginInvoke(new Action(ProcessNextPopup));
                 }
@@ -567,6 +570,8 @@ namespace MinimalFirewall
             {
                 if (sender is not NotifierForm notifier) return;
                 notifier.FormClosed -= Notifier_FormClosed;
+
+                if (this.IsDisposed || this.Disposing) return;
 
                 var pending = notifier.PendingConnection;
                 var result = notifier.Result;
@@ -639,8 +644,8 @@ namespace MinimalFirewall
                 {
                     var newQueue = new Queue<PendingConnectionViewModel>(
                         _popupQueue.Where(p =>
-                            !(p.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                               p.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                            !(string.Equals(p.AppPath, processedConnection?.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                              string.Equals(p.Direction, processedConnection?.Direction, StringComparison.OrdinalIgnoreCase))
                         )
                     );
                     _popupQueue.Clear();
@@ -655,8 +660,8 @@ namespace MinimalFirewall
                         if (activeNotifier != null)
                         {
                             var pendingInPopup = activeNotifier.PendingConnection;
-                            if (pendingInPopup.AppPath.Equals(processedConnection.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                                pendingInPopup.Direction.Equals(processedConnection.Direction, StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(pendingInPopup?.AppPath, processedConnection?.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                                string.Equals(pendingInPopup?.Direction, processedConnection?.Direction, StringComparison.OrdinalIgnoreCase))
                             {
                                 notifierToClose = activeNotifier;
                             }

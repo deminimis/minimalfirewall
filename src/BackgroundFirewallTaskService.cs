@@ -33,6 +33,7 @@ namespace MinimalFirewall
     // The Main Service Class
     public class BackgroundFirewallTaskService : IDisposable
     {
+        private volatile bool _isDisposed = false;
         private readonly BlockingCollection<FirewallTask> _taskQueue = new();
         private readonly Task _worker;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
@@ -67,10 +68,21 @@ namespace MinimalFirewall
 
         public void EnqueueTask(FirewallTask task)
         {
-            if (!_taskQueue.IsAddingCompleted)
+            if (_isDisposed) return;
+
+            try
             {
-                _taskQueue.Add(task);
-                SafeInvoke(QueueCountChanged, _taskQueue.Count);
+                if (!_taskQueue.IsAddingCompleted)
+                {
+                    _taskQueue.Add(task);
+                    SafeInvoke(QueueCountChanged, _taskQueue.Count);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
             }
         }
 
@@ -235,7 +247,15 @@ namespace MinimalFirewall
 
         public void Dispose()
         {
-            _taskQueue.CompleteAdding();
+            if (_isDisposed) return;
+            _isDisposed = true;
+
+            try
+            {
+                _taskQueue.CompleteAdding();
+            }
+            catch (ObjectDisposedException) { /* Already disposed */ }
+
             _cancellationTokenSource.Cancel();
             try
             {
@@ -248,52 +268,52 @@ namespace MinimalFirewall
             _taskQueue.Dispose();
             GC.SuppressFinalize(this);
         }
-    }
 
-    // Helper Classes
-    public class ActionHandler<T> : IFirewallTaskHandler
-    {
-        private readonly Action<T> _action;
-        private readonly TaskResult _result;
-
-        public ActionHandler(Action<T> action, TaskResult result)
+        // Helper Classes
+        public class ActionHandler<T> : IFirewallTaskHandler
         {
-            _action = action;
-            _result = result;
-        }
+            private readonly Action<T> _action;
+            private readonly TaskResult _result;
 
-        public Task<TaskResult> HandleAsync(object payload)
-        {
-            // Simplified pattern matching works for both specific types and generic objects
-            if (payload is T typedPayload)
+            public ActionHandler(Action<T> action, TaskResult result)
             {
-                _action(typedPayload);
-                return Task.FromResult(_result);
+                _action = action;
+                _result = result;
             }
 
-            return Task.FromResult(TaskResult.None);
-        }
-    }
-
-    public class AsyncActionHandler<T> : IFirewallTaskHandler
-    {
-        private readonly Func<T, Task> _func;
-        private readonly TaskResult _result;
-
-        public AsyncActionHandler(Func<T, Task> func, TaskResult result)
-        {
-            _func = func;
-            _result = result;
-        }
-
-        public async Task<TaskResult> HandleAsync(object payload)
-        {
-            if (payload is T typedPayload)
+            public Task<TaskResult> HandleAsync(object payload)
             {
-                await _func(typedPayload);
-                return _result;
+                // Simplified pattern matching works for both specific types and generic objects
+                if (payload is T typedPayload)
+                {
+                    _action(typedPayload);
+                    return Task.FromResult(_result);
+                }
+
+                return Task.FromResult(TaskResult.None);
             }
-            return TaskResult.None;
+        }
+
+        public class AsyncActionHandler<T> : IFirewallTaskHandler
+        {
+            private readonly Func<T, Task> _func;
+            private readonly TaskResult _result;
+
+            public AsyncActionHandler(Func<T, Task> func, TaskResult result)
+            {
+                _func = func;
+                _result = result;
+            }
+
+            public async Task<TaskResult> HandleAsync(object payload)
+            {
+                if (payload is T typedPayload)
+                {
+                    await _func(typedPayload);
+                    return _result;
+                }
+                return TaskResult.None;
+            }
         }
     }
 }
