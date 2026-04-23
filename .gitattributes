@@ -1,0 +1,27 @@
+# Set default behavior to normalize line endings
+* text=auto
+
+# C# code and project files
+*.cs       text diff=csharp
+*.csproj   text
+*.props    text
+*.targets  text
+*.resx     text
+*.config   text
+*.manifest text
+
+# Windows-specific files that require CRLF
+*.sln text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Hide auto-generated designer files from GitHub diffs/language stats
+*.Designer.cs linguist-generated=true
+
+# Exclude binary files from normalization
+*.dll binary
+*.exe binary
+*.png binary
+*.jpg binary
+*.ico binary
