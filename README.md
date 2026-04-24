@@ -16,7 +16,7 @@ or install with <b>Winget</b> (<i>may be a version behind while waiting to be ap
 </br>
 
 #### Prerequisites
-If you don't have .net 10 installed, you can download the desktop runtime from Microsoft [here]([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)) (the .NET Desktop Runtime x64), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.10`
+If you don't have .NET 10 installed, you can download the desktop runtime from Microsoft [here](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (the .NET Desktop Runtime x64), or via Winget: `winget install Microsoft.DotNet.DesktopRuntime.10`
 
 ## User Guide
 
@@ -147,7 +147,7 @@ Contributions are welcome! Please submit an issue, a discussion, or a pull reque
 ## Build Instructions
 
 #### Prerequisites
-* Visual Studio Community 2022
+* Visual Studio Community 2026
   * When installing Visual Studio, make sure you select the ".NET desktop development" workload (which includes Windows Forms).
 
 #### Step 1: Clone this repo
@@ -159,13 +159,13 @@ Contributions are welcome! Please submit an issue, a discussion, or a pull reque
 _____
 
 #### Step 3: Install Dependencies
-* Once the project is open, right-click on the "Solution 'MinimalFirewall-WindowsStore'" in the Solution Explorer and select "Restore NuGet Packages".
+* Once the project is open, right-click on the "Solution 'MinimalFirewall'" in the Solution Explorer and select "Restore NuGet Packages".
   * If that doesn't work, go to Tools > NuGet Package Manager > Manage NuGet Packages for Solution.... Install the following two packages:
     * Microsoft.Extensions.Caching.Memory
     * System.Management
 
 #### Step 4: Check the COM Reference
-* In Solution Explorer, expand the MinimalFirewall-NET8 project, then expand Dependencies > COM. You should see NetFwTypeLib. If it has a yellow warning icon, right-click it and select "Remove". Then, right-click on Dependencies and select Add COM Reference....In the list, find and check the box for "NetFwTypeLib". 
+* In Solution Explorer, expand the MinimalFirewall project, then expand Dependencies > COM. You should see NetFwTypeLib. If it has a yellow warning icon, right-click it and select "Remove". Then, right-click on Dependencies and select Add COM Reference....In the list, find and check the box for "NetFwTypeLib". 
 
 #### Step 5: Build
 * Set configuration manager to x64, and build. 
