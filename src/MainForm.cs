@@ -255,6 +255,19 @@ namespace MinimalFirewall
             {
                 _eventListenerService.EnableAuditing();
                 _eventListenerService.Start();
+
+                if (!AdminTaskService.IsAuditPolicyEnabled())
+                {
+                    _activityLogger.LogDebug("[Startup] Lockdown is on but WFP audit policy is not enabled. Connection popups will not work until this is resolved.");
+                    MessageBox.Show(this,
+                        "Lockdown Mode is active, but Windows Security Auditing could not be verified as enabled.\n\n" +
+                        "Blocked-connection popups and the dashboard will not work until this is resolved.\n\n" +
+                        "Potential Causes:\n" +
+                        "1. A local or domain Group Policy is preventing audit subcategory changes.\n" +
+                        "2. Other security software is blocking this action.\n\n" +
+                        "Existing firewall rules will continue to apply normally.",
+                        "Audit Policy Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             else
             {
