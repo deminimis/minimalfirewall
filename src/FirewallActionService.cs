@@ -552,6 +552,17 @@ namespace MinimalFirewall
                 "53", "*", 
                 enable
             );
+
+            // DNS Client (Dnscache) - TCP for DoH (443), DoT (853), and TCP/53 fallback
+            ManageSystemRule(
+                "Minimal Firewall System - DNS Client (TCP)",
+                "Allows the DNS Client (Dnscache) to use DNS-over-HTTPS, DNS-over-TLS, and TCP DNS fallback.",
+                "svchost.exe",
+                "Dnscache",
+                6,
+                "53,443,853", "*",
+                enable
+            );
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
