@@ -82,19 +82,26 @@ namespace MinimalFirewall
             if (_isDisposed) return;
 
             Interlocked.Increment(ref _outstandingWork);
+            bool added = false;
             try
             {
                 _taskQueue.Add(task);
-                SafeInvoke(QueueCountChanged, _taskQueue.Count);
+                added = true;
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
+
+            if (!added)
             {
                 Interlocked.Decrement(ref _outstandingWork);
+                SignalIdleIfQuiescent();
+                return;
             }
-            catch (InvalidOperationException)
-            {
-                Interlocked.Decrement(ref _outstandingWork);
-            }
+
+            // Count post-Add can throw if Dispose() raced; task is genuinely queued
+            // either way, so don't unwind the increment.
+            try { SafeInvoke(QueueCountChanged, _taskQueue.Count); }
+            catch (ObjectDisposedException) { }
         }
 
         private async Task ProcessQueueAsync()
@@ -109,7 +116,7 @@ namespace MinimalFirewall
                     // If queue is empty, we wait UP TO 1500ms for a new item.
                     // If an item arrives, TryTake returns true immediately (no lag).
                     // If 1500ms passes, it returns false, and we update status to "Ready".
-                    if (_taskQueue.Count == 0)
+                    if (SafeQueueCount() == 0)
                     {
                         if (!_taskQueue.TryTake(out task, 1500, _cancellationTokenSource.Token))
                         {
@@ -140,6 +147,10 @@ namespace MinimalFirewall
             catch (InvalidOperationException)
             {
                 // Graceful shutdown via CompleteAdding() once queue is drained.
+            }
+            catch (ObjectDisposedException)
+            {
+                // Catastrophic-shutdown path: queue disposed while worker still running.
             }
         }
 
@@ -177,18 +188,22 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (result.RequiresCacheInvalidation && _taskQueue.Count == 0)
+                // Read once via SafeQueueCount so a post-Dispose race doesn't skip
+                // the decrement / idle signal at the bottom of this finally.
+                int queueCount = SafeQueueCount();
+
+                if (result.RequiresCacheInvalidation && queueCount == 0)
                 {
                     _dataService.InvalidateRuleCache();
                     _activityLogger.LogDebug($"[Cache] Invalidated MFW Rules cache after task batch completed.");
                 }
 
-                if (result.RequiresWildcardRefresh && _taskQueue.Count == 0)
+                if (result.RequiresWildcardRefresh && queueCount == 0)
                 {
                     SafeInvoke(WildcardRulesChanged);
                 }
 
-                SafeInvoke(QueueCountChanged, _taskQueue.Count);
+                SafeInvoke(QueueCountChanged, queueCount);
                 Interlocked.Decrement(ref _outstandingWork);
                 SignalIdleIfQuiescent();
             }
