@@ -78,7 +78,8 @@ namespace MinimalFirewall
 
         public void EnqueueTask(FirewallTask task)
         {
-            if (_isDisposed || _taskQueue.IsAddingCompleted) return;
+            // IsAddingCompleted itself throws if Dispose() raced ahead; rely on catches.
+            if (_isDisposed) return;
 
             Interlocked.Increment(ref _outstandingWork);
             try
