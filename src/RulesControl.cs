@@ -290,7 +290,7 @@ namespace MinimalFirewall
                             var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, createPayload));
 
-                            await Task.Delay(500);
+                            await _backgroundTaskService.WhenIdleAsync();
                             if (DataRefreshRequested != null)
                             {
                                 await DataRefreshRequested.Invoke();
@@ -325,7 +325,7 @@ namespace MinimalFirewall
                 using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _appSettings);
                 if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
                 {
-                    await Task.Delay(2000); // Wait for background service to process
+                    await _backgroundTaskService.WhenIdleAsync();
                     if (DataRefreshRequested != null)
                     {
                         await DataRefreshRequested.Invoke();
