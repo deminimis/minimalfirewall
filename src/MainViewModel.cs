@@ -80,7 +80,7 @@ namespace MinimalFirewall
             _firewallSentryService.RuleSetChanged += OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected += OnPendingConnectionDetected;
 
-            _backgroundTaskService.StatusChanged += (text) => StatusTextChanged?.Invoke(text);
+            _backgroundTaskService.StatusChanged += OnBackgroundStatusChanged;
 
             DebouncedSentryRefresh(null);
         }
@@ -568,6 +568,11 @@ namespace MinimalFirewall
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, payload, $"Applying {action} to {Path.GetFileName(appPath)}"));
         }
 
+        private void OnBackgroundStatusChanged(string text)
+        {
+            StatusTextChanged?.Invoke(text);
+        }
+
         private void OnRuleSetChanged()
         {
             ClearRulesCache();
@@ -726,8 +731,10 @@ namespace MinimalFirewall
         {
             // Unsubscribe before disposing the timer; residual in-flight
             // callbacks are caught in OnRuleSetChanged and EnqueueTask.
+            // StatusChanged unsub avoids worker -> UI Invoke deadlock during shutdown.
             _firewallSentryService.RuleSetChanged -= OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected -= OnPendingConnectionDetected;
+            _backgroundTaskService.StatusChanged -= OnBackgroundStatusChanged;
             _sentryRefreshDebounceTimer?.Dispose();
             GC.SuppressFinalize(this);
         }
