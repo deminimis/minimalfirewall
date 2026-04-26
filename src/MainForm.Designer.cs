@@ -36,12 +36,15 @@ namespace MinimalFirewall
             {
                 _trayBlinkTimer?.Dispose();
                 _autoRefreshTimer?.Dispose();
+                // Order matters: view model -> producers -> consumer queue.
+                // In-flight watcher callbacks racing past this are guarded in EnqueueTask.
+                _mainViewModel?.Dispose();
+                _firewallSentryService?.Dispose();
+                _eventListenerService?.Dispose();
                 _backgroundTaskService?.Dispose();
                 _lockedGreenIcon?.Dispose();
                 _unlockedWhiteIcon?.Dispose();
                 _refreshWhiteIcon?.Dispose();
-                _firewallSentryService?.Dispose();
-                _eventListenerService?.Dispose();
                 _defaultTrayIcon?.Dispose();
                 _unlockedTrayIcon?.Dispose();
                 _alertTrayIcon?.Dispose();

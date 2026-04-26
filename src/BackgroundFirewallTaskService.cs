@@ -68,22 +68,18 @@ namespace MinimalFirewall
 
         public void EnqueueTask(FirewallTask task)
         {
+            // Don't probe _taskQueue state outside the try: IsAddingCompleted
+            // can itself throw if Dispose() raced ahead. Catches cover late
+            // callbacks from watchers / debounce timers post-Dispose.
             if (_isDisposed) return;
 
             try
             {
-                if (!_taskQueue.IsAddingCompleted)
-                {
-                    _taskQueue.Add(task);
-                    SafeInvoke(QueueCountChanged, _taskQueue.Count);
-                }
+                _taskQueue.Add(task);
+                SafeInvoke(QueueCountChanged, _taskQueue.Count);
             }
-            catch (ObjectDisposedException)
-            {
-            }
-            catch (InvalidOperationException)
-            {
-            }
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
         }
 
         private async Task ProcessQueueAsync()

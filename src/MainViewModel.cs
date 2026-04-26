@@ -16,7 +16,7 @@ using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
-    public class MainViewModel : ObservableViewModel
+    public class MainViewModel : ObservableViewModel, IDisposable
     {
         private readonly FirewallRuleService _firewallRuleService;
         private readonly WildcardRuleService _wildcardRuleService;
@@ -576,7 +576,8 @@ namespace MinimalFirewall
                 return;
             }
 
-            _sentryRefreshDebounceTimer?.Change(1000, Timeout.Infinite);
+            try { _sentryRefreshDebounceTimer?.Change(1000, Timeout.Infinite); }
+            catch (ObjectDisposedException) { } // timer disposed during shutdown
         }
 
         private async void DebouncedSentryRefresh(object? state)
@@ -719,6 +720,16 @@ namespace MinimalFirewall
                     MessageBoxButtons.OK,
                     MsgIcon.Error);
             }
+        }
+
+        public void Dispose()
+        {
+            // Unsubscribe before disposing the timer; residual in-flight
+            // callbacks are caught in OnRuleSetChanged and EnqueueTask.
+            _firewallSentryService.RuleSetChanged -= OnRuleSetChanged;
+            _eventListenerService.PendingConnectionDetected -= OnPendingConnectionDetected;
+            _sentryRefreshDebounceTimer?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
