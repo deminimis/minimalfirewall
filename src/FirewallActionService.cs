@@ -1372,7 +1372,6 @@ namespace MinimalFirewall
                 if (replace)
                 {
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
-                    await Task.Delay(1000);
                 }
 
                 foreach (var ruleVm in container.AdvancedRules)
@@ -1387,6 +1386,10 @@ namespace MinimalFirewall
                     wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
                 }
+
+                // Wait for the queue to drain so callers (e.g. SettingsControl) display
+                // "Import Complete" only after the firewall actually has the imported rules.
+                await BackgroundTaskService.WhenIdleAsync();
 
                 activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules.Count} advanced rules and {container.WildcardRules.Count} wildcard rules. Replace: {replace}");
             }
