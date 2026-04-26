@@ -43,47 +43,10 @@ namespace MinimalFirewall
         private const int WTD_UI_NONE = 2;
         private const int WTD_REVOKE_NONE = 0;
         private const int WTD_CHOICE_FILE = 1;
-        private const int WTD_STATEACTION_VERIFY = 0;
-        private const int WTD_STATEACTION_CLOSE = 1;
+        private const int WTD_STATEACTION_IGNORE = 0;
 
         public static bool GetPublisherInfo(string filePath, out string? publisherName)
-        {
-            publisherName = null;
-            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-            {
-                return false;
-            }
-
-            try
-            {
-#pragma warning disable SYSLIB0057 // CreateFromSignedFile has no direct replacement for Authenticode signer extraction
-                using (var basicCert = X509Certificate.CreateFromSignedFile(filePath))
-                using (var cert = new X509Certificate2(basicCert))
-#pragma warning restore SYSLIB0057
-                {
-                    publisherName = NormalizePublisherName(cert.Subject);
-                    return !string.IsNullOrEmpty(publisherName);
-                }
-            }
-            catch (CryptographicException)
-            {
-                // No embedded Authenticode signature — only trust FileVersionInfo metadata
-                // if the file is catalog-signed (verified via WinVerifyTrust). This prevents
-                // unsigned files with spoofed CompanyName PE metadata from being treated
-                // as if they were signed by a whitelisted publisher.
-                if (VerifyWithWinTrust(filePath))
-                {
-                    publisherName = GetPublisherNameFromFileVersion(filePath);
-                    return !string.IsNullOrEmpty(publisherName);
-                }
-                return false;
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Debug.WriteLine($"[ERROR] Signature extraction failed for {filePath}: {ex.Message}");
-                return false;
-            }
-        }
+            => IsSignatureTrusted(filePath, out publisherName);
 
         public static bool IsSignatureTrusted(string filePath, out string? publisherName)
         {
@@ -94,47 +57,36 @@ namespace MinimalFirewall
                 return false;
             }
 
-            // Try embedded Authenticode signature first
-            string? embeddedPublisher = null;
+            // Gate on Authenticode digest verification. WinVerifyTrust validates that the
+            // file's hash matches its embedded or catalog signature AND that the signer
+            // chains to a trusted root. Without this gate, a tampered file would still
+            // expose its original signer's CN via CreateFromSignedFile.
+            if (!VerifyWithWinTrust(filePath))
+            {
+                return false;
+            }
+
+            // File integrity verified. Extract publisher name for display/whitelist matching.
             try
             {
 #pragma warning disable SYSLIB0057 // CreateFromSignedFile has no direct replacement for Authenticode signer extraction
-                using (var basicCert = X509Certificate.CreateFromSignedFile(filePath))
-                using (var cert = new X509Certificate2(basicCert))
+                using var basicCert = X509Certificate.CreateFromSignedFile(filePath);
+                using var cert = new X509Certificate2(basicCert);
 #pragma warning restore SYSLIB0057
-                using (var chain = new X509Chain())
-                {
-                    embeddedPublisher = NormalizePublisherName(cert.Subject);
-
-                    if (!string.IsNullOrEmpty(embeddedPublisher))
-                    {
-                        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                        if (chain.Build(cert))
-                        {
-                            publisherName = embeddedPublisher;
-                            return true;
-                        }
-                    }
-                }
+                publisherName = NormalizePublisherName(cert.Subject);
             }
-            catch (Exception ex) when (ex is CryptographicException or IOException or UnauthorizedAccessException)
+            catch (CryptographicException)
             {
-                Debug.WriteLine($"[INFO] Embedded signature check failed for {filePath}: {ex.Message}. Trying WinVerifyTrust for catalog-signed file.");
+                // Catalog-signed: no embedded cert. Fall back to PE metadata.
+                publisherName = GetPublisherNameFromFileVersion(filePath);
             }
-
-            // Fallback: use WinVerifyTrust (covers catalog-signed files + chain build failures)
-            if (VerifyWithWinTrust(filePath))
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // Prefer the embedded cert CN if we extracted one; otherwise fall back to file version info
-                publisherName = !string.IsNullOrEmpty(embeddedPublisher)
-                    ? embeddedPublisher
-                    : GetPublisherNameFromFileVersion(filePath);
-                return true;
+                Debug.WriteLine($"[INFO] Signer extraction failed for {filePath}: {ex.Message}");
+                return false;
             }
 
-            return false;
+            return !string.IsNullOrEmpty(publisherName);
         }
 
         private static string? NormalizePublisherName(string? subject)
@@ -185,7 +137,7 @@ namespace MinimalFirewall
                     fdwRevocationChecks = WTD_REVOKE_NONE,
                     dwUnionChoice = WTD_CHOICE_FILE,
                     pUnion = pFileInfo,
-                    dwStateAction = WTD_STATEACTION_VERIFY,
+                    dwStateAction = WTD_STATEACTION_IGNORE,
                     hWVTStateData = IntPtr.Zero,
                     pwszURLReference = IntPtr.Zero,
                     dwProvFlags = 0,
@@ -201,12 +153,7 @@ namespace MinimalFirewall
 
                 int result = WinVerifyTrust(IntPtr.Zero, pActionId, pTrustData);
 
-                // Close the state data to release resources
-                trustData.dwStateAction = WTD_STATEACTION_CLOSE;
-                trustData.hWVTStateData = IntPtr.Zero;
-                Marshal.StructureToPtr(trustData, pTrustData, false);
-                WinVerifyTrust(IntPtr.Zero, pActionId, pTrustData);
-
+                // No state retained with WTD_STATEACTION_IGNORE, so no close pass needed.
                 return result == 0; // ERROR_SUCCESS
             }
             catch (Exception ex)
