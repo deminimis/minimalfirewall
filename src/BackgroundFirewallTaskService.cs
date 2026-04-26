@@ -144,13 +144,14 @@ namespace MinimalFirewall
             {
                 // Graceful shutdown via cancellation token.
             }
-            catch (InvalidOperationException)
-            {
-                // Graceful shutdown via CompleteAdding() once queue is drained.
-            }
             catch (ObjectDisposedException)
             {
                 // Catastrophic-shutdown path: queue disposed while worker still running.
+                // Must precede InvalidOperationException (it's a subclass).
+            }
+            catch (InvalidOperationException)
+            {
+                // Graceful shutdown via CompleteAdding() once queue is drained.
             }
         }
 
@@ -247,6 +248,12 @@ namespace MinimalFirewall
         private void SafeInvoke<T>(Action<T>? action, T param)
         {
             try { action?.Invoke(param); } catch { /* Ignore UI update errors */ }
+        }
+
+        private int SafeQueueCount()
+        {
+            try { return _taskQueue.Count; }
+            catch (ObjectDisposedException) { return 0; }
         }
 
         // Map the TaskType enum 
