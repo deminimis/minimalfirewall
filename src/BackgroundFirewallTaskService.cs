@@ -46,6 +46,16 @@ namespace MinimalFirewall
 
         private readonly Dictionary<FirewallTaskType, IFirewallTaskHandler> _handlers;
 
+        // Idle signaling: callers can await WhenIdleAsync() to know when the queue is fully drained.
+        // _outstandingWork = (queued tasks) + (tasks currently being processed). Incremented in
+        // EnqueueTask before Add, decremented in RunTaskLogicAsync.finally. Single atomic counter
+        // avoids the race that would exist between BlockingCollection.Count and a separate
+        // "processing" flag during the window between Take() returning and the handler starting.
+        private const int ShutdownDrainTimeoutMs = 5000;
+        private int _outstandingWork;
+        private readonly object _idleLock = new();
+        private readonly List<TaskCompletionSource> _idleWaiters = new();
+
         public event Action<int>? QueueCountChanged;
         public event Action<string>? StatusChanged;
         public event Action? WildcardRulesChanged;
@@ -68,18 +78,22 @@ namespace MinimalFirewall
 
         public void EnqueueTask(FirewallTask task)
         {
-            // Don't probe _taskQueue state outside the try: IsAddingCompleted
-            // can itself throw if Dispose() raced ahead. Catches cover late
-            // callbacks from watchers / debounce timers post-Dispose.
-            if (_isDisposed) return;
+            if (_isDisposed || _taskQueue.IsAddingCompleted) return;
 
+            Interlocked.Increment(ref _outstandingWork);
             try
             {
                 _taskQueue.Add(task);
                 SafeInvoke(QueueCountChanged, _taskQueue.Count);
             }
-            catch (ObjectDisposedException) { }
-            catch (InvalidOperationException) { }
+            catch (ObjectDisposedException)
+            {
+                Interlocked.Decrement(ref _outstandingWork);
+            }
+            catch (InvalidOperationException)
+            {
+                Interlocked.Decrement(ref _outstandingWork);
+            }
         }
 
         private async Task ProcessQueueAsync()
@@ -120,7 +134,11 @@ namespace MinimalFirewall
             }
             catch (OperationCanceledException)
             {
-                // Graceful shutdown
+                // Graceful shutdown via cancellation token.
+            }
+            catch (InvalidOperationException)
+            {
+                // Graceful shutdown via CompleteAdding() once queue is drained.
             }
         }
 
@@ -170,7 +188,38 @@ namespace MinimalFirewall
                 }
 
                 SafeInvoke(QueueCountChanged, _taskQueue.Count);
+                Interlocked.Decrement(ref _outstandingWork);
+                SignalIdleIfQuiescent();
             }
+        }
+
+        public Task WhenIdleAsync()
+        {
+            if (Volatile.Read(ref _outstandingWork) == 0) return Task.CompletedTask;
+
+            lock (_idleLock)
+            {
+                if (Volatile.Read(ref _outstandingWork) == 0) return Task.CompletedTask;
+
+                var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _idleWaiters.Add(tcs);
+                return tcs.Task;
+            }
+        }
+
+        private void SignalIdleIfQuiescent()
+        {
+            if (Volatile.Read(ref _outstandingWork) != 0) return;
+
+            List<TaskCompletionSource> toSignal;
+            lock (_idleLock)
+            {
+                if (Volatile.Read(ref _outstandingWork) != 0) return;
+                if (_idleWaiters.Count == 0) return;
+                toSignal = new List<TaskCompletionSource>(_idleWaiters);
+                _idleWaiters.Clear();
+            }
+            foreach (var tcs in toSignal) tcs.TrySetResult();
         }
 
         // Helper to prevent subscriber errors (UI crashes) from killing the service
@@ -252,13 +301,30 @@ namespace MinimalFirewall
             }
             catch (ObjectDisposedException) { /* Already disposed */ }
 
-            _cancellationTokenSource.Cancel();
+            // Allow worker to drain remaining queued mutations so user-initiated rule
+            // changes are not abandoned on app exit. Force-cancel only if drain stalls.
+            bool drained;
             try
             {
-                _worker.Wait(2000);
+                drained = _worker.Wait(ShutdownDrainTimeoutMs);
             }
-            catch (AggregateException) { /* Expected */ }
-            catch (Exception) { /* Expected */ }
+            catch (AggregateException) { drained = true; }
+            catch (Exception) { drained = true; }
+
+            if (!drained)
+            {
+                _cancellationTokenSource.Cancel();
+                try { _worker.Wait(2000); }
+                catch (AggregateException) { }
+                catch (Exception) { }
+            }
+
+            // Release any callers still awaiting WhenIdleAsync().
+            lock (_idleLock)
+            {
+                foreach (var tcs in _idleWaiters) tcs.TrySetCanceled();
+                _idleWaiters.Clear();
+            }
 
             _cancellationTokenSource.Dispose();
             _taskQueue.Dispose();

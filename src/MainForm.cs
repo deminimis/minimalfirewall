@@ -120,6 +120,7 @@ namespace MinimalFirewall
             settingsControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(true);
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
             settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
+            rulesControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(false, false);
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
 
