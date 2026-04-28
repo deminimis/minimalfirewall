@@ -1,5 +1,4 @@
-﻿// File: TemporaryRuleManager.cs
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
