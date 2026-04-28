@@ -1,27 +1,51 @@
-# Set default behavior to normalize line endings
-* text=auto
+# Set default behavior: normalize line endings to LF in the repo,
+# and check out LF on all platforms (overrides core.autocrlf)
+* text=auto eol=lf
+
 
 # C# code and project files
-*.cs       text diff=csharp
-*.csproj   text
-*.props    text
-*.targets  text
-*.resx     text
-*.config   text
-*.manifest text
+*.cs       text eol=lf diff=csharp
+*.csproj   text eol=lf
+*.props    text eol=lf
+*.targets  text eol=lf
+*.resx     text eol=lf
+*.config   text eol=lf
+*.manifest text eol=lf
+
+
+# Data and markup files
+*.json     text eol=lf
+*.xml      text eol=lf
+*.md       text eol=lf
+*.txt      text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
 
 # Windows-specific files that require CRLF
 *.sln text eol=crlf
 *.bat text eol=crlf
 *.cmd text eol=crlf
-*.ps1 text eol=crlf
+# Note: *.ps1 uses LF. PowerShell Core (v6+) and modern Windows Terminal
+# handle LF fine. Change to eol=crlf only if targeting legacy PowerShell 5.1.
+*.ps1 text eol=lf
 
-# Hide auto-generated designer files from GitHub diffs/language stats
+
+# Hide auto-generated designer files from GitHub diffs and language stats
 *.Designer.cs linguist-generated=true
 
+
 # Exclude binary files from normalization
-*.dll binary
-*.exe binary
-*.png binary
-*.jpg binary
-*.ico binary
+*.dll    binary
+*.exe    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.bmp    binary
+*.ico    binary
+*.zip    binary
+*.nupkg  binary
+*.pdf    binary
