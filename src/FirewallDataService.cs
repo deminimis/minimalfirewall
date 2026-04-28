@@ -14,11 +14,12 @@ namespace MinimalFirewall
 {
     public enum MfwRuleStatus { None, MfwAllow, MfwBlock }
 
-    public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
+    public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService, RuleTimestampService ruleTimestampService)
     {
         private readonly FirewallRuleService _firewallRuleService = firewallRuleService;
         private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
         private readonly UwpService _uwpService = uwpService;
+        private readonly RuleTimestampService _ruleTimestampService = ruleTimestampService;
         private readonly MemoryCache _localCache = new(new MemoryCacheOptions());
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
@@ -66,6 +67,19 @@ namespace MinimalFirewall
                 {
                     return [];
                 }
+
+                // Stamp first-seen times, prune stale entries, persist if dirty.
+                var now = DateTime.UtcNow;
+                var activeNames = new List<string>(mfwRules.Count);
+                foreach (var rule in mfwRules)
+                {
+                    if (string.IsNullOrEmpty(rule.Name)) continue;
+                    rule.DateAdded = _ruleTimestampService.EnsureStamped(rule.Name, now);
+                    activeNames.Add(rule.Name);
+                }
+                _ruleTimestampService.PruneTo(activeNames);
+                _ruleTimestampService.Flush();
+
                 return mfwRules;
             }, token);
         }
@@ -157,7 +171,8 @@ namespace MinimalFirewall
                 IsEnabled = group.TrueForAll(r => r.IsEnabled),
                 Profiles = firstRule.Profiles,
                 Grouping = firstRule.Grouping ?? "",
-                Description = firstRule.Description ?? ""
+                Description = firstRule.Description ?? "",
+                DateAdded = group.Where(r => r.DateAdded.HasValue).Min(r => (DateTime?)r.DateAdded)
             };
 
             bool hasInAllow = group.Exists(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));
