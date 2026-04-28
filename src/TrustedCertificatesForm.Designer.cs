@@ -1,4 +1,4 @@
-namespace MinimalFirewall
+﻿namespace MinimalFirewall
 {
     partial class TrustedCertificatesForm
     {
