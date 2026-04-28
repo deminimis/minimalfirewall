@@ -14,11 +14,25 @@ namespace MinimalFirewall
         private Dictionary<string, DateTime> _timestamps = new(StringComparer.OrdinalIgnoreCase);
         private readonly object _lock = new();
         private bool _dirty;
+        private bool _isBaselineSession;
 
         public RuleTimestampService()
         {
             _path = ConfigPathManager.GetConfigPath("rule_timestamps.json");
+            _isBaselineSession = !File.Exists(_path);
             Load();
+        }
+
+        // True until the first refresh has flushed; rules observed during this window are
+        // recorded with a sentinel so they display as Unknown rather than as the install-time stamp.
+        public bool IsBaselineSession
+        {
+            get { lock (_lock) { return _isBaselineSession; } }
+        }
+
+        public void EndBaselineSession()
+        {
+            lock (_lock) { _isBaselineSession = false; }
         }
 
         private void Load()
@@ -45,16 +59,22 @@ namespace MinimalFirewall
             }
         }
 
-        // Returns existing stamp if known, otherwise records and returns the supplied stamp.
-        public DateTime EnsureStamped(string ruleName, DateTime stamp)
+        // Returns existing stamp if known, otherwise records the supplied stamp.
+        // When treatAsBaseline is true and the rule is unseen, stores DateTime.MinValue
+        // as an Unknown sentinel and returns null. MinValue is also translated to null on read.
+        public DateTime? EnsureStamped(string ruleName, DateTime stamp, bool treatAsBaseline = false)
         {
-            if (string.IsNullOrEmpty(ruleName)) return stamp;
+            if (string.IsNullOrEmpty(ruleName)) return treatAsBaseline ? null : stamp;
             lock (_lock)
             {
-                if (_timestamps.TryGetValue(ruleName, out var existing)) return existing;
-                _timestamps[ruleName] = stamp;
+                if (_timestamps.TryGetValue(ruleName, out var existing))
+                {
+                    return existing == DateTime.MinValue ? null : existing;
+                }
+                var toStore = treatAsBaseline ? DateTime.MinValue : stamp;
+                _timestamps[ruleName] = toStore;
                 _dirty = true;
-                return stamp;
+                return toStore == DateTime.MinValue ? null : toStore;
             }
         }
 
@@ -63,7 +83,9 @@ namespace MinimalFirewall
             if (string.IsNullOrEmpty(ruleName)) return null;
             lock (_lock)
             {
-                return _timestamps.TryGetValue(ruleName, out var ts) ? ts : null;
+                if (_timestamps.TryGetValue(ruleName, out var ts) && ts != DateTime.MinValue)
+                    return ts;
+                return null;
             }
         }
 

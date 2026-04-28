@@ -69,16 +69,19 @@ namespace MinimalFirewall
                 }
 
                 // Stamp first-seen times, prune stale entries, persist if dirty.
+                // First refresh after install treats all observed rules as baseline (Unknown).
                 var now = DateTime.UtcNow;
+                bool isBaseline = _ruleTimestampService.IsBaselineSession;
                 var activeNames = new List<string>(mfwRules.Count);
                 foreach (var rule in mfwRules)
                 {
                     if (string.IsNullOrEmpty(rule.Name)) continue;
-                    rule.DateAdded = _ruleTimestampService.EnsureStamped(rule.Name, now);
+                    rule.DateAdded = _ruleTimestampService.EnsureStamped(rule.Name, now, isBaseline);
                     activeNames.Add(rule.Name);
                 }
                 _ruleTimestampService.PruneTo(activeNames);
                 _ruleTimestampService.Flush();
+                if (isBaseline) _ruleTimestampService.EndBaselineSession();
 
                 return mfwRules;
             }, token);
