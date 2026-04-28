@@ -112,7 +112,14 @@ namespace MinimalFirewall
         {
             if (this.InvokeRequired)
             {
-                this.Invoke(() => OnStatusTextChanged(text));
+                // BeginInvoke (not Invoke) so worker thread never blocks on UI thread;
+                // prevents shutdown deadlock when UI is in BackgroundTaskService.Dispose's _worker.Wait.
+                if (!this.IsDisposed && this.IsHandleCreated)
+                {
+                    try { this.BeginInvoke(() => OnStatusTextChanged(text)); }
+                    catch (ObjectDisposedException) { }
+                    catch (InvalidOperationException) { }
+                }
                 return;
             }
             statusLabel.Text = text;
