@@ -99,6 +99,7 @@ public class AdvancedRuleViewModel
     public WildcardRule? WildcardDefinition { get; set; }
     public string InterfaceTypes { get; set; } = string.Empty;
     public string IcmpTypesAndCodes { get; set; } = string.Empty;
+    public DateTime? DateAdded { get; set; }
 
     // Checks if all firewall-relevant properties match (Case-Insensitive for strings)
     public bool HasSameSettings(AdvancedRuleViewModel? other)
