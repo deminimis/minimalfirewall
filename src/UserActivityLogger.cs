@@ -1,5 +1,4 @@
-﻿// File: UserActivityLogger.cs
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +13,6 @@ namespace MinimalFirewall
         private readonly object _debugLock = new object();
         private readonly object _changeLock = new object();
 
-        // Cache options to avoid recreating them on every log entry
         private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true
@@ -32,7 +30,7 @@ namespace MinimalFirewall
         {
             if (!IsEnabled) return;
 
-            // Use a lock to ensure only one thread writes to the JSON file at a time
+            // Ensure only one thread writes to the JSON file at a time
             lock (_changeLock)
             {
                 try
@@ -65,7 +63,7 @@ namespace MinimalFirewall
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
                 {
-                    // Fallback to debug log if the change log fails
+                    // Fallback to debug log 
                     LogDebug($"[FATAL LOGGING ERROR] Could not write to changelog: {ex.Message}");
                 }
             }
@@ -104,7 +102,7 @@ namespace MinimalFirewall
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    // If we can't write to the debug log, we write to the system debug listener
+                    // Fallback to system debug listener
                     Debug.WriteLine($"[FATAL DEBUG LOGGING ERROR] {ex.Message}");
                 }
             }
