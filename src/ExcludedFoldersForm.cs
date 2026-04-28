@@ -1,4 +1,4 @@
-using DarkModeForms;
+﻿using DarkModeForms;
 
 namespace MinimalFirewall
 {
