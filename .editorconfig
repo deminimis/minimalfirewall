@@ -1,40 +1,54 @@
 # Top-most EditorConfig file
 root = true
 
+
 # All files
 [*]
 indent_style = space
 indent_size = 4
+tab_width = 4
+end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-# Force LF line endings for all text files (Matches .gitattributes)
-end_of_line = lf
 
 # Windows-specific files require CRLF
-[*.{sln,bat,cmd,ps1}]
+[*.{sln,bat,cmd}]
 end_of_line = crlf
 
-# XML-ish files typically use 2-space indent
+# PowerShell: use crlf only if targeting legacy PowerShell 5.1
+# [*.ps1]
+# end_of_line = crlf
+
+
+# XML-ish and data files typically use 2-space indent
 [*.{csproj,props,targets,config,manifest,resx,xml,yml,yaml,json}]
 indent_size = 2
 
+
 # C# and Visual Basic files
 [*.{cs,vb}]
+charset = utf-8-bom
 # Sort using directives with System.* appearing first
 dotnet_sort_system_directives_first = true
 # Avoid "this." unless necessary
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+
 
 # C# specific formatting
 [*.cs]
-# Prefer var when the type is obvious
-csharp_style_var_for_built_in_types = false:none
+# var usage:
+# - false:silent runs the analyzer but suppresses IDE messages
+# - true:suggestion nudges toward var when the type is obvious from context
+# - false:silent elsewhere avoids over-suggesting var for non-obvious types
+csharp_style_var_for_built_in_types = false:silent
 csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_style_var_elsewhere = false:none
+csharp_style_var_elsewhere = false:silent
 
-# Newline settings
+# Newline settings (Allman style)
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
 csharp_new_line_before_catch = true
