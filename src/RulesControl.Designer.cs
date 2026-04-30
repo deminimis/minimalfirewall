@@ -1,4 +1,4 @@
-// File: RulesControl.Designer.cs
+﻿// File: RulesControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class RulesControl
