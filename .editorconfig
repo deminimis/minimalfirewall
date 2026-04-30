@@ -28,7 +28,7 @@ indent_size = 2
 
 # C# and Visual Basic files
 [*.{cs,vb}]
-charset = utf-8-bom
+charset = utf-8
 # Sort using directives with System.* appearing first
 dotnet_sort_system_directives_first = true
 # Avoid "this." unless necessary
