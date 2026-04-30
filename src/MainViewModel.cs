@@ -229,6 +229,7 @@ namespace MinimalFirewall
 
         private void AddRuleAndRefresh(AggregatedRuleViewModel newRule)
         {
+            newRule.DateAdded ??= DateTime.UtcNow;
             AllAggregatedRules.Add(newRule);
             ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
         }

@@ -155,6 +155,7 @@ namespace MinimalFirewall
                 _ when col == advProfilesColumn => rule.Profiles,
                 _ when col == advGroupingColumn => rule.Grouping,
                 _ when col == advDescColumn => rule.Description,
+                _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
                 _ => e.Value
             };
         }

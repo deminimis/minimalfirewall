@@ -36,6 +36,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn advProfilesColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn dateAddedColumn;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
         private System.Windows.Forms.CheckBox programFilterCheckBox;
         private System.Windows.Forms.CheckBox serviceFilterCheckBox;
@@ -100,6 +101,7 @@ namespace MinimalFirewall
             this.advProfilesColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.dateAddedColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.filterPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.programFilterCheckBox = new System.Windows.Forms.CheckBox();
             this.serviceFilterCheckBox = new System.Windows.Forms.CheckBox();
@@ -300,7 +302,8 @@ namespace MinimalFirewall
             this.advServiceColumn,
             this.advProfilesColumn,
             this.advGroupingColumn,
-            this.advDescColumn});
+            this.advDescColumn,
+            this.dateAddedColumn});
             this.rulesDataGridView.ContextMenuStrip = this.rulesContextMenu;
             this.rulesDataGridView.EnableHeadersVisualStyles = false;
             this.rulesDataGridView.GridColor = System.Drawing.SystemColors.Control;
@@ -436,6 +439,15 @@ namespace MinimalFirewall
             this.advDescColumn.HeaderText = "Description";
             this.advDescColumn.Name = "advDescColumn";
             this.advDescColumn.ReadOnly = true;
+            // 
+            // dateAddedColumn
+            // 
+            this.dateAddedColumn.DataPropertyName = "DateAdded";
+            this.dateAddedColumn.DefaultCellStyle.Format = "yyyy-MM-dd HH:mm";
+            this.dateAddedColumn.FillWeight = 12F;
+            this.dateAddedColumn.HeaderText = "Date Added";
+            this.dateAddedColumn.Name = "dateAddedColumn";
+            this.dateAddedColumn.ReadOnly = true;
             // 
             // filterPanel
             // 

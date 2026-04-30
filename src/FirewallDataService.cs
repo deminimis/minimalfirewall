@@ -14,11 +14,12 @@ namespace MinimalFirewall
 {
     public enum MfwRuleStatus { None, MfwAllow, MfwBlock }
 
-    public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService)
+    public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService, RuleTimestampService ruleTimestampService)
     {
         private readonly FirewallRuleService _firewallRuleService = firewallRuleService;
         private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
         private readonly UwpService _uwpService = uwpService;
+        private readonly RuleTimestampService _ruleTimestampService = ruleTimestampService;
         private readonly MemoryCache _localCache = new(new MemoryCacheOptions());
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
@@ -66,6 +67,22 @@ namespace MinimalFirewall
                 {
                     return [];
                 }
+
+                // Stamp first-seen times, prune stale entries, persist if dirty.
+                // First refresh after install treats all observed rules as baseline (Unknown).
+                var now = DateTime.UtcNow;
+                bool isBaseline = _ruleTimestampService.IsBaselineSession;
+                var activeNames = new List<string>(mfwRules.Count);
+                foreach (var rule in mfwRules)
+                {
+                    if (string.IsNullOrEmpty(rule.Name)) continue;
+                    rule.DateAdded = _ruleTimestampService.EnsureStamped(rule.Name, now, isBaseline);
+                    activeNames.Add(rule.Name);
+                }
+                _ruleTimestampService.PruneTo(activeNames);
+                _ruleTimestampService.Flush();
+                if (isBaseline) _ruleTimestampService.EndBaselineSession();
+
                 return mfwRules;
             }, token);
         }
@@ -157,7 +174,8 @@ namespace MinimalFirewall
                 IsEnabled = group.TrueForAll(r => r.IsEnabled),
                 Profiles = firstRule.Profiles,
                 Grouping = firstRule.Grouping ?? "",
-                Description = firstRule.Description ?? ""
+                Description = firstRule.Description ?? "",
+                DateAdded = group.Where(r => r.DateAdded.HasValue).Min(r => (DateTime?)r.DateAdded)
             };
 
             bool hasInAllow = group.Exists(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));

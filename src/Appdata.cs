@@ -35,7 +35,8 @@ namespace MinimalFirewall
             "debug_log.txt",
             "changelog.json",
             "uwp_apps.json",
-            "trusted_publishers.json"
+            "trusted_publishers.json",
+            "rule_timestamps.json"
         };
 
         public static void EnsureStorageDirectoryExists()

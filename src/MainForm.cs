@@ -32,6 +32,7 @@ namespace MinimalFirewall
         private UserActivityLogger _activityLogger;
         private WildcardRuleService _wildcardRuleService;
         private ForeignRuleTracker _foreignRuleTracker;
+        private RuleTimestampService _ruleTimestampService;
         private AppSettings _appSettings;
         private StartupService _startupService;
         private FirewallGroupManager _groupManager;
@@ -141,9 +142,10 @@ namespace MinimalFirewall
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
             _wildcardRuleService = new WildcardRuleService();
             _foreignRuleTracker = new ForeignRuleTracker();
+            _ruleTimestampService = new RuleTimestampService();
 
             var uwpService = new UwpService(_firewallRuleService);
-            _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService);
+            _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService, _ruleTimestampService);
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
             var trafficMonitorViewModel = new TrafficMonitorViewModel();
 
