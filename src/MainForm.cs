@@ -639,8 +639,9 @@ namespace MinimalFirewall
                     BeginInvoke(new Action(ProcessNextPopup));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _activityLogger.LogException("Notifier_FormClosed", ex);
             }
             finally
             {

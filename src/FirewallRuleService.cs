@@ -40,9 +40,10 @@ namespace MinimalFirewall
                     {
                         mappedList.Add(mapper(rule));
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         // Ignore rules that fail to map
+                        Debug.WriteLine($"[WARN] GetAllRulesMapped: Failed to map firewall rule: {ex.Message}");
                     }
                     finally
                     {
@@ -220,7 +221,10 @@ namespace MinimalFirewall
                             keep = true;
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[WARN] GetRulesByPathAndDirection: Failed to inspect firewall rule: {ex.Message}");
+                    }
                     finally
                     {
                         if (!keep) Marshal.ReleaseComObject(rule);
