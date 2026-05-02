@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Net;
@@ -155,7 +156,10 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch {  }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] PathResolver failed to build DOS device map: {ex.Message}");
+            }
 
             var specialFolders = new[]
             {
@@ -179,7 +183,10 @@ namespace MinimalFirewall
                         _envVarMap[path] = envVar;
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WARN] PathResolver failed to map special folder {folder}: {ex.Message}");
+                }
             }
         }
 
@@ -204,8 +211,9 @@ namespace MinimalFirewall
             {
                 return Environment.ExpandEnvironmentVariables(environmentPath);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] ConvertFromEnvironmentPath failed: {ex.Message}");
                 return environmentPath;
             }
         }
@@ -218,8 +226,9 @@ namespace MinimalFirewall
             {
                 expandedPath = Environment.ExpandEnvironmentVariables(path);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NormalizePath failed to expand environment variables: {ex.Message}");
                 return path;
             }
 
@@ -238,8 +247,9 @@ namespace MinimalFirewall
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Debug.WriteLine($"[WARN] NormalizePath failed to resolve actual file casing: {ex.Message}");
                 }
             }
 
@@ -253,8 +263,9 @@ namespace MinimalFirewall
                 string basePath = AppContext.BaseDirectory;
                 return Path.GetFullPath(Path.Combine(basePath, expandedPath));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NormalizePath failed to get full path: {ex.Message}");
                 return path;
             }
         }

@@ -184,7 +184,10 @@ namespace MinimalFirewall
                     if (p.MainModule != null) path = p.MainModule.FileName;
                 }
                 catch (Win32Exception) { path = "N/A (Access Denied)"; }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WARN] ResolveProcessInfo failed to read main module for PID {pid}: {ex.Message}");
+                }
 
                 if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))
                 {
@@ -196,8 +199,9 @@ namespace MinimalFirewall
             {
                 return ("(Exited)", string.Empty, string.Empty);
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] ResolveProcessInfo failed for PID {pid}: {ex.Message}");
                 return ("Unknown", string.Empty, string.Empty);
             }
         }

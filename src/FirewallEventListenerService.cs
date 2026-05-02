@@ -424,7 +424,10 @@ namespace MinimalFirewall
                     if (normalizedDir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WARN] IsInExcludedFolder failed for excluded folder '{excludedFolder}': {ex.Message}");
+                }
             }
 
             return false;
