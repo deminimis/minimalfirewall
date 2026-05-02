@@ -870,7 +870,10 @@ namespace DarkModeForms
                 if (key?.GetValue("CurrentMajorVersionNumber") is int majorInt) return majorInt;
                 if (key?.GetValue("ProductName")?.ToString()?.Contains("Windows 1") == true) return 10;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] WindowsVersion failed to read registry version: {ex.Message}");
+            }
             return 10;
         }
 
