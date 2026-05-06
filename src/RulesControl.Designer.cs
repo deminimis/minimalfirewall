@@ -37,6 +37,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn dateAddedColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn autoAllowedColumn;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
         private System.Windows.Forms.CheckBox programFilterCheckBox;
         private System.Windows.Forms.CheckBox serviceFilterCheckBox;
@@ -102,6 +103,7 @@ namespace MinimalFirewall
             this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.dateAddedColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.autoAllowedColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.filterPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.programFilterCheckBox = new System.Windows.Forms.CheckBox();
             this.serviceFilterCheckBox = new System.Windows.Forms.CheckBox();
@@ -303,7 +305,8 @@ namespace MinimalFirewall
             this.advProfilesColumn,
             this.advGroupingColumn,
             this.advDescColumn,
-            this.dateAddedColumn});
+            this.dateAddedColumn,
+            this.autoAllowedColumn});
             this.rulesDataGridView.ContextMenuStrip = this.rulesContextMenu;
             this.rulesDataGridView.EnableHeadersVisualStyles = false;
             this.rulesDataGridView.GridColor = System.Drawing.SystemColors.Control;
@@ -449,6 +452,14 @@ namespace MinimalFirewall
             this.dateAddedColumn.Name = "dateAddedColumn";
             this.dateAddedColumn.ReadOnly = true;
             // 
+            // autoAllowedColumn
+            //
+            this.autoAllowedColumn.DataPropertyName = "AutoAllowedPublisher";
+            this.autoAllowedColumn.FillWeight = 8F;
+            this.autoAllowedColumn.HeaderText = "Origin";
+            this.autoAllowedColumn.Name = "autoAllowedColumn";
+            this.autoAllowedColumn.ReadOnly = true;
+            //
             // filterPanel
             // 
             this.filterPanel.Anchor = System.Windows.Forms.AnchorStyles.Left;

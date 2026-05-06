@@ -156,6 +156,7 @@ namespace MinimalFirewall
                 _ when col == advGroupingColumn => rule.Grouping,
                 _ when col == advDescColumn => rule.Description,
                 _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
+                _ when col == autoAllowedColumn => string.IsNullOrEmpty(rule.AutoAllowedPublisher) ? "" : "Auto",
                 _ => e.Value
             };
         }
@@ -425,6 +426,10 @@ namespace MinimalFirewall
                     details.AppendLine($"Profiles: {rule.Profiles}");
                     details.AppendLine($"Group: {rule.Grouping}");
                     details.AppendLine($"Description: {rule.Description}");
+                    if (!string.IsNullOrEmpty(rule.AutoAllowedPublisher))
+                    {
+                        details.AppendLine($"Auto-allowed publisher: {rule.AutoAllowedPublisher}");
+                    }
                 }
 
                 if (details.Length > 0)

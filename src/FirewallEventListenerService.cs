@@ -395,7 +395,8 @@ namespace MinimalFirewall
                 var appPayload = new ApplyApplicationRulePayload
                 {
                     AppPaths = new List<string> { appPath },
-                    Action = allowAction
+                    Action = allowAction,
+                    AutoAllowedPublisher = matchedPublisher
                 };
                 BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
                 return true;

@@ -254,6 +254,8 @@ namespace MinimalFirewall
                 11 => rule => rule.Profiles,
                 12 => rule => rule.Grouping,
                 13 => rule => rule.Description,
+                14 => rule => rule.DateAdded ?? DateTime.MinValue,
+                15 => rule => rule.AutoAllowedPublisher,
                 _ => rule => rule.Name,
             };
         }
