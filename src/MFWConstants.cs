@@ -7,6 +7,7 @@ namespace MinimalFirewall
         public const string WildcardRuleGroup = "Minimal Firewall (Wildcard) - MFW";
         public const string WildcardDescriptionPrefix = "MFW_Wildcard_Path:[";
         public const string UwpDescriptionPrefix = "UWP App; PFN=";
+        public const string AutoAllowPublisherPrefix = "MFW_AutoAllow_Publisher:[";
         public const string MfwRuleSuffix = " - MFW";
     }
 }

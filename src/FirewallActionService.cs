@@ -161,7 +161,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null)
+        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null, string? autoAllowedPublisher = null)
         {
             var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             if (action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
@@ -201,8 +201,19 @@ namespace MinimalFirewall
                 string appName = Path.GetFileNameWithoutExtension(appPath);
                 void createRule(string baseName, Directions dir, Actions act)
                 {
-                    string description = string.IsNullOrEmpty(wildcardSourcePath) ?
-                        "" : $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    string description;
+                    if (!string.IsNullOrEmpty(wildcardSourcePath))
+                    {
+                        description = $"{MFWConstants.WildcardDescriptionPrefix}{wildcardSourcePath}]";
+                    }
+                    else if (!string.IsNullOrEmpty(autoAllowedPublisher))
+                    {
+                        description = $"{MFWConstants.AutoAllowPublisherPrefix}{autoAllowedPublisher}]";
+                    }
+                    else
+                    {
+                        description = "";
+                    }
                     CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
                 }
 
