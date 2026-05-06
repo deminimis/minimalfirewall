@@ -262,7 +262,7 @@ namespace MinimalFirewall
             var map = new Dictionary<FirewallTaskType, IFirewallTaskHandler>();
             // Standard Rule Handlers 
             map[FirewallTaskType.ApplyApplicationRule] = new ActionHandler<ApplyApplicationRulePayload>(
-                p => _actionsService.ApplyApplicationRuleChange(p.AppPaths, p.Action, p.WildcardSourcePath), TaskResult.CacheOnly);
+                p => _actionsService.ApplyApplicationRuleChange(p.AppPaths, p.Action, p.WildcardSourcePath, p.AutoAllowedPublisher), TaskResult.CacheOnly);
             map[FirewallTaskType.ApplyServiceRule] = new ActionHandler<ApplyServiceRulePayload>(
                 p => _actionsService.ApplyServiceRuleChange(p.ServiceName, p.Action, p.AppPath), TaskResult.CacheOnly);
             map[FirewallTaskType.ApplyUwpRule] = new ActionHandler<ApplyUwpRulePayload>(
