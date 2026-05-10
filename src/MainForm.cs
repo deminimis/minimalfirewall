@@ -259,7 +259,7 @@ namespace MinimalFirewall
                 _eventListenerService.EnableAuditing();
                 _eventListenerService.Start();
 
-                if (!AdminTaskService.IsAuditPolicyEnabled())
+                if (!AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
                 {
                     _activityLogger.LogDebug("[Startup] Lockdown is on but WFP audit policy is not enabled. Connection popups will not work until this is resolved.");
                     MessageBox.Show(this,
