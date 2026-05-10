@@ -476,7 +476,7 @@ namespace MinimalFirewall
 
             ManageWslRules(newLockdownState);
 
-            if (newLockdownState && !AdminTaskService.IsAuditPolicyEnabled())
+            if (newLockdownState && !AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
             {
                 SafeShowMessageBox(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
