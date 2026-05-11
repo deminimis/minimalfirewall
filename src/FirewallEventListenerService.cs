@@ -395,7 +395,8 @@ namespace MinimalFirewall
                 var appPayload = new ApplyApplicationRulePayload
                 {
                     AppPaths = new List<string> { appPath },
-                    Action = allowAction
+                    Action = allowAction,
+                    AutoAllowedPublisher = matchedPublisher
                 };
                 BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule, appPayload));
                 return true;
@@ -424,7 +425,10 @@ namespace MinimalFirewall
                     if (normalizedDir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
                         return true;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[WARN] IsInExcludedFolder failed for excluded folder '{excludedFolder}': {ex.Message}");
+                }
             }
 
             return false;

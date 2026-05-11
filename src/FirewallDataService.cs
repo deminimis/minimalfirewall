@@ -175,7 +175,8 @@ namespace MinimalFirewall
                 Profiles = firstRule.Profiles,
                 Grouping = firstRule.Grouping ?? "",
                 Description = firstRule.Description ?? "",
-                DateAdded = group.Where(r => r.DateAdded.HasValue).Min(r => (DateTime?)r.DateAdded)
+                DateAdded = group.Where(r => r.DateAdded.HasValue).Min(r => (DateTime?)r.DateAdded),
+                AutoAllowedPublisher = group.Select(r => r.AutoAllowedPublisher).FirstOrDefault(p => !string.IsNullOrEmpty(p)) ?? ""
             };
 
             bool hasInAllow = group.Exists(r => r.Status == "Allow" && r.Direction.HasFlag(Directions.Incoming));
@@ -336,11 +337,22 @@ namespace MinimalFirewall
             var rawProtocol = rule.Protocol;
 
             string appName = string.IsNullOrEmpty(rawAppName) ? string.Empty : rawAppName;
+            string rawDescription = rule.Description ?? "N/A";
+            string autoAllowedPublisher = string.Empty;
+            if (rawDescription.StartsWith(MFWConstants.AutoAllowPublisherPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                int endIdx = rawDescription.IndexOf(']', MFWConstants.AutoAllowPublisherPrefix.Length);
+                if (endIdx > 0)
+                {
+                    autoAllowedPublisher = rawDescription.Substring(MFWConstants.AutoAllowPublisherPrefix.Length, endIdx - MFWConstants.AutoAllowPublisherPrefix.Length);
+                }
+                rawDescription = string.Empty;
+            }
 
             return new AdvancedRuleViewModel
             {
                 Name = rule.Name ?? "Unnamed Rule",
-                Description = rule.Description ?? "N/A",
+                Description = rawDescription,
                 IsEnabled = rule.Enabled,
                 Status = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW ? "Allow" : "Block",
                 Direction = (Directions)rule.Direction,
@@ -355,7 +367,8 @@ namespace MinimalFirewall
                 Profiles = GetProfileString(rule.Profiles),
                 Grouping = rule.Grouping ?? string.Empty,
                 InterfaceTypes = rule.InterfaceTypes ?? "All",
-                IcmpTypesAndCodes = rule.IcmpTypesAndCodes ?? ""
+                IcmpTypesAndCodes = rule.IcmpTypesAndCodes ?? "",
+                AutoAllowedPublisher = autoAllowedPublisher
             };
         }
 

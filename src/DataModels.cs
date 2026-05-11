@@ -100,6 +100,7 @@ public class AdvancedRuleViewModel
     public string InterfaceTypes { get; set; } = string.Empty;
     public string IcmpTypesAndCodes { get; set; } = string.Empty;
     public DateTime? DateAdded { get; set; }
+    public string AutoAllowedPublisher { get; set; } = string.Empty;
 
     // Checks if all firewall-relevant properties match (Case-Insensitive for strings)
     public bool HasSameSettings(AdvancedRuleViewModel? other)
@@ -292,7 +293,7 @@ public class FirewallTask
 }
 
 // Payload DTOs converted to records for Immutability and built-in ToString() logging
-public record ApplyApplicationRulePayload { public List<string> AppPaths { get; init; } = []; public string Action { get; init; } = ""; public string? WildcardSourcePath { get; init; } }
+public record ApplyApplicationRulePayload { public List<string> AppPaths { get; init; } = []; public string Action { get; init; } = ""; public string? WildcardSourcePath { get; init; } public string? AutoAllowedPublisher { get; init; } }
 public record ApplyServiceRulePayload { public string ServiceName { get; init; } = ""; public string Action { get; init; } = ""; public string? AppPath { get; init; } }
 public record ApplyUwpRulePayload { public List<UwpApp> UwpApps { get; init; } = []; public string Action { get; init; } = ""; }
 public record DeleteRulesPayload { public List<string> RuleIdentifiers { get; init; } = []; }

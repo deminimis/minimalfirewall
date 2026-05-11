@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace MinimalFirewall
 {
@@ -71,7 +72,10 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] DashboardControl.Initialize failed to restore layout: {ex.Message}");
+            }
 
             splitContainer.SplitterMoved += SplitContainer_SplitterMoved;
 
@@ -521,7 +525,10 @@ namespace MinimalFirewall
                 string json = JsonSerializer.Serialize(settings);
                 File.WriteAllText(_layoutSettingsPath, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] DashboardControl.SplitContainer_SplitterMoved failed to save layout: {ex.Message}");
+            }
         }
 
         public class DashboardLayoutSettings
