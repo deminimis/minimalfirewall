@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace MinimalFirewall
 {
@@ -120,8 +121,9 @@ namespace MinimalFirewall
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NotifierForm.OnLoad failed to restore layout: {ex.Message}");
             }
         }
 
@@ -149,8 +151,9 @@ namespace MinimalFirewall
                     trustPublisherCheckBox.Visible = false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NotifierForm.OnShown failed to load publisher info: {ex.Message}");
                 trustPublisherCheckBox.Visible = false;
             }
         }
@@ -174,8 +177,9 @@ namespace MinimalFirewall
                     File.WriteAllText(_layoutSettingsPath, json);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NotifierForm.OnFormClosing failed to save layout: {ex.Message}");
             }
 
             base.OnFormClosing(e);
@@ -278,8 +282,9 @@ namespace MinimalFirewall
                     copyDetailsButton.Text = "📋";
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] NotifierForm.copyDetailsButton_Click failed: {ex.Message}");
             }
         }
 

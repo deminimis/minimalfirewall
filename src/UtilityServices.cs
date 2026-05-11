@@ -60,6 +60,12 @@ namespace MinimalFirewall
             return IsAuditingEnabledForSubcategory(packetDropGuid) && IsAuditingEnabledForSubcategory(connectionGuid);
         }
 
+        public static bool IsWfpConnectionAuditPolicyEnabled()
+        {
+            var connectionGuid = new Guid("{0CCE9226-69AE-11D9-BED3-505054503030}");
+            return IsAuditingEnabledForSubcategory(connectionGuid);
+        }
+
         private const uint AUDIT_FAILURE = 0x00000002;
 
         [DllImport("advapi32.dll", SetLastError = true)]

@@ -205,8 +205,9 @@ namespace MinimalFirewall
                         SortOrder.Ascending : SortOrder.Descending;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"[WARN] ApplySearchFilter failed: {ex.Message}");
             }
         }
 
