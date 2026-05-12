@@ -45,6 +45,7 @@ namespace MinimalFirewall
         public event Action? RulesListUpdated;
         public event Action? SystemChangesUpdated;
         public event Action<PendingConnectionViewModel>? PopupRequired;
+        public event Action<FirewallRuleChange>? RulePopupRequired;
         public event Action<PendingConnectionViewModel>? DashboardActionProcessed;
         public event Action<string>? StatusTextChanged;
 
@@ -357,22 +358,45 @@ namespace MinimalFirewall
             var knownState = _snapshotService.LoadSnapshot();
             bool isFirstInitialization = knownState.Count == 0 && !_snapshotService.SnapshotExists();
 
-            if (_appSettings.QuarantineMode)
+            foreach (var change in incrementalChanges)
             {
-                foreach (var change in incrementalChanges)
+                bool isFresh = change.Name != null && !knownState.Contains(change.Name);
+                if (change.Type == ChangeType.New && isFresh && !isFirstInitialization)
                 {
-                    bool isFresh = !knownState.Contains(change.Name);
-                    if (change.Type == ChangeType.New && change.Rule.IsEnabled && isFresh && !isFirstInitialization)
-                    {
-                        var payload = new ForeignRuleChangePayload { Change = change };
-                        _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload, $"Quarantining: {change.Name}"));
+                    // Determine if it is an OS Rule
+                    bool isWindowsRule = (change.Grouping?.StartsWith("@") == true) ||
+                                         (change.Name?.StartsWith("@") == true) ||
+                                         string.Equals(change.ApplicationName, "System", StringComparison.OrdinalIgnoreCase) ||
+                                         (change.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true);
 
-                        change.Rule.IsEnabled = false;
-                        change.Rule.Status = "Blocked (Pending Review)";
-                    }
-                    else if (change.Type == ChangeType.New && !change.Rule.IsEnabled)
+                    if (isWindowsRule)
                     {
-                        change.Rule.Status = "Blocked (Pending Review)";
+                        // Silently disable 
+                        if (change.Rule.IsEnabled)
+                        {
+                            var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Auto-Disabling OS Rule: {change.Name}"));
+                            change.Rule.IsEnabled = false;
+                        }
+                        change.Rule.Status = "Auto-Disabled (OS)";
+                    }
+                    else
+                    {
+                        // It's a Third-Party Rule
+                        if (_appSettings.QuarantineMode && change.Rule.IsEnabled)
+                        {
+                            var payload = new ForeignRuleChangePayload { Change = change };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload, $"Quarantining: {change.Name}"));
+                            change.Rule.IsEnabled = false;
+                            change.Rule.Status = "Blocked (Pending Review)";
+                        }
+                        else if (!change.Rule.IsEnabled)
+                        {
+                            change.Rule.Status = "Blocked (Pending Review)";
+                        }
+
+                        // Trigger popup
+                        RulePopupRequired?.Invoke(change);
                     }
                 }
             }

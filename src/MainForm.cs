@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using NetFwTypeLib;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
@@ -24,25 +24,28 @@ namespace MinimalFirewall
     public partial class MainForm : Form
     {
         #region Fields
-        private FirewallDataService _dataService;
-        private FirewallActionsService _actionsService;
-        private FirewallEventListenerService _eventListenerService;
-        private FirewallSentryService _firewallSentryService;
-        private FirewallRuleService _firewallRuleService;
-        private UserActivityLogger _activityLogger;
-        private WildcardRuleService _wildcardRuleService;
-        private ForeignRuleTracker _foreignRuleTracker;
-        private RuleTimestampService _ruleTimestampService;
-        private AppSettings _appSettings;
-        private StartupService _startupService;
-        private FirewallGroupManager _groupManager;
-        private IconService _iconService;
-        private PublisherWhitelistService _whitelistService;
-        private BackgroundFirewallTaskService _backgroundTaskService;
-        private MainViewModel _mainViewModel;
+        private FirewallDataService _dataService = null!;
+        private FirewallActionsService _actionsService = null!;
+        private FirewallEventListenerService _eventListenerService = null!;
+        private FirewallSentryService _firewallSentryService = null!;
+        private FirewallRuleService _firewallRuleService = null!;
+        private UserActivityLogger _activityLogger = null!;
+        private WildcardRuleService _wildcardRuleService = null!;
+        private ForeignRuleTracker _foreignRuleTracker = null!;
+        private RuleTimestampService _ruleTimestampService = null!;
+        private AppSettings _appSettings = null!;
+        private StartupService _startupService = null!;
+        private FirewallGroupManager _groupManager = null!;
+        private IconService _iconService = null!;
+        private PublisherWhitelistService _whitelistService = null!;
+        private BackgroundFirewallTaskService _backgroundTaskService = null!;
+        private MainViewModel _mainViewModel = null!;
         private readonly Queue<PendingConnectionViewModel> _popupQueue = [];
         private volatile bool _isPopupVisible = false;
         private readonly object _popupLock = new();
+
+        private readonly Queue<FirewallRuleChange> _rulePopupQueue = new();
+        private volatile bool _isRulePopupVisible = false;
         private DarkModeCS dm;
         private System.Threading.Timer? _autoRefreshTimer;
         private readonly Dictionary<string, System.Threading.Timer> _tabUnloadTimers = [];
@@ -111,6 +114,7 @@ namespace MinimalFirewall
             _backgroundTaskService.WildcardRulesChanged += OnWildcardRulesChanged;
             _mainViewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             _mainViewModel.PopupRequired += OnPopupRequired;
+            _mainViewModel.RulePopupRequired += OnRulePopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
             _mainViewModel.SystemChangesUpdated += () => {
                 UpdateUiWithChangesCount();
@@ -560,6 +564,81 @@ namespace MinimalFirewall
             });
         }
 
+        private void OnRulePopupRequired(FirewallRuleChange rule)
+        {
+            SafeInvoke(() =>
+            {
+                if (_appSettings.IsPopupsEnabled)
+                {
+                    lock (_popupLock)
+                    {
+                        _rulePopupQueue.Enqueue(rule);
+                    }
+                    BeginInvoke(new Action(ProcessNextRulePopup));
+                }
+            });
+        }
+
+        private void ProcessNextRulePopup()
+        {
+            lock (_popupLock)
+            {
+                if (_isRulePopupVisible || _rulePopupQueue.Count == 0) return;
+                _isRulePopupVisible = true;
+
+                var rule = _rulePopupQueue.Dequeue();
+                bool isDark = IsDarkModeEnabled;
+                var notifier = new NotifierForm(rule, isDark);
+                notifier.FormClosed += RuleNotifier_FormClosed;
+                notifier.TopMost = true;
+                notifier.Show();
+            }
+        }
+
+        private void RuleNotifier_FormClosed(object? sender, FormClosedEventArgs e)
+        {
+            try
+            {
+                if (sender is not NotifierForm notifier) return;
+                notifier.FormClosed -= RuleNotifier_FormClosed;
+
+                if (this.IsDisposed || this.Disposing) return;
+
+                var rule = notifier.RuleChange;
+                var result = notifier.Result;
+
+                if (rule != null)
+                {
+                    if (result == NotifierForm.NotifierResult.Allow)
+                    {
+                        // User chose to Allow (Keep it enabled)
+                        _mainViewModel.EnableForeignRule(rule);
+                        _mainViewModel.AcceptForeignRule(rule);
+                    }
+                    else if (result == NotifierForm.NotifierResult.Block)
+                    {
+                        // User chose to Block (Disable/Delete it)
+                        _mainViewModel.DeleteForeignRule(rule);
+                    }
+                    // Ignore leaves it in the audit tab
+                }
+
+                lock (_popupLock)
+                {
+                    _isRulePopupVisible = false;
+                }
+                BeginInvoke(new Action(ProcessNextRulePopup));
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("RuleNotifier_FormClosed", ex);
+            }
+            finally
+            {
+                if (sender is IDisposable disposable) disposable.Dispose();
+            }
+        }
+
         private void ProcessNextPopup()
         {
             lock (_popupLock)
@@ -591,6 +670,9 @@ namespace MinimalFirewall
 
                 var pending = notifier.PendingConnection;
                 var result = notifier.Result;
+
+                if (pending == null) return;
+
                 _mainViewModel.PendingConnections.Remove(pending);
                 if (result == NotifierForm.NotifierResult.CreateWildcard)
                 {
@@ -843,6 +925,7 @@ namespace MinimalFirewall
                 _tabUnloadTimers.Clear();
                 _mainViewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
                 _mainViewModel.PopupRequired -= OnPopupRequired;
+                _mainViewModel.RulePopupRequired -= OnRulePopupRequired;
                 _backgroundTaskService.QueueCountChanged -= OnQueueCountChanged;
                 _backgroundTaskService.WildcardRulesChanged -= OnWildcardRulesChanged;
                 Application.Exit();
