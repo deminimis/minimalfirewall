@@ -22,6 +22,9 @@ namespace MinimalFirewall
             dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
             dm.ApplyTheme(appSettings.Theme == "Dark");
 
+            // Force repaint of FlatComboBox controls to ensure correct colors
+            directionCombo.Invalidate();
+            protocolComboBox.Invalidate();
 
             directionCombo.SelectedIndex = 0; // Default to first item
             protocolComboBox.Items.Clear();

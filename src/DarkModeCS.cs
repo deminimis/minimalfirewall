@@ -365,6 +365,13 @@ namespace DarkModeForms
             }
             else if (control is ComboBox comboBox)
             {
+                if (control is FlatComboBox flatCombo)
+                {
+                    flatCombo.BorderColor = IsDarkMode ? OScolors.ControlDark : Color.Gray;
+                    flatCombo.ButtonColor = IsDarkMode ? OScolors.Surface : Color.LightGray;
+                    flatCombo.Invalidate();
+                }
+
                 if (comboBox.DropDownStyle != ComboBoxStyle.DropDownList)
                 {
                     comboBox.SelectionStart = comboBox.Text.Length;
