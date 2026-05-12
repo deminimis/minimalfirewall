@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using Firewall.Traffic.ViewModels;
 using Microsoft.VisualBasic.ApplicationServices;
 using MinimalFirewall.TypedObjects;
@@ -458,9 +458,32 @@ namespace MinimalFirewall
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyServiceRule, servicePayload, $"Applying: {action} to Service {item.Name}"));
                     break;
                 case RuleType.UWP:
-                    if (firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
+                    string pfn = string.Empty;
+
+                    // Check if it's MFW-created UWP rule 
+                    if (firstRule.Description != null && firstRule.Description.Contains(MFWConstants.UwpDescriptionPrefix))
                     {
-                        var pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
+                        pfn = firstRule.Description.Replace(MFWConstants.UwpDescriptionPrefix, "");
+                    }
+                    else
+                    {
+                        // Match from the cached UWP apps list by Name
+                        var uwpApps = _dataService.LoadUwpAppsFromCache();
+                        var matchingUwp = uwpApps.FirstOrDefault(u => string.Equals(u.Name, item.Name, StringComparison.OrdinalIgnoreCase));
+
+                        if (matchingUwp != null)
+                        {
+                            pfn = matchingUwp.PackageFamilyName;
+                        }
+                        else
+                        {
+                            // Fallback, use the raw ApplicationName
+                            pfn = firstRule.ApplicationName ?? string.Empty;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(pfn))
+                    {
                         var uwpApp = new UwpApp { Name = item.Name, PackageFamilyName = pfn };
                         var uwpPayload = new ApplyUwpRulePayload { UwpApps = [uwpApp], Action = action };
                         _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyUwpRule, uwpPayload, $"Applying: {action} to UWP {item.Name}"));
