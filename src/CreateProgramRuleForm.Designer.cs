@@ -90,8 +90,6 @@ namespace MinimalFirewall
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
 
-            this.blockDirectionCombo.BorderColor = System.Drawing.Color.Gray;
-            this.blockDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
             this.blockDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.blockDirectionCombo.FormattingEnabled = true;
             this.blockDirectionCombo.Items.AddRange(new object[] {
@@ -103,8 +101,6 @@ namespace MinimalFirewall
             this.blockDirectionCombo.Size = new System.Drawing.Size(280, 23);
             this.blockDirectionCombo.TabIndex = 3;
 
-            this.allowDirectionCombo.BorderColor = System.Drawing.Color.Gray;
-            this.allowDirectionCombo.ButtonColor = System.Drawing.Color.LightGray;
             this.allowDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.allowDirectionCombo.FormattingEnabled = true;
             this.allowDirectionCombo.Items.AddRange(new object[] {

@@ -365,9 +365,7 @@
             this.protocolGroupBox.Text = "Protocol";
             // 
             // protocolComboBox
-            // 
-            this.protocolComboBox.BorderColor = System.Drawing.Color.Gray;
-            this.protocolComboBox.ButtonColor = System.Drawing.Color.LightGray;
+            //
             this.protocolComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.protocolComboBox.FormattingEnabled = true;
             this.protocolComboBox.Location = new System.Drawing.Point(75, 22);
@@ -684,8 +682,6 @@
             // 
             this.groupComboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupComboBox.BorderColor = System.Drawing.Color.Gray;
-            this.groupComboBox.ButtonColor = System.Drawing.Color.LightGray;
             this.groupComboBox.FormattingEnabled = true;
             this.groupComboBox.Location = new System.Drawing.Point(80, 13);
             this.groupComboBox.Name = "groupComboBox";
