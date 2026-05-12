@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.IO;
 using NetFwTypeLib;
@@ -101,7 +101,7 @@ namespace MinimalFirewall
                 }
             }
 
-            Panel activePanel = null;
+            Panel? activePanel = null;
 
             // Default button states
             backButton.Enabled = _history.Count > 0;
@@ -581,9 +581,12 @@ namespace MinimalFirewall
 
         private AdvancedRuleViewModel CreateBaseViewModel(string name, string status, Directions direction, int protocol, string description = "")
         {
+            // MFW prefix to protect from OS overwrite
+            string safeName = name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? name : $"MFW - {name}";
             return new AdvancedRuleViewModel
             {
-                Name = name,
+                Name = safeName,
+
                 Description = description,
                 IsEnabled = true,
                 Status = status,
