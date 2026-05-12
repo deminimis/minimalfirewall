@@ -1068,7 +1068,8 @@ namespace MinimalFirewall
         private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType)
         {
             // MFW prefix to protect against OS overwrites
-            string safeName = name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? name : $"MFW - {name}";
+            string safeName = (name ?? string.Empty).StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ?
+                (name ?? string.Empty) : $"MFW - {name}";
 
             var vm = new AdvancedRuleViewModel
             {
