@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using System.Data;
 using System.IO;
 using MinimalFirewall.TypedObjects;
@@ -715,17 +715,17 @@ namespace MinimalFirewall
 
         private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction, bool acknowledge = true)
         {
-            if (change.Rule?.Name is not null)
+            if (change.Rule is { Name: string ruleName })
             {
-                if (enable) firewallService.EnableRuleByName(change.Rule.Name);
-                else firewallService.DisableRuleByName(change.Rule.Name);
+                if (enable) firewallService.EnableRuleByName(ruleName);
+                else firewallService.DisableRuleByName(ruleName);
 
                 if (acknowledge)
                 {
-                    foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
+                    foreignRuleTracker.AcknowledgeRules([ruleName]);
                 }
-                activityLogger.LogChange($"Foreign Rule {logAction}", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
+                activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
+                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}' (Ack: {acknowledge})");
             }
         }
 
@@ -741,20 +741,20 @@ namespace MinimalFirewall
         // Quarantine Logic 
         public void QuarantineForeignRule(FirewallRuleChange change)
         {
-            if (change.Rule?.Name is not null)
+            if (change.Rule is { Name: string ruleName })
             {
-                firewallService.DisableRuleByName(change.Rule.Name);
-                activityLogger.LogChange("Foreign Rule Quarantined", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Quarantined (Disabled) foreign rule '{change.Rule.Name}' without acknowledgement.");
+                firewallService.DisableRuleByName(ruleName);
+                activityLogger.LogChange("Foreign Rule Quarantined", ruleName);
+                activityLogger.LogDebug($"Sentry: Quarantined (Disabled) foreign rule '{ruleName}' without acknowledgement.");
             }
         }
 
         public void DeleteForeignRule(FirewallRuleChange change)
         {
-            if (change.Rule?.Name is not null)
+            if (change.Rule is { Name: string ruleName })
             {
-                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{change.Rule.Name}'");
-                DeleteAdvancedRules([change.Rule.Name]);
+                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{ruleName}'");
+                DeleteAdvancedRules([ruleName]);
             }
         }
 
@@ -827,7 +827,14 @@ namespace MinimalFirewall
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
-            // Validation
+            if (vm == null) return;
+
+            // MFW prefix to protect custom rules
+            if (!string.IsNullOrWhiteSpace(vm.Name) && !vm.Name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase))
+            {
+                vm.Name = $"MFW - {vm.Name}";
+            }
+
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
@@ -1060,9 +1067,12 @@ namespace MinimalFirewall
 
         private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType)
         {
+            // MFW prefix to protect against OS overwrites
+            string safeName = name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? name : $"MFW - {name}";
+
             var vm = new AdvancedRuleViewModel
             {
-                Name = name,
+                Name = safeName,
                 Description = description,
                 IsEnabled = true,
                 Grouping = grouping,
@@ -1080,6 +1090,7 @@ namespace MinimalFirewall
                 InterfaceTypes = "All",
                 IcmpTypesAndCodes = ""
             };
+
             CreateSingleAdvancedRule(vm, "All", "");
         }
 
@@ -1179,10 +1190,13 @@ namespace MinimalFirewall
                     return;
                 }
 
+                // MFW prefix to protect wildcard generated rules
+                string safeName = baseName.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? baseName : $"MFW - {baseName}";
+
                 var vm = new AdvancedRuleViewModel
                 {
-                    Name = baseName,
-                    ApplicationName = string.IsNullOrEmpty(serviceNameToUse) ? appPath : null,
+                    Name = safeName,
+                    ApplicationName = string.IsNullOrEmpty(serviceNameToUse) ? appPath : "",
                     ServiceName = !string.IsNullOrEmpty(serviceNameToUse) ? serviceNameToUse : "",
                     Direction = dir,
                     Status = act == Actions.Allow ? "Allow" : "Block",

@@ -294,7 +294,7 @@ namespace MinimalFirewall
                         {
                             if (originalRule.HasSameSettings(dialog.RuleVm)) return;
 
-                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules.Select(r => r.Name).ToList() };
+                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules?.Select(r => r.Name).ToList() ?? new List<string>() };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
 
                             var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
@@ -546,7 +546,7 @@ namespace MinimalFirewall
             OnRulesListUpdated();
         }
 
-        private void RulesDataGridView_MouseDown(object sender, MouseEventArgs e)
+        private void RulesDataGridView_MouseDown(object? sender, MouseEventArgs e)
         {
             var hit = rulesDataGridView.HitTest(e.X, e.Y);
             if (hit.Type == DataGridViewHitTestType.None)

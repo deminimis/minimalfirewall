@@ -552,9 +552,12 @@ namespace MinimalFirewall
 
         private AggregatedRuleViewModel CreateStandardProgramRule(string name, string appPath, Directions direction, Actions action)
         {
+            // MFW prefix to prevent Windows from deleting the rule.
+            string safeName = name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? name : $"MFW - {name}";
+
             return new AggregatedRuleViewModel
             {
-                Name = name,
+                Name = safeName,
                 ApplicationName = appPath,
                 InboundStatus = direction.HasFlag(Directions.Incoming) ? action.ToString() : "N/A",
                 OutboundStatus = direction.HasFlag(Directions.Outgoing) ? action.ToString() : "N/A",
@@ -660,11 +663,12 @@ namespace MinimalFirewall
         {
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
             _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
-            PendingConnections.Remove(pending); 
+            PendingConnections.Remove(pending);
 
             var vm = new AdvancedRuleViewModel
             {
-                Name = $"{pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
+                // MFW prefix to protect against OS overwrites
+                Name = $"MFW - {pending.FileName} - {pending.RemoteAddress}:{pending.RemotePort}",
                 Description = "Granular rule created by Minimal Firewall popup.",
                 IsEnabled = true,
                 Grouping = MFWConstants.MainRuleGroup,
