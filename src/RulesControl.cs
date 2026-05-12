@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
 using System.Data;
 using System.ComponentModel;
@@ -164,6 +164,14 @@ namespace MinimalFirewall
         private Image? GetIconForRule(AggregatedRuleViewModel rule)
         {
             if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName)) return null;
+
+            if (rule.Type == RuleType.UWP ||
+                rule.ApplicationName.StartsWith("@", StringComparison.Ordinal) ||
+                rule.ApplicationName == "*" ||
+                rule.ApplicationName.Equals("System", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
 
             int iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
             return (iconIndex != -1 && _iconService.ImageList != null)
