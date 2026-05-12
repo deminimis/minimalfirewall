@@ -82,7 +82,7 @@ PRESETS = {
         "SortableBindingList.cs",
         "StatusForm.cs",
         "StatusForm.Designer.cs",
-	"Program.cs",
+        "Program.cs",
         "MainForm.Designer.cs"
     ],
     "9. FULL BACKEND (No UI)": [
@@ -134,6 +134,9 @@ class FileCombinerApp:
         self.browse_files_button = ttk.Button(button_frame, text="Add Manual Files", command=self.browse_files)
         self.browse_files_button.pack(side=tk.LEFT, padx=(0, 5))
 
+        self.skeleton_button = ttk.Button(button_frame, text="Add Code Skeleton", command=self.generate_and_add_skeleton)
+        self.skeleton_button.pack(side=tk.LEFT, padx=5)
+
         self.remove_button = ttk.Button(button_frame, text="Remove Selected", command=self.remove_selected)
         self.remove_button.pack(side=tk.LEFT, padx=5)
 
@@ -163,8 +166,6 @@ class FileCombinerApp:
         selection = self.preset_combo.get()
         if not selection:
             return
-
-        # self.clear_list()  <-- REMOVED THIS LINE
         
         files_to_load = PRESETS.get(selection, [])
         loaded_count = 0
@@ -191,8 +192,7 @@ class FileCombinerApp:
                 if not found:
                     print(f"Warning: Could not find {filename}")
 
-
-        self.status_var.set(f"Added {loaded_count} new files from context '{selection}'. Total: {len(self.files)}")
+        self.status_var.set(f"Added {loaded_count} new files. Total: {len(self.files)}")
 
     def browse_files(self):
         file_paths = filedialog.askopenfilenames(initialdir=PROJECT_SOURCE_PATH)
@@ -201,7 +201,6 @@ class FileCombinerApp:
         for file_path in file_paths:
             if file_path.lower().endswith(excluded_extensions):
                 continue
-
             if file_path not in self.files:
                 self.files.append(file_path)
                 file_name = os.path.basename(file_path)
@@ -218,7 +217,6 @@ class FileCombinerApp:
             if file_path in self.files:
                 self.files.remove(file_path)
             self.tree.delete(item)
-            
         self.status_var.set(f"Removed {len(selected_items)} files.")
 
     def clear_list(self):
@@ -240,13 +238,13 @@ class FileCombinerApp:
                 outfile.write("CONTEXT SUMMARY:\n")
                 outfile.write(f"Total Files: {len(self.files)}\n")
                 outfile.write("-" * 30 + "\n")
+
                 for f in self.files:
                     outfile.write(f"- {os.path.basename(f)}\n")
                 outfile.write("=" * 50 + "\n\n")
 
                 for file_path in self.files:
                     full_path = os.path.abspath(file_path).replace(os.sep, '/')
-                    
                     outfile.write(f"" + "-" * 50 + "\n")
                     outfile.write(f"// Full Path: {full_path}\n")
                     outfile.write("-" * 80 + "\n")
@@ -266,13 +264,86 @@ class FileCombinerApp:
                         outfile.write(file_content)
                     else:
                         outfile.write(f"// Note: Could not decode file.\n")
-                    
                     outfile.write("\n\n")
             
-            self.root.destroy()
+            # The app stays open and just updates the status bar
+            self.status_var.set(f"SUCCESS: {OUTPUT_FILENAME} updated.")
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to combine files: {str(e)}")
+
+    def generate_and_add_skeleton(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        skeleton_file = os.path.join(script_dir, "project_code_skeleton.txt")
+        
+        # Run the skeleton extraction
+        self.build_skeleton(skeleton_file)
+        
+        # Add to list
+        if os.path.exists(skeleton_file):
+            if skeleton_file not in self.files:
+                self.files.append(skeleton_file)
+                self.tree.insert("", tk.END, values=("project_code_skeleton.txt", skeleton_file))
+            self.status_var.set("Added Code Skeleton to list.")
+
+    def build_skeleton(self, output_path):
+        exclude_dirs = {'.git', 'node_modules', 'dist', 'build', '__pycache__', 'public', '.supabase', 'bin', 'obj'}
+        allowed_exts = {'.go', '.ts', '.tsx', '.sql', '.cs'}
+        
+        with open(output_path, 'w', encoding='utf-8') as out:
+            out.write("=== ARCHITECTURE SKELETON ===\n")
+            out.write("This file contains all file paths and their structural definitions.\n\n")
+            
+            for root_dir, dirs, files in os.walk(PROJECT_SOURCE_PATH):
+                dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                
+                for file in files:
+                    ext = os.path.splitext(file)[1].lower()
+                    if ext in allowed_exts:
+                        filepath = os.path.join(root_dir, file)
+                        rel_path = os.path.relpath(filepath, PROJECT_SOURCE_PATH).replace('\\', '/')
+                        
+                        sigs = self.extract_signatures(filepath, ext)
+                        if sigs:
+                            out.write(f"\n📂 {rel_path}\n")
+                            for sig in sigs:
+                                out.write(f"    - {sig}\n")
+
+    def extract_signatures(self, filepath, ext):
+        signatures = []
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                for line in f:
+                    stripped = line.strip()
+                    
+                    # Go
+                    if ext == '.go':
+                        if stripped.startswith('func ') or stripped.startswith('type '):
+                            signatures.append(stripped.rstrip('{').strip())
+                    # TS/React
+                    elif ext in ['.ts', '.tsx']:
+                        if (stripped.startswith('export const ') or 
+                            stripped.startswith('export function ') or 
+                            stripped.startswith('export interface ') or 
+                            stripped.startswith('export type ') or 
+                            stripped.startswith('export default function') or
+                            stripped.startswith('class ')):
+                            signatures.append(stripped.rstrip('{').strip())
+                    # SQL
+                    elif ext == '.sql':
+                        lower_strip = stripped.lower()
+                        if lower_strip.startswith('create table') or lower_strip.startswith('create or replace function'):
+                            signatures.append(stripped.rstrip('(').strip())
+                    # C#
+                    elif ext == '.cs':
+                        if (stripped.startswith('public class ') or 
+                            stripped.startswith('public interface ') or
+                            (stripped.startswith('public ') and '(' in stripped and ')' in stripped and not stripped.endswith(';')) or
+                            (stripped.startswith('private ') and '(' in stripped and ')' in stripped and not stripped.endswith(';'))):
+                            signatures.append(stripped.split('{')[0].strip())
+        except Exception:
+            pass
+        return signatures
 
 if __name__ == "__main__":
     root = tk.Tk()
