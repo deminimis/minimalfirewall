@@ -349,14 +349,17 @@ namespace MinimalFirewall
 
         public async Task ScanForSystemChangesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
-            var newChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker, progress, token), token);
+            var incrementalChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker, progress, token), token);
             if (token.IsCancellationRequested) return;
+
+            if (incrementalChanges.Count == 0) return; // Nothing to update
 
             var knownState = _snapshotService.LoadSnapshot();
             bool isFirstInitialization = knownState.Count == 0 && !_snapshotService.SnapshotExists();
+
             if (_appSettings.QuarantineMode)
             {
-                foreach (var change in newChanges)
+                foreach (var change in incrementalChanges)
                 {
                     bool isFresh = !knownState.Contains(change.Name);
                     if (change.Type == ChangeType.New && change.Rule.IsEnabled && isFresh && !isFirstInitialization)
@@ -374,11 +377,24 @@ namespace MinimalFirewall
                 }
             }
 
-            var currentRuleNames = newChanges.Select(c => c.Name).ToList();
+            // Update ui list
+            foreach (var change in incrementalChanges)
+            {
+                if (change.Type == ChangeType.Deleted)
+                {
+                    SystemChanges.RemoveAll(c => c.Name == change.Name);
+                }
+                else
+                {
+                    // Add updated object
+                    SystemChanges.RemoveAll(c => c.Name == change.Name);
+                    SystemChanges.Add(change);
+                }
+            }
+
+            var currentRuleNames = SystemChanges.Select(c => c.Name).ToList();
             _snapshotService.SaveSnapshot(currentRuleNames);
 
-            SystemChanges.Clear();
-            SystemChanges.AddRange(newChanges);
             SystemChangesUpdated?.Invoke();
         }
 
@@ -386,6 +402,8 @@ namespace MinimalFirewall
         {
             _foreignRuleTracker.Clear();
             _snapshotService.DeleteSnapshot();
+            _firewallSentryService.ResetBaseline();
+            SystemChanges.Clear();
             await ScanForSystemChangesAsync(CancellationToken.None);
         }
 
