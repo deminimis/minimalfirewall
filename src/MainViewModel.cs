@@ -23,7 +23,6 @@ namespace MinimalFirewall
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
         private readonly FirewallDataService _dataService;
         private readonly FirewallSentryService _firewallSentryService;
-        private readonly ForeignRuleTracker _foreignRuleTracker;
         private readonly FirewallEventListenerService _eventListenerService;
         private readonly AppSettings _appSettings;
         private readonly UserActivityLogger _activityLogger;
@@ -55,7 +54,6 @@ namespace MinimalFirewall
             BackgroundFirewallTaskService backgroundTaskService,
             FirewallDataService dataService,
             FirewallSentryService firewallSentryService,
-            ForeignRuleTracker foreignRuleTracker,
             TrafficMonitorViewModel trafficMonitorViewModel,
             FirewallEventListenerService eventListenerService,
             AppSettings appSettings,
@@ -67,7 +65,6 @@ namespace MinimalFirewall
             _backgroundTaskService = backgroundTaskService;
             _dataService = dataService;
             _firewallSentryService = firewallSentryService;
-            _foreignRuleTracker = foreignRuleTracker;
             TrafficMonitorViewModel = trafficMonitorViewModel;
             _eventListenerService = eventListenerService;
             _appSettings = appSettings;
@@ -350,7 +347,7 @@ namespace MinimalFirewall
 
         public async Task ScanForSystemChangesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
-            var incrementalChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(_foreignRuleTracker, progress, token), token);
+            var incrementalChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(progress, token), token);
             if (token.IsCancellationRequested) return;
 
             if (incrementalChanges.Count == 0) return; // Nothing to update
@@ -361,44 +358,67 @@ namespace MinimalFirewall
             foreach (var change in incrementalChanges)
             {
                 bool isFresh = change.Name != null && !knownState.Contains(change.Name);
+
+                // Helper to identify Microsoft/OS rules 
+                bool isWindowsRule = (change.Grouping?.StartsWith("@") == true) ||
+                                     (change.Name?.StartsWith("@") == true) ||
+                                     (change.Name?.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase) == true) ||
+                                     string.Equals(change.ApplicationName, "System", StringComparison.OrdinalIgnoreCase) ||
+                                     (change.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true) ||
+                                     (change.ApplicationName?.StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.Windows), StringComparison.OrdinalIgnoreCase) == true);
+
                 if (change.Type == ChangeType.New && isFresh && !isFirstInitialization)
                 {
-                    // Determine if it is an OS Rule
-                    bool isWindowsRule = (change.Grouping?.StartsWith("@") == true) ||
-                                         (change.Name?.StartsWith("@") == true) ||
-                                         string.Equals(change.ApplicationName, "System", StringComparison.OrdinalIgnoreCase) ||
-                                         (change.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true);
-
                     if (isWindowsRule)
                     {
-                        // Silently disable 
-                        if (change.Rule.IsEnabled)
+                        bool isAllowRule = string.Equals(change.Rule.Status, "Allow", StringComparison.OrdinalIgnoreCase);
+
+                        // Disable if it's an Allow rule, OR if it's a Block rule and the user opted to disable them
+                        if (change.Rule.IsEnabled && (isAllowRule || _appSettings.AutoDisableOsBlockRules))
                         {
+                            string actionType = isAllowRule ? "Allow" : "Block";
                             var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Auto-Disabling OS Rule: {change.Name}"));
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Auto-Disabling OS {actionType} Rule: {change.Name}"));
                             change.Rule.IsEnabled = false;
+                            change.Intervention = "Auto-Disabled (OS)";
                         }
-                        change.Rule.Status = "Auto-Disabled (OS)";
+                        else
+                        {
+                            // It's a block rule and the setting is OFF, or it's already disabled
+                            change.Intervention = change.Rule.IsEnabled ? "OS Block Rule (Retained)" : "Auto-Disabled (OS)";
+                        }
                     }
                     else
                     {
                         // It's a Third-Party Rule
-                        if (_appSettings.QuarantineMode && change.Rule.IsEnabled)
+                        if (change.Rule.IsEnabled)
                         {
-                            var payload = new ForeignRuleChangePayload { Change = change };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.QuarantineForeignRule, payload, $"Quarantining: {change.Name}"));
+                            var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Blocking Third-Party Rule: {change.Name}"));
                             change.Rule.IsEnabled = false;
-                            change.Rule.Status = "Blocked (Pending Review)";
+                            change.Intervention = "Blocked (Pending Review)";
                         }
                         else if (!change.Rule.IsEnabled)
                         {
-                            change.Rule.Status = "Blocked (Pending Review)";
+                            change.Intervention = "Blocked (Pending Review)";
                         }
 
                         // Trigger popup
                         RulePopupRequired?.Invoke(change);
                     }
                 }
+                else if (change.Type == ChangeType.New)
+                {
+                    // Restore historical intervention context on app restart
+                    if (isWindowsRule)
+                    {
+                        change.Intervention = change.Rule.IsEnabled ? "OS Block Rule (Retained)" : "Auto-Disabled (OS)";
+                    }
+                    else
+                    {
+                        change.Intervention = change.Rule.IsEnabled ? "User Allowed" : "User Blocked";
+                    }
+            }
             }
 
             // Update ui list
@@ -424,22 +444,10 @@ namespace MinimalFirewall
 
         public async Task RebuildBaselineAsync()
         {
-            _foreignRuleTracker.Clear();
             _snapshotService.DeleteSnapshot();
             _firewallSentryService.ResetBaseline();
             SystemChanges.Clear();
             await ScanForSystemChangesAsync(CancellationToken.None);
-        }
-
-        public void AcceptForeignRule(FirewallRuleChange change)
-        {
-            if (change.Rule?.Name is not null)
-            {
-                var payload = new ForeignRuleChangePayload { Change = change };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptForeignRule, payload, $"Archiving rule: {change.Name}"));
-                SystemChanges.Remove(change);
-                SystemChangesUpdated?.Invoke();
-            }
         }
 
         public void EnableForeignRule(FirewallRuleChange change)
@@ -450,6 +458,8 @@ namespace MinimalFirewall
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.EnableForeignRule, payload, $"Enabling rule: {change.Name}"));
 
                 change.Rule.IsEnabled = true;
+                change.Intervention = "User Allowed (Popup)";
+                SystemChangesUpdated?.Invoke();
             }
         }
 
@@ -461,6 +471,8 @@ namespace MinimalFirewall
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Disabling rule: {change.Name}"));
 
                 change.Rule.IsEnabled = false;
+                change.Intervention = "User Blocked (Popup)";
+                SystemChangesUpdated?.Invoke();
             }
         }
 
@@ -473,15 +485,6 @@ namespace MinimalFirewall
                 SystemChanges.Remove(change);
                 SystemChangesUpdated?.Invoke();
             }
-        }
-
-        public void AcceptAllForeignRules()
-        {
-            if (SystemChanges.Count == 0) return;
-            var payload = new AllForeignRuleChangesPayload { Changes = new List<FirewallRuleChange>(SystemChanges) };
-            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AcceptAllForeignRules, payload, "Archiving all rules..."));
-            SystemChanges.Clear();
-            SystemChangesUpdated?.Invoke();
         }
 
         public void ApplyRuleChange(AggregatedRuleViewModel item, string action)

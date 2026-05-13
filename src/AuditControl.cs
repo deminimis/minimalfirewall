@@ -1,4 +1,4 @@
-﻿using MinimalFirewall.TypedObjects;
+using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using DarkModeForms;
 using System.Diagnostics;
@@ -22,7 +22,6 @@ namespace MinimalFirewall
 
         private MainViewModel _viewModel = null!;
         private AppSettings _appSettings = null!;
-        private ForeignRuleTracker _foreignRuleTracker = null!;
         private FirewallSentryService _firewallSentryService = null!;
         private DarkModeCS _dm = null!;
         private BindingSource _bindingSource = null!;
@@ -66,13 +65,11 @@ namespace MinimalFirewall
 
         public void Initialize(
             MainViewModel viewModel,
-            ForeignRuleTracker foreignRuleTracker,
             FirewallSentryService firewallSentryService,
             AppSettings appSettings,
             DarkModeCS dm)
         {
             _viewModel = viewModel;
-            _foreignRuleTracker = foreignRuleTracker;
             _firewallSentryService = firewallSentryService;
             _appSettings = appSettings;
             _dm = dm;
@@ -89,12 +86,8 @@ namespace MinimalFirewall
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
             _viewModel.StatusTextChanged += OnStatusTextChanged;
             auditSearchTextBox.Text = _appSettings.AuditSearchText;
-            quarantineCheckBox.Checked = _appSettings.QuarantineMode;
-
-            toolTip1.SetToolTip(rebuildBaselineButton, "Unarchives all hidden rules, making them visible again in this list.");
-            // Initialize cached font based on grid default
-            _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font, FontStyle.Bold);
-
+            // Initialize cached font based on grid default, falling back to Control.
+            _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font ?? Control.DefaultFont, FontStyle.Bold);
             ApplySearchFilter();
         }
 
@@ -128,20 +121,14 @@ namespace MinimalFirewall
         public void ApplyThemeFixes()
         {
             if (_dm == null) return;
-            rebuildBaselineButton.FlatAppearance.BorderSize = 1;
-            rebuildBaselineButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
 
             if (_dm.IsDarkMode)
             {
-                rebuildBaselineButton.ForeColor = Color.White;
-                quarantineCheckBox.ForeColor = Color.White;
                 statusStrip1.BackColor = _dm.OScolors.Surface;
                 statusLabel.ForeColor = _dm.OScolors.TextActive;
             }
             else
             {
-                rebuildBaselineButton.ForeColor = SystemColors.ControlText;
-                quarantineCheckBox.ForeColor = SystemColors.ControlText;
                 statusStrip1.BackColor = SystemColors.Control;
                 statusLabel.ForeColor = SystemColors.ControlText;
             }
@@ -164,6 +151,7 @@ namespace MinimalFirewall
                           (c.Name != null && c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.Description != null && c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.ApplicationName != null && c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                          (c.Intervention != null && c.Intervention.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase))).ToList();
                 });
 
@@ -208,26 +196,6 @@ namespace MinimalFirewall
             catch (Exception ex)
             {
                 Debug.WriteLine($"[WARN] ApplySearchFilter failed: {ex.Message}");
-            }
-        }
-
-        private async void rebuildBaselineButton_Click(object sender, EventArgs e)
-        {
-            if (_viewModel != null)
-            {
-                var result = DarkModeForms.Messenger.MessageBox("This will clear all accepted (hidden) rules from the Audit list, causing them to be displayed again. Are you sure?", "Clear Accepted Rules", MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-                if (result != DialogResult.Yes) return;
-
-                try
-                {
-                    rebuildBaselineButton.Enabled = false;
-                    await _viewModel.RebuildBaselineAsync();
-                }
-                finally
-                {
-                    rebuildBaselineButton.Enabled = true;
-                }
             }
         }
 
@@ -282,7 +250,6 @@ namespace MinimalFirewall
             {
                 openFileLocationToolStripMenuItem.Enabled = false;
                 deleteToolStripMenuItem.Enabled = false;
-                archiveSelectedToolStripMenuItem.Enabled = false;
                 enableSelectedToolStripMenuItem.Enabled = false;
                 disableSelectedToolStripMenuItem.Enabled = false;
                 return;
@@ -290,7 +257,6 @@ namespace MinimalFirewall
 
             bool hasEnabledItems = false;
             bool hasDisabledItems = false;
-
             foreach (DataGridViewRow row in systemChangesDataGridView.SelectedRows)
             {
                 if (row.DataBoundItem is FirewallRuleChange change && change.Rule != null)
@@ -304,7 +270,6 @@ namespace MinimalFirewall
             }
 
             deleteToolStripMenuItem.Enabled = true;
-            archiveSelectedToolStripMenuItem.Enabled = true;
 
             enableSelectedToolStripMenuItem.Visible = hasDisabledItems;
             enableSelectedToolStripMenuItem.Enabled = hasDisabledItems;
@@ -333,27 +298,14 @@ namespace MinimalFirewall
             }
         }
 
-        private void archiveSelectedToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ProcessSelectedChanges((change, index) => _viewModel.AcceptForeignRule(change));
-        }
-
         private void enableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ProcessSelectedChanges((change, index) =>
-            {
-                _viewModel.EnableForeignRule(change);
-                systemChangesDataGridView.InvalidateRow(index);
-            });
+            ProcessSelectedChanges((change, index) => _viewModel.EnableForeignRule(change));
         }
 
         private void disableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ProcessSelectedChanges((change, index) =>
-            {
-                _viewModel.DisableForeignRule(change);
-                systemChangesDataGridView.InvalidateRow(index);
-            });
+            ProcessSelectedChanges((change, index) => _viewModel.DisableForeignRule(change));
         }
 
         private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -395,10 +347,11 @@ namespace MinimalFirewall
                             details.AppendLine();
                         }
 
-                        details.AppendLine($"Type: Audited Change ({change.Type})");
+                        details.AppendLine($"Type: Logged Event ({change.Type})");
                         details.AppendLine($"Rule Name: {change.Name}");
                         details.AppendLine($"Application: {change.ApplicationName}");
                         details.AppendLine($"Publisher: {change.Publisher}");
+                        details.AppendLine($"Intervention: {change.Intervention}");
                         details.AppendLine($"Action: {change.Status}");
                         details.AppendLine($"Direction: {change.Rule.Direction}");
                         details.AppendLine($"Protocol: {change.ProtocolName}");
@@ -437,38 +390,54 @@ namespace MinimalFirewall
 
             if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
 
-            Color foreColor = Color.Black;
-            string pub = change.Publisher ?? string.Empty;
+            bool isDarkMode = _dm?.IsDarkMode == true;
 
-            Color rowBackColor = pub switch
-            {
-                "" => Color.FromArgb(255, 220, 220),
-                _ when pub.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) => Color.FromArgb(220, 255, 220),
-                _ => Color.FromArgb(255, 255, 220)
-            };
+            // Default fallback colors
+            Color rowBackColor = isDarkMode ? grid.DefaultCellStyle.BackColor : SystemColors.Window;
+            Color foreColor = isDarkMode ? grid.DefaultCellStyle.ForeColor : SystemColors.ControlText;
 
-            if (change.Rule is { IsEnabled: false })
+            string intervention = change.Intervention ?? string.Empty;
+            bool isEnabled = change.Rule?.IsEnabled ?? false;
+
+            // Color-code rows
+            if (intervention.Contains("Auto-Disabled (OS)", StringComparison.OrdinalIgnoreCase))
             {
-                foreColor = Color.DimGray;
-                if (grid.Columns[e.ColumnIndex].Name == "advStatusColumn")
-                {
-                    if (_cachedBoldFont != null)
-                        e.CellStyle!.Font = _cachedBoldFont;
-                }
+                // Gray/dim for auto-handled Microsoft rules
+                rowBackColor = isDarkMode ? Color.FromArgb(45, 45, 45) : Color.FromArgb(240, 240, 240);
+                foreColor = isDarkMode ? Color.Gray : Color.DimGray;
+            }
+            else if (intervention.Contains("Blocked", StringComparison.OrdinalIgnoreCase) || intervention.Contains("OS Block", StringComparison.OrdinalIgnoreCase) || !isEnabled)
+            {
+                // Red for blocked third-party rules, retained OS block rules, or manually disabled rules
+                rowBackColor = isDarkMode ? Color.FromArgb(60, 20, 20) : Color.FromArgb(255, 220, 220);
+                foreColor = isDarkMode ? Color.LightCoral : Color.Maroon;
+            }
+            else if (intervention.Contains("Allowed", StringComparison.OrdinalIgnoreCase) || isEnabled)
+            {
+                // Green for allowed rules
+                rowBackColor = isDarkMode ? Color.FromArgb(20, 60, 20) : Color.FromArgb(220, 255, 220);
+                foreColor = isDarkMode ? Color.LightGreen : Color.DarkGreen;
             }
 
+            if (grid.Columns[e.ColumnIndex].Name == "advInterventionColumn" ||
+                grid.Columns[e.ColumnIndex].Name == "advStatusColumn")
+            {
+                if (_cachedBoldFont != null)
+                    e.CellStyle!.Font = _cachedBoldFont;
+            }
+
+            // format timestamp
             var column = grid.Columns[e.ColumnIndex];
             if (column.Name == "advTimestampColumn" && e.Value is DateTime dt)
             {
                 e.Value = dt.ToString("G");
                 e.FormattingApplied = true;
             }
-            else
-            {
-                e.CellStyle!.BackColor = rowBackColor;
-                e.CellStyle.ForeColor = foreColor;
-            }
 
+            e.CellStyle!.BackColor = rowBackColor;
+            e.CellStyle.ForeColor = foreColor;
+
+            // Preserve color on select
             if (grid.Rows[e.RowIndex].Selected)
             {
                 e.CellStyle.SelectionBackColor = SystemColors.Highlight;
@@ -476,8 +445,8 @@ namespace MinimalFirewall
             }
             else
             {
-                e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
-                e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
+                e.CellStyle.SelectionBackColor = rowBackColor;
+                e.CellStyle.SelectionForeColor = foreColor;
             }
         }
 
@@ -633,11 +602,5 @@ namespace MinimalFirewall
             box.SelectionColor = box.ForeColor;
         }
 
-        private void quarantineCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (_appSettings == null) return;
-            _appSettings.QuarantineMode = quarantineCheckBox.Checked;
-            _appSettings.Save();
-        }
     }
 }

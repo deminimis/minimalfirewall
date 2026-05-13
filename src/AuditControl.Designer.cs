@@ -1,11 +1,9 @@
-﻿namespace MinimalFirewall
+namespace MinimalFirewall
 {
     partial class AuditControl
     {
         private System.Windows.Forms.TextBox auditSearchTextBox;
-        private System.Windows.Forms.Button rebuildBaselineButton;
         private System.Windows.Forms.ContextMenuStrip auditContextMenu;
-        private System.Windows.Forms.ToolStripMenuItem archiveSelectedToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem enableSelectedToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem disableSelectedToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
@@ -14,7 +12,6 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.Panel topPanel;
-        private System.Windows.Forms.CheckBox quarantineCheckBox;
         private System.Windows.Forms.DataGridView systemChangesDataGridView;
         private System.Windows.Forms.SplitContainer splitContainer;
         private System.Windows.Forms.RichTextBox diffRichTextBox;
@@ -23,6 +20,7 @@
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
         private System.Windows.Forms.DataGridViewTextBoxColumn advPublisherColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advNameColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn advInterventionColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advStatusColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advProtocolColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn advLocalPortsColumn;
@@ -51,9 +49,7 @@
             this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.auditSearchTextBox = new System.Windows.Forms.TextBox();
-            this.rebuildBaselineButton = new System.Windows.Forms.Button();
             this.auditContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.archiveSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.enableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.disableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
@@ -62,7 +58,6 @@
             this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.topPanel = new System.Windows.Forms.Panel();
-            this.quarantineCheckBox = new System.Windows.Forms.CheckBox();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
             this.systemChangesDataGridView = new System.Windows.Forms.DataGridView();
             this.diffLabel = new System.Windows.Forms.Label();
@@ -71,6 +66,7 @@
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.advPublisherColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.advInterventionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advProtocolColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.advLocalPortsColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -100,26 +96,15 @@
             this.auditSearchTextBox.Location = new System.Drawing.Point(707, 27);
             this.auditSearchTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.auditSearchTextBox.Name = "auditSearchTextBox";
-            this.auditSearchTextBox.PlaceholderText = "Search changes...";
+            this.auditSearchTextBox.PlaceholderText = "Search history...";
             this.auditSearchTextBox.Size = new System.Drawing.Size(285, 27);
             this.auditSearchTextBox.TabIndex = 3;
             this.auditSearchTextBox.TextChanged += new System.EventHandler(this.auditSearchTextBox_TextChanged);
-            // 
-            // rebuildBaselineButton
-            // 
-            this.rebuildBaselineButton.Location = new System.Drawing.Point(3, 17);
-            this.rebuildBaselineButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rebuildBaselineButton.Name = "rebuildBaselineButton";
-            this.rebuildBaselineButton.Size = new System.Drawing.Size(173, 48);
-            this.rebuildBaselineButton.TabIndex = 2;
-            this.rebuildBaselineButton.Text = "Rebuild Baseline";
-            this.rebuildBaselineButton.Click += new System.EventHandler(this.rebuildBaselineButton_Click);
             // 
             // auditContextMenu
             // 
             this.auditContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.auditContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.archiveSelectedToolStripMenuItem,
             this.enableSelectedToolStripMenuItem,
             this.disableSelectedToolStripMenuItem,
             this.toolStripSeparator1,
@@ -130,13 +115,6 @@
             this.auditContextMenu.Name = "auditContextMenu";
             this.auditContextMenu.Size = new System.Drawing.Size(211, 208);
             this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.auditContextMenu_Opening);
-            // 
-            // archiveSelectedToolStripMenuItem
-            // 
-            this.archiveSelectedToolStripMenuItem.Name = "archiveSelectedToolStripMenuItem";
-            this.archiveSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.archiveSelectedToolStripMenuItem.Text = "Archive (Hide)";
-            this.archiveSelectedToolStripMenuItem.Click += new System.EventHandler(this.archiveSelectedToolStripMenuItem_Click);
             // 
             // enableSelectedToolStripMenuItem
             // 
@@ -185,26 +163,12 @@
             // 
             // topPanel
             // 
-            this.topPanel.Controls.Add(this.quarantineCheckBox);
-            this.topPanel.Controls.Add(this.rebuildBaselineButton);
             this.topPanel.Controls.Add(this.auditSearchTextBox);
             this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.topPanel.Location = new System.Drawing.Point(0, 0);
             this.topPanel.Name = "topPanel";
             this.topPanel.Size = new System.Drawing.Size(1000, 77);
             this.topPanel.TabIndex = 4;
-            // 
-            // quarantineCheckBox
-            // 
-            this.quarantineCheckBox.AutoSize = true;
-            this.quarantineCheckBox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.quarantineCheckBox.Location = new System.Drawing.Point(195, 29);
-            this.quarantineCheckBox.Name = "quarantineCheckBox";
-            this.quarantineCheckBox.Size = new System.Drawing.Size(196, 24);
-            this.quarantineCheckBox.TabIndex = 4;
-            this.quarantineCheckBox.Text = "Quarantine New Rules";
-            this.quarantineCheckBox.UseVisualStyleBackColor = true;
-            this.quarantineCheckBox.CheckedChanged += new System.EventHandler(this.quarantineCheckBox_CheckedChanged);
             // 
             // splitContainer
             // 
@@ -249,6 +213,7 @@
             this.systemChangesDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.advTimestampColumn,
             this.advNameColumn,
+            this.advInterventionColumn,
             this.advStatusColumn,
             this.advProtocolColumn,
             this.advLocalPortsColumn,
@@ -346,6 +311,14 @@
             this.advNameColumn.HeaderText = "Name";
             this.advNameColumn.Name = "advNameColumn";
             this.advNameColumn.ReadOnly = true;
+            // 
+            // advInterventionColumn
+            // 
+            this.advInterventionColumn.DataPropertyName = "Intervention";
+            this.advInterventionColumn.FillWeight = 25F;
+            this.advInterventionColumn.HeaderText = "Intervention";
+            this.advInterventionColumn.Name = "advInterventionColumn";
+            this.advInterventionColumn.ReadOnly = true;
             // 
             // advStatusColumn
             // 

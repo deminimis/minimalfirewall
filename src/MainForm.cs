@@ -31,7 +31,6 @@ namespace MinimalFirewall
         private FirewallRuleService _firewallRuleService = null!;
         private UserActivityLogger _activityLogger = null!;
         private WildcardRuleService _wildcardRuleService = null!;
-        private ForeignRuleTracker _foreignRuleTracker = null!;
         private RuleTimestampService _ruleTimestampService = null!;
         private AppSettings _appSettings = null!;
         private StartupService _startupService = null!;
@@ -145,7 +144,6 @@ namespace MinimalFirewall
             _firewallRuleService = new FirewallRuleService();
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
             _wildcardRuleService = new WildcardRuleService();
-            _foreignRuleTracker = new ForeignRuleTracker();
             _ruleTimestampService = new RuleTimestampService();
 
             var uwpService = new UwpService(_firewallRuleService);
@@ -155,20 +153,20 @@ namespace MinimalFirewall
 
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
 
-            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _foreignRuleTracker, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
+            _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
             _eventListenerService.ActionsService = _actionsService;
 
             _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService, _dataService);
             _actionsService.BackgroundTaskService = _backgroundTaskService;
             _eventListenerService.BackgroundTaskService = _backgroundTaskService;
 
-            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, _foreignRuleTracker, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
+            _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
 
             // Initialize UI Controls with Services
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
-            auditControl1.Initialize(_mainViewModel, _foreignRuleTracker, _firewallSentryService, _appSettings, dm);
+            auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings, dm);
             groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
@@ -613,14 +611,13 @@ namespace MinimalFirewall
                     {
                         // User chose to Allow (Keep it enabled)
                         _mainViewModel.EnableForeignRule(rule);
-                        _mainViewModel.AcceptForeignRule(rule);
                     }
                     else if (result == NotifierForm.NotifierResult.Block)
                     {
-                        // User chose to Block (Disable/Delete it)
-                        _mainViewModel.DeleteForeignRule(rule);
+                        // User chose to Block: Disable for history and prevent app from recreating. 
+                        _mainViewModel.DisableForeignRule(rule);
                     }
-                    // Ignore leaves it in the audit tab
+                    // Ignore leaves in audit tab. 
                 }
 
                 lock (_popupLock)
