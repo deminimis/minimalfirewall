@@ -430,6 +430,16 @@ namespace MinimalFirewall
                 }
                 else
                 {
+                    // Preserve previous Intervention state if it's a modification
+                    if (change.Type == ChangeType.Modified)
+                    {
+                        var existingRule = SystemChanges.FirstOrDefault(c => c.Name == change.Name);
+                        if (existingRule != null && string.IsNullOrEmpty(change.Intervention))
+                        {
+                            change.Intervention = existingRule.Intervention;
+                        }
+                    }
+
                     // Add updated object
                     SystemChanges.RemoveAll(c => c.Name == change.Name);
                     SystemChanges.Add(change);
