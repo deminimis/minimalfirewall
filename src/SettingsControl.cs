@@ -37,6 +37,28 @@ namespace MinimalFirewall
         public SettingsControl()
         {
             InitializeComponent();
+
+            // Divider 1 
+            Panel divider1 = new Panel
+            {
+                Height = 1,
+                Width = 650,
+                Location = new Point(25, 265),
+                BackColor = Color.DimGray
+            };
+            mainSettingsPanel.Controls.Add(divider1);
+            DarkModeCS.ExcludeFromProcessing(divider1);
+
+            // Divider 2 
+            Panel divider2 = new Panel
+            {
+                Height = 1,
+                Width = 650,
+                Location = new Point(25, 405),
+                BackColor = Color.DimGray
+            };
+            mainSettingsPanel.Controls.Add(divider2);
+            DarkModeCS.ExcludeFromProcessing(divider2);
         }
 
         public void Initialize(

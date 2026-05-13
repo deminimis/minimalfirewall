@@ -62,7 +62,7 @@ namespace MinimalFirewall
             // 
             deleteAllRulesButton.FlatAppearance.BorderSize = 0;
             deleteAllRulesButton.FlatStyle = FlatStyle.Flat;
-            deleteAllRulesButton.Location = new Point(25, 589);
+            deleteAllRulesButton.Location = new Point(245, 470);
             deleteAllRulesButton.Name = "deleteAllRulesButton";
             deleteAllRulesButton.Size = new Size(210, 28);
             deleteAllRulesButton.TabIndex = 25;
@@ -74,7 +74,7 @@ namespace MinimalFirewall
             // 
             revertFirewallButton.FlatAppearance.BorderSize = 0;
             revertFirewallButton.FlatStyle = FlatStyle.Flat;
-            revertFirewallButton.Location = new Point(245, 589);
+            revertFirewallButton.Location = new Point(465, 470);
             revertFirewallButton.Name = "revertFirewallButton";
             revertFirewallButton.Size = new Size(210, 28);
             revertFirewallButton.TabIndex = 26;
@@ -96,9 +96,9 @@ namespace MinimalFirewall
             // 
             managePublishersButton.FlatAppearance.BorderSize = 0;
             managePublishersButton.FlatStyle = FlatStyle.Flat;
-            managePublishersButton.Location = new Point(306, 174);
+            managePublishersButton.Location = new Point(306, 282);
             managePublishersButton.Name = "managePublishersButton";
-            managePublishersButton.Size = new Size(175, 22);
+            managePublishersButton.Size = new Size(225, 28);
             managePublishersButton.TabIndex = 23;
             managePublishersButton.Text = "Manage Trusted Publishers";
             managePublishersButton.UseVisualStyleBackColor = true;
@@ -107,7 +107,7 @@ namespace MinimalFirewall
             // autoAllowWhitelistedPublishersCheck
             // 
             autoAllowWhitelistedPublishersCheck.AutoSize = true;
-            autoAllowWhitelistedPublishersCheck.Location = new Point(306, 150);
+            autoAllowWhitelistedPublishersCheck.Location = new Point(25, 285);
             autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
             autoAllowWhitelistedPublishersCheck.Size = new Size(182, 19);
             autoAllowWhitelistedPublishersCheck.TabIndex = 22;
@@ -117,7 +117,7 @@ namespace MinimalFirewall
             // autoAllowSystemSignedAppsCheck
             // 
             autoAllowSystemSignedAppsCheck.AutoSize = true;
-            autoAllowSystemSignedAppsCheck.Location = new Point(306, 212);
+            autoAllowSystemSignedAppsCheck.Location = new Point(25, 320);
             autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
             autoAllowSystemSignedAppsCheck.Size = new Size(221, 19);
             autoAllowSystemSignedAppsCheck.TabIndex = 36;
@@ -127,7 +127,7 @@ namespace MinimalFirewall
             // autoDisableOsBlockRulesCheck
             // 
             autoDisableOsBlockRulesCheck.AutoSize = true;
-            autoDisableOsBlockRulesCheck.Location = new Point(306, 262);
+            autoDisableOsBlockRulesCheck.Location = new Point(306, 150);
             autoDisableOsBlockRulesCheck.Name = "autoDisableOsBlockRulesCheck";
             autoDisableOsBlockRulesCheck.Size = new Size(218, 19);
             autoDisableOsBlockRulesCheck.TabIndex = 37;
@@ -138,9 +138,9 @@ namespace MinimalFirewall
             // 
             viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
             viewTrustedCertsButton.FlatStyle = FlatStyle.Flat;
-            viewTrustedCertsButton.Location = new Point(306, 236);
+            viewTrustedCertsButton.Location = new Point(306, 317);
             viewTrustedCertsButton.Name = "viewTrustedCertsButton";
-            viewTrustedCertsButton.Size = new Size(175, 22);
+            viewTrustedCertsButton.Size = new Size(225, 28);
             viewTrustedCertsButton.TabIndex = 34;
             viewTrustedCertsButton.Text = "View Trusted CAs...";
             viewTrustedCertsButton.UseVisualStyleBackColor = true;
@@ -150,9 +150,9 @@ namespace MinimalFirewall
             // 
             excludedFoldersButton.FlatAppearance.BorderSize = 0;
             excludedFoldersButton.FlatStyle = FlatStyle.Flat;
-            excludedFoldersButton.Location = new Point(25, 262);
+            excludedFoldersButton.Location = new Point(25, 355);
             excludedFoldersButton.Name = "excludedFoldersButton";
-            excludedFoldersButton.Size = new Size(160, 28);
+            excludedFoldersButton.Size = new Size(225, 28);
             excludedFoldersButton.TabIndex = 35;
             excludedFoldersButton.Text = "Auto-Allow Exclusions";
             excludedFoldersButton.UseVisualStyleBackColor = true;
@@ -203,7 +203,7 @@ namespace MinimalFirewall
             coffeePanel.BackColor = Color.Transparent;
             coffeePanel.Controls.Add(coffeePictureBox);
             coffeePanel.Cursor = Cursors.Hand;
-            coffeePanel.Location = new Point(18, 529);
+            coffeePanel.Location = new Point(18, 645);
             coffeePanel.Name = "coffeePanel";
             coffeePanel.Size = new Size(380, 60);
             coffeePanel.TabIndex = 17;
@@ -213,7 +213,7 @@ namespace MinimalFirewall
             // 
             coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
             coffeeLinkLabel.AutoSize = true;
-            coffeeLinkLabel.Location = new Point(215, 596);
+            coffeeLinkLabel.Location = new Point(85, 665);
             coffeeLinkLabel.MaximumSize = new Size(320, 0);
             coffeeLinkLabel.Name = "coffeeLinkLabel";
             coffeeLinkLabel.Size = new Size(266, 15);
@@ -240,7 +240,7 @@ namespace MinimalFirewall
             // 
             versionLabel.AutoSize = true;
             versionLabel.Font = new Font("Segoe UI", 9F);
-            versionLabel.Location = new Point(195, 446);
+            versionLabel.Location = new Point(450, 605);
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(45, 15);
             versionLabel.TabIndex = 12;
@@ -250,9 +250,9 @@ namespace MinimalFirewall
             // 
             checkForUpdatesButton.FlatAppearance.BorderSize = 0;
             checkForUpdatesButton.FlatStyle = FlatStyle.Flat;
-            checkForUpdatesButton.Location = new Point(25, 439);
+            checkForUpdatesButton.Location = new Point(245, 560);
             checkForUpdatesButton.Name = "checkForUpdatesButton";
-            checkForUpdatesButton.Size = new Size(160, 28);
+            checkForUpdatesButton.Size = new Size(210, 28);
             checkForUpdatesButton.TabIndex = 11;
             checkForUpdatesButton.Text = "Check for Updates";
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
@@ -261,9 +261,9 @@ namespace MinimalFirewall
             // 
             openFirewallButton.FlatAppearance.BorderSize = 0;
             openFirewallButton.FlatStyle = FlatStyle.Flat;
-            openFirewallButton.Location = new Point(25, 315);
+            openFirewallButton.Location = new Point(25, 425);
             openFirewallButton.Name = "openFirewallButton";
-            openFirewallButton.Size = new Size(160, 28);
+            openFirewallButton.Size = new Size(210, 28);
             openFirewallButton.TabIndex = 10;
             openFirewallButton.Text = "Open Windows Firewall";
             openFirewallButton.Click += OpenFirewallButton_Click;
@@ -272,9 +272,9 @@ namespace MinimalFirewall
             // 
             openAppDataButton.FlatAppearance.BorderSize = 0;
             openAppDataButton.FlatStyle = FlatStyle.Flat;
-            openAppDataButton.Location = new Point(195, 315);
+            openAppDataButton.Location = new Point(245, 425);
             openAppDataButton.Name = "openAppDataButton";
-            openAppDataButton.Size = new Size(160, 28);
+            openAppDataButton.Size = new Size(210, 28);
             openAppDataButton.TabIndex = 32;
             openAppDataButton.Text = "Open %LocalAppData%";
             openAppDataButton.UseVisualStyleBackColor = true;
@@ -283,7 +283,7 @@ namespace MinimalFirewall
             // forumLink
             // 
             forumLink.AutoSize = true;
-            forumLink.Location = new Point(25, 472);
+            forumLink.Location = new Point(25, 605);
             forumLink.Name = "forumLink";
             forumLink.Size = new Size(114, 15);
             forumLink.TabIndex = 9;
@@ -295,7 +295,7 @@ namespace MinimalFirewall
             // reportProblemLink
             // 
             reportProblemLink.AutoSize = true;
-            reportProblemLink.Location = new Point(25, 490);
+            reportProblemLink.Location = new Point(160, 605);
             reportProblemLink.Name = "reportProblemLink";
             reportProblemLink.Size = new Size(99, 15);
             reportProblemLink.TabIndex = 8;
@@ -307,7 +307,7 @@ namespace MinimalFirewall
             // helpLink
             // 
             helpLink.AutoSize = true;
-            helpLink.Location = new Point(25, 507);
+            helpLink.Location = new Point(290, 605);
             helpLink.Name = "helpLink";
             helpLink.Size = new Size(126, 15);
             helpLink.TabIndex = 7;
@@ -439,7 +439,7 @@ namespace MinimalFirewall
             // 
             exportDiagnosticButton.FlatAppearance.BorderSize = 0;
             exportDiagnosticButton.FlatStyle = FlatStyle.Flat;
-            exportDiagnosticButton.Location = new Point(25, 675);
+            exportDiagnosticButton.Location = new Point(25, 560);
             exportDiagnosticButton.Name = "exportDiagnosticButton";
             exportDiagnosticButton.Size = new Size(210, 28);
             exportDiagnosticButton.TabIndex = 32;
@@ -451,7 +451,7 @@ namespace MinimalFirewall
             // 
             importReplaceButton.FlatAppearance.BorderSize = 0;
             importReplaceButton.FlatStyle = FlatStyle.Flat;
-            importReplaceButton.Location = new Point(465, 638);
+            importReplaceButton.Location = new Point(465, 515);
             importReplaceButton.Name = "importReplaceButton";
             importReplaceButton.Size = new Size(210, 28);
             importReplaceButton.TabIndex = 30;
@@ -463,7 +463,7 @@ namespace MinimalFirewall
             // 
             importMergeButton.FlatAppearance.BorderSize = 0;
             importMergeButton.FlatStyle = FlatStyle.Flat;
-            importMergeButton.Location = new Point(245, 638);
+            importMergeButton.Location = new Point(245, 515);
             importMergeButton.Name = "importMergeButton";
             importMergeButton.Size = new Size(210, 28);
             importMergeButton.TabIndex = 29;
@@ -475,7 +475,7 @@ namespace MinimalFirewall
             // 
             exportRulesButton.FlatAppearance.BorderSize = 0;
             exportRulesButton.FlatStyle = FlatStyle.Flat;
-            exportRulesButton.Location = new Point(25, 638);
+            exportRulesButton.Location = new Point(25, 515);
             exportRulesButton.Name = "exportRulesButton";
             exportRulesButton.Size = new Size(210, 28);
             exportRulesButton.TabIndex = 28;
@@ -487,7 +487,7 @@ namespace MinimalFirewall
             // 
             cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
             cleanUpOrphanedRulesButton.FlatStyle = FlatStyle.Flat;
-            cleanUpOrphanedRulesButton.Location = new Point(568, 583);
+            cleanUpOrphanedRulesButton.Location = new Point(25, 470);
             cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
             cleanUpOrphanedRulesButton.Size = new Size(210, 28);
             cleanUpOrphanedRulesButton.TabIndex = 27;
