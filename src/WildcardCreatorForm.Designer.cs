@@ -108,8 +108,6 @@ namespace MinimalFirewall
             // 
             // directionCombo
             // 
-            this.directionCombo.BorderColor = System.Drawing.Color.Gray;
-            this.directionCombo.ButtonColor = System.Drawing.Color.LightGray;
             this.directionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.directionCombo.FormattingEnabled = true;
             this.directionCombo.Items.AddRange(new object[] {
@@ -275,8 +273,6 @@ namespace MinimalFirewall
             // 
             // protocolComboBox
             // 
-            this.protocolComboBox.BorderColor = System.Drawing.Color.Gray;
-            this.protocolComboBox.ButtonColor = System.Drawing.Color.LightGray;
             this.protocolComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.protocolComboBox.FormattingEnabled = true;
             this.protocolComboBox.Location = new System.Drawing.Point(124, 27);
