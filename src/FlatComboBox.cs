@@ -24,7 +24,7 @@ namespace DarkModeForms
             }
         }
 
-        private Color buttonColor = Color.LightGray;
+        private Color buttonColor = Color.FromArgb(55, 55, 55);
         [DefaultValue(typeof(Color), "LightGray")]
         public Color ButtonColor
         {
@@ -58,6 +58,18 @@ namespace DarkModeForms
                     if (dropDownButtonWidth < UIHelpers.Scale(12, g)) dropDownButtonWidth = UIHelpers.Scale(16, g);
 
                     var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
+                    var textPadding = UIHelpers.Scale(4, g);
+                    var textBackRect = new Rectangle(clientRect.Left, clientRect.Top, Math.Max(0, clientRect.Width - dropDownButtonWidth), clientRect.Height);
+                    var textRect = new Rectangle(clientRect.Left + textPadding, clientRect.Top, Math.Max(0, clientRect.Width - dropDownButtonWidth - (textPadding * 2)), clientRect.Height);
+
+                    #region Selected Text
+                    using (var b = new SolidBrush(BackColor))
+                    {
+                        g.FillRectangle(b, textBackRect);
+                    }
+
+                    TextRenderer.DrawText(g, Text, Font, textRect, ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                    #endregion
 
                     #region DropDown Button
                     using (var b = new SolidBrush(Enabled ? ButtonColor : SystemColors.Control))
@@ -96,6 +108,12 @@ namespace DarkModeForms
             }
 
             base.WndProc(ref m);
+        }
+
+        protected override void OnBackColorChanged(EventArgs e)
+        {
+            base.OnBackColorChanged(e);
+            Invalidate();
         }
     }
 
