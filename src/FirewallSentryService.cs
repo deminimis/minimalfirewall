@@ -1,10 +1,13 @@
-﻿using System.Management;
+using System.Management;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.IO;
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Concurrent;
+using System;
+using System.Threading;
 
 namespace MinimalFirewall
 {
@@ -14,9 +17,17 @@ namespace MinimalFirewall
         private ManagementEventWatcher? _watcher;
         private bool _isStarted = false;
 
-        private Dictionary<string, AdvancedRuleViewModel> _ruleCache = new(StringComparer.OrdinalIgnoreCase);
+        // Lightweight incremental queue
+        private readonly ConcurrentQueue<(string Name, ChangeType Type)> _pendingChanges = new();
+        private bool _isFirstScan = true;
 
         public event Action? RuleSetChanged;
+
+        public void ResetBaseline()
+        {
+            _isFirstScan = true;
+            _pendingChanges.Clear();
+        }
 
         public FirewallSentryService(FirewallRuleService firewallService)
         {
@@ -29,9 +40,11 @@ namespace MinimalFirewall
             try
             {
                 var scope = new ManagementScope(@"root\StandardCimv2");
+                // Listen for rule change
                 var query = new WqlEventQuery(
                     "SELECT * FROM __InstanceOperationEvent WITHIN 3 " +
-                    "WHERE TargetInstance ISA 'MSFT_NetFirewallRule'");
+                    "WHERE TargetInstance ISA 'MSFT_NetFirewallRule' AND " +
+                    "(__Class = '__InstanceCreationEvent' OR __Class = '__InstanceModificationEvent' OR __Class = '__InstanceDeletionEvent')");
 
                 _watcher = new ManagementEventWatcher(scope, query);
                 _watcher.EventArrived += OnFirewallRuleChangeEvent;
@@ -66,14 +79,117 @@ namespace MinimalFirewall
 
         private void OnFirewallRuleChangeEvent(object sender, EventArrivedEventArgs e)
         {
-            RuleSetChanged?.Invoke();
+            try
+            {
+                // Release unmanaged COM handles immediately
+                using var newEvent = e.NewEvent;
+                var eventClass = newEvent.ClassPath.ClassName;
+
+                using var targetInstance = (ManagementBaseObject)newEvent["TargetInstance"];
+
+                string ruleName = targetInstance["InstanceID"]?.ToString() ?? string.Empty;
+                string grouping = targetInstance["DisplayGroup"]?.ToString() ?? string.Empty;
+
+                if (string.IsNullOrEmpty(ruleName) || IsMfwRule(grouping)) return;
+
+                ChangeType type = eventClass switch
+                {
+                    "__InstanceCreationEvent" => ChangeType.New,
+                    "__InstanceModificationEvent" => ChangeType.Modified,
+                    "__InstanceDeletionEvent" => ChangeType.Deleted,
+                    _ => ChangeType.Modified
+                };
+
+                _pendingChanges.Enqueue((ruleName, type));
+                RuleSetChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SENTRY ERROR] Failed to parse WMI event: {ex.Message}");
+            }
         }
 
-        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker, IProgress<int>? progress = null, CancellationToken token = default)
+        public List<FirewallRuleChange> CheckForChanges(IProgress<int>? progress = null, CancellationToken token = default)
         {
             var changes = new List<FirewallRuleChange>();
-            var currentScan = new Dictionary<string, AdvancedRuleViewModel>(StringComparer.OrdinalIgnoreCase);
+            // Baseline load: fetch all rules
+            // Afterwards, ONLY process the specific rules caught by WMI event queue 
+            if (_isFirstScan)
+            {
+                changes = PerformFullBaselineScan(progress, token);
+                _isFirstScan = false;
+                return changes;
+            }
 
+            // Incremental event processing
+            int processed = 0;
+            int total = _pendingChanges.Count;
+
+            while (_pendingChanges.TryDequeue(out var changeEvent))
+            {
+                if (token.IsCancellationRequested) break;
+
+                processed++;
+                progress?.Report(total > 0 ? (processed * 100) / total : 100);
+
+                
+                if (changeEvent.Type == ChangeType.Deleted)
+                {
+                    changes.Add(new FirewallRuleChange
+                    {
+                        Type = ChangeType.Deleted,
+                        Rule = new AdvancedRuleViewModel { Name = changeEvent.Name }
+                    });
+                    continue;
+                }
+
+                // Look up single rule safely (COM throws exceptions if rule is missing/deleted quickly)
+                NetFwTypeLib.INetFwRule2? comRule = null;
+                try
+                {
+                    comRule = firewallService.GetRuleByName(changeEvent.Name);
+                }
+                catch (FileNotFoundException)
+                {
+                    // Race condition (WMI report change, COM says doesn't exist)
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SENTRY ERROR] COM Lookup failed for {changeEvent.Name}: {ex.Message}");
+                }
+
+                if (comRule != null)
+                {
+                    try
+                    {
+                        var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(comRule);
+                        var changeObj = new FirewallRuleChange
+                        {
+                            Type = changeEvent.Type,
+                            Rule = ruleVm
+                        };
+
+                        EnrichWithPublisher(changeObj, ruleVm.ApplicationName);
+                        changes.Add(changeObj);
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(comRule);
+                    }
+                }
+                else if (changeEvent.Type != ChangeType.Deleted)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SENTRY WARN] Dropped {changeEvent.Type} event for '{changeEvent.Name}': COM rule could not be fetched.");
+                }
+            }
+
+            progress?.Report(100);
+            return changes;
+        }
+
+        private List<FirewallRuleChange> PerformFullBaselineScan(IProgress<int>? progress, CancellationToken token)
+        {
+            var changes = new List<FirewallRuleChange>();
             Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
             if (policyType == null) return changes;
 
@@ -81,92 +197,34 @@ namespace MinimalFirewall
             if (firewallPolicy?.Rules == null) return changes;
 
             var comRules = firewallPolicy.Rules;
-
             try
             {
                 int totalRules = comRules.Count;
-                if (totalRules == 0)
-                {
-                    progress?.Report(100);
-                    return changes;
-                }
+                if (totalRules == 0) { progress?.Report(100); return changes; }
 
                 int processedRules = 0;
                 foreach (NetFwTypeLib.INetFwRule2 rule in comRules)
                 {
-                    if (token.IsCancellationRequested) return new List<FirewallRuleChange>();
-
+                    if (token.IsCancellationRequested) break;
                     processedRules++;
                     progress?.Report((processedRules * 100) / totalRules);
 
                     if (rule == null) continue;
-
                     try
                     {
                         string ruleName = rule.Name;
-                        string ruleGrouping = rule.Grouping;
-
-                        if (string.IsNullOrEmpty(ruleName)) continue;
-                        if (IsMfwRule(ruleGrouping)) continue;
+                        if (string.IsNullOrEmpty(ruleName) || IsMfwRule(rule.Grouping)) continue;
 
                         var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
-                        currentScan[ruleName] = ruleVm;
-
-                        bool isAcknowledged = acknowledgedTracker.IsAcknowledged(ruleName);
-                        bool existsInCache = _ruleCache.TryGetValue(ruleName, out var cachedRule);
-
-                        FirewallRuleChange? changeObj = null;
-
-                        // DETECTION LOGIC
-                        if (existsInCache)
-                        {
-                            if (!ruleVm.HasSameSettings(cachedRule))
-                            {
-                                changeObj = new FirewallRuleChange
-                                {
-                                    Type = ChangeType.Modified,
-                                    Rule = ruleVm,
-                                    OldRule = cachedRule
-                                };
-                            }
-                            else if (!isAcknowledged)
-                            {
-                                changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
-                            }
-                        }
-                        else if (!isAcknowledged)
-                        {
-                            changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
-                        }
-
-                        if (changeObj != null)
-                        {
-                            EnrichWithPublisher(changeObj, ruleVm.ApplicationName);
-                            changes.Add(changeObj);
-                        }
+                        var changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
+                        EnrichWithPublisher(changeObj, ruleVm.ApplicationName);
+                        changes.Add(changeObj);
                     }
                     finally
                     {
-                        // Release COM objects immediately inside the loop 
                         Marshal.ReleaseComObject(rule);
                     }
                 }
-
-
-                foreach (var kvp in _ruleCache)
-                {
-                    if (!currentScan.ContainsKey(kvp.Key) && !acknowledgedTracker.IsAcknowledged(kvp.Key))
-                    {
-                        changes.Add(new FirewallRuleChange
-                        {
-                            Type = ChangeType.Deleted,
-                            Rule = kvp.Value,
-                            OldRule = kvp.Value
-                        });
-                    }
-                }
-
-                _ruleCache = currentScan;
             }
             finally
             {

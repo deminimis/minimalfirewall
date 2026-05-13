@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -281,13 +281,12 @@ namespace MinimalFirewall
                 p => _actionsService.DeleteForeignRule(p.Change), TaskResult.CacheOnly);
 
             map[FirewallTaskType.DisableForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
-                p => _actionsService.DisableForeignRule(p.Change, p.Acknowledge), TaskResult.CacheOnly);
+                p => _actionsService.DisableForeignRule(p.Change), TaskResult.CacheOnly);
 
             map[FirewallTaskType.EnableForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
-                p => _actionsService.EnableForeignRule(p.Change, p.Acknowledge), TaskResult.CacheOnly);
+                p => _actionsService.EnableForeignRule(p.Change), TaskResult.CacheOnly);
 
-            map[FirewallTaskType.QuarantineForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
-               p => _actionsService.QuarantineForeignRule(p.Change), TaskResult.CacheOnly);
+
             map[FirewallTaskType.SetGroupEnabledState] = new ActionHandler<SetGroupEnabledStatePayload>(
                p => _actionsService.SetGroupEnabledState(p.GroupName, p.IsEnabled), TaskResult.CacheOnly);
             map[FirewallTaskType.DeleteGroup] = new AsyncActionHandler<string>(

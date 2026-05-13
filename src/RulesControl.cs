@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
 using System.Data;
 using System.ComponentModel;
@@ -165,6 +165,14 @@ namespace MinimalFirewall
         {
             if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName)) return null;
 
+            if (rule.Type == RuleType.UWP ||
+                rule.ApplicationName.StartsWith("@", StringComparison.Ordinal) ||
+                rule.ApplicationName == "*" ||
+                rule.ApplicationName.Equals("System", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
             int iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
             return (iconIndex != -1 && _iconService.ImageList != null)
                    ? _iconService.ImageList.Images[iconIndex]
@@ -286,7 +294,7 @@ namespace MinimalFirewall
                         {
                             if (originalRule.HasSameSettings(dialog.RuleVm)) return;
 
-                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules.Select(r => r.Name).ToList() };
+                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules?.Select(r => r.Name).ToList() ?? new List<string>() };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
 
                             var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
@@ -538,7 +546,7 @@ namespace MinimalFirewall
             OnRulesListUpdated();
         }
 
-        private void RulesDataGridView_MouseDown(object sender, MouseEventArgs e)
+        private void RulesDataGridView_MouseDown(object? sender, MouseEventArgs e)
         {
             var hit = rulesDataGridView.HitTest(e.X, e.Y);
             if (hit.Type == DataGridViewHitTestType.None)

@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using System.Data;
 using System.IO;
 using MinimalFirewall.TypedObjects;
@@ -20,13 +20,11 @@ namespace MinimalFirewall
         private readonly FirewallRuleService firewallService;
         private readonly UserActivityLogger activityLogger;
         private readonly FirewallEventListenerService eventListenerService;
-        private readonly ForeignRuleTracker foreignRuleTracker;
         private readonly FirewallSentryService sentryService;
         private readonly PublisherWhitelistService _whitelistService;
         private readonly TemporaryRuleManager _temporaryRuleManager;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly FirewallDataService _dataService;
-
         // Timer cleanup management
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private bool _disposed;
@@ -34,18 +32,23 @@ namespace MinimalFirewall
         // COM Type caching for performance
         private static readonly Type? FwRuleType = Type.GetTypeFromProgID("HNetCfg.FWRule");
         private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
 
-        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, WildcardRuleService wildcardRuleService, FirewallDataService dataService)
+        public FirewallActionsService(
+            FirewallRuleService firewallService,
+            UserActivityLogger activityLogger,
+            FirewallEventListenerService eventListenerService,
+            FirewallSentryService sentryService,
+            PublisherWhitelistService whitelistService,
+            WildcardRuleService wildcardRuleService,
+            FirewallDataService dataService)
         {
             this.firewallService = firewallService;
             this.activityLogger = activityLogger;
             this.eventListenerService = eventListenerService;
-            this.foreignRuleTracker = foreignRuleTracker;
             this.sentryService = sentryService;
             this._whitelistService = whitelistService;
             this._wildcardRuleService = wildcardRuleService;
@@ -713,48 +716,32 @@ namespace MinimalFirewall
             }
         }
 
-        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction, bool acknowledge = true)
+        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction)
         {
-            if (change.Rule?.Name is not null)
+            if (change.Rule is { Name: string ruleName })
             {
-                if (enable) firewallService.EnableRuleByName(change.Rule.Name);
-                else firewallService.DisableRuleByName(change.Rule.Name);
+                if (enable) firewallService.EnableRuleByName(ruleName);
+                else firewallService.DisableRuleByName(ruleName);
 
-                if (acknowledge)
-                {
-                    foreignRuleTracker.AcknowledgeRules([change.Rule.Name]);
-                }
-                activityLogger.LogChange($"Foreign Rule {logAction}", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{change.Rule.Name}' (Ack: {acknowledge})");
+                activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
+                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}'");
             }
         }
 
         public void AcceptForeignRule(FirewallRuleChange change) =>
             ProcessForeignRule(change, true, "Accepted");
+        public void EnableForeignRule(FirewallRuleChange change) =>
+            ProcessForeignRule(change, true, "Enabled");
+        public void DisableForeignRule(FirewallRuleChange change) =>
+            ProcessForeignRule(change, false, "Disabled");
 
-        public void EnableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
-            ProcessForeignRule(change, true, "Enabled", acknowledge);
-
-        public void DisableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
-            ProcessForeignRule(change, false, "Disabled", acknowledge);
-
-        // Quarantine Logic 
-        public void QuarantineForeignRule(FirewallRuleChange change)
-        {
-            if (change.Rule?.Name is not null)
-            {
-                firewallService.DisableRuleByName(change.Rule.Name);
-                activityLogger.LogChange("Foreign Rule Quarantined", change.Rule.Name);
-                activityLogger.LogDebug($"Sentry: Quarantined (Disabled) foreign rule '{change.Rule.Name}' without acknowledgement.");
-            }
-        }
 
         public void DeleteForeignRule(FirewallRuleChange change)
         {
-            if (change.Rule?.Name is not null)
+            if (change.Rule is { Name: string ruleName })
             {
-                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{change.Rule.Name}'");
-                DeleteAdvancedRules([change.Rule.Name]);
+                activityLogger.LogDebug($"Sentry: Deleting foreign rule '{ruleName}'");
+                DeleteAdvancedRules([ruleName]);
             }
         }
 
@@ -819,7 +806,6 @@ namespace MinimalFirewall
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
             if (ruleNames.Any())
             {
-                foreignRuleTracker.AcknowledgeRules(ruleNames);
                 activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
                 activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
             }
@@ -827,7 +813,14 @@ namespace MinimalFirewall
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
-            // Validation
+            if (vm == null) return;
+
+            // MFW prefix to protect custom rules
+            if (!string.IsNullOrWhiteSpace(vm.Name) && !vm.Name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase))
+            {
+                vm.Name = $"MFW - {vm.Name}";
+            }
+
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
@@ -1060,9 +1053,13 @@ namespace MinimalFirewall
 
         private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType)
         {
+            // MFW prefix to protect against OS overwrites
+            string safeName = (name ?? string.Empty).StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ?
+                (name ?? string.Empty) : $"MFW - {name}";
+
             var vm = new AdvancedRuleViewModel
             {
-                Name = name,
+                Name = safeName,
                 Description = description,
                 IsEnabled = true,
                 Grouping = grouping,
@@ -1080,6 +1077,7 @@ namespace MinimalFirewall
                 InterfaceTypes = "All",
                 IcmpTypesAndCodes = ""
             };
+
             CreateSingleAdvancedRule(vm, "All", "");
         }
 
@@ -1179,10 +1177,13 @@ namespace MinimalFirewall
                     return;
                 }
 
+                // MFW prefix to protect wildcard generated rules
+                string safeName = baseName.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? baseName : $"MFW - {baseName}";
+
                 var vm = new AdvancedRuleViewModel
                 {
-                    Name = baseName,
-                    ApplicationName = string.IsNullOrEmpty(serviceNameToUse) ? appPath : null,
+                    Name = safeName,
+                    ApplicationName = string.IsNullOrEmpty(serviceNameToUse) ? appPath : "",
                     ServiceName = !string.IsNullOrEmpty(serviceNameToUse) ? serviceNameToUse : "",
                     Direction = dir,
                     Status = act == Actions.Allow ? "Allow" : "Block",
