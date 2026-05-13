@@ -20,13 +20,11 @@ namespace MinimalFirewall
         private readonly FirewallRuleService firewallService;
         private readonly UserActivityLogger activityLogger;
         private readonly FirewallEventListenerService eventListenerService;
-        private readonly ForeignRuleTracker foreignRuleTracker;
         private readonly FirewallSentryService sentryService;
         private readonly PublisherWhitelistService _whitelistService;
         private readonly TemporaryRuleManager _temporaryRuleManager;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly FirewallDataService _dataService;
-
         // Timer cleanup management
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private bool _disposed;
@@ -34,18 +32,23 @@ namespace MinimalFirewall
         // COM Type caching for performance
         private static readonly Type? FwRuleType = Type.GetTypeFromProgID("HNetCfg.FWRule");
         private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
 
-        public FirewallActionsService(FirewallRuleService firewallService, UserActivityLogger activityLogger, FirewallEventListenerService eventListenerService, ForeignRuleTracker foreignRuleTracker, FirewallSentryService sentryService, PublisherWhitelistService whitelistService, WildcardRuleService wildcardRuleService, FirewallDataService dataService)
+        public FirewallActionsService(
+            FirewallRuleService firewallService,
+            UserActivityLogger activityLogger,
+            FirewallEventListenerService eventListenerService,
+            FirewallSentryService sentryService,
+            PublisherWhitelistService whitelistService,
+            WildcardRuleService wildcardRuleService,
+            FirewallDataService dataService)
         {
             this.firewallService = firewallService;
             this.activityLogger = activityLogger;
             this.eventListenerService = eventListenerService;
-            this.foreignRuleTracker = foreignRuleTracker;
             this.sentryService = sentryService;
             this._whitelistService = whitelistService;
             this._wildcardRuleService = wildcardRuleService;
@@ -713,41 +716,25 @@ namespace MinimalFirewall
             }
         }
 
-        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction, bool acknowledge = true)
+        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction)
         {
             if (change.Rule is { Name: string ruleName })
             {
                 if (enable) firewallService.EnableRuleByName(ruleName);
                 else firewallService.DisableRuleByName(ruleName);
 
-                if (acknowledge)
-                {
-                    foreignRuleTracker.AcknowledgeRules([ruleName]);
-                }
                 activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
-                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}' (Ack: {acknowledge})");
+                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}'");
             }
         }
 
         public void AcceptForeignRule(FirewallRuleChange change) =>
             ProcessForeignRule(change, true, "Accepted");
+        public void EnableForeignRule(FirewallRuleChange change) =>
+            ProcessForeignRule(change, true, "Enabled");
+        public void DisableForeignRule(FirewallRuleChange change) =>
+            ProcessForeignRule(change, false, "Disabled");
 
-        public void EnableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
-            ProcessForeignRule(change, true, "Enabled", acknowledge);
-
-        public void DisableForeignRule(FirewallRuleChange change, bool acknowledge = true) =>
-            ProcessForeignRule(change, false, "Disabled", acknowledge);
-
-        // Quarantine Logic 
-        public void QuarantineForeignRule(FirewallRuleChange change)
-        {
-            if (change.Rule is { Name: string ruleName })
-            {
-                firewallService.DisableRuleByName(ruleName);
-                activityLogger.LogChange("Foreign Rule Quarantined", ruleName);
-                activityLogger.LogDebug($"Sentry: Quarantined (Disabled) foreign rule '{ruleName}' without acknowledgement.");
-            }
-        }
 
         public void DeleteForeignRule(FirewallRuleChange change)
         {
@@ -819,7 +806,6 @@ namespace MinimalFirewall
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
             if (ruleNames.Any())
             {
-                foreignRuleTracker.AcknowledgeRules(ruleNames);
                 activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
                 activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
             }

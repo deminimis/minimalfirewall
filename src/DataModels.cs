@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.ComponentModel;
 using NetFwTypeLib;
 using System.Text.Json.Serialization;
@@ -46,6 +46,7 @@ public class FirewallRuleChange
     public string Grouping => Rule.Grouping;
     public string Description => Rule.Description;
     public string Publisher { get; set; } = string.Empty;
+    public string Intervention { get; set; } = string.Empty;
 }
 
 public class UnifiedRuleViewModel
@@ -268,8 +269,7 @@ public enum FirewallTaskType
     RemoveWildcardRule,
     RemoveWildcardDefinitionOnly,
     DeleteAllMfwRules,
-    ImportRules,
-    QuarantineForeignRule
+    ImportRules
 }
 
 public class FirewallTask

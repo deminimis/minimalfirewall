@@ -109,15 +109,14 @@ namespace MinimalFirewall
             }
         }
 
-        public List<FirewallRuleChange> CheckForChanges(ForeignRuleTracker acknowledgedTracker, IProgress<int>? progress = null, CancellationToken token = default)
+        public List<FirewallRuleChange> CheckForChanges(IProgress<int>? progress = null, CancellationToken token = default)
         {
             var changes = new List<FirewallRuleChange>();
-
-            // Baseline load: fetch all unacknowledged rules
+            // Baseline load: fetch all rules
             // Afterwards, ONLY process the specific rules caught by WMI event queue 
             if (_isFirstScan)
             {
-                changes = PerformFullBaselineScan(acknowledgedTracker, progress, token);
+                changes = PerformFullBaselineScan(progress, token);
                 _isFirstScan = false;
                 return changes;
             }
@@ -133,8 +132,7 @@ namespace MinimalFirewall
                 processed++;
                 progress?.Report(total > 0 ? (processed * 100) / total : 100);
 
-                if (acknowledgedTracker.IsAcknowledged(changeEvent.Name)) continue;
-
+                
                 if (changeEvent.Type == ChangeType.Deleted)
                 {
                     changes.Add(new FirewallRuleChange
@@ -189,7 +187,7 @@ namespace MinimalFirewall
             return changes;
         }
 
-        private List<FirewallRuleChange> PerformFullBaselineScan(ForeignRuleTracker acknowledgedTracker, IProgress<int>? progress, CancellationToken token)
+        private List<FirewallRuleChange> PerformFullBaselineScan(IProgress<int>? progress, CancellationToken token)
         {
             var changes = new List<FirewallRuleChange>();
             Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
@@ -215,7 +213,7 @@ namespace MinimalFirewall
                     try
                     {
                         string ruleName = rule.Name;
-                        if (string.IsNullOrEmpty(ruleName) || IsMfwRule(rule.Grouping) || acknowledgedTracker.IsAcknowledged(ruleName)) continue;
+                        if (string.IsNullOrEmpty(ruleName) || IsMfwRule(rule.Grouping)) continue;
 
                         var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
                         var changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };

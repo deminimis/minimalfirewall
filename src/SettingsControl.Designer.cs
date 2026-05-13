@@ -1,4 +1,4 @@
-﻿namespace MinimalFirewall
+namespace MinimalFirewall
 {
     partial class SettingsControl
     {
@@ -17,514 +17,497 @@
 
         private void InitializeComponent()
         {
-            this.deleteAllRulesButton = new System.Windows.Forms.Button();
-            this.revertFirewallButton = new System.Windows.Forms.Button();
-            this.auditAlertsSwitch = new System.Windows.Forms.CheckBox();
-            this.managePublishersButton = new System.Windows.Forms.Button();
-            this.autoAllowWhitelistedPublishersCheck = new System.Windows.Forms.CheckBox();
-            this.autoAllowSystemSignedAppsCheck = new System.Windows.Forms.CheckBox();
-            this.viewTrustedCertsButton = new System.Windows.Forms.Button();
-            this.excludedFoldersButton = new System.Windows.Forms.Button();
-            this.showAppIconsSwitch = new System.Windows.Forms.CheckBox();
-            this.trafficMonitorSwitch = new System.Windows.Forms.CheckBox();
-            this.autoRefreshLabel1 = new System.Windows.Forms.Label();
-            this.autoRefreshLabel2 = new System.Windows.Forms.Label();
-            this.coffeePanel = new System.Windows.Forms.Panel();
-            this.coffeeLinkLabel = new System.Windows.Forms.LinkLabel();
-            this.coffeePictureBox = new System.Windows.Forms.PictureBox();
-            this.versionLabel = new System.Windows.Forms.Label();
-            this.checkForUpdatesButton = new System.Windows.Forms.Button();
-            this.openFirewallButton = new System.Windows.Forms.Button();
-            this.openAppDataButton = new System.Windows.Forms.Button();
-            this.forumLink = new System.Windows.Forms.LinkLabel();
-            this.reportProblemLink = new System.Windows.Forms.LinkLabel();
-            this.helpLink = new System.Windows.Forms.LinkLabel();
-            this.autoRefreshTextBox = new System.Windows.Forms.TextBox();
-            this.loggingSwitch = new System.Windows.Forms.CheckBox();
-            this.popupsSwitch = new System.Windows.Forms.CheckBox();
-            this.darkModeSwitch = new System.Windows.Forms.CheckBox();
-            this.autoThemeSwitch = new System.Windows.Forms.CheckBox();
-            this.startOnStartupSwitch = new System.Windows.Forms.CheckBox();
-            this.closeToTraySwitch = new System.Windows.Forms.CheckBox();
-            this.mainSettingsPanel = new System.Windows.Forms.Panel();
-            this.exportDiagnosticButton = new System.Windows.Forms.Button();
-            this.importReplaceButton = new System.Windows.Forms.Button();
-            this.importMergeButton = new System.Windows.Forms.Button();
-            this.exportRulesButton = new System.Windows.Forms.Button();
-            this.cleanUpOrphanedRulesButton = new System.Windows.Forms.Button();
-            this.coffeePanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.coffeePictureBox)).BeginInit();
-            this.mainSettingsPanel.SuspendLayout();
-            this.SuspendLayout();
+            deleteAllRulesButton = new Button();
+            revertFirewallButton = new Button();
+            auditAlertsSwitch = new CheckBox();
+            managePublishersButton = new Button();
+            autoAllowWhitelistedPublishersCheck = new CheckBox();
+            autoAllowSystemSignedAppsCheck = new CheckBox();
+            autoDisableOsBlockRulesCheck = new CheckBox();
+            viewTrustedCertsButton = new Button();
+            excludedFoldersButton = new Button();
+            showAppIconsSwitch = new CheckBox();
+            trafficMonitorSwitch = new CheckBox();
+            autoRefreshLabel1 = new Label();
+            autoRefreshLabel2 = new Label();
+            coffeePanel = new Panel();
+            coffeeLinkLabel = new LinkLabel();
+            coffeePictureBox = new PictureBox();
+            versionLabel = new Label();
+            checkForUpdatesButton = new Button();
+            openFirewallButton = new Button();
+            openAppDataButton = new Button();
+            forumLink = new LinkLabel();
+            reportProblemLink = new LinkLabel();
+            helpLink = new LinkLabel();
+            autoRefreshTextBox = new TextBox();
+            loggingSwitch = new CheckBox();
+            popupsSwitch = new CheckBox();
+            darkModeSwitch = new CheckBox();
+            autoThemeSwitch = new CheckBox();
+            startOnStartupSwitch = new CheckBox();
+            closeToTraySwitch = new CheckBox();
+            mainSettingsPanel = new Panel();
+            exportDiagnosticButton = new Button();
+            importReplaceButton = new Button();
+            importMergeButton = new Button();
+            exportRulesButton = new Button();
+            cleanUpOrphanedRulesButton = new Button();
+            coffeePanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
+            mainSettingsPanel.SuspendLayout();
+            SuspendLayout();
             // 
             // deleteAllRulesButton
             // 
-            this.deleteAllRulesButton.FlatAppearance.BorderSize = 0;
-            this.deleteAllRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.deleteAllRulesButton.Location = new System.Drawing.Point(29, 785);
-            this.deleteAllRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.deleteAllRulesButton.Name = "deleteAllRulesButton";
-            this.deleteAllRulesButton.Size = new System.Drawing.Size(240, 37);
-            this.deleteAllRulesButton.TabIndex = 25;
-            this.deleteAllRulesButton.Text = "Delete all Minimal Firewall rules";
-            this.deleteAllRulesButton.UseVisualStyleBackColor = true;
-            this.deleteAllRulesButton.Click += new System.EventHandler(this.deleteAllRulesButton_Click);
+            deleteAllRulesButton.FlatAppearance.BorderSize = 0;
+            deleteAllRulesButton.FlatStyle = FlatStyle.Flat;
+            deleteAllRulesButton.Location = new Point(25, 589);
+            deleteAllRulesButton.Name = "deleteAllRulesButton";
+            deleteAllRulesButton.Size = new Size(210, 28);
+            deleteAllRulesButton.TabIndex = 25;
+            deleteAllRulesButton.Text = "Delete all Minimal Firewall rules";
+            deleteAllRulesButton.UseVisualStyleBackColor = true;
+            deleteAllRulesButton.Click += deleteAllRulesButton_Click;
             // 
             // revertFirewallButton
             // 
-            this.revertFirewallButton.FlatAppearance.BorderSize = 0;
-            this.revertFirewallButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.revertFirewallButton.Location = new System.Drawing.Point(280, 785);
-            this.revertFirewallButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.revertFirewallButton.Name = "revertFirewallButton";
-            this.revertFirewallButton.Size = new System.Drawing.Size(240, 37);
-            this.revertFirewallButton.TabIndex = 26;
-            this.revertFirewallButton.Text = "Revert Windows Firewall";
-            this.revertFirewallButton.UseVisualStyleBackColor = true;
-            this.revertFirewallButton.Click += new System.EventHandler(this.revertFirewallButton_Click);
+            revertFirewallButton.FlatAppearance.BorderSize = 0;
+            revertFirewallButton.FlatStyle = FlatStyle.Flat;
+            revertFirewallButton.Location = new Point(245, 589);
+            revertFirewallButton.Name = "revertFirewallButton";
+            revertFirewallButton.Size = new Size(210, 28);
+            revertFirewallButton.TabIndex = 26;
+            revertFirewallButton.Text = "Revert Windows Firewall";
+            revertFirewallButton.UseVisualStyleBackColor = true;
+            revertFirewallButton.Click += revertFirewallButton_Click;
             // 
             // auditAlertsSwitch
             // 
-            this.auditAlertsSwitch.AutoSize = true;
-            this.auditAlertsSwitch.Location = new System.Drawing.Point(350, 153);
-            this.auditAlertsSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.auditAlertsSwitch.Name = "auditAlertsSwitch";
-            this.auditAlertsSwitch.Size = new System.Drawing.Size(211, 24);
-            this.auditAlertsSwitch.TabIndex = 24;
-            this.auditAlertsSwitch.Text = "Alert on new system rules";
-            this.auditAlertsSwitch.UseVisualStyleBackColor = true;
+            auditAlertsSwitch.AutoSize = true;
+            auditAlertsSwitch.Location = new Point(306, 115);
+            auditAlertsSwitch.Name = "auditAlertsSwitch";
+            auditAlertsSwitch.Size = new Size(161, 19);
+            auditAlertsSwitch.TabIndex = 24;
+            auditAlertsSwitch.Text = "Alert on new system rules";
+            auditAlertsSwitch.UseVisualStyleBackColor = true;
             // 
             // managePublishersButton
             // 
-            this.managePublishersButton.FlatAppearance.BorderSize = 0;
-            this.managePublishersButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.managePublishersButton.Location = new System.Drawing.Point(350, 232);
-            this.managePublishersButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.managePublishersButton.Name = "managePublishersButton";
-            this.managePublishersButton.Size = new System.Drawing.Size(200, 29);
-            this.managePublishersButton.TabIndex = 23;
-            this.managePublishersButton.Text = "Manage Trusted Publishers";
-            this.managePublishersButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.managePublishersButton.UseVisualStyleBackColor = true;
-            this.managePublishersButton.Click += new System.EventHandler(this.managePublishersButton_Click);
+            managePublishersButton.FlatAppearance.BorderSize = 0;
+            managePublishersButton.FlatStyle = FlatStyle.Flat;
+            managePublishersButton.Location = new Point(306, 174);
+            managePublishersButton.Name = "managePublishersButton";
+            managePublishersButton.Size = new Size(175, 22);
+            managePublishersButton.TabIndex = 23;
+            managePublishersButton.Text = "Manage Trusted Publishers";
+            managePublishersButton.UseVisualStyleBackColor = true;
+            managePublishersButton.Click += managePublishersButton_Click;
             // 
             // autoAllowWhitelistedPublishersCheck
             // 
-            this.autoAllowWhitelistedPublishersCheck.AutoSize = true;
-            this.autoAllowWhitelistedPublishersCheck.Location = new System.Drawing.Point(350, 200);
-            this.autoAllowWhitelistedPublishersCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
-            this.autoAllowWhitelistedPublishersCheck.Size = new System.Drawing.Size(276, 24);
-            this.autoAllowWhitelistedPublishersCheck.TabIndex = 22;
-            this.autoAllowWhitelistedPublishersCheck.Text = "Auto-allow trusted publishers";
-            this.autoAllowWhitelistedPublishersCheck.UseVisualStyleBackColor = true;
+            autoAllowWhitelistedPublishersCheck.AutoSize = true;
+            autoAllowWhitelistedPublishersCheck.Location = new Point(306, 150);
+            autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
+            autoAllowWhitelistedPublishersCheck.Size = new Size(182, 19);
+            autoAllowWhitelistedPublishersCheck.TabIndex = 22;
+            autoAllowWhitelistedPublishersCheck.Text = "Auto-allow trusted publishers";
+            autoAllowWhitelistedPublishersCheck.UseVisualStyleBackColor = true;
             // 
             // autoAllowSystemSignedAppsCheck
             // 
-            this.autoAllowSystemSignedAppsCheck.AutoSize = true;
-            this.autoAllowSystemSignedAppsCheck.Location = new System.Drawing.Point(350, 282);
-            this.autoAllowSystemSignedAppsCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
-            this.autoAllowSystemSignedAppsCheck.Size = new System.Drawing.Size(276, 24);
-            this.autoAllowSystemSignedAppsCheck.TabIndex = 36;
-            this.autoAllowSystemSignedAppsCheck.Text = "Auto-allow apps trusted by Windows";
-            this.autoAllowSystemSignedAppsCheck.UseVisualStyleBackColor = true;
+            autoAllowSystemSignedAppsCheck.AutoSize = true;
+            autoAllowSystemSignedAppsCheck.Location = new Point(306, 212);
+            autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
+            autoAllowSystemSignedAppsCheck.Size = new Size(221, 19);
+            autoAllowSystemSignedAppsCheck.TabIndex = 36;
+            autoAllowSystemSignedAppsCheck.Text = "Auto-allow apps trusted by Windows";
+            autoAllowSystemSignedAppsCheck.UseVisualStyleBackColor = true;
+            // 
+            // autoDisableOsBlockRulesCheck
+            // 
+            autoDisableOsBlockRulesCheck.AutoSize = true;
+            autoDisableOsBlockRulesCheck.Location = new Point(306, 262);
+            autoDisableOsBlockRulesCheck.Name = "autoDisableOsBlockRulesCheck";
+            autoDisableOsBlockRulesCheck.Size = new Size(218, 19);
+            autoDisableOsBlockRulesCheck.TabIndex = 37;
+            autoDisableOsBlockRulesCheck.Text = "Automatically disable OS block rules";
+            autoDisableOsBlockRulesCheck.UseVisualStyleBackColor = true;
             // 
             // viewTrustedCertsButton
             // 
-            this.viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
-            this.viewTrustedCertsButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.viewTrustedCertsButton.Location = new System.Drawing.Point(350, 314);
-            this.viewTrustedCertsButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.viewTrustedCertsButton.Name = "viewTrustedCertsButton";
-            this.viewTrustedCertsButton.Size = new System.Drawing.Size(200, 29);
-            this.viewTrustedCertsButton.TabIndex = 34;
-            this.viewTrustedCertsButton.Text = "View Trusted CAs...";
-            this.viewTrustedCertsButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.viewTrustedCertsButton.UseVisualStyleBackColor = true;
-            this.viewTrustedCertsButton.Click += new System.EventHandler(this.viewTrustedCertsButton_Click);
+            viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
+            viewTrustedCertsButton.FlatStyle = FlatStyle.Flat;
+            viewTrustedCertsButton.Location = new Point(306, 236);
+            viewTrustedCertsButton.Name = "viewTrustedCertsButton";
+            viewTrustedCertsButton.Size = new Size(175, 22);
+            viewTrustedCertsButton.TabIndex = 34;
+            viewTrustedCertsButton.Text = "View Trusted CAs...";
+            viewTrustedCertsButton.UseVisualStyleBackColor = true;
+            viewTrustedCertsButton.Click += viewTrustedCertsButton_Click;
             // 
             // excludedFoldersButton
             // 
-            this.excludedFoldersButton.FlatAppearance.BorderSize = 0;
-            this.excludedFoldersButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.excludedFoldersButton.Location = new System.Drawing.Point(29, 350);
-            this.excludedFoldersButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.excludedFoldersButton.Name = "excludedFoldersButton";
-            this.excludedFoldersButton.Size = new System.Drawing.Size(183, 37);
-            this.excludedFoldersButton.TabIndex = 35;
-            this.excludedFoldersButton.Text = "Auto-Allow Exclusions";
-            this.excludedFoldersButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.excludedFoldersButton.UseVisualStyleBackColor = true;
-            this.excludedFoldersButton.Click += new System.EventHandler(this.excludedFoldersButton_Click);
+            excludedFoldersButton.FlatAppearance.BorderSize = 0;
+            excludedFoldersButton.FlatStyle = FlatStyle.Flat;
+            excludedFoldersButton.Location = new Point(25, 262);
+            excludedFoldersButton.Name = "excludedFoldersButton";
+            excludedFoldersButton.Size = new Size(160, 28);
+            excludedFoldersButton.TabIndex = 35;
+            excludedFoldersButton.Text = "Auto-Allow Exclusions";
+            excludedFoldersButton.UseVisualStyleBackColor = true;
+            excludedFoldersButton.Click += excludedFoldersButton_Click;
             // 
             // showAppIconsSwitch
             // 
-            this.showAppIconsSwitch.AutoSize = true;
-            this.showAppIconsSwitch.Location = new System.Drawing.Point(350, 107);
-            this.showAppIconsSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.showAppIconsSwitch.Name = "showAppIconsSwitch";
-            this.showAppIconsSwitch.Size = new System.Drawing.Size(177, 24);
-            this.showAppIconsSwitch.TabIndex = 21;
-            this.showAppIconsSwitch.Text = "Show application icons";
-            this.showAppIconsSwitch.UseVisualStyleBackColor = true;
-            this.showAppIconsSwitch.CheckedChanged += new System.EventHandler(this.ShowAppIconsSwitch_CheckedChanged);
+            showAppIconsSwitch.AutoSize = true;
+            showAppIconsSwitch.Location = new Point(306, 80);
+            showAppIconsSwitch.Name = "showAppIconsSwitch";
+            showAppIconsSwitch.Size = new Size(148, 19);
+            showAppIconsSwitch.TabIndex = 21;
+            showAppIconsSwitch.Text = "Show application icons";
+            showAppIconsSwitch.UseVisualStyleBackColor = true;
+            showAppIconsSwitch.CheckedChanged += ShowAppIconsSwitch_CheckedChanged;
             // 
             // trafficMonitorSwitch
             // 
-            this.trafficMonitorSwitch.AutoSize = true;
-            this.trafficMonitorSwitch.Location = new System.Drawing.Point(350, 60);
-            this.trafficMonitorSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.trafficMonitorSwitch.Name = "trafficMonitorSwitch";
-            this.trafficMonitorSwitch.Size = new System.Drawing.Size(191, 24);
-            this.trafficMonitorSwitch.TabIndex = 20;
-            this.trafficMonitorSwitch.Text = "Enable Live Connections";
-            this.trafficMonitorSwitch.UseVisualStyleBackColor = true;
-            this.trafficMonitorSwitch.CheckedChanged += new System.EventHandler(this.TrafficMonitorSwitch_CheckedChanged);
+            trafficMonitorSwitch.AutoSize = true;
+            trafficMonitorSwitch.Location = new Point(306, 45);
+            trafficMonitorSwitch.Name = "trafficMonitorSwitch";
+            trafficMonitorSwitch.Size = new Size(155, 19);
+            trafficMonitorSwitch.TabIndex = 20;
+            trafficMonitorSwitch.Text = "Enable Live Connections";
+            trafficMonitorSwitch.UseVisualStyleBackColor = true;
+            trafficMonitorSwitch.CheckedChanged += TrafficMonitorSwitch_CheckedChanged;
             // 
             // autoRefreshLabel1
             // 
-            this.autoRefreshLabel1.AutoSize = true;
-            this.autoRefreshLabel1.Location = new System.Drawing.Point(29, 299);
-            this.autoRefreshLabel1.Name = "autoRefreshLabel1";
-            this.autoRefreshLabel1.Size = new System.Drawing.Size(117, 20);
-            this.autoRefreshLabel1.TabIndex = 18;
-            this.autoRefreshLabel1.Text = "List refresh time:";
+            autoRefreshLabel1.AutoSize = true;
+            autoRefreshLabel1.Location = new Point(25, 224);
+            autoRefreshLabel1.Name = "autoRefreshLabel1";
+            autoRefreshLabel1.Size = new Size(94, 15);
+            autoRefreshLabel1.TabIndex = 18;
+            autoRefreshLabel1.Text = "List refresh time:";
             // 
             // autoRefreshLabel2
             // 
-            this.autoRefreshLabel2.AutoSize = true;
-            this.autoRefreshLabel2.Location = new System.Drawing.Point(228, 299);
-            this.autoRefreshLabel2.Name = "autoRefreshLabel2";
-            this.autoRefreshLabel2.Size = new System.Drawing.Size(61, 20);
-            this.autoRefreshLabel2.TabIndex = 19;
-            this.autoRefreshLabel2.Text = "minutes";
+            autoRefreshLabel2.AutoSize = true;
+            autoRefreshLabel2.Location = new Point(200, 224);
+            autoRefreshLabel2.Name = "autoRefreshLabel2";
+            autoRefreshLabel2.Size = new Size(50, 15);
+            autoRefreshLabel2.TabIndex = 19;
+            autoRefreshLabel2.Text = "minutes";
             // 
             // coffeePanel
             // 
-            this.coffeePanel.BackColor = System.Drawing.Color.Transparent;
-            this.coffeePanel.Controls.Add(this.coffeeLinkLabel);
-            this.coffeePanel.Controls.Add(this.coffeePictureBox);
-            this.coffeePanel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.coffeePanel.Location = new System.Drawing.Point(21, 705);
-            this.coffeePanel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.coffeePanel.Name = "coffeePanel";
-            this.coffeePanel.Size = new System.Drawing.Size(434, 80);
-            this.coffeePanel.TabIndex = 17;
-            this.coffeePanel.Click += new System.EventHandler(this.CoffeeLink_Click);
+            coffeePanel.BackColor = Color.Transparent;
+            coffeePanel.Controls.Add(coffeePictureBox);
+            coffeePanel.Cursor = Cursors.Hand;
+            coffeePanel.Location = new Point(18, 529);
+            coffeePanel.Name = "coffeePanel";
+            coffeePanel.Size = new Size(380, 60);
+            coffeePanel.TabIndex = 17;
+            coffeePanel.Click += CoffeeLink_Click;
             // 
             // coffeeLinkLabel
             // 
-            this.coffeeLinkLabel.ActiveLinkColor = System.Drawing.Color.DodgerBlue;
-            this.coffeeLinkLabel.AutoSize = true;
-            this.coffeeLinkLabel.Location = new System.Drawing.Point(69, 24);
-            this.coffeeLinkLabel.MaximumSize = new System.Drawing.Size(366, 0);
-            this.coffeeLinkLabel.Name = "coffeeLinkLabel";
-            this.coffeeLinkLabel.Size = new System.Drawing.Size(335, 20);
-            this.coffeeLinkLabel.TabIndex = 15;
-            this.coffeeLinkLabel.TabStop = true;
-            this.coffeeLinkLabel.Tag = "https://www.buymeacoffee.com/deminimis";
-            this.coffeeLinkLabel.Text = "Support my caffeine addiction if you like this app";
-            this.coffeeLinkLabel.Click += new System.EventHandler(this.CoffeeLink_Click);
+            coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
+            coffeeLinkLabel.AutoSize = true;
+            coffeeLinkLabel.Location = new Point(215, 596);
+            coffeeLinkLabel.MaximumSize = new Size(320, 0);
+            coffeeLinkLabel.Name = "coffeeLinkLabel";
+            coffeeLinkLabel.Size = new Size(266, 15);
+            coffeeLinkLabel.TabIndex = 15;
+            coffeeLinkLabel.TabStop = true;
+            coffeeLinkLabel.Tag = "https://www.buymeacoffee.com/deminimis";
+            coffeeLinkLabel.Text = "Support my caffeine addiction if you like this app";
+            coffeeLinkLabel.Click += CoffeeLink_Click;
             // 
             // coffeePictureBox
             // 
-            this.coffeePictureBox.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.coffeePictureBox.Location = new System.Drawing.Point(0, 0);
-            this.coffeePictureBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.coffeePictureBox.Name = "coffeePictureBox";
-            this.coffeePictureBox.Size = new System.Drawing.Size(62, 72);
-            this.coffeePictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-            this.coffeePictureBox.TabIndex = 13;
-            this.coffeePictureBox.TabStop = false;
-            this.coffeePictureBox.Click += new System.EventHandler(this.CoffeeLink_Click);
-            this.coffeePictureBox.MouseEnter += new System.EventHandler(this.CoffeePictureBox_MouseEnter);
-            this.coffeePictureBox.MouseLeave += new System.EventHandler(this.CoffeePictureBox_MouseLeave);
+            coffeePictureBox.Cursor = Cursors.Hand;
+            coffeePictureBox.Location = new Point(0, 0);
+            coffeePictureBox.Name = "coffeePictureBox";
+            coffeePictureBox.Size = new Size(54, 54);
+            coffeePictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
+            coffeePictureBox.TabIndex = 13;
+            coffeePictureBox.TabStop = false;
+            coffeePictureBox.Click += CoffeeLink_Click;
+            coffeePictureBox.MouseEnter += CoffeePictureBox_MouseEnter;
+            coffeePictureBox.MouseLeave += CoffeePictureBox_MouseLeave;
             // 
             // versionLabel
             // 
-            this.versionLabel.AutoSize = true;
-            this.versionLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.versionLabel.Location = new System.Drawing.Point(223, 595);
-            this.versionLabel.Name = "versionLabel";
-            this.versionLabel.Size = new System.Drawing.Size(57, 20);
-            this.versionLabel.TabIndex = 12;
-            this.versionLabel.Text = "Version";
+            versionLabel.AutoSize = true;
+            versionLabel.Font = new Font("Segoe UI", 9F);
+            versionLabel.Location = new Point(195, 446);
+            versionLabel.Name = "versionLabel";
+            versionLabel.Size = new Size(45, 15);
+            versionLabel.TabIndex = 12;
+            versionLabel.Text = "Version";
             // 
             // checkForUpdatesButton
             // 
-            this.checkForUpdatesButton.FlatAppearance.BorderSize = 0;
-            this.checkForUpdatesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.checkForUpdatesButton.Location = new System.Drawing.Point(29, 585);
-            this.checkForUpdatesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.checkForUpdatesButton.Name = "checkForUpdatesButton";
-            this.checkForUpdatesButton.Size = new System.Drawing.Size(183, 37);
-            this.checkForUpdatesButton.TabIndex = 11;
-            this.checkForUpdatesButton.Text = "Check for Updates";
-            this.checkForUpdatesButton.Click += new System.EventHandler(this.CheckForUpdatesButton_Click);
+            checkForUpdatesButton.FlatAppearance.BorderSize = 0;
+            checkForUpdatesButton.FlatStyle = FlatStyle.Flat;
+            checkForUpdatesButton.Location = new Point(25, 439);
+            checkForUpdatesButton.Name = "checkForUpdatesButton";
+            checkForUpdatesButton.Size = new Size(160, 28);
+            checkForUpdatesButton.TabIndex = 11;
+            checkForUpdatesButton.Text = "Check for Updates";
+            checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
             // 
             // openFirewallButton
             // 
-            this.openFirewallButton.FlatAppearance.BorderSize = 0;
-            this.openFirewallButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.openFirewallButton.Location = new System.Drawing.Point(29, 420);
-            this.openFirewallButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.openFirewallButton.Name = "openFirewallButton";
-            this.openFirewallButton.Size = new System.Drawing.Size(183, 37);
-            this.openFirewallButton.TabIndex = 10;
-            this.openFirewallButton.Text = "Open Windows Firewall";
-            this.openFirewallButton.Click += new System.EventHandler(this.OpenFirewallButton_Click);
+            openFirewallButton.FlatAppearance.BorderSize = 0;
+            openFirewallButton.FlatStyle = FlatStyle.Flat;
+            openFirewallButton.Location = new Point(25, 315);
+            openFirewallButton.Name = "openFirewallButton";
+            openFirewallButton.Size = new Size(160, 28);
+            openFirewallButton.TabIndex = 10;
+            openFirewallButton.Text = "Open Windows Firewall";
+            openFirewallButton.Click += OpenFirewallButton_Click;
             // 
             // openAppDataButton
             // 
-            this.openAppDataButton.FlatAppearance.BorderSize = 0;
-            this.openAppDataButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.openAppDataButton.Location = new System.Drawing.Point(223, 420);
-            this.openAppDataButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.openAppDataButton.Name = "openAppDataButton";
-            this.openAppDataButton.Size = new System.Drawing.Size(183, 37);
-            this.openAppDataButton.TabIndex = 32;
-            this.openAppDataButton.Text = "Open %LocalAppData%";
-            this.openAppDataButton.UseVisualStyleBackColor = true;
-            this.openAppDataButton.Click += new System.EventHandler(this.openAppDataButton_Click);
+            openAppDataButton.FlatAppearance.BorderSize = 0;
+            openAppDataButton.FlatStyle = FlatStyle.Flat;
+            openAppDataButton.Location = new Point(195, 315);
+            openAppDataButton.Name = "openAppDataButton";
+            openAppDataButton.Size = new Size(160, 28);
+            openAppDataButton.TabIndex = 32;
+            openAppDataButton.Text = "Open %LocalAppData%";
+            openAppDataButton.UseVisualStyleBackColor = true;
+            openAppDataButton.Click += openAppDataButton_Click;
             // 
             // forumLink
             // 
-            this.forumLink.AutoSize = true;
-            this.forumLink.Location = new System.Drawing.Point(29, 630);
-            this.forumLink.Name = "forumLink";
-            this.forumLink.Size = new System.Drawing.Size(140, 20);
-            this.forumLink.TabIndex = 9;
-            this.forumLink.TabStop = true;
-            this.forumLink.Tag = "https://github.com/deminimis/minimalfirewall/discussions";
-            this.forumLink.Text = "Forum / Discussions";
-            this.forumLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkLabel_LinkClicked);
+            forumLink.AutoSize = true;
+            forumLink.Location = new Point(25, 472);
+            forumLink.Name = "forumLink";
+            forumLink.Size = new Size(114, 15);
+            forumLink.TabIndex = 9;
+            forumLink.TabStop = true;
+            forumLink.Tag = "https://github.com/deminimis/minimalfirewall/discussions";
+            forumLink.Text = "Forum / Discussions";
+            forumLink.LinkClicked += LinkLabel_LinkClicked;
             // 
             // reportProblemLink
             // 
-            this.reportProblemLink.AutoSize = true;
-            this.reportProblemLink.Location = new System.Drawing.Point(29, 653);
-            this.reportProblemLink.Name = "reportProblemLink";
-            this.reportProblemLink.Size = new System.Drawing.Size(126, 20);
-            this.reportProblemLink.TabIndex = 8;
-            this.reportProblemLink.TabStop = true;
-            this.reportProblemLink.Tag = "https://github.com/deminimis/minimalfirewall/issues";
-            this.reportProblemLink.Text = "Report a Problem";
-            this.reportProblemLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkLabel_LinkClicked);
+            reportProblemLink.AutoSize = true;
+            reportProblemLink.Location = new Point(25, 490);
+            reportProblemLink.Name = "reportProblemLink";
+            reportProblemLink.Size = new Size(99, 15);
+            reportProblemLink.TabIndex = 8;
+            reportProblemLink.TabStop = true;
+            reportProblemLink.Tag = "https://github.com/deminimis/minimalfirewall/issues";
+            reportProblemLink.Text = "Report a Problem";
+            reportProblemLink.LinkClicked += LinkLabel_LinkClicked;
             // 
             // helpLink
             // 
-            this.helpLink.AutoSize = true;
-            this.helpLink.Location = new System.Drawing.Point(29, 676);
-            this.helpLink.Name = "helpLink";
-            this.helpLink.Size = new System.Drawing.Size(158, 20);
-            this.helpLink.TabIndex = 7;
-            this.helpLink.TabStop = true;
-            this.helpLink.Tag = "https://github.com/deminimis/minimalfirewall";
-            this.helpLink.Text = "Help / Documentation";
-            this.helpLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.LinkLabel_LinkClicked);
+            helpLink.AutoSize = true;
+            helpLink.Location = new Point(25, 507);
+            helpLink.Name = "helpLink";
+            helpLink.Size = new Size(126, 15);
+            helpLink.TabIndex = 7;
+            helpLink.TabStop = true;
+            helpLink.Tag = "https://github.com/deminimis/minimalfirewall";
+            helpLink.Text = "Help / Documentation";
+            helpLink.LinkClicked += LinkLabel_LinkClicked;
             // 
             // autoRefreshTextBox
             // 
-            this.autoRefreshTextBox.Location = new System.Drawing.Point(155, 299);
-            this.autoRefreshTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.autoRefreshTextBox.MaxLength = 3;
-            this.autoRefreshTextBox.Name = "autoRefreshTextBox";
-            this.autoRefreshTextBox.Size = new System.Drawing.Size(68, 27);
-            this.autoRefreshTextBox.TabIndex = 5;
-            this.autoRefreshTextBox.Text = "10";
+            autoRefreshTextBox.Location = new Point(136, 224);
+            autoRefreshTextBox.MaxLength = 3;
+            autoRefreshTextBox.Name = "autoRefreshTextBox";
+            autoRefreshTextBox.Size = new Size(60, 23);
+            autoRefreshTextBox.TabIndex = 5;
+            autoRefreshTextBox.Text = "10";
             // 
             // loggingSwitch
             // 
-            this.loggingSwitch.AutoSize = true;
-            this.loggingSwitch.Location = new System.Drawing.Point(29, 247);
-            this.loggingSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.loggingSwitch.Name = "loggingSwitch";
-            this.loggingSwitch.Size = new System.Drawing.Size(132, 24);
-            this.loggingSwitch.TabIndex = 4;
-            this.loggingSwitch.Text = "Enable logging";
-            this.loggingSwitch.UseVisualStyleBackColor = true;
+            loggingSwitch.AutoSize = true;
+            loggingSwitch.Location = new Point(25, 185);
+            loggingSwitch.Name = "loggingSwitch";
+            loggingSwitch.Size = new Size(105, 19);
+            loggingSwitch.TabIndex = 4;
+            loggingSwitch.Text = "Enable logging";
+            loggingSwitch.UseVisualStyleBackColor = true;
             // 
             // popupsSwitch
             // 
-            this.popupsSwitch.AutoSize = true;
-            this.popupsSwitch.Location = new System.Drawing.Point(29, 200);
-            this.popupsSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.popupsSwitch.Name = "popupsSwitch";
-            this.popupsSwitch.Size = new System.Drawing.Size(216, 24);
-            this.popupsSwitch.TabIndex = 3;
-            this.popupsSwitch.Text = "Enable pop-up notifications";
-            this.popupsSwitch.UseVisualStyleBackColor = true;
-            this.popupsSwitch.CheckedChanged += new System.EventHandler(this.PopupsSwitch_CheckedChanged);
+            popupsSwitch.AutoSize = true;
+            popupsSwitch.Location = new Point(25, 150);
+            popupsSwitch.Name = "popupsSwitch";
+            popupsSwitch.Size = new Size(173, 19);
+            popupsSwitch.TabIndex = 3;
+            popupsSwitch.Text = "Enable pop-up notifications";
+            popupsSwitch.UseVisualStyleBackColor = true;
+            popupsSwitch.CheckedChanged += PopupsSwitch_CheckedChanged;
             // 
             // darkModeSwitch
             // 
-            this.darkModeSwitch.AutoSize = true;
-            this.darkModeSwitch.Location = new System.Drawing.Point(29, 153);
-            this.darkModeSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.darkModeSwitch.Name = "darkModeSwitch";
-            this.darkModeSwitch.Size = new System.Drawing.Size(105, 24);
-            this.darkModeSwitch.TabIndex = 2;
-            this.darkModeSwitch.Text = "Dark Mode";
-            this.darkModeSwitch.UseVisualStyleBackColor = true;
-            this.darkModeSwitch.CheckedChanged += new System.EventHandler(this.DarkModeSwitch_CheckedChanged);
+            darkModeSwitch.AutoSize = true;
+            darkModeSwitch.Location = new Point(25, 115);
+            darkModeSwitch.Name = "darkModeSwitch";
+            darkModeSwitch.Size = new Size(84, 19);
+            darkModeSwitch.TabIndex = 2;
+            darkModeSwitch.Text = "Dark Mode";
+            darkModeSwitch.UseVisualStyleBackColor = true;
+            darkModeSwitch.CheckedChanged += DarkModeSwitch_CheckedChanged;
             // 
             // autoThemeSwitch
             // 
-            this.autoThemeSwitch.AutoSize = true;
-            this.autoThemeSwitch.Location = new System.Drawing.Point(145, 153);
-            this.autoThemeSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.autoThemeSwitch.Name = "autoThemeSwitch";
-            this.autoThemeSwitch.Size = new System.Drawing.Size(115, 24);
-            this.autoThemeSwitch.TabIndex = 33;
-            this.autoThemeSwitch.Text = "Auto Theme";
-            this.autoThemeSwitch.UseVisualStyleBackColor = true;
-            this.autoThemeSwitch.CheckedChanged += new System.EventHandler(this.AutoThemeSwitch_CheckedChanged);
+            autoThemeSwitch.AutoSize = true;
+            autoThemeSwitch.Location = new Point(127, 115);
+            autoThemeSwitch.Name = "autoThemeSwitch";
+            autoThemeSwitch.Size = new Size(92, 19);
+            autoThemeSwitch.TabIndex = 33;
+            autoThemeSwitch.Text = "Auto Theme";
+            autoThemeSwitch.UseVisualStyleBackColor = true;
+            autoThemeSwitch.CheckedChanged += AutoThemeSwitch_CheckedChanged;
             // 
             // startOnStartupSwitch
             // 
-            this.startOnStartupSwitch.AutoSize = true;
-            this.startOnStartupSwitch.Location = new System.Drawing.Point(29, 107);
-            this.startOnStartupSwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.startOnStartupSwitch.Name = "startOnStartupSwitch";
-            this.startOnStartupSwitch.Size = new System.Drawing.Size(159, 24);
-            this.startOnStartupSwitch.TabIndex = 1;
-            this.startOnStartupSwitch.Text = "Start with Windows";
-            this.startOnStartupSwitch.UseVisualStyleBackColor = true;
-            this.startOnStartupSwitch.CheckedChanged += new System.EventHandler(this.startOnStartupSwitch_CheckedChanged);
+            startOnStartupSwitch.AutoSize = true;
+            startOnStartupSwitch.Location = new Point(25, 80);
+            startOnStartupSwitch.Name = "startOnStartupSwitch";
+            startOnStartupSwitch.Size = new Size(128, 19);
+            startOnStartupSwitch.TabIndex = 1;
+            startOnStartupSwitch.Text = "Start with Windows";
+            startOnStartupSwitch.UseVisualStyleBackColor = true;
+            startOnStartupSwitch.CheckedChanged += startOnStartupSwitch_CheckedChanged;
             // 
             // closeToTraySwitch
             // 
-            this.closeToTraySwitch.AutoSize = true;
-            this.closeToTraySwitch.Checked = true;
-            this.closeToTraySwitch.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.closeToTraySwitch.Location = new System.Drawing.Point(29, 60);
-            this.closeToTraySwitch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.closeToTraySwitch.Name = "closeToTraySwitch";
-            this.closeToTraySwitch.Size = new System.Drawing.Size(114, 24);
-            this.closeToTraySwitch.TabIndex = 0;
-            this.closeToTraySwitch.Text = "Close to tray";
-            this.closeToTraySwitch.UseVisualStyleBackColor = true;
+            closeToTraySwitch.AutoSize = true;
+            closeToTraySwitch.Checked = true;
+            closeToTraySwitch.CheckState = CheckState.Checked;
+            closeToTraySwitch.Location = new Point(25, 45);
+            closeToTraySwitch.Name = "closeToTraySwitch";
+            closeToTraySwitch.Size = new Size(92, 19);
+            closeToTraySwitch.TabIndex = 0;
+            closeToTraySwitch.Text = "Close to tray";
+            closeToTraySwitch.UseVisualStyleBackColor = true;
             // 
             // mainSettingsPanel
             // 
-            this.mainSettingsPanel.AutoScroll = true;
-            this.mainSettingsPanel.Controls.Add(this.exportDiagnosticButton);
-            this.mainSettingsPanel.Controls.Add(this.importReplaceButton);
-            this.mainSettingsPanel.Controls.Add(this.importMergeButton);
-            this.mainSettingsPanel.Controls.Add(this.exportRulesButton);
-            this.mainSettingsPanel.Controls.Add(this.cleanUpOrphanedRulesButton);
-            this.mainSettingsPanel.Controls.Add(this.deleteAllRulesButton);
-            this.mainSettingsPanel.Controls.Add(this.revertFirewallButton);
-            this.mainSettingsPanel.Controls.Add(this.auditAlertsSwitch);
-            this.mainSettingsPanel.Controls.Add(this.managePublishersButton);
-            this.mainSettingsPanel.Controls.Add(this.autoAllowWhitelistedPublishersCheck);
-            this.mainSettingsPanel.Controls.Add(this.autoAllowSystemSignedAppsCheck);
-            this.mainSettingsPanel.Controls.Add(this.viewTrustedCertsButton);
-            this.mainSettingsPanel.Controls.Add(this.excludedFoldersButton);
-            this.mainSettingsPanel.Controls.Add(this.showAppIconsSwitch);
-            this.mainSettingsPanel.Controls.Add(this.trafficMonitorSwitch);
-            this.mainSettingsPanel.Controls.Add(this.autoRefreshLabel1);
-            this.mainSettingsPanel.Controls.Add(this.autoRefreshLabel2);
-            this.mainSettingsPanel.Controls.Add(this.coffeePanel);
-            this.mainSettingsPanel.Controls.Add(this.versionLabel);
-            this.mainSettingsPanel.Controls.Add(this.checkForUpdatesButton);
-            this.mainSettingsPanel.Controls.Add(this.openFirewallButton);
-            this.mainSettingsPanel.Controls.Add(this.openAppDataButton);
-            this.mainSettingsPanel.Controls.Add(this.forumLink);
-            this.mainSettingsPanel.Controls.Add(this.reportProblemLink);
-            this.mainSettingsPanel.Controls.Add(this.helpLink);
-            this.mainSettingsPanel.Controls.Add(this.autoRefreshTextBox);
-            this.mainSettingsPanel.Controls.Add(this.loggingSwitch);
-            this.mainSettingsPanel.Controls.Add(this.popupsSwitch);
-            this.mainSettingsPanel.Controls.Add(this.darkModeSwitch);
-            this.mainSettingsPanel.Controls.Add(this.autoThemeSwitch);
-            this.mainSettingsPanel.Controls.Add(this.startOnStartupSwitch);
-            this.mainSettingsPanel.Controls.Add(this.closeToTraySwitch);
-            this.mainSettingsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.mainSettingsPanel.Location = new System.Drawing.Point(0, 0);
-            this.mainSettingsPanel.Name = "mainSettingsPanel";
-            this.mainSettingsPanel.Size = new System.Drawing.Size(1015, 925);
-            this.mainSettingsPanel.TabIndex = 27;
+            mainSettingsPanel.AutoScroll = true;
+            mainSettingsPanel.Controls.Add(coffeeLinkLabel);
+            mainSettingsPanel.Controls.Add(exportDiagnosticButton);
+            mainSettingsPanel.Controls.Add(importReplaceButton);
+            mainSettingsPanel.Controls.Add(importMergeButton);
+            mainSettingsPanel.Controls.Add(exportRulesButton);
+            mainSettingsPanel.Controls.Add(cleanUpOrphanedRulesButton);
+            mainSettingsPanel.Controls.Add(deleteAllRulesButton);
+            mainSettingsPanel.Controls.Add(revertFirewallButton);
+            mainSettingsPanel.Controls.Add(auditAlertsSwitch);
+            mainSettingsPanel.Controls.Add(managePublishersButton);
+            mainSettingsPanel.Controls.Add(autoAllowWhitelistedPublishersCheck);
+            mainSettingsPanel.Controls.Add(autoAllowSystemSignedAppsCheck);
+            mainSettingsPanel.Controls.Add(autoDisableOsBlockRulesCheck);
+            mainSettingsPanel.Controls.Add(viewTrustedCertsButton);
+            mainSettingsPanel.Controls.Add(excludedFoldersButton);
+            mainSettingsPanel.Controls.Add(showAppIconsSwitch);
+            mainSettingsPanel.Controls.Add(trafficMonitorSwitch);
+            mainSettingsPanel.Controls.Add(autoRefreshLabel1);
+            mainSettingsPanel.Controls.Add(autoRefreshLabel2);
+            mainSettingsPanel.Controls.Add(coffeePanel);
+            mainSettingsPanel.Controls.Add(versionLabel);
+            mainSettingsPanel.Controls.Add(checkForUpdatesButton);
+            mainSettingsPanel.Controls.Add(openFirewallButton);
+            mainSettingsPanel.Controls.Add(openAppDataButton);
+            mainSettingsPanel.Controls.Add(forumLink);
+            mainSettingsPanel.Controls.Add(reportProblemLink);
+            mainSettingsPanel.Controls.Add(helpLink);
+            mainSettingsPanel.Controls.Add(autoRefreshTextBox);
+            mainSettingsPanel.Controls.Add(loggingSwitch);
+            mainSettingsPanel.Controls.Add(popupsSwitch);
+            mainSettingsPanel.Controls.Add(darkModeSwitch);
+            mainSettingsPanel.Controls.Add(autoThemeSwitch);
+            mainSettingsPanel.Controls.Add(startOnStartupSwitch);
+            mainSettingsPanel.Controls.Add(closeToTraySwitch);
+            mainSettingsPanel.Dock = DockStyle.Fill;
+            mainSettingsPanel.Location = new Point(0, 0);
+            mainSettingsPanel.Margin = new Padding(3, 2, 3, 2);
+            mainSettingsPanel.Name = "mainSettingsPanel";
+            mainSettingsPanel.Size = new Size(888, 694);
+            mainSettingsPanel.TabIndex = 27;
             // 
             // exportDiagnosticButton
             // 
-            this.exportDiagnosticButton.FlatAppearance.BorderSize = 0;
-            this.exportDiagnosticButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.exportDiagnosticButton.Location = new System.Drawing.Point(29, 900);
-            this.exportDiagnosticButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.exportDiagnosticButton.Name = "exportDiagnosticButton";
-            this.exportDiagnosticButton.Size = new System.Drawing.Size(240, 37);
-            this.exportDiagnosticButton.TabIndex = 32;
-            this.exportDiagnosticButton.Text = "Export Diagnostic Package...";
-            this.exportDiagnosticButton.UseVisualStyleBackColor = true;
-            this.exportDiagnosticButton.Click += new System.EventHandler(this.exportDiagnosticButton_Click);
+            exportDiagnosticButton.FlatAppearance.BorderSize = 0;
+            exportDiagnosticButton.FlatStyle = FlatStyle.Flat;
+            exportDiagnosticButton.Location = new Point(25, 675);
+            exportDiagnosticButton.Name = "exportDiagnosticButton";
+            exportDiagnosticButton.Size = new Size(210, 28);
+            exportDiagnosticButton.TabIndex = 32;
+            exportDiagnosticButton.Text = "Export Diagnostic Package...";
+            exportDiagnosticButton.UseVisualStyleBackColor = true;
+            exportDiagnosticButton.Click += exportDiagnosticButton_Click;
             // 
             // importReplaceButton
             // 
-            this.importReplaceButton.FlatAppearance.BorderSize = 0;
-            this.importReplaceButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.importReplaceButton.Location = new System.Drawing.Point(531, 850);
-            this.importReplaceButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.importReplaceButton.Name = "importReplaceButton";
-            this.importReplaceButton.Size = new System.Drawing.Size(240, 37);
-            this.importReplaceButton.TabIndex = 30;
-            this.importReplaceButton.Text = "Import && Replace Rules...";
-            this.importReplaceButton.UseVisualStyleBackColor = true;
-            this.importReplaceButton.Click += new System.EventHandler(this.importReplaceButton_Click);
+            importReplaceButton.FlatAppearance.BorderSize = 0;
+            importReplaceButton.FlatStyle = FlatStyle.Flat;
+            importReplaceButton.Location = new Point(465, 638);
+            importReplaceButton.Name = "importReplaceButton";
+            importReplaceButton.Size = new Size(210, 28);
+            importReplaceButton.TabIndex = 30;
+            importReplaceButton.Text = "Import && Replace Rules...";
+            importReplaceButton.UseVisualStyleBackColor = true;
+            importReplaceButton.Click += importReplaceButton_Click;
             // 
             // importMergeButton
             // 
-            this.importMergeButton.FlatAppearance.BorderSize = 0;
-            this.importMergeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.importMergeButton.Location = new System.Drawing.Point(280, 850);
-            this.importMergeButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.importMergeButton.Name = "importMergeButton";
-            this.importMergeButton.Size = new System.Drawing.Size(240, 37);
-            this.importMergeButton.TabIndex = 29;
-            this.importMergeButton.Text = "Import && Add Rules...";
-            this.importMergeButton.UseVisualStyleBackColor = true;
-            this.importMergeButton.Click += new System.EventHandler(this.importMergeButton_Click);
+            importMergeButton.FlatAppearance.BorderSize = 0;
+            importMergeButton.FlatStyle = FlatStyle.Flat;
+            importMergeButton.Location = new Point(245, 638);
+            importMergeButton.Name = "importMergeButton";
+            importMergeButton.Size = new Size(210, 28);
+            importMergeButton.TabIndex = 29;
+            importMergeButton.Text = "Import && Add Rules...";
+            importMergeButton.UseVisualStyleBackColor = true;
+            importMergeButton.Click += importMergeButton_Click;
             // 
             // exportRulesButton
             // 
-            this.exportRulesButton.FlatAppearance.BorderSize = 0;
-            this.exportRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.exportRulesButton.Location = new System.Drawing.Point(29, 850);
-            this.exportRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.exportRulesButton.Name = "exportRulesButton";
-            this.exportRulesButton.Size = new System.Drawing.Size(240, 37);
-            this.exportRulesButton.TabIndex = 28;
-            this.exportRulesButton.Text = "Export Rules...";
-            this.exportRulesButton.UseVisualStyleBackColor = true;
-            this.exportRulesButton.Click += new System.EventHandler(this.exportRulesButton_Click);
+            exportRulesButton.FlatAppearance.BorderSize = 0;
+            exportRulesButton.FlatStyle = FlatStyle.Flat;
+            exportRulesButton.Location = new Point(25, 638);
+            exportRulesButton.Name = "exportRulesButton";
+            exportRulesButton.Size = new Size(210, 28);
+            exportRulesButton.TabIndex = 28;
+            exportRulesButton.Text = "Export Rules...";
+            exportRulesButton.UseVisualStyleBackColor = true;
+            exportRulesButton.Click += exportRulesButton_Click;
             // 
             // cleanUpOrphanedRulesButton
             // 
-            this.cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
-            this.cleanUpOrphanedRulesButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.cleanUpOrphanedRulesButton.Location = new System.Drawing.Point(530, 785);
-            this.cleanUpOrphanedRulesButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
-            this.cleanUpOrphanedRulesButton.Size = new System.Drawing.Size(240, 37);
-            this.cleanUpOrphanedRulesButton.TabIndex = 27;
-            this.cleanUpOrphanedRulesButton.Text = "Clean Up Orphaned Rules";
-            this.cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
-            this.cleanUpOrphanedRulesButton.Click += new System.EventHandler(this.cleanUpOrphanedRulesButton_Click);
+            cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
+            cleanUpOrphanedRulesButton.FlatStyle = FlatStyle.Flat;
+            cleanUpOrphanedRulesButton.Location = new Point(568, 583);
+            cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
+            cleanUpOrphanedRulesButton.Size = new Size(210, 28);
+            cleanUpOrphanedRulesButton.TabIndex = 27;
+            cleanUpOrphanedRulesButton.Text = "Clean Up Orphaned Rules";
+            cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
+            cleanUpOrphanedRulesButton.Click += cleanUpOrphanedRulesButton_Click;
             // 
             // SettingsControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.mainSettingsPanel);
-            this.Name = "SettingsControl";
-            this.Size = new System.Drawing.Size(1015, 925);
-            this.coffeePanel.ResumeLayout(false);
-            this.coffeePanel.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.coffeePictureBox)).EndInit();
-            this.mainSettingsPanel.ResumeLayout(false);
-            this.mainSettingsPanel.PerformLayout();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(mainSettingsPanel);
+            Margin = new Padding(3, 2, 3, 2);
+            Name = "SettingsControl";
+            Size = new Size(888, 694);
+            coffeePanel.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
+            mainSettingsPanel.ResumeLayout(false);
+            mainSettingsPanel.PerformLayout();
+            ResumeLayout(false);
 
         }
 
@@ -535,6 +518,7 @@
         private System.Windows.Forms.Button managePublishersButton;
         private System.Windows.Forms.CheckBox autoAllowWhitelistedPublishersCheck;
         private System.Windows.Forms.CheckBox autoAllowSystemSignedAppsCheck;
+        private System.Windows.Forms.CheckBox autoDisableOsBlockRulesCheck;
         private System.Windows.Forms.Button viewTrustedCertsButton;
         private System.Windows.Forms.Button excludedFoldersButton;
         private System.Windows.Forms.CheckBox showAppIconsSwitch;

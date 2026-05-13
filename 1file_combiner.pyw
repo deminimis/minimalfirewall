@@ -232,7 +232,12 @@ class FileCombinerApp:
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         output_file = os.path.join(script_dir, OUTPUT_FILENAME)
-        
+        skeleton_file = os.path.join(script_dir, "project_code_skeleton.txt")
+
+        # Auto-regenerate skeleton if it is in the list
+        if skeleton_file in self.files:
+            self.build_skeleton(skeleton_file)
+     
         try:
             with open(output_file, 'w', encoding='utf-8', errors='ignore') as outfile:
                 outfile.write("CONTEXT SUMMARY:\n")

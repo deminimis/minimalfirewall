@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -30,6 +30,7 @@ namespace MinimalFirewall
         private bool _autoAllowWhitelistedPublishers = false;
         private bool _autoAllowSystemSignedApps = false;
         private bool _alertOnForeignRules = true;
+        private bool _autoDisableOsBlockRules = false;
         private bool _filterPrograms = true;
         private bool _filterServices = true;
         private bool _filterUwp = true;
@@ -43,7 +44,6 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
-        private bool _quarantineMode = false;
         private List<string> _autoAllowExclusions = new List<string>
         {
             Path.GetTempPath(),
@@ -70,8 +70,18 @@ namespace MinimalFirewall
         // Legacy combined toggle — kept for one-time migration into the two split settings below.
         public bool AutoAllowSystemTrusted { get => _autoAllowSystemTrusted; set => SetField(ref _autoAllowSystemTrusted, value); }
         public bool AutoAllowWhitelistedPublishers { get => _autoAllowWhitelistedPublishers; set => SetField(ref _autoAllowWhitelistedPublishers, value); }
-        public bool AutoAllowSystemSignedApps { get => _autoAllowSystemSignedApps; set => SetField(ref _autoAllowSystemSignedApps, value); }
-        public bool AlertOnForeignRules { get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value); }
+        public bool AutoAllowSystemSignedApps
+        {
+            get => _autoAllowSystemSignedApps; set => SetField(ref _autoAllowSystemSignedApps, value);
+        }
+        public bool AlertOnForeignRules
+        {
+            get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value);
+        }
+        public bool AutoDisableOsBlockRules
+        {
+            get => _autoDisableOsBlockRules; set => SetField(ref _autoDisableOsBlockRules, value);
+        }
         public bool FilterPrograms { get => _filterPrograms; set => SetField(ref _filterPrograms, value); }
         public bool FilterServices { get => _filterServices; set => SetField(ref _filterServices, value); }
         public bool FilterUwp { get => _filterUwp; set => SetField(ref _filterUwp, value); }
@@ -85,7 +95,7 @@ namespace MinimalFirewall
         public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
-        public bool QuarantineMode { get => _quarantineMode; set => SetField(ref _quarantineMode, value); }
+        
         public List<string> AutoAllowExclusions { get => _autoAllowExclusions; set => SetField(ref _autoAllowExclusions, value); }
 
         public Point WindowLocation { get => _windowLocation; set => SetField(ref _windowLocation, value); }
