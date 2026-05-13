@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -18,13 +18,60 @@ namespace MinimalFirewall
 
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public NotifierResult Result { get; set; } = NotifierResult.Ignore;
-        public PendingConnectionViewModel PendingConnection { get; private set; }
+        public PendingConnectionViewModel? PendingConnection { get; private set; }
+        public FirewallRuleChange? RuleChange { get; private set; }
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
         private readonly DarkModeCS dm;
 
         // Settings file path for window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
+
+        public NotifierForm(FirewallRuleChange rule, bool isDarkMode)
+        {
+            InitializeComponent();
+            RuleChange = rule;
+
+            // Initialize Dark Mode
+            dm = new DarkModeCS(this)
+            {
+                ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+            };
+            dm.ApplyTheme(isDarkMode);
+            if (isDarkMode)
+            {
+                pathLabel.BackColor = Color.FromArgb(45, 45, 48);
+                pathLabel.ForeColor = Color.White;
+            }
+
+            // UI Text for new rule
+            string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
+            this.Text = "New Firewall Rule Detected";
+            string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
+            infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
+            pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
+            pathLabel.WordWrap = false;
+
+            this.AcceptButton = this.ignoreButton;
+
+            // Button Styling
+            Color allowColor = Color.FromArgb(204, 255, 204);
+            Color blockColor = Color.FromArgb(255, 204, 204);
+
+            allowButton.BackColor = allowColor;
+            blockButton.BackColor = blockColor;
+            allowButton.ForeColor = Color.Black;
+            blockButton.ForeColor = Color.Black;
+            allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(allowColor, 0.1f);
+            blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(blockColor, 0.1f);
+            allowButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(allowColor, 0.2f);
+            blockButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(blockColor, 0.2f);
+
+            // Hide irrelevant 
+            if (tempAllowButton != null) tempAllowButton.Visible = false;
+            if (createWildcardButton != null) createWildcardButton.Visible = false;
+            if (trustPublisherCheckBox != null) trustPublisherCheckBox.Visible = false;
+        }
 
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
         {
@@ -130,11 +177,10 @@ namespace MinimalFirewall
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
-
             try
             {
-                string publisherName = null;
-
+                if (PendingConnection == null) return;
+                string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
@@ -242,22 +288,32 @@ namespace MinimalFirewall
             try
             {
                 var details = new System.Text.StringBuilder();
-                details.AppendLine($"Type: Pending Connection");
-                details.AppendLine($"Application: {PendingConnection.FileName}");
-                details.AppendLine($"Path: {PendingConnection.AppPath}");
-                details.AppendLine($"PID: {PendingConnection.ProcessId}");
-                if (!string.IsNullOrEmpty(PendingConnection.ProcessOwner))
-                    details.AppendLine($"Owner: {PendingConnection.ProcessOwner}");
-                if (!string.IsNullOrEmpty(PendingConnection.ParentProcessId))
+                if (PendingConnection == null && RuleChange != null)
                 {
-                    string parentDisplay = string.IsNullOrEmpty(PendingConnection.ParentProcessName) ? PendingConnection.ParentProcessId : $"{PendingConnection.ParentProcessName} (PID: {PendingConnection.ParentProcessId})";
-                    details.AppendLine($"Parent Process: {parentDisplay}");
+                    details.AppendLine($"Type: New Rule Detected");
+                    details.AppendLine($"Rule Name: {RuleChange.Name}");
+                    details.AppendLine($"Path: {RuleChange.ApplicationName}");
+                    details.AppendLine($"Publisher: {RuleChange.Publisher}");
                 }
-                details.AppendLine($"Service: {PendingConnection.ServiceName}");
-                details.AppendLine($"Direction: {PendingConnection.Direction}");
-                if (!string.IsNullOrEmpty(PendingConnection.CommandLine))
-                    details.AppendLine($"CMD: {PendingConnection.CommandLine}");
-
+                else if (PendingConnection != null)
+                {
+                    details.AppendLine($"Type: Pending Connection");
+                    details.AppendLine($"Application: {PendingConnection.FileName}");
+                    details.AppendLine($"Path: {PendingConnection.AppPath}");
+                    details.AppendLine($"PID: {PendingConnection.ProcessId}");
+                    if (!string.IsNullOrEmpty(PendingConnection.ProcessOwner))
+                        details.AppendLine($"Owner: {PendingConnection.ProcessOwner}");
+                    if (!string.IsNullOrEmpty(PendingConnection.ParentProcessId))
+                    {
+                        string parentDisplay = string.IsNullOrEmpty(PendingConnection.ParentProcessName) ?
+                            PendingConnection.ParentProcessId : $"{PendingConnection.ParentProcessName} (PID: {PendingConnection.ParentProcessId})";
+                        details.AppendLine($"Parent Process: {parentDisplay}");
+                    }
+                    details.AppendLine($"Service: {PendingConnection.ServiceName}");
+                    details.AppendLine($"Direction: {PendingConnection.Direction}");
+                    if (!string.IsNullOrEmpty(PendingConnection.CommandLine))
+                        details.AppendLine($"CMD: {PendingConnection.CommandLine}");
+                }
                 // clipboard retry logic
                 for (int i = 0; i < 5; i++)
                 {

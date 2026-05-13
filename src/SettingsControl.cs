@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using Firewall.Traffic.ViewModels;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -19,24 +19,46 @@ namespace MinimalFirewall
 {
     public partial class SettingsControl : UserControl
     {
-        private AppSettings _appSettings;
-        private StartupService _startupService;
-        private PublisherWhitelistService _whitelistService;
-        private FirewallActionsService _actionsService;
-        private UserActivityLogger _activityLogger;
-        private MainViewModel _mainViewModel;
-        private ImageList _appImageList;
-        private DarkModeCS _dm;
+        private AppSettings _appSettings = null!;
+        private StartupService _startupService = null!;
+        private PublisherWhitelistService _whitelistService = null!;
+        private FirewallActionsService _actionsService = null!;
+        private UserActivityLogger _activityLogger = null!;
+        private MainViewModel _mainViewModel = null!;
+        private ImageList _appImageList = null!;
+        private DarkModeCS _dm = null!;
 
-        public event Action ThemeChanged;
-        public event Action IconVisibilityChanged;
-        public event Func<Task> DataRefreshRequested;
-        public event Action AutoRefreshTimerChanged;
+        public event Action? ThemeChanged;
+        public event Action? IconVisibilityChanged;
+        public event Func<Task>? DataRefreshRequested;
+        public event Action? AutoRefreshTimerChanged;
         public event Action? TrafficMonitorSettingChanged;
 
         public SettingsControl()
         {
             InitializeComponent();
+
+            // Divider 1 
+            Panel divider1 = new Panel
+            {
+                Height = 1,
+                Width = 650,
+                Location = new Point(25, 265),
+                BackColor = Color.DimGray
+            };
+            mainSettingsPanel.Controls.Add(divider1);
+            DarkModeCS.ExcludeFromProcessing(divider1);
+
+            // Divider 2 
+            Panel divider2 = new Panel
+            {
+                Height = 1,
+                Width = 650,
+                Location = new Point(25, 405),
+                BackColor = Color.DimGray
+            };
+            mainSettingsPanel.Controls.Add(divider2);
+            DarkModeCS.ExcludeFromProcessing(divider2);
         }
 
         public void Initialize(
@@ -69,6 +91,7 @@ namespace MinimalFirewall
             closeToTraySwitch.CheckedChanged += new System.EventHandler(this.closeToTraySwitch_CheckedChanged);
             autoAllowWhitelistedPublishersCheck.CheckedChanged += new System.EventHandler(this.autoAllowWhitelistedPublishersCheck_CheckedChanged);
             autoAllowSystemSignedAppsCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemSignedAppsCheck_CheckedChanged);
+            autoDisableOsBlockRulesCheck.CheckedChanged += new System.EventHandler(this.autoDisableOsBlockRulesCheck_CheckedChanged);
             auditAlertsSwitch.CheckedChanged += new System.EventHandler(this.auditAlertsSwitch_CheckedChanged);
             autoRefreshTextBox.Leave += new System.EventHandler(this.autoRefreshTextBox_Leave);
 
@@ -120,6 +143,7 @@ namespace MinimalFirewall
             showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
             autoAllowWhitelistedPublishersCheck.Checked = _appSettings.AutoAllowWhitelistedPublishers;
             autoAllowSystemSignedAppsCheck.Checked = _appSettings.AutoAllowSystemSignedApps;
+            autoDisableOsBlockRulesCheck.Checked = _appSettings.AutoDisableOsBlockRules;
             auditAlertsSwitch.Checked = _appSettings.AlertOnForeignRules;
             managePublishersButton.Enabled = true;
         }
@@ -145,6 +169,7 @@ namespace MinimalFirewall
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
             _appSettings.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
+            _appSettings.AutoDisableOsBlockRules = autoDisableOsBlockRulesCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
@@ -187,7 +212,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void AutoThemeSwitch_CheckedChanged(object sender, EventArgs e)
+        private void AutoThemeSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
             if (_appSettings != null)
@@ -197,7 +222,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void DarkModeSwitch_CheckedChanged(object sender, EventArgs e)
+        private void DarkModeSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null && !autoThemeSwitch.Checked)
             {
@@ -206,7 +231,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void startOnStartupSwitch_CheckedChanged(object sender, EventArgs e)
+        private void startOnStartupSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null && _startupService != null)
             {
@@ -215,7 +240,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void PopupsSwitch_CheckedChanged(object sender, EventArgs e)
+        private void PopupsSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -223,7 +248,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void loggingSwitch_CheckedChanged(object sender, EventArgs e)
+        private void loggingSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -232,7 +257,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void TrafficMonitorSwitch_CheckedChanged(object sender, EventArgs e)
+        private void TrafficMonitorSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -241,7 +266,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void ShowAppIconsSwitch_CheckedChanged(object sender, EventArgs e)
+        private void ShowAppIconsSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -250,7 +275,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void closeToTraySwitch_CheckedChanged(object sender, EventArgs e)
+        private void closeToTraySwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -258,7 +283,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void autoAllowWhitelistedPublishersCheck_CheckedChanged(object sender, EventArgs e)
+        private void autoAllowWhitelistedPublishersCheck_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -266,7 +291,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void autoAllowSystemSignedAppsCheck_CheckedChanged(object sender, EventArgs e)
+        private void autoAllowSystemSignedAppsCheck_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -274,7 +299,15 @@ namespace MinimalFirewall
             }
         }
 
-        private void auditAlertsSwitch_CheckedChanged(object sender, EventArgs e)
+        private void autoDisableOsBlockRulesCheck_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (_appSettings != null)
+            {
+                _appSettings.AutoDisableOsBlockRules = autoDisableOsBlockRulesCheck.Checked;
+            }
+        }
+
+        private void auditAlertsSwitch_CheckedChanged(object? sender, EventArgs e)
         {
             if (_appSettings != null)
             {
@@ -282,7 +315,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void autoRefreshTextBox_Leave(object sender, EventArgs e)
+        private void autoRefreshTextBox_Leave(object? sender, EventArgs e)
         {
             if (_appSettings == null) return;
 
@@ -301,49 +334,49 @@ namespace MinimalFirewall
             }
         }
 
-        private void managePublishersButton_Click(object sender, EventArgs e)
+        private void managePublishersButton_Click(object? sender, EventArgs e)
         {
             using var form = new ManagePublishersForm(_whitelistService, _appSettings);
             form.ShowDialog(this.FindForm());
         }
 
-        private void viewTrustedCertsButton_Click(object sender, EventArgs e)
+        private void viewTrustedCertsButton_Click(object? sender, EventArgs e)
         {
             using var form = new TrustedCertificatesForm(_appSettings);
             form.ShowDialog(this.FindForm());
         }
 
-        private void excludedFoldersButton_Click(object sender, EventArgs e)
+        private void excludedFoldersButton_Click(object? sender, EventArgs e)
         {
             using var form = new ExcludedFoldersForm(_appSettings);
             form.ShowDialog(this.FindForm());
         }
 
-        private void OpenFirewallButton_Click(object sender, EventArgs e)
+        private void OpenFirewallButton_Click(object? sender, EventArgs e)
         {
             string wfPath = Path.Combine(Environment.SystemDirectory, "wf.msc");
             OpenLink(wfPath, "Windows Firewall console");
         }
 
-        private void openAppDataButton_Click(object sender, EventArgs e)
+        private void openAppDataButton_Click(object? sender, EventArgs e)
         {
             string standardAppDataPath = ConfigPathManager.GetStandardAppDataDirectory();
             if (!Directory.Exists(standardAppDataPath)) Directory.CreateDirectory(standardAppDataPath);
             OpenLink(standardAppDataPath, "%AppData% folder");
         }
 
-        private void CheckForUpdatesButton_Click(object sender, EventArgs e)
+        private void CheckForUpdatesButton_Click(object? sender, EventArgs e)
         {
             OpenLink("https://github.com/deminimis/minimalfirewall/releases");
         }
 
-        private void LinkLabel_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void LinkLabel_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
         {
             if (sender is not LinkLabel { Tag: string url }) return;
             OpenLink(url);
         }
 
-        private void CoffeeLink_Click(object sender, EventArgs e)
+        private void CoffeeLink_Click(object? sender, EventArgs e)
         {
             OpenLink("https://www.buymeacoffee.com/deminimis");
         }
@@ -363,7 +396,7 @@ namespace MinimalFirewall
         private void CoffeePictureBox_MouseEnter(object? sender, EventArgs e) { }
         private void CoffeePictureBox_MouseLeave(object? sender, EventArgs e) { }
 
-        private async void deleteAllRulesButton_Click(object sender, EventArgs e)
+        private async void deleteAllRulesButton_Click(object? sender, EventArgs e)
         {
             var result = Messenger.MessageBox("This will permanently delete all firewall rules created by this application. This action cannot be undone. Are you sure you want to continue?",
                 "Delete All Rules", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
@@ -384,7 +417,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void revertFirewallButton_Click(object sender, EventArgs e)
+        private async void revertFirewallButton_Click(object? sender, EventArgs e)
         {
             var result = Messenger.MessageBox("WARNING: This will reset your ENTIRE Windows Firewall configuration to its default state. " +
                 "All custom rules, including those not created by this application, will be deleted. This action is irreversible.\n\n" +
@@ -408,7 +441,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void cleanUpOrphanedRulesButton_Click(object sender, EventArgs e)
+        private async void cleanUpOrphanedRulesButton_Click(object? sender, EventArgs e)
         {
             var result = Messenger.MessageBox(
                 "This will scan for rules whose associated application no longer exists on disk and delete them.\n\nAre you sure you want to continue?",
@@ -430,7 +463,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void exportRulesButton_Click(object sender, EventArgs e)
+        private async void exportRulesButton_Click(object? sender, EventArgs e)
         {
             using var saveDialog = new SaveFileDialog
             {
@@ -480,12 +513,12 @@ namespace MinimalFirewall
             }
         }
 
-        private async void importMergeButton_Click(object sender, EventArgs e)
+        private async void importMergeButton_Click(object? sender, EventArgs e)
         {
             await ProcessRuleImportAsync(replace: false);
         }
 
-        private async void importReplaceButton_Click(object sender, EventArgs e)
+        private async void importReplaceButton_Click(object? sender, EventArgs e)
         {
             var confirmResult = Messenger.MessageBox(
                 "WARNING: This will delete ALL current Minimal Firewall rules before importing the new ones. This action cannot be undone.\n\nAre you sure you want to continue?",
@@ -529,7 +562,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void exportDiagnosticButton_Click(object sender, EventArgs e)
+        private async void exportDiagnosticButton_Click(object? sender, EventArgs e)
         {
             using var saveDialog = new SaveFileDialog
             {
