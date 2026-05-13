@@ -34,12 +34,11 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
         
     - **Advanced Rules:** Create detailed rules based on protocol (TCP/UDP/ICMP), local/remote ports, IP addresses, services, and network profiles (Domain, Private, Public).
 
-- **Quarantine Mode (Beta):** Located in the Audit tab, this optional security feature automatically disables any new firewall rules created by third-party applications. These rules remain disabled until you explicitly review and accept them.
-        
-- **Firewall Auditing:** The Audit tab monitors for rules created, modified, or deleted by other applications. 
-    - **Visual Verification:** Changes are color-coded based on digital signatures (Green for trusted, Yellow for third-party, Red for unsigned/unknown).
+- **Firewall Auditing & History Log:** The Audit tab serves as an active ledger of all firewall changes on your system. 
+    - **Active Interception:** Minimal Firewall tracks exactly how new rules are handled with a dedicated "Intervention" column. 
+    - **Smart OS Handling:** Windows "Allow" rules are automatically disabled to prevent unauthorized bypasses, while explicit OS "Block" rules are safely retained (this behavior is customizable in settings).
+    - **Visual Ledger:** Rules are intuitively color-coded based on the action taken: Gray for auto-handled Microsoft rules, Green for allowed connections, and Red for blocked rules.
     - **Batch Management:** Select multiple entries to allow, disable, or delete rules in bulk.
-    - **Timeline:** See exactly when a rule was added to your system.
     
 - **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time with optimized polling, showing which process is connected to which remote address.
     
@@ -90,7 +89,7 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 1. **Do I need to keep the app running?**
     
-    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program or change a rule, or to utilize quarantine mode. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
+    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program, change a rule, or review the historical ledger in the Audit tab. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
   
 2. **How do I completely uninstall Minimal Firewall?**
 
