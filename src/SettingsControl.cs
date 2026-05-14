@@ -91,7 +91,6 @@ namespace MinimalFirewall
             closeToTraySwitch.CheckedChanged += new System.EventHandler(this.closeToTraySwitch_CheckedChanged);
             autoAllowWhitelistedPublishersCheck.CheckedChanged += new System.EventHandler(this.autoAllowWhitelistedPublishersCheck_CheckedChanged);
             autoAllowSystemSignedAppsCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemSignedAppsCheck_CheckedChanged);
-            autoDisableOsBlockRulesCheck.CheckedChanged += new System.EventHandler(this.autoDisableOsBlockRulesCheck_CheckedChanged);
             auditAlertsSwitch.CheckedChanged += new System.EventHandler(this.auditAlertsSwitch_CheckedChanged);
             autoRefreshTextBox.Leave += new System.EventHandler(this.autoRefreshTextBox_Leave);
 
@@ -143,7 +142,6 @@ namespace MinimalFirewall
             showAppIconsSwitch.Checked = _appSettings.ShowAppIcons;
             autoAllowWhitelistedPublishersCheck.Checked = _appSettings.AutoAllowWhitelistedPublishers;
             autoAllowSystemSignedAppsCheck.Checked = _appSettings.AutoAllowSystemSignedApps;
-            autoDisableOsBlockRulesCheck.Checked = _appSettings.AutoDisableOsBlockRules;
             auditAlertsSwitch.Checked = _appSettings.AlertOnForeignRules;
             managePublishersButton.Enabled = true;
         }
@@ -169,7 +167,6 @@ namespace MinimalFirewall
             _appSettings.ShowAppIcons = showAppIconsSwitch.Checked;
             _appSettings.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
             _appSettings.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
-            _appSettings.AutoDisableOsBlockRules = autoDisableOsBlockRulesCheck.Checked;
             _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
 
             _activityLogger.IsEnabled = _appSettings.IsLoggingEnabled;
@@ -299,13 +296,6 @@ namespace MinimalFirewall
             }
         }
 
-        private void autoDisableOsBlockRulesCheck_CheckedChanged(object? sender, EventArgs e)
-        {
-            if (_appSettings != null)
-            {
-                _appSettings.AutoDisableOsBlockRules = autoDisableOsBlockRulesCheck.Checked;
-            }
-        }
 
         private void auditAlertsSwitch_CheckedChanged(object? sender, EventArgs e)
         {

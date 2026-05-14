@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Xml;
@@ -191,12 +191,11 @@ namespace MinimalFirewall
 
                 serviceName = ResolveServiceName(appPath, serviceName, pidStr);
 
-                //  ignore svchost if it has no service
+                // Don't ignore svchost without service
                 if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) &&
                     string.IsNullOrEmpty(serviceName))
                 {
-                    ClearPendingNotification(appPath, direction);
-                    return;
+                    serviceName = "Unknown Service";
                 }
 
                 // Ignore Noisy Services

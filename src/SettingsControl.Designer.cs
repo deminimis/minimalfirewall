@@ -23,7 +23,6 @@ namespace MinimalFirewall
             managePublishersButton = new Button();
             autoAllowWhitelistedPublishersCheck = new CheckBox();
             autoAllowSystemSignedAppsCheck = new CheckBox();
-            autoDisableOsBlockRulesCheck = new CheckBox();
             viewTrustedCertsButton = new Button();
             excludedFoldersButton = new Button();
             showAppIconsSwitch = new CheckBox();
@@ -124,18 +123,8 @@ namespace MinimalFirewall
             autoAllowSystemSignedAppsCheck.Text = "Auto-allow apps trusted by Windows";
             autoAllowSystemSignedAppsCheck.UseVisualStyleBackColor = true;
             // 
-            // autoDisableOsBlockRulesCheck
-            // 
-            autoDisableOsBlockRulesCheck.AutoSize = true;
-            autoDisableOsBlockRulesCheck.Location = new Point(306, 150);
-            autoDisableOsBlockRulesCheck.Name = "autoDisableOsBlockRulesCheck";
-            autoDisableOsBlockRulesCheck.Size = new Size(218, 19);
-            autoDisableOsBlockRulesCheck.TabIndex = 37;
-            autoDisableOsBlockRulesCheck.Text = "Automatically disable OS block rules";
-            autoDisableOsBlockRulesCheck.UseVisualStyleBackColor = true;
-            // 
             // viewTrustedCertsButton
-            // 
+            //
             viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
             viewTrustedCertsButton.FlatStyle = FlatStyle.Flat;
             viewTrustedCertsButton.Location = new Point(306, 317);
@@ -406,7 +395,6 @@ namespace MinimalFirewall
             mainSettingsPanel.Controls.Add(managePublishersButton);
             mainSettingsPanel.Controls.Add(autoAllowWhitelistedPublishersCheck);
             mainSettingsPanel.Controls.Add(autoAllowSystemSignedAppsCheck);
-            mainSettingsPanel.Controls.Add(autoDisableOsBlockRulesCheck);
             mainSettingsPanel.Controls.Add(viewTrustedCertsButton);
             mainSettingsPanel.Controls.Add(excludedFoldersButton);
             mainSettingsPanel.Controls.Add(showAppIconsSwitch);
@@ -518,7 +506,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.Button managePublishersButton;
         private System.Windows.Forms.CheckBox autoAllowWhitelistedPublishersCheck;
         private System.Windows.Forms.CheckBox autoAllowSystemSignedAppsCheck;
-        private System.Windows.Forms.CheckBox autoDisableOsBlockRulesCheck;
         private System.Windows.Forms.Button viewTrustedCertsButton;
         private System.Windows.Forms.Button excludedFoldersButton;
         private System.Windows.Forms.CheckBox showAppIconsSwitch;

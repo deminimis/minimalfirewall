@@ -303,6 +303,32 @@ namespace MinimalFirewall
                 string action = $"{decision} ({pending.Direction})";
                 FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
 
+                // Force svchost rules without services to be granular
+                if (pending.FileName.Equals("svchost.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    var granularRule = new AdvancedRuleViewModel
+                    {
+                        Name = $"MFW - svchost.exe ({pending.ServiceName}) - {pending.RemoteAddress}:{pending.RemotePort}",
+                        Description = $"Granular {decision} rule for svchost.exe to prevent blanket OS breakage.",
+                        IsEnabled = true,
+                        Grouping = MFWConstants.MainRuleGroup,
+                        Status = decision,
+                        Direction = parsedDirection,
+                        Protocol = int.TryParse(pending.Protocol, out int proto) ? proto : 256,
+                        ApplicationName = pending.AppPath,
+                        ServiceName = string.IsNullOrEmpty(pending.ServiceName) ? "*" : pending.ServiceName,
+                        RemotePorts = string.IsNullOrEmpty(pending.RemotePort) ? "*" : pending.RemotePort,
+                        RemoteAddresses = string.IsNullOrEmpty(pending.RemoteAddress) ? "*" : pending.RemoteAddress,
+                        LocalPorts = "*",
+                        LocalAddresses = "*",
+                        Profiles = "All",
+                        Type = RuleType.Advanced,
+                        InterfaceTypes = "All"
+                    };
+                    CreateAdvancedRule(granularRule, "All", "");
+                    return; // Exit early so we dont' make blanket rule
+                }
+
                 var newAggregatedRule = CreateStandardProgramRule(pending.FileName, pending.AppPath, parsedDirection, parsedAction);
                 AddRuleAndRefresh(newAggregatedRule);
             }
@@ -373,19 +399,14 @@ namespace MinimalFirewall
                     {
                         bool isAllowRule = string.Equals(change.Rule.Status, "Allow", StringComparison.OrdinalIgnoreCase);
 
-                        // Disable if it's an Allow rule, OR if it's a Block rule and the user opted to disable them
-                        if (change.Rule.IsEnabled && (isAllowRule || _appSettings.AutoDisableOsBlockRules))
+                        // log rules
+                        if (change.Rule.IsEnabled)
                         {
-                            string actionType = isAllowRule ? "Allow" : "Block";
-                            var payload = new ForeignRuleChangePayload { Change = change, Acknowledge = false };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DisableForeignRule, payload, $"Auto-Disabling OS {actionType} Rule: {change.Name}"));
-                            change.Rule.IsEnabled = false;
-                            change.Intervention = "Auto-Disabled (OS)";
+                            change.Intervention = isAllowRule ? "OS Allowed Rule (Retained)" : "OS Block Rule (Retained)";
                         }
                         else
                         {
-                            // It's a block rule and the setting is OFF, or it's already disabled
-                            change.Intervention = change.Rule.IsEnabled ? "OS Block Rule (Retained)" : "Auto-Disabled (OS)";
+                            change.Intervention = "Disabled (OS)";
                         }
                     }
                     else
@@ -412,14 +433,25 @@ namespace MinimalFirewall
                     // Restore historical intervention context on app restart
                     if (isWindowsRule)
                     {
-                        change.Intervention = change.Rule.IsEnabled ? "OS Block Rule (Retained)" : "Auto-Disabled (OS)";
+                        bool isAllowRule = string.Equals(change.Rule.Status, "Allow", StringComparison.OrdinalIgnoreCase);
+
+                        // We no longer auto-disable any OS rules (Allow or Block).
+                        // Just retain and log them to prevent breaking OS features/VPNs.
+                        if (change.Rule.IsEnabled)
+                        {
+                            change.Intervention = isAllowRule ? "OS Allowed Rule (Retained)" : "OS Block Rule (Retained)";
+                        }
+                        else
+                        {
+                            change.Intervention = "Disabled (OS)";
+                        }
                     }
                     else
                     {
                         change.Intervention = change.Rule.IsEnabled ? "User Allowed" : "User Blocked";
                     }
-            }
-            }
+                }
+            } // <--- THIS WAS THE MISSING BRACKET! It closes the FIRST foreach loop safely.
 
             // Update ui list
             foreach (var change in incrementalChanges)
