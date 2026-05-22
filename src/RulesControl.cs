@@ -454,40 +454,41 @@ namespace MinimalFirewall
             if (e.RowIndex < 0 || e.RowIndex >= _currentRuleList.Count) return;
             var rule = _currentRuleList[e.RowIndex];
 
-            // Color coding logic for Allow/Block
+            ApplyRuleCellTheme(e, rule);
+        }
+
+        private void ApplyRuleCellTheme(DataGridViewCellFormattingEventArgs e, AggregatedRuleViewModel rule)
+        {
             bool hasAllow = (rule.InboundStatus != null && rule.InboundStatus.Contains("Allow")) ||
                             (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Allow"));
             bool hasBlock = (rule.InboundStatus != null && rule.InboundStatus.Contains("Block")) ||
                             (rule.OutboundStatus != null && rule.OutboundStatus.Contains("Block"));
 
-            // Define base row colors
             if (hasAllow && hasBlock)
             {
-                e.CellStyle.BackColor = Color.FromArgb(255, 255, 204); // Mixed (Light Yellow)
+                e.CellStyle.BackColor = Theme.Colors.Warning;
             }
             else if (hasAllow)
             {
-                e.CellStyle.BackColor = Color.FromArgb(204, 255, 204); // Allow (Light Green)
+                e.CellStyle.BackColor = Theme.Colors.Success;
             }
             else if (hasBlock)
             {
-                e.CellStyle.BackColor = Color.FromArgb(255, 204, 204); // Block (Light Red)
+                e.CellStyle.BackColor = Theme.Colors.Danger;
             }
 
             if (hasAllow || hasBlock)
             {
-                e.CellStyle.ForeColor = Color.Black;
+                e.CellStyle.ForeColor = Theme.Colors.TextActive;
             }
 
-            // Selection color
             if (rulesDataGridView.Rows[e.RowIndex].Selected)
             {
-                e.CellStyle.SelectionBackColor = Color.FromArgb(189, 222, 255);
-                e.CellStyle.SelectionForeColor = Color.Black;
+                e.CellStyle.SelectionBackColor = Theme.Colors.SelectionInfo;
+                e.CellStyle.SelectionForeColor = Theme.Colors.TextActive;
             }
             else
             {
-                // Restore default when not selected 
                 e.CellStyle.SelectionBackColor = e.CellStyle.BackColor;
                 e.CellStyle.SelectionForeColor = e.CellStyle.ForeColor;
             }
@@ -500,7 +501,7 @@ namespace MinimalFirewall
             var mouseOverRow = rulesDataGridView.HitTest(rulesDataGridView.PointToClient(MousePosition).X, rulesDataGridView.PointToClient(MousePosition).Y).RowIndex;
             if (e.RowIndex == mouseOverRow)
             {
-                using var overlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
+                using var overlayBrush = new SolidBrush(Theme.Colors.HighlightOverlay);
                 e.Graphics.FillRectangle(overlayBrush, e.RowBounds);
             }
         }

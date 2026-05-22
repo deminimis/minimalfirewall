@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -10,44 +9,7 @@ namespace DarkModeForms
 {
     public class FlatTabControl : TabControl
     {
-        // Cache recolored icons 
         private Dictionary<string, Image> _iconCache = new Dictionary<string, Image>();
-
-        [Description("Color for a decorative line"), Category("Appearance")]
-        [DefaultValue(typeof(Color), "Highlight")]
-        public Color LineColor { get; set; } = SystemColors.Highlight;
-
-        [Description("Color for all Borders"), Category("Appearance")]
-        [DefaultValue(typeof(Color), "ControlDark")]
-        public Color BorderColor { get; set; } = SystemColors.ControlDark;
-
-        [Description("Back color for selected Tab"), Category("Appearance")]
-        [DefaultValue(typeof(Color), "ControlLight")]
-        public Color SelectTabColor { get; set; } = SystemColors.ControlLight;
-
-        private Color _selectedForeColor = SystemColors.HighlightText;
-        [Description("Fore Color for Selected Tab"), Category("Appearance")]
-        [DefaultValue(typeof(Color), "HighlightText")]
-        public Color SelectedForeColor
-        {
-            get => _selectedForeColor;
-            set
-            {
-                _selectedForeColor = value;
-                _iconCache.Clear(); // Invalidate cache when colors change
-                Invalidate();
-            }
-        }
-
-        [Description("Back Color for un-selected tabs"), Category("Appearance")]
-        [DefaultValue(typeof(Color), "ControlLight")]
-        public Color TabColor { get; set; } = SystemColors.ControlLight;
-
-        [Description("Background color for the whole control"), Category("Appearance"), Browsable(true)]
-        public override Color BackColor { get; set; } = SystemColors.Control;
-
-        [Description("Fore Color for all Texts"), Category("Appearance")]
-        public override Color ForeColor { get; set; } = SystemColors.ControlText;
 
         public FlatTabControl()
         {
@@ -59,7 +21,6 @@ namespace DarkModeForms
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            // High DPI Scaling Logic
             float scaleFactor = this.DeviceDpi / 96f;
             int baseWidth = 70;
             int baseHeight = 120;
@@ -79,8 +40,7 @@ namespace DarkModeForms
         internal void DrawControl(Graphics g)
         {
             if (!Visible) return;
-
-            using (Brush bBackColor = new SolidBrush(this.BackColor))
+            using (Brush bBackColor = new SolidBrush(Theme.Colors.Background))
             {
                 g.FillRectangle(bBackColor, this.ClientRectangle);
             }
@@ -96,18 +56,20 @@ namespace DarkModeForms
             Rectangle tabRect = this.GetTabRect(nIndex);
             bool isSelected = (this.SelectedIndex == nIndex);
 
-            bool isDarkModeText = (0.299 * SelectedForeColor.R + 0.587 * SelectedForeColor.G + 0.114 * SelectedForeColor.B) > 128;
+            Color tabBackColor = isSelected ? Theme.Colors.Surface : Theme.Colors.SurfaceDark;
+            Color textColor = isSelected ? Theme.Colors.TextActive : Theme.Colors.TextInactive;
+            bool isDarkModeText = (0.299 * textColor.R + 0.587 * textColor.G + 0.114 * textColor.B) > 128;
+
             UIHelpers.SetHighQualityGraphics(g);
 
             if (this.Alignment == TabAlignment.Left)
             {
-                Color tabBackColor = isSelected ? SelectTabColor : this.TabColor;
                 using (Brush b = new SolidBrush(tabBackColor))
                 {
                     g.FillRectangle(b, tabRect);
                 }
 
-                using (Pen p = new Pen(this.BorderColor))
+                using (Pen p = new Pen(Theme.Colors.ControlDark))
                 {
                     int offset = UIHelpers.Scale(1, g);
                     g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - offset);
@@ -123,17 +85,15 @@ namespace DarkModeForms
                     {
                         int iconW = this.ImageList.ImageSize.Width;
                         int iconH = this.ImageList.ImageSize.Height;
-
                         int iconX = tabRect.X + (tabRect.Width - iconW) / 2;
                         int iconY = tabRect.Y + UIHelpers.Scale(15, g);
 
                         if (isDarkModeText && customTabPage.ImageKey != "locked.png")
                         {
-                            // Use cached image 
-                            string cacheKey = $"{customTabPage.ImageIndex}-{SelectedForeColor.ToArgb()}";
+                            string cacheKey = $"{customTabPage.ImageIndex}-{textColor.ToArgb()}";
                             if (!_iconCache.ContainsKey(cacheKey))
                             {
-                                _iconCache[cacheKey] = RecolorImage(originalIcon, SelectedForeColor);
+                                _iconCache[cacheKey] = RecolorImage(originalIcon, textColor);
                             }
                             g.DrawImage(_iconCache[cacheKey], new Rectangle(iconX, iconY, iconW, iconH));
                         }
@@ -156,13 +116,12 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    using (Pen p = new Pen(this.LineColor, UIHelpers.Scale(3, g)))
+                    using (Pen p = new Pen(Theme.Colors.Accent, UIHelpers.Scale(3, g)))
                     {
                         g.DrawLine(p, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Top, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Bottom - UIHelpers.Scale(1, g));
                     }
                 }
 
-                Color textColor = isSelected ? SelectedForeColor : ForeColor;
                 TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, textColor, textFlags);
             }
             else
@@ -178,10 +137,11 @@ namespace DarkModeForms
                     new Point(tabRect.Right, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Bottom)
                 };
-                using (Brush brush = new SolidBrush(isSelected ? SelectTabColor : this.TabColor))
+
+                using (Brush brush = new SolidBrush(tabBackColor))
                 {
                     g.FillPolygon(brush, points);
-                    using (Pen borderPen = new Pen(this.BorderColor))
+                    using (Pen borderPen = new Pen(Theme.Colors.ControlDark))
                     {
                         g.DrawPolygon(borderPen, points);
                     }
@@ -189,10 +149,10 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    g.DrawLine(new Pen(SelectTabColor, UIHelpers.Scale(2, g)), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
+                    g.DrawLine(new Pen(Theme.Colors.Surface, UIHelpers.Scale(2, g)), new Point(tabRect.Left, tabRect.Bottom), new Point(tabRect.Right, tabRect.Bottom));
                 }
 
-                TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, isSelected ? SelectedForeColor : ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                TextRenderer.DrawText(g, customTabPage.Text, Font, tabRect, textColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             }
         }
 
@@ -204,7 +164,6 @@ namespace DarkModeForms
                 float r = newColor.R / 255f;
                 float g_ = newColor.G / 255f;
                 float b = newColor.B / 255f;
-
                 var colorMatrix = new ColorMatrix(new float[][]
                 {
                     new float[] {0, 0, 0, 0, 0},
@@ -213,7 +172,6 @@ namespace DarkModeForms
                     new float[] {0, 0, 0, 1, 0},
                     new float[] {r, g_, b, 0, 1}
                 });
-
                 using (var attributes = new ImageAttributes())
                 {
                     attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);

@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System;
 using System.Collections.Specialized;
@@ -22,10 +22,6 @@ namespace MinimalFirewall
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource = null!;
-
-        private static readonly Color AllowColor = Color.FromArgb(204, 255, 204);
-        private static readonly Color BlockColor = Color.FromArgb(255, 204, 204);
-        private readonly SolidBrush _highlightOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
 
         public DashboardControl()
@@ -79,12 +75,16 @@ namespace MinimalFirewall
 
             splitContainer.SplitterMoved += SplitContainer_SplitterMoved;
 
-            if (_dm != null && detailsRichTextBox != null)
+            ApplyThemeToControls();
+        }
+
+        private void ApplyThemeToControls()
+        {
+            if (detailsRichTextBox != null)
             {
-                bool isDark = _dm.IsDarkMode;
-                detailsRichTextBox.BackColor = isDark ? _dm.OScolors.Surface : Color.White;
-                detailsRichTextBox.ForeColor = isDark ? _dm.OScolors.TextActive : Color.Black;
-                detailsLabel.ForeColor = isDark ? Color.White : Color.Black;
+                detailsRichTextBox.BackColor = Theme.Colors.Surface;
+                detailsRichTextBox.ForeColor = Theme.Colors.TextActive;
+                detailsLabel.ForeColor = Theme.Colors.TextActive;
             }
         }
 
@@ -96,9 +96,8 @@ namespace MinimalFirewall
             var pending = GetSelectedPendingConnection();
             if (pending == null) return;
 
-            bool isDark = _dm?.IsDarkMode == true;
-            Color labelColor = isDark ? Color.LightSkyBlue : Color.Blue;
-            Color valColor = isDark ? _dm!.OScolors.TextActive : Color.Black;
+            Color labelColor = Theme.Colors.InfoText;
+            Color valColor = Theme.Colors.TextActive;
             Font boldFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
 
             void AppendLine(string label, string value)
@@ -228,27 +227,31 @@ namespace MinimalFirewall
                 }
             }
 
-            // Color Logic 
+            ApplyDashboardCellTheme(e);
+        }
+
+        private void ApplyDashboardCellTheme(DataGridViewCellFormattingEventArgs e)
+        {
+            // Semantic Color Logic 
             if (allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index)
             {
-                e.CellStyle.BackColor = AllowColor;
-                e.CellStyle.ForeColor = Color.Black;
+                e.CellStyle.BackColor = Theme.Colors.Success;
+                e.CellStyle.ForeColor = Theme.Colors.TextActive;
             }
             else if (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index)
             {
-                e.CellStyle.BackColor = BlockColor;
-                e.CellStyle.ForeColor = Color.Black;
+                e.CellStyle.BackColor = Theme.Colors.Danger;
+                e.CellStyle.ForeColor = Theme.Colors.TextActive;
             }
             else if (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index)
             {
-                e.CellStyle.BackColor = _dm != null && _dm.IsDarkMode ?
-                    Color.FromArgb(85, 85, 85) : Color.FromArgb(200, 200, 200);
+                e.CellStyle.BackColor = Theme.Colors.Ignore;
+                e.CellStyle.ForeColor = Theme.Colors.TextActive;
             }
 
             // Selection Logic
             if (dashboardDataGridView.Rows[e.RowIndex].Selected)
             {
-                // Prevent selection color from covering the action buttons
                 if ((allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index) ||
                     (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index) ||
                     (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index))
@@ -258,9 +261,8 @@ namespace MinimalFirewall
                 }
                 else
                 {
-                    // Custom light blue selection for all other cells
-                    e.CellStyle.SelectionBackColor = Color.FromArgb(189, 222, 255);
-                    e.CellStyle.SelectionForeColor = Color.Black;
+                    e.CellStyle.SelectionBackColor = Theme.Colors.SelectionInfo;
+                    e.CellStyle.SelectionForeColor = Theme.Colors.TextActive;
                 }
             }
             else
@@ -280,7 +282,8 @@ namespace MinimalFirewall
 
             if (e.RowIndex == hitTest.RowIndex)
             {
-                e.Graphics.FillRectangle(_highlightOverlayBrush, e.RowBounds);
+                using var highlightBrush = new SolidBrush(Theme.Colors.HighlightOverlay);
+                e.Graphics.FillRectangle(highlightBrush, e.RowBounds);
             }
         }
 

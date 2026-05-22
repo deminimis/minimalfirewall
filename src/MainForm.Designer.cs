@@ -1,4 +1,4 @@
-﻿// File: MainForm.Designer.cs
+// File: MainForm.Designer.cs
 namespace MinimalFirewall
 {
     public partial class MainForm
@@ -99,7 +99,6 @@ namespace MinimalFirewall
             // mainTabControl
             // 
             mainTabControl.Alignment = TabAlignment.Left;
-            mainTabControl.BorderColor = SystemColors.ControlDark;
             mainTabControl.Controls.Add(dashboardTabPage);
             mainTabControl.Controls.Add(rulesTabPage);
             mainTabControl.Controls.Add(wildcardRulesTabPage);
@@ -111,16 +110,12 @@ namespace MinimalFirewall
             mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             mainTabControl.ImageList = appImageList;
             mainTabControl.ItemSize = new Size(70, 120);
-            mainTabControl.LineColor = SystemColors.Highlight;
             mainTabControl.Location = new Point(0, 0);
             mainTabControl.Multiline = true;
             mainTabControl.Name = "mainTabControl";
-            mainTabControl.SelectedForeColor = SystemColors.HighlightText;
             mainTabControl.SelectedIndex = 0;
-            mainTabControl.SelectTabColor = SystemColors.ControlLight;
             mainTabControl.Size = new Size(1000, 700);
             mainTabControl.SizeMode = TabSizeMode.Fixed;
-            mainTabControl.TabColor = SystemColors.ControlLight;
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
             mainTabControl.Deselecting += MainTabControl_Deselecting;

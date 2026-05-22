@@ -422,13 +422,7 @@ namespace DarkModeForms
             }
             else if (control is FlatTabControl flatTab)
             {
-                flatTab.BackColor = OScolors.Background; 
-                flatTab.TabColor = OScolors.SurfaceDark; 
-                flatTab.SelectTabColor = OScolors.Surface; 
-                flatTab.SelectedForeColor = OScolors.TextActive;
-                flatTab.ForeColor = OScolors.TextInactive;
-                flatTab.LineColor = OScolors.Accent;
-                flatTab.BorderColor = OScolors.ControlDark;
+                flatTab.Invalidate();
             }
             else if (control is TabControl tab && tab.Parent != null)
             {
@@ -728,6 +722,15 @@ namespace DarkModeForms
                 _ret.ControlLight = Color.FromArgb(67, 67, 67);
                 _ret.Primary = Color.FromArgb(3, 218, 198);
                 _ret.Secondary = Color.MediumSlateBlue;
+
+                // Semantic Colors (Dark)
+                _ret.Success = Color.FromArgb(60, 100, 60);
+                _ret.Danger = Color.FromArgb(100, 60, 60);
+                _ret.Warning = Color.FromArgb(100, 100, 60);
+                _ret.InfoText = Color.LightSkyBlue;
+                _ret.Ignore = Color.FromArgb(85, 85, 85);
+                _ret.SelectionInfo = Color.FromArgb(50, 90, 130);
+                _ret.HighlightOverlay = Color.FromArgb(40, Color.White);
             }
             else
             {
@@ -744,8 +747,17 @@ namespace DarkModeForms
                 _ret.Control = Color.FromArgb(235, 230, 224);
                 _ret.ControlDark = Color.FromArgb(205, 200, 194);
                 _ret.ControlLight = Color.FromArgb(250, 248, 245);
-                _ret.Primary = Color.FromArgb(0, 120, 215); 
+                _ret.Primary = Color.FromArgb(0, 120, 215);
                 _ret.Secondary = Color.MediumSlateBlue;
+
+                // Semantic Colors (Light)
+                _ret.Success = Color.FromArgb(204, 255, 204);
+                _ret.Danger = Color.FromArgb(255, 204, 204);
+                _ret.Warning = Color.FromArgb(255, 255, 204);
+                _ret.InfoText = Color.Blue;
+                _ret.Ignore = Color.FromArgb(200, 200, 200);
+                _ret.SelectionInfo = Color.FromArgb(189, 222, 255);
+                _ret.HighlightOverlay = Color.FromArgb(25, Color.Black);
             }
 
             return _ret;
@@ -955,6 +967,15 @@ namespace DarkModeForms
         public Color Secondary { get; set; } = SystemColors.HotTrack;
         public Color SecondaryDark => ControlPaint.Dark(Secondary);
         public Color SecondaryLight => ControlPaint.Light(Secondary);
+
+        // Semantic Application Colors
+        public Color Success { get; set; }
+        public Color Danger { get; set; }
+        public Color Warning { get; set; }
+        public Color InfoText { get; set; }
+        public Color Ignore { get; set; }
+        public Color SelectionInfo { get; set; }
+        public Color HighlightOverlay { get; set; }
     }
 
     public class MyRenderer : ToolStripProfessionalRenderer
