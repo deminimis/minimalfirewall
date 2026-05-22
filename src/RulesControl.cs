@@ -238,10 +238,12 @@ namespace MinimalFirewall
         private void ApplyRulesFilters()
         {
             var enabledTypes = new HashSet<RuleType>();
+
             if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
             if (serviceFilterCheckBox.Checked) enabledTypes.Add(RuleType.Service);
             if (uwpFilterCheckBox.Checked) enabledTypes.Add(RuleType.UWP);
             if (wildcardFilterCheckBox.Checked) enabledTypes.Add(RuleType.Wildcard);
+
             enabledTypes.Add(RuleType.Advanced);
 
             bool showSystemRules = systemFilterCheckBox.Checked;
