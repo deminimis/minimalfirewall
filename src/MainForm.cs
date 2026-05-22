@@ -100,6 +100,7 @@ namespace MinimalFirewall
             // Configuration & Theme
             ConfigPathManager.EnsureStorageDirectoryExists();
             _appSettings = AppSettings.Load();
+            _appSettings.PropertyChanged += AppSettings_PropertyChanged;
             dm = new DarkModeCS(this);
             if (this.components != null)
             {
@@ -198,6 +199,12 @@ namespace MinimalFirewall
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
+
+            if (_appSettings != null)
+            {
+                _appSettings.PropertyChanged -= AppSettings_PropertyChanged;
+            }
+
             _cachedArrowPen?.Dispose();
             base.OnFormClosed(e);
         }
@@ -537,6 +544,14 @@ namespace MinimalFirewall
             });
         }
 
+        private void AppSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AppSettings.IsPopupsEnabled) && !_appSettings.IsPopupsEnabled)
+            {
+                SafeInvoke(DismissAllPopups);
+            }
+        }
+
         private void OnPopupRequired(PendingConnectionViewModel pending)
         {
             SafeInvoke(() =>
@@ -581,6 +596,13 @@ namespace MinimalFirewall
         {
             lock (_popupLock)
             {
+                if (!_appSettings.IsPopupsEnabled)
+                {
+                    _rulePopupQueue.Clear();
+                    _isRulePopupVisible = false;
+                    return;
+                }
+
                 if (_isRulePopupVisible || _rulePopupQueue.Count == 0) return;
                 _isRulePopupVisible = true;
 
@@ -640,6 +662,13 @@ namespace MinimalFirewall
         {
             lock (_popupLock)
             {
+                if (!_appSettings.IsPopupsEnabled)
+                {
+                    _popupQueue.Clear();
+                    _isPopupVisible = false;
+                    return;
+                }
+
                 if (_isPopupVisible || _popupQueue.Count == 0)
                 {
                     return;
@@ -1286,13 +1315,23 @@ namespace MinimalFirewall
         {
             foreach (var form in Application.OpenForms.OfType<NotifierForm>().ToList())
             {
-                form.Close();
+                // Detach handlers to keep pending connections on dashboard. 
+                form.FormClosed -= Notifier_FormClosed;
+                form.FormClosed -= RuleNotifier_FormClosed;
+
+                if (!form.IsDisposed)
+                {
+                    form.Close();
+                }
             }
 
             lock (_popupLock)
             {
                 _popupQueue.Clear();
+                _rulePopupQueue.Clear();
+
                 _isPopupVisible = false;
+                _isRulePopupVisible = false;
             }
         }
 
