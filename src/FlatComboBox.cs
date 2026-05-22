@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -9,35 +9,7 @@ namespace DarkModeForms
 {
     public class FlatComboBox : ComboBox
     {
-        private Color borderColor = Color.Gray;
-        [DefaultValue(typeof(Color), "Gray")]
-        public Color BorderColor
-        {
-            get { return borderColor; }
-            set
-            {
-                if (borderColor != value)
-                {
-                    borderColor = value;
-                    Invalidate();
-                }
-            }
-        }
-
-        private Color buttonColor = Color.FromArgb(55, 55, 55);
-        [DefaultValue(typeof(Color), "LightGray")]
-        public Color ButtonColor
-        {
-            get { return buttonColor; }
-            set
-            {
-                if (buttonColor != value)
-                {
-                    buttonColor = value;
-                    Invalidate();
-                }
-            }
-        }
+        
 
         public FlatComboBox()
         {
@@ -63,16 +35,16 @@ namespace DarkModeForms
                     var textRect = new Rectangle(clientRect.Left + textPadding, clientRect.Top, Math.Max(0, clientRect.Width - dropDownButtonWidth - (textPadding * 2)), clientRect.Height);
 
                     #region Selected Text
-                    using (var b = new SolidBrush(BackColor))
+                    using (var b = new SolidBrush(Theme.Colors.Control))
                     {
                         g.FillRectangle(b, textBackRect);
                     }
 
-                    TextRenderer.DrawText(g, Text, Font, textRect, ForeColor, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                    TextRenderer.DrawText(g, Text, Font, textRect, Theme.Colors.TextActive, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
                     #endregion
 
                     #region DropDown Button
-                    using (var b = new SolidBrush(Enabled ? ButtonColor : SystemColors.Control))
+                    using (var b = new SolidBrush(Enabled ? Theme.Colors.Surface : Theme.Colors.ControlLight))
                     {
                         g.FillRectangle(b, dropDownRect);
                     }
@@ -87,7 +59,7 @@ namespace DarkModeForms
                         new Point(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
                         new Point(middle.X, middle.Y + (cSize.Height / 2))
                     };
-                    using (var chevronPen = new Pen(BorderColor, UIHelpers.Scale(2, g)))
+                    using (var chevronPen = new Pen(Theme.Colors.TextInactive, UIHelpers.Scale(2, g)))
                     {
                         g.DrawLine(chevronPen, chevron[0], chevron[2]);
                         g.DrawLine(chevronPen, chevron[1], chevron[2]);
@@ -95,7 +67,7 @@ namespace DarkModeForms
                     #endregion
 
                     #region Borders
-                    using (var p = new Pen(Enabled ? BorderColor : SystemColors.ControlDark, UIHelpers.Scale(1, g)))
+                    using (var p = new Pen(Enabled ? Theme.Colors.ControlDark : Theme.Colors.ControlLight, UIHelpers.Scale(1, g)))
                     {
                         Rectangle borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
                         g.DrawRectangle(p, borderRect);

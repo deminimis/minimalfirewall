@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -231,6 +231,7 @@ namespace DarkModeForms
             {
                 _IsDarkMode = pIsDarkMode;
                 OScolors = GetSystemColors(pIsDarkMode ? 0 : 1);
+                Theme.Colors = OScolors; // Sync global theme palette
 
                 SuspendDrawing(OwnerForm);
                 OwnerForm.SuspendLayout();
@@ -367,8 +368,6 @@ namespace DarkModeForms
             {
                 if (control is FlatComboBox flatCombo)
                 {
-                    flatCombo.BorderColor = IsDarkMode ? OScolors.ControlDark : Color.Gray;
-                    flatCombo.ButtonColor = IsDarkMode ? OScolors.Surface : Color.LightGray;
                     flatCombo.Invalidate();
                 }
 
@@ -1218,5 +1217,10 @@ namespace DarkModeForms
         { get; set; }
         public bool LastThemeAppliedIsDark
         { get; set; }
+    }
+
+    public static class Theme
+    {
+        public static OSThemeColors Colors { get; set; } = DarkModeCS.GetSystemColors(DarkModeCS.isDarkMode() ? 0 : 1);
     }
 }

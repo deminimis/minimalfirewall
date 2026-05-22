@@ -1,4 +1,4 @@
-﻿// File: Messenger.cs
+// File: Messenger.cs
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -431,7 +431,7 @@ namespace DarkModeForms
                             break;
                         case ValueTypes.Dynamic:
                             {
-                                var combo = new FlatComboBox { DataSource = field.DataSet, ValueMember = "Value", DisplayMember = "Key", Dock = DockStyle.Fill, BackColor = DMode.OScolors.Control, ButtonColor = DMode.OScolors.Surface, ForeColor = DMode.OScolors.TextActive, SelectedValue = field.Value, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = (DMode.IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard) };
+                                var combo = new FlatComboBox { DataSource = field.DataSet, ValueMember = "Value", DisplayMember = "Key", Dock = DockStyle.Fill, BackColor = DMode.OScolors.Control, ForeColor = DMode.OScolors.TextActive, SelectedValue = field.Value, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = (DMode.IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard) };
                                 combo.SelectedValueChanged += (sender, args) =>
                                 {
                                     field.Value = combo.SelectedValue.ToString()!;

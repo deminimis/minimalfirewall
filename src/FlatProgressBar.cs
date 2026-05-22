@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -52,8 +52,6 @@ namespace DarkModeForms
         private int min = 0;
         private int max = 100;
         private int val = 0;
-        [DefaultValue(typeof(Color), "Green")]
-        public Color BarColor { get; set; } = Color.Green;
 
         protected override void OnResize(EventArgs e)
         {
@@ -67,11 +65,11 @@ namespace DarkModeForms
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
 
             // Background
-            using Brush backBrush = new SolidBrush(this.BackColor);
+            using Brush backBrush = new SolidBrush(Theme.Colors.ControlLight);
             g.FillRectangle(backBrush, this.ClientRectangle);
 
             // Foreground Bar
-            using (SolidBrush brush = new SolidBrush(BarColor))
+            using (SolidBrush brush = new SolidBrush(Theme.Colors.Primary)) // Centralized accent color
             {
                 if (Style == ProgressBarStyle.Marquee)
                 {
@@ -143,7 +141,7 @@ namespace DarkModeForms
             int penWidth = UIHelpers.Scale(1, g);
             if (penWidth < 1) penWidth = 1;
 
-            using (Pen pen = new Pen(Color.DarkGray, penWidth))
+            using (Pen pen = new Pen(Theme.Colors.ControlDark, penWidth))
             {
                 g.DrawRectangle(pen, 0, 0, this.Width - penWidth, this.Height - penWidth);
             }
