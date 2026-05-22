@@ -399,23 +399,20 @@ namespace MinimalFirewall
             string intervention = change.Intervention ?? string.Empty;
             bool isEnabled = change.Rule?.IsEnabled ?? false;
 
-            // Color-code rows
+            // Route audit events to palette
             if (intervention.Contains("Auto-Disabled (OS)", StringComparison.OrdinalIgnoreCase))
             {
-                // Gray/dim for auto-handled Microsoft rules
-                rowBackColor = isDarkMode ? Color.FromArgb(45, 45, 45) : Color.FromArgb(240, 240, 240);
-                foreColor = isDarkMode ? Color.Gray : Color.DimGray;
+                rowBackColor = Theme.Colors.Control;
+                foreColor = Theme.Colors.TextInactive;
             }
             else if (intervention.Contains("Blocked", StringComparison.OrdinalIgnoreCase) || intervention.Contains("OS Block", StringComparison.OrdinalIgnoreCase) || !isEnabled)
             {
-                // Red for blocked third-party rules, retained OS block rules, or manually disabled rules
-                rowBackColor = isDarkMode ? Color.FromArgb(60, 20, 20) : Color.FromArgb(255, 220, 220);
+                rowBackColor = Theme.Colors.Danger;
                 foreColor = isDarkMode ? Color.LightCoral : Color.Maroon;
             }
             else if (intervention.Contains("Allowed", StringComparison.OrdinalIgnoreCase) || isEnabled)
             {
-                // Green for allowed rules
-                rowBackColor = isDarkMode ? Color.FromArgb(20, 60, 20) : Color.FromArgb(220, 255, 220);
+                rowBackColor = Theme.Colors.ConnectionEstablished;
                 foreColor = isDarkMode ? Color.LightGreen : Color.DarkGreen;
             }
 

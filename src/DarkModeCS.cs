@@ -731,6 +731,11 @@ namespace DarkModeForms
                 _ret.Ignore = Color.FromArgb(85, 85, 85);
                 _ret.SelectionInfo = Color.FromArgb(50, 90, 130);
                 _ret.HighlightOverlay = Color.FromArgb(40, Color.White);
+
+                // Dark Mode Palette Extensions
+                _ret.ConnectionEstablished = Color.FromArgb(30, 70, 40);
+                _ret.ConnectionListening = Color.FromArgb(75, 70, 30);
+                _ret.PathLabelBackground = Color.FromArgb(45, 45, 48);
             }
             else
             {
@@ -758,6 +763,11 @@ namespace DarkModeForms
                 _ret.Ignore = Color.FromArgb(200, 200, 200);
                 _ret.SelectionInfo = Color.FromArgb(189, 222, 255);
                 _ret.HighlightOverlay = Color.FromArgb(25, Color.Black);
+
+                // Light Mode Palette Extensions
+                _ret.ConnectionEstablished = Color.FromArgb(204, 255, 204);
+                _ret.ConnectionListening = Color.FromArgb(255, 255, 204);
+                _ret.PathLabelBackground = Color.FromArgb(230, 230, 235);
             }
 
             return _ret;
@@ -967,6 +977,11 @@ namespace DarkModeForms
         public Color Secondary { get; set; } = SystemColors.HotTrack;
         public Color SecondaryDark => ControlPaint.Dark(Secondary);
         public Color SecondaryLight => ControlPaint.Light(Secondary);
+
+        // Centralized Application Theme Extensions
+        public Color ConnectionEstablished { get; set; }
+        public Color ConnectionListening { get; set; }
+        public Color PathLabelBackground { get; set; }
 
         // Semantic Application Colors
         public Color Success { get; set; }

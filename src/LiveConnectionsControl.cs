@@ -1,14 +1,15 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Windows.Forms;
-using Firewall.Traffic.ViewModels;
-using System.Linq;
-using NetFwTypeLib;
-using MinimalFirewall.TypedObjects;
-using System.Collections.Specialized;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using DarkModeForms;
+using Firewall.Traffic.ViewModels;
+using MinimalFirewall.TypedObjects;
+using NetFwTypeLib;
 
 namespace MinimalFirewall
 {
@@ -22,11 +23,7 @@ namespace MinimalFirewall
 
         private SortableBindingList<TcpConnectionViewModel> _sortableList = new();
 
-        // Cached GDI+ objects 
-        private static readonly Brush HoverOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
-        private static readonly Color EstablishedColor = Color.FromArgb(204, 255, 204);
-        private static readonly Color ListenColor = Color.FromArgb(255, 255, 204);
-
+        // Behavioral State Handlers
         private int _hoveredRowIndex = -1;
 
         public LiveConnectionsControl()
@@ -216,18 +213,18 @@ namespace MinimalFirewall
             if (e.RowIndex < 0 || e.RowIndex >= _sortableList.Count) return;
             var conn = _sortableList[e.RowIndex];
 
-            // Color code rows based on connection state
+            // Dynamic theme assignment based on active state criteria
             if (conn.State != null)
             {
                 if (conn.State.Equals("Established", StringComparison.OrdinalIgnoreCase))
                 {
-                    e.CellStyle.BackColor = EstablishedColor;
-                    e.CellStyle.ForeColor = Color.Black;
+                    e.CellStyle.BackColor = Theme.Colors.ConnectionEstablished;
+                    e.CellStyle.ForeColor = Theme.Colors.TextActive;
                 }
                 else if (conn.State.Equals("Listen", StringComparison.OrdinalIgnoreCase))
                 {
-                    e.CellStyle.BackColor = ListenColor;
-                    e.CellStyle.ForeColor = Color.Black;
+                    e.CellStyle.BackColor = Theme.Colors.ConnectionListening;
+                    e.CellStyle.ForeColor = Theme.Colors.TextActive;
                 }
             }
 
@@ -280,7 +277,10 @@ namespace MinimalFirewall
         {
             if (!liveConnectionsDataGridView.Rows[e.RowIndex].Selected && e.RowIndex == _hoveredRowIndex)
             {
-                e.Graphics.FillRectangle(HoverOverlayBrush, e.RowBounds);
+                using (var brush = new SolidBrush(Theme.Colors.HighlightOverlay))
+                {
+                    e.Graphics.FillRectangle(brush, e.RowBounds);
+                }
             }
         }
 

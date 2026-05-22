@@ -24,27 +24,38 @@ namespace MinimalFirewall
         public bool TrustPublisher { get; private set; } = false;
         private readonly DarkModeCS dm;
 
-        // Settings file path for window position
+        // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
+
+        private void ApplyThemeStyles(bool isDarkMode)
+        {
+            dm.ApplyTheme(isDarkMode);
+
+            pathLabel.BackColor = Theme.Colors.PathLabelBackground;
+            pathLabel.ForeColor = Theme.Colors.TextActive;
+
+            allowButton.BackColor = Theme.Colors.Success;
+            blockButton.BackColor = Theme.Colors.Danger;
+            allowButton.ForeColor = isDarkMode ? Theme.Colors.TextActive : Color.Black;
+            blockButton.ForeColor = isDarkMode ? Theme.Colors.TextActive : Color.Black;
+
+            allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Success, 0.1f);
+            blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Danger, 0.1f);
+            allowButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(Theme.Colors.Success, 0.2f);
+            blockButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(Theme.Colors.Danger, 0.2f);
+        }
 
         public NotifierForm(FirewallRuleChange rule, bool isDarkMode)
         {
             InitializeComponent();
             RuleChange = rule;
 
-            // Initialize Dark Mode
             dm = new DarkModeCS(this)
             {
                 ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
             };
-            dm.ApplyTheme(isDarkMode);
-            if (isDarkMode)
-            {
-                pathLabel.BackColor = Color.FromArgb(45, 45, 48);
-                pathLabel.ForeColor = Color.White;
-            }
+            ApplyThemeStyles(isDarkMode);
 
-            // UI Text for new rule
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
             this.Text = "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
@@ -54,20 +65,6 @@ namespace MinimalFirewall
 
             this.AcceptButton = this.ignoreButton;
 
-            // Button Styling
-            Color allowColor = Color.FromArgb(204, 255, 204);
-            Color blockColor = Color.FromArgb(255, 204, 204);
-
-            allowButton.BackColor = allowColor;
-            blockButton.BackColor = blockColor;
-            allowButton.ForeColor = Color.Black;
-            blockButton.ForeColor = Color.Black;
-            allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(allowColor, 0.1f);
-            blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(blockColor, 0.1f);
-            allowButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(allowColor, 0.2f);
-            blockButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(blockColor, 0.2f);
-
-            // Hide irrelevant 
             if (tempAllowButton != null) tempAllowButton.Visible = false;
             if (createWildcardButton != null) createWildcardButton.Visible = false;
             if (trustPublisherCheckBox != null) trustPublisherCheckBox.Visible = false;
@@ -76,47 +73,22 @@ namespace MinimalFirewall
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
         {
             InitializeComponent();
-
             PendingConnection = pending;
 
-            // Initialize Dark Mode
             dm = new DarkModeCS(this)
             {
                 ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
             };
-            dm.ApplyTheme(isDarkMode);
+            ApplyThemeStyles(isDarkMode);
 
-            if (isDarkMode)
-            {
-                pathLabel.BackColor = Color.FromArgb(45, 45, 48);
-                pathLabel.ForeColor = Color.White;
-            }
-
-            // Set UI Text
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
             this.Text = "Connection Blocked";
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
-
             pathLabel.Text = pending.AppPath;
-            pathLabel.WordWrap = false; 
+            pathLabel.WordWrap = false;
 
             this.AcceptButton = this.ignoreButton;
-
-            // Button Styling
-            Color allowColor = Color.FromArgb(204, 255, 204);
-            Color blockColor = Color.FromArgb(255, 204, 204);
-
-            allowButton.BackColor = allowColor;
-            blockButton.BackColor = blockColor;
-
-            allowButton.ForeColor = Color.Black;
-            blockButton.ForeColor = Color.Black;
-
-            allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(allowColor, 0.1f);
-            blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(blockColor, 0.1f);
-            allowButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(allowColor, 0.2f);
-            blockButton.FlatAppearance.MouseDownBackColor = ControlPaint.Dark(blockColor, 0.2f);
 
             SetupTempAllowMenu();
         }
