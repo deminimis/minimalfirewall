@@ -102,14 +102,11 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            if (_dm == null) return;
-
-            // Helper function 
             void StyleButton(Button btn)
             {
                 btn.FlatAppearance.BorderSize = 1;
-                btn.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
-                btn.ForeColor = _dm.IsDarkMode ? Color.White : SystemColors.ControlText;
+                btn.FlatAppearance.BorderColor = Theme.Colors.ControlDark;
+                btn.ForeColor = Theme.Colors.TextActive;
             }
 
             var buttonsToStyle = new[] {

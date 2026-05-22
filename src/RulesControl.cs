@@ -181,19 +181,11 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            if (_dm == null || this.Disposing || this.IsDisposed) return;
-
+            if (this.Disposing || this.IsDisposed) return;
             createRuleButton.FlatAppearance.BorderSize = 1;
-            createRuleButton.FlatAppearance.BorderColor = _dm.OScolors.ControlDark;
 
-            if (_dm.IsDarkMode)
-            {
-                createRuleButton.ForeColor = Color.White;
-            }
-            else
-            {
-                createRuleButton.ForeColor = SystemColors.ControlText;
-            }
+            createRuleButton.FlatAppearance.BorderColor = Theme.Colors.ControlDark;
+            createRuleButton.ForeColor = Theme.Colors.TextActive;
         }
 
         public async Task RefreshDataAsync(bool forceUwpScan = false, IProgress<int>? progress = null, CancellationToken token = default)

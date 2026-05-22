@@ -90,63 +90,70 @@ namespace MinimalFirewall
 
         private async void DashboardDataGridView_SelectionChanged(object? sender, EventArgs e)
         {
+            var pending = GetSelectedPendingConnection();
+            if (pending == null)
+            {
+                if (detailsRichTextBox != null) detailsRichTextBox.Clear();
+                return;
+            }
+
+            string? pubName = null;
+            if (!string.IsNullOrEmpty(pending.AppPath))
+            {
+                pubName = await Task.Run(() =>
+                {
+                    SignatureValidationService.GetPublisherInfo(pending.AppPath, out string name);
+                    return name;
+                });
+            }
+
+            // Safety check 
+            if (this.IsDisposed || GetSelectedPendingConnection() != pending) return;
+
+
+            RenderConnectionDetails(pending, pubName);
+        }
+
+        private void RenderConnectionDetails(PendingConnectionViewModel pending, string? pubName)
+        {
             if (detailsRichTextBox == null) return;
             detailsRichTextBox.Clear();
 
-            var pending = GetSelectedPendingConnection();
-            if (pending == null) return;
-
-            Color labelColor = Theme.Colors.InfoText;
-            Color valColor = Theme.Colors.TextActive;
-            Font boldFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
-
-            void AppendLine(string label, string value)
+            void AppendDetail(string label, string? value)
             {
+                if (string.IsNullOrEmpty(value)) return;
+
                 detailsRichTextBox.SelectionStart = detailsRichTextBox.TextLength;
                 detailsRichTextBox.SelectionLength = 0;
-                detailsRichTextBox.SelectionColor = labelColor;
-                detailsRichTextBox.SelectionFont = boldFont;
+
+                // Centralized Theme Styling
+                detailsRichTextBox.SelectionColor = Theme.Colors.InfoText;
+                detailsRichTextBox.SelectionFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
                 detailsRichTextBox.AppendText(label + ": ");
 
-                detailsRichTextBox.SelectionColor = valColor;
+                detailsRichTextBox.SelectionColor = Theme.Colors.TextActive;
                 detailsRichTextBox.SelectionFont = detailsRichTextBox.Font;
                 detailsRichTextBox.AppendText(value + Environment.NewLine);
             }
 
-            AppendLine("Application", pending.FileName);
-            AppendLine("Path", pending.AppPath);
-            AppendLine("PID", pending.ProcessId);
-            if (!string.IsNullOrEmpty(pending.ProcessOwner)) AppendLine("Owner", pending.ProcessOwner);
-            if (!string.IsNullOrEmpty(pending.ParentProcessId))
-            {
-                string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
-                AppendLine("Parent Process", parentDisplay);
-            }
-            AppendLine("Service", string.IsNullOrEmpty(pending.ServiceName) ? "N/A" : pending.ServiceName);
-            AppendLine("Direction", pending.Direction);
+            AppendDetail("Application", pending.FileName);
+            AppendDetail("Path", pending.AppPath);
+            AppendDetail("PID", pending.ProcessId);
+            AppendDetail("Owner", pending.ProcessOwner);
+
+            string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ?
+                pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
+            AppendDetail("Parent Process", parentDisplay);
+
+            AppendDetail("Service", string.IsNullOrEmpty(pending.ServiceName) ? "N/A" : pending.ServiceName);
+            AppendDetail("Direction", pending.Direction);
+
             string remote = string.IsNullOrEmpty(pending.RemoteAddress) ? "N/A" : $"{pending.RemoteAddress}:{pending.RemotePort}";
-            AppendLine("Remote Address", remote);
-            AppendLine("Protocol", pending.ProtocolDisplay);
+            AppendDetail("Remote Address", remote);
 
-            if (!string.IsNullOrEmpty(pending.CommandLine))
-            {
-                AppendLine("CMD", pending.CommandLine);
-            }
-
-            string appPathToVerify = pending.AppPath;
-            if (!string.IsNullOrEmpty(appPathToVerify))
-            {
-                string pubName = await Task.Run(() =>
-                {
-                    SignatureValidationService.GetPublisherInfo(appPathToVerify, out string name);
-                    return name;
-                });
-
-                if (!this.IsDisposed && GetSelectedPendingConnection() == pending && !string.IsNullOrEmpty(pubName))
-                {
-                    AppendLine("Publisher", pubName);
-                }
-            }
+            AppendDetail("Protocol", pending.ProtocolDisplay);
+            AppendDetail("CMD", pending.CommandLine);
+            AppendDetail("Publisher", pubName);
         }
 
         public void SetIconColumnVisibility(bool visible)

@@ -124,8 +124,8 @@ namespace MinimalFirewall
 
             if (_dm.IsDarkMode)
             {
-                statusStrip1.BackColor = _dm.OScolors.Surface;
-                statusLabel.ForeColor = _dm.OScolors.TextActive;
+                statusStrip1.BackColor = Theme.Colors.Surface;
+                statusLabel.ForeColor = Theme.Colors.TextActive;
             }
             else
             {

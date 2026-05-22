@@ -1416,7 +1416,7 @@ namespace MinimalFirewall
 
             if (button.ClientRectangle.Contains(button.PointToClient(Cursor.Position)))
             {
-                using var p = new Pen(dm.OScolors.Accent, 2);
+                using var p = new Pen(Theme.Colors.Accent, 2);
                 e.Graphics.DrawRectangle(p, 0, 0, button.Width - 1, button.Height - 1);
             }
         }

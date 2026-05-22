@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using MinimalFirewall.Groups;
 using System.Windows.Forms;
 using System.Threading.Tasks;
@@ -187,7 +187,7 @@ namespace MinimalFirewall
                 thumbSize,
                 thumbSize);
 
-            using var thumbBrush = new SolidBrush(_dm.OScolors.TextActive);
+            using var thumbBrush = new SolidBrush(Theme.Colors.TextActive);
             g.FillEllipse(thumbBrush, thumbRect);
         }
 
