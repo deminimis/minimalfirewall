@@ -91,7 +91,7 @@ namespace MinimalFirewall
             var pending = GetSelectedPendingConnection();
             if (pending == null)
             {
-                if (detailsRichTextBox != null) detailsRichTextBox.Clear();
+                detailsRichTextBox?.Clear();
                 return;
             }
 

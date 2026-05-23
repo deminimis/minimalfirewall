@@ -9,7 +9,7 @@ namespace DarkModeForms
 {
     public class FlatTabControl : TabControl
     {
-        private Dictionary<string, Image> _iconCache = new Dictionary<string, Image>();
+        private readonly Dictionary<string, Image> _iconCache = [];
 
         public FlatTabControl()
         {
@@ -91,11 +91,12 @@ namespace DarkModeForms
                         if (isDarkModeText && customTabPage.ImageKey != "locked.png")
                         {
                             string cacheKey = $"{customTabPage.ImageIndex}-{textColor.ToArgb()}";
-                            if (!_iconCache.ContainsKey(cacheKey))
+                            if (!_iconCache.TryGetValue(cacheKey, out var cachedIcon))
                             {
-                                _iconCache[cacheKey] = RecolorImage(originalIcon, textColor);
+                                cachedIcon = RecolorImage(originalIcon, textColor);
+                                _iconCache[cacheKey] = cachedIcon;
                             }
-                            g.DrawImage(_iconCache[cacheKey], new Rectangle(iconX, iconY, iconW, iconH));
+                            g.DrawImage(cachedIcon, new Rectangle(iconX, iconY, iconW, iconH));
                         }
                         else
                         {
@@ -127,8 +128,8 @@ namespace DarkModeForms
             else
             {
                 int scaled3 = UIHelpers.Scale(3, g);
-                Point[] points = new[]
-                {
+                Point[] points =
+                [
                     new Point(tabRect.Left, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Top + scaled3),
                     new Point(tabRect.Left + scaled3, tabRect.Top),
@@ -136,16 +137,12 @@ namespace DarkModeForms
                     new Point(tabRect.Right, tabRect.Top + scaled3),
                     new Point(tabRect.Right, tabRect.Bottom),
                     new Point(tabRect.Left, tabRect.Bottom)
-                };
+                ];
 
-                using (Brush brush = new SolidBrush(tabBackColor))
-                {
-                    g.FillPolygon(brush, points);
-                    using (var borderPen = new Pen(Theme.Colors.ControlDark))
-                    {
-                        g.DrawPolygon(borderPen, points);
-                    }
-                }
+                using Brush brush = new SolidBrush(tabBackColor);
+                g.FillPolygon(brush, points);
+                using var borderPen = new Pen(Theme.Colors.ControlDark);
+                g.DrawPolygon(borderPen, points);
 
                 if (isSelected)
                 {
@@ -156,7 +153,7 @@ namespace DarkModeForms
             }
         }
 
-        private Image RecolorImage(Image sourceImage, Color newColor)
+        private static Bitmap RecolorImage(Image sourceImage, Color newColor)
         {
             var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(newBitmap))

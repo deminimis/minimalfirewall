@@ -38,7 +38,7 @@ namespace MinimalFirewall
             blockDirectionCombo.Enabled = blockRadio.Checked;
         }
 
-        private void okButton_Click(object sender, EventArgs e)
+        private void OkButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace MinimalFirewall
                 string direction = allowRadio.Checked ? allowDirectionCombo.Text : blockDirectionCombo.Text;
                 string finalAction = $"{action} ({direction})";
 
-                _actionsService.ApplyApplicationRuleChange(new List<string>(_filePaths), finalAction);
+                _actionsService.ApplyApplicationRuleChange([.. _filePaths], finalAction);
                 DialogResult = DialogResult.OK;
             }
             catch (Exception ex)
@@ -56,7 +56,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void cancelButton_Click(object sender, EventArgs e)
+        private void CancelButton_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
         }

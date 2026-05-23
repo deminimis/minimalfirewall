@@ -272,7 +272,10 @@ namespace DarkModeForms
                 {
                     e.Graphics.FillRectangle(backBrush, e.Bounds);
                 }
-                TextRenderer.DrawText(e.Graphics, e.Header!.Text, e.Font, e.Bounds, OScolors.TextActive, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                if (e.Header != null)
+                {
+                    TextRenderer.DrawText(e.Graphics, e.Header.Text, e.Font, e.Bounds, OScolors.TextActive, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                }
             }
             else
             {
@@ -541,10 +544,8 @@ namespace DarkModeForms
             if (sender is not TabControl tab || tab.Parent == null) return;
 
             //  Check bounds before filling to prevent overflow
-            using (var headerBrush = new SolidBrush(tab.Parent.BackColor))
-            {
-                e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
-            }
+            using var headerBrush = new SolidBrush(tab.Parent.BackColor);
+            e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
 
             for (int i = 0; i < tab.TabPages.Count; i++)
             {

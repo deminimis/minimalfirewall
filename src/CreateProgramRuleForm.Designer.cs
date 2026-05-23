@@ -1,4 +1,4 @@
-﻿// File: CreateProgramRuleForm.Designer.cs
+// File: CreateProgramRuleForm.Designer.cs
 namespace MinimalFirewall
 {
     public partial class CreateProgramRuleForm
@@ -80,7 +80,7 @@ namespace MinimalFirewall
             this.okButton.TabIndex = 2;
             this.okButton.Text = "OK";
             this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+            this.okButton.Click += new System.EventHandler(this.OkButton_Click);
 
             this.cancelButton.Location = new System.Drawing.Point(377, 310);
             this.cancelButton.Name = "cancelButton";
@@ -88,7 +88,7 @@ namespace MinimalFirewall
             this.cancelButton.TabIndex = 3;
             this.cancelButton.Text = "Cancel";
             this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
 
             this.blockDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.blockDirectionCombo.FormattingEnabled = true;

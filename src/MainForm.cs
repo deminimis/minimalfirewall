@@ -41,11 +41,11 @@ namespace MinimalFirewall
         private MainViewModel _mainViewModel = null!;
         private readonly Queue<PendingConnectionViewModel> _popupQueue = [];
         private volatile bool _isPopupVisible = false;
-        private readonly object _popupLock = new();
+        private readonly System.Threading.Lock _popupLock = new();
 
         private readonly Queue<FirewallRuleChange> _rulePopupQueue = new();
         private volatile bool _isRulePopupVisible = false;
-        private DarkModeCS dm;
+        private readonly DarkModeCS dm;
         private System.Threading.Timer? _autoRefreshTimer;
         private readonly Dictionary<string, System.Threading.Timer> _tabUnloadTimers = [];
         private Image? _lockedGreenIcon;
@@ -394,12 +394,10 @@ namespace MinimalFirewall
 
             lockdownButton.Image = null;
             rescanButton.Image = null;
-            using (var stream = assembly.GetManifestResourceStream("MinimalFirewall.logo.png"))
+            using var pngStream = assembly.GetManifestResourceStream("MinimalFirewall.logo.png");
+            if (pngStream != null)
             {
-                if (stream != null)
-                {
-                    logoPictureBox.Image = Image.FromStream(stream);
-                }
+                logoPictureBox.Image = Image.FromStream(pngStream);
             }
         }
         #endregion
@@ -1359,7 +1357,7 @@ namespace MinimalFirewall
             (sender as Control)?.Invalidate();
         }
 
-        private static Image RecolorImage(Image sourceImage, Color newColor)
+        private static Bitmap RecolorImage(Image sourceImage, Color newColor)
         {
             var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height);
             using (var g = Graphics.FromImage(newBitmap))
