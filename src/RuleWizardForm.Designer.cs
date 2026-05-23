@@ -1,4 +1,4 @@
-﻿namespace MinimalFirewall
+namespace MinimalFirewall
 {
     partial class RuleWizardForm
     {
@@ -16,693 +16,691 @@
 
         private void InitializeComponent()
         {
-            this.pnlSelection = new System.Windows.Forms.Panel();
-            this.restrictAppButton = new System.Windows.Forms.Button();
-            this.blockDeviceButton = new System.Windows.Forms.Button();
-            this.allowFileShareButton = new System.Windows.Forms.Button();
-            this.blockServiceButton = new System.Windows.Forms.Button();
-            this.advancedRuleButton = new System.Windows.Forms.Button();
-            this.wildcardRuleButton = new System.Windows.Forms.Button();
-            this.portRuleButton = new System.Windows.Forms.Button();
-            this.programRuleButton = new System.Windows.Forms.Button();
-            this.batchProgramRuleButton = new System.Windows.Forms.Button();
-            this.pnlGetProgram = new System.Windows.Forms.Panel();
-            this.browseButton = new System.Windows.Forms.Button();
-            this.programPathTextBox = new System.Windows.Forms.TextBox();
-            this.pnlGetFolder = new System.Windows.Forms.Panel();
-            this.dllCheckBox = new System.Windows.Forms.CheckBox();
-            this.exeCheckBox = new System.Windows.Forms.CheckBox();
-            this.batchBrowseFolderButton = new System.Windows.Forms.Button();
-            this.batchFolderPathTextBox = new System.Windows.Forms.TextBox();
-            this.pnlGetPorts = new System.Windows.Forms.Panel();
-            this.portsProgramPathTextBox = new System.Windows.Forms.TextBox();
-            this.portsBrowseButton = new System.Windows.Forms.Button();
-            this.restrictToProgramCheckBox = new System.Windows.Forms.CheckBox();
-            this.portsTextBox = new System.Windows.Forms.TextBox();
-            this.portsLabel = new System.Windows.Forms.Label();
-            this.pnlGetProtocol = new System.Windows.Forms.Panel();
-            this.bothProtocolRadioButton = new System.Windows.Forms.RadioButton();
-            this.udpRadioButton = new System.Windows.Forms.RadioButton();
-            this.tcpRadioButton = new System.Windows.Forms.RadioButton();
-            this.pnlSummary = new System.Windows.Forms.Panel();
-            this.summaryLabel = new System.Windows.Forms.Label();
-            this.pnlGetName = new System.Windows.Forms.Panel();
-            this.ruleNameTextBox = new System.Windows.Forms.TextBox();
-            this.bottomPanel = new System.Windows.Forms.Panel();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.nextButton = new System.Windows.Forms.Button();
-            this.backButton = new System.Windows.Forms.Button();
-            this.topPanel = new System.Windows.Forms.Panel();
-            this.mainHeaderLabel = new System.Windows.Forms.Label();
-            this.pnlGetAction = new System.Windows.Forms.Panel();
-            this.blockActionRadioButton = new System.Windows.Forms.RadioButton();
-            this.allowActionRadioButton = new System.Windows.Forms.RadioButton();
-            this.pnlGetDirection = new System.Windows.Forms.Panel();
-            this.bothDirRadioButton = new System.Windows.Forms.RadioButton();
-            this.inboundRadioButton = new System.Windows.Forms.RadioButton();
-            this.outboundRadioButton = new System.Windows.Forms.RadioButton();
-            this.pnlGetService = new System.Windows.Forms.Panel();
-            this.serviceNameTextBox = new System.Windows.Forms.TextBox();
-            this.serviceListBox = new System.Windows.Forms.ListBox();
-            this.serviceInstructionLabel = new System.Windows.Forms.Label();
-            this.pnlGetFileShareIP = new System.Windows.Forms.Panel();
-            this.fileShareIpTextBox = new System.Windows.Forms.TextBox();
-            this.fileShareWarningLabel = new System.Windows.Forms.Label();
-            this.pnlGetBlockDeviceIP = new System.Windows.Forms.Panel();
-            this.blockDeviceIpTextBox = new System.Windows.Forms.TextBox();
-            this.pnlGetRestrictApp = new System.Windows.Forms.Panel();
-            this.restrictAppPathTextBox = new System.Windows.Forms.TextBox();
-            this.restrictAppBrowseButton = new System.Windows.Forms.Button();
-            this.pnlSelection.SuspendLayout();
-            this.pnlGetProgram.SuspendLayout();
-            this.pnlGetFolder.SuspendLayout();
-            this.pnlGetPorts.SuspendLayout();
-            this.pnlGetProtocol.SuspendLayout();
-            this.pnlSummary.SuspendLayout();
-            this.pnlGetName.SuspendLayout();
-            this.bottomPanel.SuspendLayout();
-            this.topPanel.SuspendLayout();
-            this.pnlGetAction.SuspendLayout();
-            this.pnlGetDirection.SuspendLayout();
-            this.pnlGetService.SuspendLayout();
-            this.pnlGetFileShareIP.SuspendLayout();
-            this.pnlGetBlockDeviceIP.SuspendLayout();
-            this.pnlGetRestrictApp.SuspendLayout();
-            this.SuspendLayout();
+            pnlSelection = new Panel();
+            restrictAppButton = new Button();
+            blockDeviceButton = new Button();
+            allowFileShareButton = new Button();
+            blockServiceButton = new Button();
+            advancedRuleButton = new Button();
+            wildcardRuleButton = new Button();
+            portRuleButton = new Button();
+            batchProgramRuleButton = new Button();
+            programRuleButton = new Button();
+            pnlGetProgram = new Panel();
+            browseButton = new Button();
+            programPathTextBox = new TextBox();
+            pnlGetFolder = new Panel();
+            dllCheckBox = new CheckBox();
+            exeCheckBox = new CheckBox();
+            batchBrowseFolderButton = new Button();
+            batchFolderPathTextBox = new TextBox();
+            pnlGetPorts = new Panel();
+            portsProgramPathTextBox = new TextBox();
+            portsBrowseButton = new Button();
+            restrictToProgramCheckBox = new CheckBox();
+            portsTextBox = new TextBox();
+            portsLabel = new Label();
+            pnlGetProtocol = new Panel();
+            bothProtocolRadioButton = new RadioButton();
+            udpRadioButton = new RadioButton();
+            tcpRadioButton = new RadioButton();
+            pnlSummary = new Panel();
+            summaryLabel = new Label();
+            pnlGetName = new Panel();
+            ruleNameTextBox = new TextBox();
+            bottomPanel = new Panel();
+            cancelButton = new Button();
+            nextButton = new Button();
+            backButton = new Button();
+            topPanel = new Panel();
+            mainHeaderLabel = new Label();
+            pnlGetAction = new Panel();
+            blockActionRadioButton = new RadioButton();
+            allowActionRadioButton = new RadioButton();
+            pnlGetDirection = new Panel();
+            bothDirRadioButton = new RadioButton();
+            inboundRadioButton = new RadioButton();
+            outboundRadioButton = new RadioButton();
+            pnlGetService = new Panel();
+            serviceNameTextBox = new TextBox();
+            serviceListBox = new ListBox();
+            serviceInstructionLabel = new Label();
+            pnlGetFileShareIP = new Panel();
+            fileShareIpTextBox = new TextBox();
+            fileShareWarningLabel = new Label();
+            pnlGetBlockDeviceIP = new Panel();
+            blockDeviceIpTextBox = new TextBox();
+            pnlGetRestrictApp = new Panel();
+            restrictAppPathTextBox = new TextBox();
+            restrictAppBrowseButton = new Button();
+            pnlSelection.SuspendLayout();
+            pnlGetProgram.SuspendLayout();
+            pnlGetFolder.SuspendLayout();
+            pnlGetPorts.SuspendLayout();
+            pnlGetProtocol.SuspendLayout();
+            pnlSummary.SuspendLayout();
+            pnlGetName.SuspendLayout();
+            bottomPanel.SuspendLayout();
+            topPanel.SuspendLayout();
+            pnlGetAction.SuspendLayout();
+            pnlGetDirection.SuspendLayout();
+            pnlGetService.SuspendLayout();
+            pnlGetFileShareIP.SuspendLayout();
+            pnlGetBlockDeviceIP.SuspendLayout();
+            pnlGetRestrictApp.SuspendLayout();
+            SuspendLayout();
             // 
             // pnlSelection
             // 
-            this.pnlSelection.Controls.Add(this.restrictAppButton);
-            this.pnlSelection.Controls.Add(this.blockDeviceButton);
-            this.pnlSelection.Controls.Add(this.allowFileShareButton);
-            this.pnlSelection.Controls.Add(this.blockServiceButton);
-            this.pnlSelection.Controls.Add(this.advancedRuleButton);
-            this.pnlSelection.Controls.Add(this.wildcardRuleButton);
-            this.pnlSelection.Controls.Add(this.portRuleButton);
-            this.pnlSelection.Controls.Add(this.batchProgramRuleButton);
-            this.pnlSelection.Controls.Add(this.programRuleButton);
-            this.pnlSelection.Location = new System.Drawing.Point(0, 58);
-            this.pnlSelection.Name = "pnlSelection";
-            this.pnlSelection.Size = new System.Drawing.Size(534, 340);
-            this.pnlSelection.TabIndex = 0;
+            pnlSelection.Controls.Add(restrictAppButton);
+            pnlSelection.Controls.Add(blockDeviceButton);
+            pnlSelection.Controls.Add(allowFileShareButton);
+            pnlSelection.Controls.Add(blockServiceButton);
+            pnlSelection.Controls.Add(advancedRuleButton);
+            pnlSelection.Controls.Add(wildcardRuleButton);
+            pnlSelection.Controls.Add(portRuleButton);
+            pnlSelection.Controls.Add(batchProgramRuleButton);
+            pnlSelection.Controls.Add(programRuleButton);
+            pnlSelection.Location = new Point(0, 62);
+            pnlSelection.Name = "pnlSelection";
+            pnlSelection.Size = new Size(534, 363);
+            pnlSelection.TabIndex = 0;
             // 
             // restrictAppButton
             // 
-            this.restrictAppButton.Location = new System.Drawing.Point(50, 248);
-            this.restrictAppButton.Name = "restrictAppButton";
-            this.restrictAppButton.Size = new System.Drawing.Size(434, 28);
-            this.restrictAppButton.TabIndex = 7;
-            this.restrictAppButton.Text = "Restrict an App to My Local Network Only";
-            this.restrictAppButton.UseVisualStyleBackColor = true;
-            this.restrictAppButton.Click += new System.EventHandler(this.restrictAppButton_Click);
+            restrictAppButton.Location = new Point(50, 265);
+            restrictAppButton.Name = "restrictAppButton";
+            restrictAppButton.Size = new Size(434, 30);
+            restrictAppButton.TabIndex = 7;
+            restrictAppButton.Text = "Restrict an App to My Local Network Only";
+            restrictAppButton.UseVisualStyleBackColor = true;
+            restrictAppButton.Click += restrictAppButton_Click;
             // 
             // blockDeviceButton
             // 
-            this.blockDeviceButton.Location = new System.Drawing.Point(50, 214);
-            this.blockDeviceButton.Name = "blockDeviceButton";
-            this.blockDeviceButton.Size = new System.Drawing.Size(434, 28);
-            this.blockDeviceButton.TabIndex = 6;
-            this.blockDeviceButton.Text = "Block a Specific Device on My Network";
-            this.blockDeviceButton.UseVisualStyleBackColor = true;
-            this.blockDeviceButton.Click += new System.EventHandler(this.blockDeviceButton_Click);
+            blockDeviceButton.Location = new Point(50, 228);
+            blockDeviceButton.Name = "blockDeviceButton";
+            blockDeviceButton.Size = new Size(434, 30);
+            blockDeviceButton.TabIndex = 6;
+            blockDeviceButton.Text = "Block a Specific Device on My Network";
+            blockDeviceButton.UseVisualStyleBackColor = true;
+            blockDeviceButton.Click += blockDeviceButton_Click;
             // 
             // allowFileShareButton
             // 
-            this.allowFileShareButton.Location = new System.Drawing.Point(50, 180);
-            this.allowFileShareButton.Name = "allowFileShareButton";
-            this.allowFileShareButton.Size = new System.Drawing.Size(434, 28);
-            this.allowFileShareButton.TabIndex = 5;
-            this.allowFileShareButton.Text = "Allow Another PC to Access My Files";
-            this.allowFileShareButton.UseVisualStyleBackColor = true;
-            this.allowFileShareButton.Click += new System.EventHandler(this.allowFileShareButton_Click);
+            allowFileShareButton.Location = new Point(50, 192);
+            allowFileShareButton.Name = "allowFileShareButton";
+            allowFileShareButton.Size = new Size(434, 30);
+            allowFileShareButton.TabIndex = 5;
+            allowFileShareButton.Text = "Allow Another PC to Access My Files";
+            allowFileShareButton.UseVisualStyleBackColor = true;
+            allowFileShareButton.Click += allowFileShareButton_Click;
             // 
             // blockServiceButton
             // 
-            this.blockServiceButton.Location = new System.Drawing.Point(50, 146);
-            this.blockServiceButton.Name = "blockServiceButton";
-            this.blockServiceButton.Size = new System.Drawing.Size(434, 28);
-            this.blockServiceButton.TabIndex = 4;
-            this.blockServiceButton.Text = "Block a Windows Service";
-            this.blockServiceButton.UseVisualStyleBackColor = true;
-            this.blockServiceButton.Click += new System.EventHandler(this.blockServiceButton_Click);
+            blockServiceButton.Location = new Point(50, 156);
+            blockServiceButton.Name = "blockServiceButton";
+            blockServiceButton.Size = new Size(434, 30);
+            blockServiceButton.TabIndex = 4;
+            blockServiceButton.Text = "Block a Windows Service";
+            blockServiceButton.UseVisualStyleBackColor = true;
+            blockServiceButton.Click += blockServiceButton_Click;
             // 
             // advancedRuleButton
             // 
-            this.advancedRuleButton.Location = new System.Drawing.Point(50, 282);
-            this.advancedRuleButton.Name = "advancedRuleButton";
-            this.advancedRuleButton.Size = new System.Drawing.Size(434, 28);
-            this.advancedRuleButton.TabIndex = 3;
-            this.advancedRuleButton.Text = "Create a Custom Advanced Rule...";
-            this.advancedRuleButton.UseVisualStyleBackColor = true;
-            this.advancedRuleButton.Click += new System.EventHandler(this.advancedRuleButton_Click);
+            advancedRuleButton.Location = new Point(50, 301);
+            advancedRuleButton.Name = "advancedRuleButton";
+            advancedRuleButton.Size = new Size(434, 30);
+            advancedRuleButton.TabIndex = 3;
+            advancedRuleButton.Text = "Create a Custom Advanced Rule...";
+            advancedRuleButton.UseVisualStyleBackColor = true;
+            advancedRuleButton.Click += advancedRuleButton_Click;
             // 
             // wildcardRuleButton
             // 
-            this.wildcardRuleButton.Location = new System.Drawing.Point(50, 112);
-            this.wildcardRuleButton.Name = "wildcardRuleButton";
-            this.wildcardRuleButton.Size = new System.Drawing.Size(434, 28);
-            this.wildcardRuleButton.TabIndex = 2;
-            this.wildcardRuleButton.Text = "Create a Wildcard Rule for a Folder...";
-            this.wildcardRuleButton.UseVisualStyleBackColor = true;
-            this.wildcardRuleButton.Click += new System.EventHandler(this.wildcardRuleButton_Click);
+            wildcardRuleButton.Location = new Point(50, 119);
+            wildcardRuleButton.Name = "wildcardRuleButton";
+            wildcardRuleButton.Size = new Size(434, 30);
+            wildcardRuleButton.TabIndex = 2;
+            wildcardRuleButton.Text = "Create a Wildcard Rule for a Folder...";
+            wildcardRuleButton.UseVisualStyleBackColor = true;
+            wildcardRuleButton.Click += wildcardRuleButton_Click;
             // 
             // portRuleButton
             // 
-            this.portRuleButton.Location = new System.Drawing.Point(50, 78);
-            this.portRuleButton.Name = "portRuleButton";
-            this.portRuleButton.Size = new System.Drawing.Size(434, 28);
-            this.portRuleButton.TabIndex = 1;
-            this.portRuleButton.Text = "Open a Port";
-            this.portRuleButton.UseVisualStyleBackColor = true;
-            this.portRuleButton.Click += new System.EventHandler(this.portRuleButton_Click);
-            // 
-            // programRuleButton
-            // 
-            this.programRuleButton.Location = new System.Drawing.Point(50, 10);
-            this.programRuleButton.Name = "programRuleButton";
-            this.programRuleButton.Size = new System.Drawing.Size(434, 28);
-            this.programRuleButton.TabIndex = 0;
-            this.programRuleButton.Text = "Allow or Block a Program";
-            this.programRuleButton.UseVisualStyleBackColor = true;
-            this.programRuleButton.Click += new System.EventHandler(this.programRuleButton_Click);
+            portRuleButton.Location = new Point(50, 83);
+            portRuleButton.Name = "portRuleButton";
+            portRuleButton.Size = new Size(434, 30);
+            portRuleButton.TabIndex = 1;
+            portRuleButton.Text = "Open a Port";
+            portRuleButton.UseVisualStyleBackColor = true;
+            portRuleButton.Click += portRuleButton_Click;
             // 
             // batchProgramRuleButton
             // 
-            this.batchProgramRuleButton.Location = new System.Drawing.Point(50, 44);
-            this.batchProgramRuleButton.Name = "batchProgramRuleButton";
-            this.batchProgramRuleButton.Size = new System.Drawing.Size(434, 28);
-            this.batchProgramRuleButton.TabIndex = 8;
-            this.batchProgramRuleButton.Text = "Allow or Block All Programs in a Folder";
-            this.batchProgramRuleButton.UseVisualStyleBackColor = true;
-            this.batchProgramRuleButton.Click += new System.EventHandler(this.batchProgramRuleButton_Click);
+            batchProgramRuleButton.Location = new Point(50, 47);
+            batchProgramRuleButton.Name = "batchProgramRuleButton";
+            batchProgramRuleButton.Size = new Size(434, 30);
+            batchProgramRuleButton.TabIndex = 8;
+            batchProgramRuleButton.Text = "Allow or Block All Programs in a Folder";
+            batchProgramRuleButton.UseVisualStyleBackColor = true;
+            batchProgramRuleButton.Click += batchProgramRuleButton_Click;
+            // 
+            // programRuleButton
+            // 
+            programRuleButton.Location = new Point(50, 11);
+            programRuleButton.Name = "programRuleButton";
+            programRuleButton.Size = new Size(434, 30);
+            programRuleButton.TabIndex = 0;
+            programRuleButton.Text = "Allow or Block a Program";
+            programRuleButton.UseVisualStyleBackColor = true;
+            programRuleButton.Click += programRuleButton_Click;
             // 
             // pnlGetProgram
             // 
-            this.pnlGetProgram.Controls.Add(this.browseButton);
-            this.pnlGetProgram.Controls.Add(this.programPathTextBox);
-            this.pnlGetProgram.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetProgram.Name = "pnlGetProgram";
-            this.pnlGetProgram.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetProgram.TabIndex = 1;
+            pnlGetProgram.Controls.Add(browseButton);
+            pnlGetProgram.Controls.Add(programPathTextBox);
+            pnlGetProgram.Location = new Point(0, 62);
+            pnlGetProgram.Name = "pnlGetProgram";
+            pnlGetProgram.Size = new Size(534, 363);
+            pnlGetProgram.TabIndex = 1;
             // 
             // browseButton
             // 
-            this.browseButton.Location = new System.Drawing.Point(422, 149);
-            this.browseButton.Name = "browseButton";
-            this.browseButton.Size = new System.Drawing.Size(90, 23);
-            this.browseButton.TabIndex = 1;
-            this.browseButton.Text = "Browse...";
-            this.browseButton.UseVisualStyleBackColor = true;
-            this.browseButton.Click += new System.EventHandler(this.browseButton_Click);
+            browseButton.Location = new Point(422, 159);
+            browseButton.Name = "browseButton";
+            browseButton.Size = new Size(90, 25);
+            browseButton.TabIndex = 1;
+            browseButton.Text = "Browse...";
+            browseButton.UseVisualStyleBackColor = true;
+            browseButton.Click += browseButton_Click;
             // 
             // programPathTextBox
             // 
-            this.programPathTextBox.Location = new System.Drawing.Point(23, 149);
-            this.programPathTextBox.Name = "programPathTextBox";
-            this.programPathTextBox.Size = new System.Drawing.Size(393, 23);
-            this.programPathTextBox.TabIndex = 0;
-            this.programPathTextBox.PlaceholderText = "Path to application executable";
+            programPathTextBox.Location = new Point(23, 159);
+            programPathTextBox.Name = "programPathTextBox";
+            programPathTextBox.PlaceholderText = "Path to application executable";
+            programPathTextBox.Size = new Size(393, 23);
+            programPathTextBox.TabIndex = 0;
             // 
             // pnlGetFolder
             // 
-            this.pnlGetFolder.Controls.Add(this.dllCheckBox);
-            this.pnlGetFolder.Controls.Add(this.exeCheckBox);
-            this.pnlGetFolder.Controls.Add(this.batchBrowseFolderButton);
-            this.pnlGetFolder.Controls.Add(this.batchFolderPathTextBox);
-            this.pnlGetFolder.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetFolder.Name = "pnlGetFolder";
-            this.pnlGetFolder.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetFolder.TabIndex = 14;
+            pnlGetFolder.Controls.Add(dllCheckBox);
+            pnlGetFolder.Controls.Add(exeCheckBox);
+            pnlGetFolder.Controls.Add(batchBrowseFolderButton);
+            pnlGetFolder.Controls.Add(batchFolderPathTextBox);
+            pnlGetFolder.Location = new Point(0, 62);
+            pnlGetFolder.Name = "pnlGetFolder";
+            pnlGetFolder.Size = new Size(534, 363);
+            pnlGetFolder.TabIndex = 14;
             // 
             // dllCheckBox
             // 
-            this.dllCheckBox.AutoSize = true;
-            this.dllCheckBox.Location = new System.Drawing.Point(112, 178);
-            this.dllCheckBox.Name = "dllCheckBox";
-            this.dllCheckBox.Size = new System.Drawing.Size(74, 19);
-            this.dllCheckBox.TabIndex = 3;
-            this.dllCheckBox.Text = ".dll files";
-            this.dllCheckBox.UseVisualStyleBackColor = true;
+            dllCheckBox.AutoSize = true;
+            dllCheckBox.Location = new Point(112, 190);
+            dllCheckBox.Name = "dllCheckBox";
+            dllCheckBox.Size = new Size(96, 20);
+            dllCheckBox.TabIndex = 3;
+            dllCheckBox.Text = ".dll files";
+            dllCheckBox.UseVisualStyleBackColor = true;
             // 
             // exeCheckBox
             // 
-            this.exeCheckBox.AutoSize = true;
-            this.exeCheckBox.Checked = true;
-            this.exeCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.exeCheckBox.Location = new System.Drawing.Point(23, 178);
-            this.exeCheckBox.Name = "exeCheckBox";
-            this.exeCheckBox.Size = new System.Drawing.Size(83, 19);
-            this.exeCheckBox.TabIndex = 2;
-            this.exeCheckBox.Text = ".exe files";
-            this.exeCheckBox.UseVisualStyleBackColor = true;
+            exeCheckBox.AutoSize = true;
+            exeCheckBox.Checked = true;
+            exeCheckBox.CheckState = CheckState.Checked;
+            exeCheckBox.Location = new Point(23, 190);
+            exeCheckBox.Name = "exeCheckBox";
+            exeCheckBox.Size = new Size(96, 20);
+            exeCheckBox.TabIndex = 2;
+            exeCheckBox.Text = ".exe files";
+            exeCheckBox.UseVisualStyleBackColor = true;
             // 
             // batchBrowseFolderButton
             // 
-            this.batchBrowseFolderButton.Location = new System.Drawing.Point(422, 149);
-            this.batchBrowseFolderButton.Name = "batchBrowseFolderButton";
-            this.batchBrowseFolderButton.Size = new System.Drawing.Size(90, 23);
-            this.batchBrowseFolderButton.TabIndex = 1;
-            this.batchBrowseFolderButton.Text = "Browse...";
-            this.batchBrowseFolderButton.UseVisualStyleBackColor = true;
-            this.batchBrowseFolderButton.Click += new System.EventHandler(this.batchBrowseFolderButton_Click);
+            batchBrowseFolderButton.Location = new Point(422, 159);
+            batchBrowseFolderButton.Name = "batchBrowseFolderButton";
+            batchBrowseFolderButton.Size = new Size(90, 25);
+            batchBrowseFolderButton.TabIndex = 1;
+            batchBrowseFolderButton.Text = "Browse...";
+            batchBrowseFolderButton.UseVisualStyleBackColor = true;
+            batchBrowseFolderButton.Click += batchBrowseFolderButton_Click;
             // 
             // batchFolderPathTextBox
             // 
-            this.batchFolderPathTextBox.Location = new System.Drawing.Point(23, 149);
-            this.batchFolderPathTextBox.Name = "batchFolderPathTextBox";
-            this.batchFolderPathTextBox.PlaceholderText = "Path to folder";
-            this.batchFolderPathTextBox.Size = new System.Drawing.Size(393, 23);
-            this.batchFolderPathTextBox.TabIndex = 0;
+            batchFolderPathTextBox.Location = new Point(23, 159);
+            batchFolderPathTextBox.Name = "batchFolderPathTextBox";
+            batchFolderPathTextBox.PlaceholderText = "Path to folder";
+            batchFolderPathTextBox.Size = new Size(393, 23);
+            batchFolderPathTextBox.TabIndex = 0;
             // 
             // pnlGetPorts
             // 
-            this.pnlGetPorts.Controls.Add(this.portsProgramPathTextBox);
-            this.pnlGetPorts.Controls.Add(this.portsBrowseButton);
-            this.pnlGetPorts.Controls.Add(this.restrictToProgramCheckBox);
-            this.pnlGetPorts.Controls.Add(this.portsTextBox);
-            this.pnlGetPorts.Controls.Add(this.portsLabel);
-            this.pnlGetPorts.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetPorts.Name = "pnlGetPorts";
-            this.pnlGetPorts.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetPorts.TabIndex = 2;
+            pnlGetPorts.Controls.Add(portsProgramPathTextBox);
+            pnlGetPorts.Controls.Add(portsBrowseButton);
+            pnlGetPorts.Controls.Add(restrictToProgramCheckBox);
+            pnlGetPorts.Controls.Add(portsTextBox);
+            pnlGetPorts.Controls.Add(portsLabel);
+            pnlGetPorts.Location = new Point(0, 62);
+            pnlGetPorts.Name = "pnlGetPorts";
+            pnlGetPorts.Size = new Size(534, 363);
+            pnlGetPorts.TabIndex = 2;
             // 
             // portsProgramPathTextBox
             // 
-            this.portsProgramPathTextBox.Location = new System.Drawing.Point(62, 234);
-            this.portsProgramPathTextBox.Name = "portsProgramPathTextBox";
-            this.portsProgramPathTextBox.Size = new System.Drawing.Size(354, 23);
-            this.portsProgramPathTextBox.TabIndex = 3;
-            this.portsProgramPathTextBox.Visible = false;
+            portsProgramPathTextBox.Location = new Point(62, 250);
+            portsProgramPathTextBox.Name = "portsProgramPathTextBox";
+            portsProgramPathTextBox.Size = new Size(354, 23);
+            portsProgramPathTextBox.TabIndex = 3;
+            portsProgramPathTextBox.Visible = false;
             // 
             // portsBrowseButton
             // 
-            this.portsBrowseButton.Location = new System.Drawing.Point(422, 234);
-            this.portsBrowseButton.Name = "portsBrowseButton";
-            this.portsBrowseButton.Size = new System.Drawing.Size(90, 23);
-            this.portsBrowseButton.TabIndex = 4;
-            this.portsBrowseButton.Text = "Browse...";
-            this.portsBrowseButton.UseVisualStyleBackColor = true;
-            this.portsBrowseButton.Visible = false;
-            this.portsBrowseButton.Click += new System.EventHandler(this.portsBrowseButton_Click);
+            portsBrowseButton.Location = new Point(422, 250);
+            portsBrowseButton.Name = "portsBrowseButton";
+            portsBrowseButton.Size = new Size(90, 25);
+            portsBrowseButton.TabIndex = 4;
+            portsBrowseButton.Text = "Browse...";
+            portsBrowseButton.UseVisualStyleBackColor = true;
+            portsBrowseButton.Visible = false;
+            portsBrowseButton.Click += portsBrowseButton_Click;
             // 
             // restrictToProgramCheckBox
             // 
-            this.restrictToProgramCheckBox.AutoSize = true;
-            this.restrictToProgramCheckBox.Location = new System.Drawing.Point(117, 209);
-            this.restrictToProgramCheckBox.Name = "restrictToProgramCheckBox";
-            this.restrictToProgramCheckBox.Size = new System.Drawing.Size(217, 19);
-            this.restrictToProgramCheckBox.TabIndex = 2;
-            this.restrictToProgramCheckBox.Text = "Restrict rule to program";
-            this.restrictToProgramCheckBox.UseVisualStyleBackColor = true;
-            this.restrictToProgramCheckBox.CheckedChanged += new System.EventHandler(this.restrictToProgramCheckBox_CheckedChanged);
+            restrictToProgramCheckBox.AutoSize = true;
+            restrictToProgramCheckBox.Location = new Point(117, 223);
+            restrictToProgramCheckBox.Name = "restrictToProgramCheckBox";
+            restrictToProgramCheckBox.Size = new Size(194, 20);
+            restrictToProgramCheckBox.TabIndex = 2;
+            restrictToProgramCheckBox.Text = "Restrict rule to program";
+            restrictToProgramCheckBox.UseVisualStyleBackColor = true;
+            restrictToProgramCheckBox.CheckedChanged += restrictToProgramCheckBox_CheckedChanged;
             // 
             // portsTextBox
             // 
-            this.portsTextBox.Location = new System.Drawing.Point(117, 122);
-            this.portsTextBox.Name = "portsTextBox";
-            this.portsTextBox.Size = new System.Drawing.Size(300, 23);
-            this.portsTextBox.TabIndex = 0;
+            portsTextBox.Location = new Point(117, 130);
+            portsTextBox.Name = "portsTextBox";
+            portsTextBox.Size = new Size(300, 23);
+            portsTextBox.TabIndex = 0;
             // 
             // portsLabel
             // 
-            this.portsLabel.AutoSize = true;
-            this.portsLabel.Location = new System.Drawing.Point(117, 148);
-            this.portsLabel.Name = "portsLabel";
-            this.portsLabel.Size = new System.Drawing.Size(161, 15);
-            this.portsLabel.TabIndex = 1;
-            this.portsLabel.Text = "e.g., 80, 443 or 27015-27030";
+            portsLabel.AutoSize = true;
+            portsLabel.Location = new Point(117, 158);
+            portsLabel.Name = "portsLabel";
+            portsLabel.Size = new Size(203, 16);
+            portsLabel.TabIndex = 1;
+            portsLabel.Text = "e.g., 80, 443 or 27015-27030";
             // 
             // pnlGetProtocol
             // 
-            this.pnlGetProtocol.Controls.Add(this.bothProtocolRadioButton);
-            this.pnlGetProtocol.Controls.Add(this.udpRadioButton);
-            this.pnlGetProtocol.Controls.Add(this.tcpRadioButton);
-            this.pnlGetProtocol.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetProtocol.Name = "pnlGetProtocol";
-            this.pnlGetProtocol.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetProtocol.TabIndex = 3;
+            pnlGetProtocol.Controls.Add(bothProtocolRadioButton);
+            pnlGetProtocol.Controls.Add(udpRadioButton);
+            pnlGetProtocol.Controls.Add(tcpRadioButton);
+            pnlGetProtocol.Location = new Point(0, 62);
+            pnlGetProtocol.Name = "pnlGetProtocol";
+            pnlGetProtocol.Size = new Size(534, 363);
+            pnlGetProtocol.TabIndex = 3;
             // 
             // bothProtocolRadioButton
             // 
-            this.bothProtocolRadioButton.AutoSize = true;
-            this.bothProtocolRadioButton.Location = new System.Drawing.Point(230, 200);
-            this.bothProtocolRadioButton.Name = "bothProtocolRadioButton";
-            this.bothProtocolRadioButton.Size = new System.Drawing.Size(76, 19);
-            this.bothProtocolRadioButton.TabIndex = 2;
-            this.bothProtocolRadioButton.Text = "TCP & UDP";
-            this.bothProtocolRadioButton.UseVisualStyleBackColor = true;
+            bothProtocolRadioButton.AutoSize = true;
+            bothProtocolRadioButton.Location = new Point(230, 213);
+            bothProtocolRadioButton.Name = "bothProtocolRadioButton";
+            bothProtocolRadioButton.Size = new Size(81, 20);
+            bothProtocolRadioButton.TabIndex = 2;
+            bothProtocolRadioButton.Text = "TCP & UDP";
+            bothProtocolRadioButton.UseVisualStyleBackColor = true;
             // 
             // udpRadioButton
             // 
-            this.udpRadioButton.AutoSize = true;
-            this.udpRadioButton.Location = new System.Drawing.Point(230, 165);
-            this.udpRadioButton.Name = "udpRadioButton";
-            this.udpRadioButton.Size = new System.Drawing.Size(48, 19);
-            this.udpRadioButton.TabIndex = 1;
-            this.udpRadioButton.Text = "UDP";
-            this.udpRadioButton.UseVisualStyleBackColor = true;
+            udpRadioButton.AutoSize = true;
+            udpRadioButton.Location = new Point(230, 176);
+            udpRadioButton.Name = "udpRadioButton";
+            udpRadioButton.Size = new Size(46, 20);
+            udpRadioButton.TabIndex = 1;
+            udpRadioButton.Text = "UDP";
+            udpRadioButton.UseVisualStyleBackColor = true;
             // 
             // tcpRadioButton
             // 
-            this.tcpRadioButton.AutoSize = true;
-            this.tcpRadioButton.Checked = true;
-            this.tcpRadioButton.Location = new System.Drawing.Point(230, 130);
-            this.tcpRadioButton.Name = "tcpRadioButton";
-            this.tcpRadioButton.Size = new System.Drawing.Size(44, 19);
-            this.tcpRadioButton.TabIndex = 0;
-            this.tcpRadioButton.TabStop = true;
-            this.tcpRadioButton.Text = "TCP";
-            this.tcpRadioButton.UseVisualStyleBackColor = true;
+            tcpRadioButton.AutoSize = true;
+            tcpRadioButton.Checked = true;
+            tcpRadioButton.Location = new Point(230, 139);
+            tcpRadioButton.Name = "tcpRadioButton";
+            tcpRadioButton.Size = new Size(46, 20);
+            tcpRadioButton.TabIndex = 0;
+            tcpRadioButton.TabStop = true;
+            tcpRadioButton.Text = "TCP";
+            tcpRadioButton.UseVisualStyleBackColor = true;
             // 
             // pnlSummary
             // 
-            this.pnlSummary.Controls.Add(this.summaryLabel);
-            this.pnlSummary.Location = new System.Drawing.Point(0, 58);
-            this.pnlSummary.Name = "pnlSummary";
-            this.pnlSummary.Size = new System.Drawing.Size(534, 340);
-            this.pnlSummary.TabIndex = 4;
+            pnlSummary.Controls.Add(summaryLabel);
+            pnlSummary.Location = new Point(0, 62);
+            pnlSummary.Name = "pnlSummary";
+            pnlSummary.Size = new Size(534, 363);
+            pnlSummary.TabIndex = 4;
             // 
             // summaryLabel
             // 
-            this.summaryLabel.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.summaryLabel.Location = new System.Drawing.Point(23, 80);
-            this.summaryLabel.Name = "summaryLabel";
-            this.summaryLabel.Size = new System.Drawing.Size(489, 200);
-            this.summaryLabel.TabIndex = 0;
-            this.summaryLabel.Text = "Summary Text";
+            summaryLabel.Font = new Font("Segoe UI", 10F);
+            summaryLabel.Location = new Point(23, 85);
+            summaryLabel.Name = "summaryLabel";
+            summaryLabel.Size = new Size(489, 213);
+            summaryLabel.TabIndex = 0;
+            summaryLabel.Text = "Summary Text";
             // 
             // pnlGetName
             // 
-            this.pnlGetName.Controls.Add(this.ruleNameTextBox);
-            this.pnlGetName.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetName.Name = "pnlGetName";
-            this.pnlGetName.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetName.TabIndex = 5;
+            pnlGetName.Controls.Add(ruleNameTextBox);
+            pnlGetName.Location = new Point(0, 62);
+            pnlGetName.Name = "pnlGetName";
+            pnlGetName.Size = new Size(534, 363);
+            pnlGetName.TabIndex = 5;
             // 
             // ruleNameTextBox
             // 
-            this.ruleNameTextBox.Location = new System.Drawing.Point(117, 149);
-            this.ruleNameTextBox.Name = "ruleNameTextBox";
-            this.ruleNameTextBox.Size = new System.Drawing.Size(300, 23);
-            this.ruleNameTextBox.TabIndex = 0;
+            ruleNameTextBox.Location = new Point(117, 159);
+            ruleNameTextBox.Name = "ruleNameTextBox";
+            ruleNameTextBox.Size = new Size(300, 23);
+            ruleNameTextBox.TabIndex = 0;
             // 
             // bottomPanel
             // 
-            this.bottomPanel.Controls.Add(this.cancelButton);
-            this.bottomPanel.Controls.Add(this.nextButton);
-            this.bottomPanel.Controls.Add(this.backButton);
-            this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.bottomPanel.Location = new System.Drawing.Point(0, 401);
-            this.bottomPanel.Name = "bottomPanel";
-            this.bottomPanel.Size = new System.Drawing.Size(534, 60);
-            this.bottomPanel.TabIndex = 6;
+            bottomPanel.Controls.Add(cancelButton);
+            bottomPanel.Controls.Add(nextButton);
+            bottomPanel.Controls.Add(backButton);
+            bottomPanel.Dock = DockStyle.Bottom;
+            bottomPanel.Location = new Point(0, 428);
+            bottomPanel.Name = "bottomPanel";
+            bottomPanel.Size = new Size(534, 64);
+            bottomPanel.TabIndex = 6;
             // 
             // cancelButton
             // 
-            this.cancelButton.Location = new System.Drawing.Point(422, 12);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(100, 36);
-            this.cancelButton.TabIndex = 2;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            cancelButton.Location = new Point(422, 13);
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new Size(100, 38);
+            cancelButton.TabIndex = 2;
+            cancelButton.Text = "Cancel";
+            cancelButton.UseVisualStyleBackColor = true;
+            cancelButton.Click += cancelButton_Click;
             // 
             // nextButton
             // 
-            this.nextButton.Location = new System.Drawing.Point(316, 12);
-            this.nextButton.Name = "nextButton";
-            this.nextButton.Size = new System.Drawing.Size(100, 36);
-            this.nextButton.TabIndex = 1;
-            this.nextButton.Text = "Next";
-            this.nextButton.UseVisualStyleBackColor = true;
-            this.nextButton.Click += new System.EventHandler(this.nextButton_Click);
+            nextButton.Location = new Point(316, 13);
+            nextButton.Name = "nextButton";
+            nextButton.Size = new Size(100, 38);
+            nextButton.TabIndex = 1;
+            nextButton.Text = "Next";
+            nextButton.UseVisualStyleBackColor = true;
+            nextButton.Click += nextButton_Click;
             // 
             // backButton
             // 
-            this.backButton.Location = new System.Drawing.Point(210, 12);
-            this.backButton.Name = "backButton";
-            this.backButton.Size = new System.Drawing.Size(100, 36);
-            this.backButton.TabIndex = 0;
-            this.backButton.Text = "< Back";
-            this.backButton.UseVisualStyleBackColor = true;
-            this.backButton.Click += new System.EventHandler(this.backButton_Click);
+            backButton.Location = new Point(210, 13);
+            backButton.Name = "backButton";
+            backButton.Size = new Size(100, 38);
+            backButton.TabIndex = 0;
+            backButton.Text = "< Back";
+            backButton.UseVisualStyleBackColor = true;
+            backButton.Click += backButton_Click;
             // 
             // topPanel
             // 
-            this.topPanel.Controls.Add(this.mainHeaderLabel);
-            this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.topPanel.Location = new System.Drawing.Point(0, 0);
-            this.topPanel.Name = "topPanel";
-            this.topPanel.Size = new System.Drawing.Size(534, 55);
-            this.topPanel.TabIndex = 7;
+            topPanel.Controls.Add(mainHeaderLabel);
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Location = new Point(0, 0);
+            topPanel.Name = "topPanel";
+            topPanel.Size = new Size(534, 59);
+            topPanel.TabIndex = 7;
             // 
             // mainHeaderLabel
             // 
-            this.mainHeaderLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.mainHeaderLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.mainHeaderLabel.Location = new System.Drawing.Point(0, 0);
-            this.mainHeaderLabel.Name = "mainHeaderLabel";
-            this.mainHeaderLabel.Size = new System.Drawing.Size(534, 55);
-            this.mainHeaderLabel.TabIndex = 0;
-            this.mainHeaderLabel.Text = "Header Label";
-            this.mainHeaderLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            mainHeaderLabel.Dock = DockStyle.Fill;
+            mainHeaderLabel.Font = new Font("Segoe UI", 12F);
+            mainHeaderLabel.Location = new Point(0, 0);
+            mainHeaderLabel.Name = "mainHeaderLabel";
+            mainHeaderLabel.Size = new Size(534, 59);
+            mainHeaderLabel.TabIndex = 0;
+            mainHeaderLabel.Text = "Header Label";
+            mainHeaderLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // pnlGetAction
             // 
-            this.pnlGetAction.Controls.Add(this.blockActionRadioButton);
-            this.pnlGetAction.Controls.Add(this.allowActionRadioButton);
-            this.pnlGetAction.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetAction.Name = "pnlGetAction";
-            this.pnlGetAction.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetAction.TabIndex = 8;
+            pnlGetAction.Controls.Add(blockActionRadioButton);
+            pnlGetAction.Controls.Add(allowActionRadioButton);
+            pnlGetAction.Location = new Point(0, 62);
+            pnlGetAction.Name = "pnlGetAction";
+            pnlGetAction.Size = new Size(534, 363);
+            pnlGetAction.TabIndex = 8;
             // 
             // blockActionRadioButton
             // 
-            this.blockActionRadioButton.AutoSize = true;
-            this.blockActionRadioButton.Location = new System.Drawing.Point(230, 182);
-            this.blockActionRadioButton.Name = "blockActionRadioButton";
-            this.blockActionRadioButton.Size = new System.Drawing.Size(53, 19);
-            this.blockActionRadioButton.TabIndex = 1;
-            this.blockActionRadioButton.Text = "Block";
-            this.blockActionRadioButton.UseVisualStyleBackColor = true;
+            blockActionRadioButton.AutoSize = true;
+            blockActionRadioButton.Location = new Point(230, 194);
+            blockActionRadioButton.Name = "blockActionRadioButton";
+            blockActionRadioButton.Size = new Size(60, 20);
+            blockActionRadioButton.TabIndex = 1;
+            blockActionRadioButton.Text = "Block";
+            blockActionRadioButton.UseVisualStyleBackColor = true;
             // 
             // allowActionRadioButton
             // 
-            this.allowActionRadioButton.AutoSize = true;
-            this.allowActionRadioButton.Checked = true;
-            this.allowActionRadioButton.Location = new System.Drawing.Point(230, 147);
-            this.allowActionRadioButton.Name = "allowActionRadioButton";
-            this.allowActionRadioButton.Size = new System.Drawing.Size(54, 19);
-            this.allowActionRadioButton.TabIndex = 0;
-            this.allowActionRadioButton.TabStop = true;
-            this.allowActionRadioButton.Text = "Allow";
-            this.allowActionRadioButton.UseVisualStyleBackColor = true;
+            allowActionRadioButton.AutoSize = true;
+            allowActionRadioButton.Checked = true;
+            allowActionRadioButton.Location = new Point(230, 157);
+            allowActionRadioButton.Name = "allowActionRadioButton";
+            allowActionRadioButton.Size = new Size(60, 20);
+            allowActionRadioButton.TabIndex = 0;
+            allowActionRadioButton.TabStop = true;
+            allowActionRadioButton.Text = "Allow";
+            allowActionRadioButton.UseVisualStyleBackColor = true;
             // 
             // pnlGetDirection
             // 
-            this.pnlGetDirection.Controls.Add(this.bothDirRadioButton);
-            this.pnlGetDirection.Controls.Add(this.inboundRadioButton);
-            this.pnlGetDirection.Controls.Add(this.outboundRadioButton);
-            this.pnlGetDirection.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetDirection.Name = "pnlGetDirection";
-            this.pnlGetDirection.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetDirection.TabIndex = 9;
+            pnlGetDirection.Controls.Add(bothDirRadioButton);
+            pnlGetDirection.Controls.Add(inboundRadioButton);
+            pnlGetDirection.Controls.Add(outboundRadioButton);
+            pnlGetDirection.Location = new Point(0, 62);
+            pnlGetDirection.Name = "pnlGetDirection";
+            pnlGetDirection.Size = new Size(534, 363);
+            pnlGetDirection.TabIndex = 9;
             // 
             // bothDirRadioButton
             // 
-            this.bothDirRadioButton.AutoSize = true;
-            this.bothDirRadioButton.Location = new System.Drawing.Point(230, 200);
-            this.bothDirRadioButton.Name = "bothDirRadioButton";
-            this.bothDirRadioButton.Size = new System.Drawing.Size(50, 19);
-            this.bothDirRadioButton.TabIndex = 2;
-            this.bothDirRadioButton.Text = "Both";
-            this.bothDirRadioButton.UseVisualStyleBackColor = true;
+            bothDirRadioButton.AutoSize = true;
+            bothDirRadioButton.Location = new Point(230, 213);
+            bothDirRadioButton.Name = "bothDirRadioButton";
+            bothDirRadioButton.Size = new Size(53, 20);
+            bothDirRadioButton.TabIndex = 2;
+            bothDirRadioButton.Text = "Both";
+            bothDirRadioButton.UseVisualStyleBackColor = true;
             // 
             // inboundRadioButton
             // 
-            this.inboundRadioButton.AutoSize = true;
-            this.inboundRadioButton.Location = new System.Drawing.Point(230, 165);
-            this.inboundRadioButton.Name = "inboundRadioButton";
-            this.inboundRadioButton.Size = new System.Drawing.Size(70, 19);
-            this.inboundRadioButton.TabIndex = 1;
-            this.inboundRadioButton.Text = "Inbound";
-            this.inboundRadioButton.UseVisualStyleBackColor = true;
+            inboundRadioButton.AutoSize = true;
+            inboundRadioButton.Location = new Point(230, 176);
+            inboundRadioButton.Name = "inboundRadioButton";
+            inboundRadioButton.Size = new Size(74, 20);
+            inboundRadioButton.TabIndex = 1;
+            inboundRadioButton.Text = "Inbound";
+            inboundRadioButton.UseVisualStyleBackColor = true;
             // 
             // outboundRadioButton
             // 
-            this.outboundRadioButton.AutoSize = true;
-            this.outboundRadioButton.Checked = true;
-            this.outboundRadioButton.Location = new System.Drawing.Point(230, 130);
-            this.outboundRadioButton.Name = "outboundRadioButton";
-            this.outboundRadioButton.Size = new System.Drawing.Size(78, 19);
-            this.outboundRadioButton.TabIndex = 0;
-            this.outboundRadioButton.TabStop = true;
-            this.outboundRadioButton.Text = "Outbound";
-            this.outboundRadioButton.UseVisualStyleBackColor = true;
+            outboundRadioButton.AutoSize = true;
+            outboundRadioButton.Checked = true;
+            outboundRadioButton.Location = new Point(230, 139);
+            outboundRadioButton.Name = "outboundRadioButton";
+            outboundRadioButton.Size = new Size(81, 20);
+            outboundRadioButton.TabIndex = 0;
+            outboundRadioButton.TabStop = true;
+            outboundRadioButton.Text = "Outbound";
+            outboundRadioButton.UseVisualStyleBackColor = true;
             // 
             // pnlGetService
             // 
-            this.pnlGetService.Controls.Add(this.serviceNameTextBox);
-            this.pnlGetService.Controls.Add(this.serviceListBox);
-            this.pnlGetService.Controls.Add(this.serviceInstructionLabel);
-            this.pnlGetService.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetService.Name = "pnlGetService";
-            this.pnlGetService.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetService.TabIndex = 10;
+            pnlGetService.Controls.Add(serviceNameTextBox);
+            pnlGetService.Controls.Add(serviceListBox);
+            pnlGetService.Controls.Add(serviceInstructionLabel);
+            pnlGetService.Location = new Point(0, 62);
+            pnlGetService.Name = "pnlGetService";
+            pnlGetService.Size = new Size(534, 363);
+            pnlGetService.TabIndex = 10;
             // 
             // serviceNameTextBox
             // 
-            this.serviceNameTextBox.Location = new System.Drawing.Point(23, 290);
-            this.serviceNameTextBox.Name = "serviceNameTextBox";
-            this.serviceNameTextBox.Size = new System.Drawing.Size(489, 23);
-            this.serviceNameTextBox.TabIndex = 2;
-            this.serviceNameTextBox.PlaceholderText = "Or enter service name (e.g. DiagTrack)";
+            serviceNameTextBox.Location = new Point(23, 309);
+            serviceNameTextBox.Name = "serviceNameTextBox";
+            serviceNameTextBox.PlaceholderText = "Or enter service name (e.g. DiagTrack)";
+            serviceNameTextBox.Size = new Size(489, 23);
+            serviceNameTextBox.TabIndex = 2;
             // 
             // serviceListBox
             // 
-            this.serviceListBox.FormattingEnabled = true;
-            this.serviceListBox.ItemHeight = 15;
-            this.serviceListBox.Location = new System.Drawing.Point(23, 40);
-            this.serviceListBox.Name = "serviceListBox";
-            this.serviceListBox.Size = new System.Drawing.Size(489, 244);
-            this.serviceListBox.TabIndex = 1;
+            serviceListBox.FormattingEnabled = true;
+            serviceListBox.Location = new Point(23, 43);
+            serviceListBox.Name = "serviceListBox";
+            serviceListBox.Size = new Size(489, 260);
+            serviceListBox.TabIndex = 1;
             // 
             // serviceInstructionLabel
             // 
-            this.serviceInstructionLabel.AutoSize = true;
-            this.serviceInstructionLabel.Location = new System.Drawing.Point(23, 12);
-            this.serviceInstructionLabel.Name = "serviceInstructionLabel";
-            this.serviceInstructionLabel.Size = new System.Drawing.Size(306, 15);
-            this.serviceInstructionLabel.TabIndex = 0;
-            this.serviceInstructionLabel.Text = "Select a service from the list below, or enter its name.";
+            serviceInstructionLabel.AutoSize = true;
+            serviceInstructionLabel.Location = new Point(23, 13);
+            serviceInstructionLabel.Name = "serviceInstructionLabel";
+            serviceInstructionLabel.Size = new Size(399, 16);
+            serviceInstructionLabel.TabIndex = 0;
+            serviceInstructionLabel.Text = "Select a service from the list below, or enter its name.";
             // 
             // pnlGetFileShareIP
             // 
-            this.pnlGetFileShareIP.Controls.Add(this.fileShareIpTextBox);
-            this.pnlGetFileShareIP.Controls.Add(this.fileShareWarningLabel);
-            this.pnlGetFileShareIP.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetFileShareIP.Name = "pnlGetFileShareIP";
-            this.pnlGetFileShareIP.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetFileShareIP.TabIndex = 11;
+            pnlGetFileShareIP.Controls.Add(fileShareIpTextBox);
+            pnlGetFileShareIP.Controls.Add(fileShareWarningLabel);
+            pnlGetFileShareIP.Location = new Point(0, 62);
+            pnlGetFileShareIP.Name = "pnlGetFileShareIP";
+            pnlGetFileShareIP.Size = new Size(534, 363);
+            pnlGetFileShareIP.TabIndex = 11;
             // 
             // fileShareIpTextBox
             // 
-            this.fileShareIpTextBox.Location = new System.Drawing.Point(117, 180);
-            this.fileShareIpTextBox.Name = "fileShareIpTextBox";
-            this.fileShareIpTextBox.PlaceholderText = "e.g., 192.168.1.50";
-            this.fileShareIpTextBox.Size = new System.Drawing.Size(300, 23);
-            this.fileShareIpTextBox.TabIndex = 1;
+            fileShareIpTextBox.Location = new Point(117, 192);
+            fileShareIpTextBox.Name = "fileShareIpTextBox";
+            fileShareIpTextBox.PlaceholderText = "e.g., 192.168.1.50";
+            fileShareIpTextBox.Size = new Size(300, 23);
+            fileShareIpTextBox.TabIndex = 1;
             // 
             // fileShareWarningLabel
             // 
-            this.fileShareWarningLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.fileShareWarningLabel.ForeColor = System.Drawing.Color.Red;
-            this.fileShareWarningLabel.Location = new System.Drawing.Point(23, 60);
-            this.fileShareWarningLabel.Name = "fileShareWarningLabel";
-            this.fileShareWarningLabel.Size = new System.Drawing.Size(489, 84);
-            this.fileShareWarningLabel.TabIndex = 0;
-            this.fileShareWarningLabel.Text = "Warning: Opening port 445 for file sharing can be a security risk. Ensure you tr" +
-    "ust the computer at the IP address you are about to enter and that your network" +
-    " is secure.";
-            this.fileShareWarningLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            fileShareWarningLabel.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            fileShareWarningLabel.ForeColor = Color.Red;
+            fileShareWarningLabel.Location = new Point(23, 64);
+            fileShareWarningLabel.Name = "fileShareWarningLabel";
+            fileShareWarningLabel.Size = new Size(489, 90);
+            fileShareWarningLabel.TabIndex = 0;
+            fileShareWarningLabel.Text = "Warning: Opening port 445 for file sharing can be a security risk. Ensure you trust the computer at the IP address you are about to enter and that your network is secure.";
+            fileShareWarningLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // pnlGetBlockDeviceIP
             // 
-            this.pnlGetBlockDeviceIP.Controls.Add(this.blockDeviceIpTextBox);
-            this.pnlGetBlockDeviceIP.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetBlockDeviceIP.Name = "pnlGetBlockDeviceIP";
-            this.pnlGetBlockDeviceIP.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetBlockDeviceIP.TabIndex = 12;
+            pnlGetBlockDeviceIP.Controls.Add(blockDeviceIpTextBox);
+            pnlGetBlockDeviceIP.Location = new Point(0, 62);
+            pnlGetBlockDeviceIP.Name = "pnlGetBlockDeviceIP";
+            pnlGetBlockDeviceIP.Size = new Size(534, 363);
+            pnlGetBlockDeviceIP.TabIndex = 12;
             // 
             // blockDeviceIpTextBox
             // 
-            this.blockDeviceIpTextBox.Location = new System.Drawing.Point(117, 149);
-            this.blockDeviceIpTextBox.Name = "blockDeviceIpTextBox";
-            this.blockDeviceIpTextBox.PlaceholderText = "e.g., 192.168.1.101";
-            this.blockDeviceIpTextBox.Size = new System.Drawing.Size(300, 23);
-            this.blockDeviceIpTextBox.TabIndex = 0;
+            blockDeviceIpTextBox.Location = new Point(117, 159);
+            blockDeviceIpTextBox.Name = "blockDeviceIpTextBox";
+            blockDeviceIpTextBox.PlaceholderText = "e.g., 192.168.1.101";
+            blockDeviceIpTextBox.Size = new Size(300, 23);
+            blockDeviceIpTextBox.TabIndex = 0;
             // 
             // pnlGetRestrictApp
             // 
-            this.pnlGetRestrictApp.Controls.Add(this.restrictAppPathTextBox);
-            this.pnlGetRestrictApp.Controls.Add(this.restrictAppBrowseButton);
-            this.pnlGetRestrictApp.Location = new System.Drawing.Point(0, 58);
-            this.pnlGetRestrictApp.Name = "pnlGetRestrictApp";
-            this.pnlGetRestrictApp.Size = new System.Drawing.Size(534, 340);
-            this.pnlGetRestrictApp.TabIndex = 13;
+            pnlGetRestrictApp.Controls.Add(restrictAppPathTextBox);
+            pnlGetRestrictApp.Controls.Add(restrictAppBrowseButton);
+            pnlGetRestrictApp.Location = new Point(0, 62);
+            pnlGetRestrictApp.Name = "pnlGetRestrictApp";
+            pnlGetRestrictApp.Size = new Size(534, 363);
+            pnlGetRestrictApp.TabIndex = 13;
             // 
             // restrictAppPathTextBox
             // 
-            this.restrictAppPathTextBox.Location = new System.Drawing.Point(23, 149);
-            this.restrictAppPathTextBox.Name = "restrictAppPathTextBox";
-            this.restrictAppPathTextBox.PlaceholderText = "Path to application executable";
-            this.restrictAppPathTextBox.Size = new System.Drawing.Size(393, 23);
-            this.restrictAppPathTextBox.TabIndex = 1;
+            restrictAppPathTextBox.Location = new Point(23, 159);
+            restrictAppPathTextBox.Name = "restrictAppPathTextBox";
+            restrictAppPathTextBox.PlaceholderText = "Path to application executable";
+            restrictAppPathTextBox.Size = new Size(393, 23);
+            restrictAppPathTextBox.TabIndex = 1;
             // 
             // restrictAppBrowseButton
             // 
-            this.restrictAppBrowseButton.Location = new System.Drawing.Point(422, 149);
-            this.restrictAppBrowseButton.Name = "restrictAppBrowseButton";
-            this.restrictAppBrowseButton.Size = new System.Drawing.Size(90, 23);
-            this.restrictAppBrowseButton.TabIndex = 2;
-            this.restrictAppBrowseButton.Text = "Browse...";
-            this.restrictAppBrowseButton.UseVisualStyleBackColor = true;
-            this.restrictAppBrowseButton.Click += new System.EventHandler(this.restrictAppBrowseButton_Click);
+            restrictAppBrowseButton.Location = new Point(422, 159);
+            restrictAppBrowseButton.Name = "restrictAppBrowseButton";
+            restrictAppBrowseButton.Size = new Size(90, 25);
+            restrictAppBrowseButton.TabIndex = 2;
+            restrictAppBrowseButton.Text = "Browse...";
+            restrictAppBrowseButton.UseVisualStyleBackColor = true;
+            restrictAppBrowseButton.Click += restrictAppBrowseButton_Click;
             // 
             // RuleWizardForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(534, 461);
-            this.Controls.Add(this.topPanel);
-            this.Controls.Add(this.bottomPanel);
-            this.Controls.Add(this.pnlGetFolder);
-            this.Controls.Add(this.pnlSelection);
-            this.Controls.Add(this.pnlGetRestrictApp);
-            this.Controls.Add(this.pnlGetBlockDeviceIP);
-            this.Controls.Add(this.pnlGetFileShareIP);
-            this.Controls.Add(this.pnlGetService);
-            this.Controls.Add(this.pnlGetName);
-            this.Controls.Add(this.pnlSummary);
-            this.Controls.Add(this.pnlGetProtocol);
-            this.Controls.Add(this.pnlGetPorts);
-            this.Controls.Add(this.pnlGetProgram);
-            this.Controls.Add(this.pnlGetAction);
-            this.Controls.Add(this.pnlGetDirection);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "RuleWizardForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Create New Rule";
-            this.pnlSelection.ResumeLayout(false);
-            this.pnlGetProgram.ResumeLayout(false);
-            this.pnlGetProgram.PerformLayout();
-            this.pnlGetFolder.ResumeLayout(false);
-            this.pnlGetFolder.PerformLayout();
-            this.pnlGetPorts.ResumeLayout(false);
-            this.pnlGetPorts.PerformLayout();
-            this.pnlGetProtocol.ResumeLayout(false);
-            this.pnlGetProtocol.PerformLayout();
-            this.pnlSummary.ResumeLayout(false);
-            this.pnlGetName.ResumeLayout(false);
-            this.pnlGetName.PerformLayout();
-            this.bottomPanel.ResumeLayout(false);
-            this.topPanel.ResumeLayout(false);
-            this.pnlGetAction.ResumeLayout(false);
-            this.pnlGetAction.PerformLayout();
-            this.pnlGetDirection.ResumeLayout(false);
-            this.pnlGetDirection.PerformLayout();
-            this.pnlGetService.ResumeLayout(false);
-            this.pnlGetService.PerformLayout();
-            this.pnlGetFileShareIP.ResumeLayout(false);
-            this.pnlGetFileShareIP.PerformLayout();
-            this.pnlGetBlockDeviceIP.ResumeLayout(false);
-            this.pnlGetBlockDeviceIP.PerformLayout();
-            this.pnlGetRestrictApp.ResumeLayout(false);
-            this.pnlGetRestrictApp.PerformLayout();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            CancelButton = cancelButton;
+            ClientSize = new Size(534, 492);
+            Controls.Add(topPanel);
+            Controls.Add(bottomPanel);
+            Controls.Add(pnlGetFolder);
+            Controls.Add(pnlSelection);
+            Controls.Add(pnlGetRestrictApp);
+            Controls.Add(pnlGetBlockDeviceIP);
+            Controls.Add(pnlGetFileShareIP);
+            Controls.Add(pnlGetService);
+            Controls.Add(pnlGetName);
+            Controls.Add(pnlSummary);
+            Controls.Add(pnlGetProtocol);
+            Controls.Add(pnlGetPorts);
+            Controls.Add(pnlGetProgram);
+            Controls.Add(pnlGetAction);
+            Controls.Add(pnlGetDirection);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "RuleWizardForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Create New Rule";
+            pnlSelection.ResumeLayout(false);
+            pnlGetProgram.ResumeLayout(false);
+            pnlGetProgram.PerformLayout();
+            pnlGetFolder.ResumeLayout(false);
+            pnlGetFolder.PerformLayout();
+            pnlGetPorts.ResumeLayout(false);
+            pnlGetPorts.PerformLayout();
+            pnlGetProtocol.ResumeLayout(false);
+            pnlGetProtocol.PerformLayout();
+            pnlSummary.ResumeLayout(false);
+            pnlGetName.ResumeLayout(false);
+            pnlGetName.PerformLayout();
+            bottomPanel.ResumeLayout(false);
+            topPanel.ResumeLayout(false);
+            pnlGetAction.ResumeLayout(false);
+            pnlGetAction.PerformLayout();
+            pnlGetDirection.ResumeLayout(false);
+            pnlGetDirection.PerformLayout();
+            pnlGetService.ResumeLayout(false);
+            pnlGetService.PerformLayout();
+            pnlGetFileShareIP.ResumeLayout(false);
+            pnlGetFileShareIP.PerformLayout();
+            pnlGetBlockDeviceIP.ResumeLayout(false);
+            pnlGetBlockDeviceIP.PerformLayout();
+            pnlGetRestrictApp.ResumeLayout(false);
+            pnlGetRestrictApp.PerformLayout();
+            ResumeLayout(false);
 
         }
 

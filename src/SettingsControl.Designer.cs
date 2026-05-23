@@ -63,10 +63,10 @@ namespace MinimalFirewall
             // 
             deleteAllRulesButton.FlatAppearance.BorderSize = 0;
             deleteAllRulesButton.FlatStyle = FlatStyle.Flat;
-            deleteAllRulesButton.Location = new Point(245, 470);
+            deleteAllRulesButton.Location = new Point(245, 501);
             deleteAllRulesButton.Margin = new Padding(4, 3, 4, 3);
             deleteAllRulesButton.Name = "deleteAllRulesButton";
-            deleteAllRulesButton.Size = new Size(210, 28);
+            deleteAllRulesButton.Size = new Size(210, 30);
             deleteAllRulesButton.TabIndex = 25;
             deleteAllRulesButton.Text = "Delete all Minimal Firewall rules";
             deleteAllRulesButton.UseVisualStyleBackColor = true;
@@ -76,10 +76,10 @@ namespace MinimalFirewall
             // 
             revertFirewallButton.FlatAppearance.BorderSize = 0;
             revertFirewallButton.FlatStyle = FlatStyle.Flat;
-            revertFirewallButton.Location = new Point(465, 470);
+            revertFirewallButton.Location = new Point(465, 501);
             revertFirewallButton.Margin = new Padding(4, 3, 4, 3);
             revertFirewallButton.Name = "revertFirewallButton";
-            revertFirewallButton.Size = new Size(210, 28);
+            revertFirewallButton.Size = new Size(210, 30);
             revertFirewallButton.TabIndex = 26;
             revertFirewallButton.Text = "Revert Windows Firewall";
             revertFirewallButton.UseVisualStyleBackColor = true;
@@ -88,7 +88,7 @@ namespace MinimalFirewall
             // auditAlertsSwitch
             // 
             auditAlertsSwitch.AutoSize = true;
-            auditAlertsSwitch.Location = new Point(306, 115);
+            auditAlertsSwitch.Location = new Point(306, 123);
             auditAlertsSwitch.Margin = new Padding(4, 3, 4, 3);
             auditAlertsSwitch.Name = "auditAlertsSwitch";
             auditAlertsSwitch.Size = new Size(201, 20);
@@ -100,10 +100,10 @@ namespace MinimalFirewall
             // 
             managePublishersButton.FlatAppearance.BorderSize = 0;
             managePublishersButton.FlatStyle = FlatStyle.Flat;
-            managePublishersButton.Location = new Point(306, 282);
+            managePublishersButton.Location = new Point(306, 301);
             managePublishersButton.Margin = new Padding(4, 3, 4, 3);
             managePublishersButton.Name = "managePublishersButton";
-            managePublishersButton.Size = new Size(225, 28);
+            managePublishersButton.Size = new Size(225, 30);
             managePublishersButton.TabIndex = 23;
             managePublishersButton.Text = "Manage Trusted Publishers";
             managePublishersButton.UseVisualStyleBackColor = true;
@@ -112,7 +112,7 @@ namespace MinimalFirewall
             // autoAllowWhitelistedPublishersCheck
             // 
             autoAllowWhitelistedPublishersCheck.AutoSize = true;
-            autoAllowWhitelistedPublishersCheck.Location = new Point(24, 285);
+            autoAllowWhitelistedPublishersCheck.Location = new Point(24, 304);
             autoAllowWhitelistedPublishersCheck.Margin = new Padding(4, 3, 4, 3);
             autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
             autoAllowWhitelistedPublishersCheck.Size = new Size(229, 20);
@@ -123,7 +123,7 @@ namespace MinimalFirewall
             // autoAllowSystemSignedAppsCheck
             // 
             autoAllowSystemSignedAppsCheck.AutoSize = true;
-            autoAllowSystemSignedAppsCheck.Location = new Point(24, 320);
+            autoAllowSystemSignedAppsCheck.Location = new Point(24, 341);
             autoAllowSystemSignedAppsCheck.Margin = new Padding(4, 3, 4, 3);
             autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
             autoAllowSystemSignedAppsCheck.Size = new Size(264, 20);
@@ -135,10 +135,10 @@ namespace MinimalFirewall
             // 
             viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
             viewTrustedCertsButton.FlatStyle = FlatStyle.Flat;
-            viewTrustedCertsButton.Location = new Point(306, 317);
+            viewTrustedCertsButton.Location = new Point(306, 338);
             viewTrustedCertsButton.Margin = new Padding(4, 3, 4, 3);
             viewTrustedCertsButton.Name = "viewTrustedCertsButton";
-            viewTrustedCertsButton.Size = new Size(225, 28);
+            viewTrustedCertsButton.Size = new Size(225, 30);
             viewTrustedCertsButton.TabIndex = 34;
             viewTrustedCertsButton.Text = "View Trusted CAs...";
             viewTrustedCertsButton.UseVisualStyleBackColor = true;
@@ -148,10 +148,10 @@ namespace MinimalFirewall
             // 
             excludedFoldersButton.FlatAppearance.BorderSize = 0;
             excludedFoldersButton.FlatStyle = FlatStyle.Flat;
-            excludedFoldersButton.Location = new Point(24, 355);
+            excludedFoldersButton.Location = new Point(24, 379);
             excludedFoldersButton.Margin = new Padding(4, 3, 4, 3);
             excludedFoldersButton.Name = "excludedFoldersButton";
-            excludedFoldersButton.Size = new Size(225, 28);
+            excludedFoldersButton.Size = new Size(225, 30);
             excludedFoldersButton.TabIndex = 35;
             excludedFoldersButton.Text = "Auto-Allow Exclusions";
             excludedFoldersButton.UseVisualStyleBackColor = true;
@@ -160,7 +160,7 @@ namespace MinimalFirewall
             // showAppIconsSwitch
             // 
             showAppIconsSwitch.AutoSize = true;
-            showAppIconsSwitch.Location = new Point(306, 80);
+            showAppIconsSwitch.Location = new Point(306, 85);
             showAppIconsSwitch.Margin = new Padding(4, 3, 4, 3);
             showAppIconsSwitch.Name = "showAppIconsSwitch";
             showAppIconsSwitch.Size = new Size(180, 20);
@@ -172,7 +172,7 @@ namespace MinimalFirewall
             // trafficMonitorSwitch
             // 
             trafficMonitorSwitch.AutoSize = true;
-            trafficMonitorSwitch.Location = new Point(306, 45);
+            trafficMonitorSwitch.Location = new Point(306, 48);
             trafficMonitorSwitch.Margin = new Padding(4, 3, 4, 3);
             trafficMonitorSwitch.Name = "trafficMonitorSwitch";
             trafficMonitorSwitch.Size = new Size(187, 20);
@@ -184,7 +184,7 @@ namespace MinimalFirewall
             // autoRefreshLabel1
             // 
             autoRefreshLabel1.AutoSize = true;
-            autoRefreshLabel1.Location = new Point(24, 224);
+            autoRefreshLabel1.Location = new Point(24, 239);
             autoRefreshLabel1.Margin = new Padding(4, 0, 4, 0);
             autoRefreshLabel1.Name = "autoRefreshLabel1";
             autoRefreshLabel1.Size = new Size(133, 16);
@@ -194,7 +194,7 @@ namespace MinimalFirewall
             // autoRefreshLabel2
             // 
             autoRefreshLabel2.AutoSize = true;
-            autoRefreshLabel2.Location = new Point(230, 224);
+            autoRefreshLabel2.Location = new Point(230, 239);
             autoRefreshLabel2.Margin = new Padding(4, 0, 4, 0);
             autoRefreshLabel2.Name = "autoRefreshLabel2";
             autoRefreshLabel2.Size = new Size(56, 16);
@@ -206,10 +206,10 @@ namespace MinimalFirewall
             coffeePanel.BackColor = Color.Transparent;
             coffeePanel.Controls.Add(coffeePictureBox);
             coffeePanel.Cursor = Cursors.Hand;
-            coffeePanel.Location = new Point(18, 645);
+            coffeePanel.Location = new Point(18, 688);
             coffeePanel.Margin = new Padding(4, 3, 4, 3);
             coffeePanel.Name = "coffeePanel";
-            coffeePanel.Size = new Size(380, 60);
+            coffeePanel.Size = new Size(380, 64);
             coffeePanel.TabIndex = 17;
             coffeePanel.Click += CoffeeLink_Click;
             // 
@@ -219,7 +219,7 @@ namespace MinimalFirewall
             coffeePictureBox.Location = new Point(0, 0);
             coffeePictureBox.Margin = new Padding(4, 3, 4, 3);
             coffeePictureBox.Name = "coffeePictureBox";
-            coffeePictureBox.Size = new Size(54, 54);
+            coffeePictureBox.Size = new Size(54, 58);
             coffeePictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             coffeePictureBox.TabIndex = 13;
             coffeePictureBox.TabStop = false;
@@ -231,7 +231,7 @@ namespace MinimalFirewall
             // 
             coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
             coffeeLinkLabel.AutoSize = true;
-            coffeeLinkLabel.Location = new Point(85, 665);
+            coffeeLinkLabel.Location = new Point(85, 709);
             coffeeLinkLabel.Margin = new Padding(4, 0, 4, 0);
             coffeeLinkLabel.MaximumSize = new Size(320, 0);
             coffeeLinkLabel.Name = "coffeeLinkLabel";
@@ -246,7 +246,7 @@ namespace MinimalFirewall
             // 
             versionLabel.AutoSize = true;
             versionLabel.Font = new Font("Segoe UI", 9F);
-            versionLabel.Location = new Point(450, 605);
+            versionLabel.Location = new Point(450, 645);
             versionLabel.Margin = new Padding(4, 0, 4, 0);
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(45, 15);
@@ -257,10 +257,10 @@ namespace MinimalFirewall
             // 
             checkForUpdatesButton.FlatAppearance.BorderSize = 0;
             checkForUpdatesButton.FlatStyle = FlatStyle.Flat;
-            checkForUpdatesButton.Location = new Point(245, 560);
+            checkForUpdatesButton.Location = new Point(245, 597);
             checkForUpdatesButton.Margin = new Padding(4, 3, 4, 3);
             checkForUpdatesButton.Name = "checkForUpdatesButton";
-            checkForUpdatesButton.Size = new Size(210, 28);
+            checkForUpdatesButton.Size = new Size(210, 30);
             checkForUpdatesButton.TabIndex = 11;
             checkForUpdatesButton.Text = "Check for Updates";
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
@@ -269,10 +269,10 @@ namespace MinimalFirewall
             // 
             openFirewallButton.FlatAppearance.BorderSize = 0;
             openFirewallButton.FlatStyle = FlatStyle.Flat;
-            openFirewallButton.Location = new Point(24, 425);
+            openFirewallButton.Location = new Point(24, 453);
             openFirewallButton.Margin = new Padding(4, 3, 4, 3);
             openFirewallButton.Name = "openFirewallButton";
-            openFirewallButton.Size = new Size(210, 28);
+            openFirewallButton.Size = new Size(210, 30);
             openFirewallButton.TabIndex = 10;
             openFirewallButton.Text = "Open Windows Firewall";
             openFirewallButton.Click += OpenFirewallButton_Click;
@@ -281,10 +281,10 @@ namespace MinimalFirewall
             // 
             openAppDataButton.FlatAppearance.BorderSize = 0;
             openAppDataButton.FlatStyle = FlatStyle.Flat;
-            openAppDataButton.Location = new Point(245, 425);
+            openAppDataButton.Location = new Point(245, 453);
             openAppDataButton.Margin = new Padding(4, 3, 4, 3);
             openAppDataButton.Name = "openAppDataButton";
-            openAppDataButton.Size = new Size(210, 28);
+            openAppDataButton.Size = new Size(210, 30);
             openAppDataButton.TabIndex = 32;
             openAppDataButton.Text = "Open %LocalAppData%";
             openAppDataButton.UseVisualStyleBackColor = true;
@@ -293,7 +293,7 @@ namespace MinimalFirewall
             // forumLink
             // 
             forumLink.AutoSize = true;
-            forumLink.Location = new Point(24, 605);
+            forumLink.Location = new Point(24, 645);
             forumLink.Margin = new Padding(4, 0, 4, 0);
             forumLink.Name = "forumLink";
             forumLink.Size = new Size(140, 16);
@@ -306,7 +306,7 @@ namespace MinimalFirewall
             // reportProblemLink
             // 
             reportProblemLink.AutoSize = true;
-            reportProblemLink.Location = new Point(160, 605);
+            reportProblemLink.Location = new Point(160, 645);
             reportProblemLink.Margin = new Padding(4, 0, 4, 0);
             reportProblemLink.Name = "reportProblemLink";
             reportProblemLink.Size = new Size(119, 16);
@@ -319,7 +319,7 @@ namespace MinimalFirewall
             // helpLink
             // 
             helpLink.AutoSize = true;
-            helpLink.Location = new Point(290, 605);
+            helpLink.Location = new Point(290, 645);
             helpLink.Margin = new Padding(4, 0, 4, 0);
             helpLink.Name = "helpLink";
             helpLink.Size = new Size(147, 16);
@@ -331,7 +331,7 @@ namespace MinimalFirewall
             // 
             // autoRefreshTextBox
             // 
-            autoRefreshTextBox.Location = new Point(166, 220);
+            autoRefreshTextBox.Location = new Point(166, 235);
             autoRefreshTextBox.Margin = new Padding(4, 3, 4, 3);
             autoRefreshTextBox.MaxLength = 3;
             autoRefreshTextBox.Name = "autoRefreshTextBox";
@@ -342,7 +342,7 @@ namespace MinimalFirewall
             // loggingSwitch
             // 
             loggingSwitch.AutoSize = true;
-            loggingSwitch.Location = new Point(24, 185);
+            loggingSwitch.Location = new Point(24, 197);
             loggingSwitch.Margin = new Padding(4, 3, 4, 3);
             loggingSwitch.Name = "loggingSwitch";
             loggingSwitch.Size = new Size(124, 20);
@@ -353,7 +353,7 @@ namespace MinimalFirewall
             // popupsSwitch
             // 
             popupsSwitch.AutoSize = true;
-            popupsSwitch.Location = new Point(24, 150);
+            popupsSwitch.Location = new Point(24, 160);
             popupsSwitch.Margin = new Padding(4, 3, 4, 3);
             popupsSwitch.Name = "popupsSwitch";
             popupsSwitch.Size = new Size(215, 20);
@@ -365,7 +365,7 @@ namespace MinimalFirewall
             // darkModeSwitch
             // 
             darkModeSwitch.AutoSize = true;
-            darkModeSwitch.Location = new Point(24, 115);
+            darkModeSwitch.Location = new Point(24, 123);
             darkModeSwitch.Margin = new Padding(4, 3, 4, 3);
             darkModeSwitch.Name = "darkModeSwitch";
             darkModeSwitch.Size = new Size(89, 20);
@@ -377,7 +377,7 @@ namespace MinimalFirewall
             // autoThemeSwitch
             // 
             autoThemeSwitch.AutoSize = true;
-            autoThemeSwitch.Location = new Point(127, 115);
+            autoThemeSwitch.Location = new Point(127, 123);
             autoThemeSwitch.Margin = new Padding(4, 3, 4, 3);
             autoThemeSwitch.Name = "autoThemeSwitch";
             autoThemeSwitch.Size = new Size(96, 20);
@@ -389,7 +389,7 @@ namespace MinimalFirewall
             // startOnStartupSwitch
             // 
             startOnStartupSwitch.AutoSize = true;
-            startOnStartupSwitch.Location = new Point(24, 80);
+            startOnStartupSwitch.Location = new Point(24, 85);
             startOnStartupSwitch.Margin = new Padding(4, 3, 4, 3);
             startOnStartupSwitch.Name = "startOnStartupSwitch";
             startOnStartupSwitch.Size = new Size(152, 20);
@@ -403,7 +403,7 @@ namespace MinimalFirewall
             closeToTraySwitch.AutoSize = true;
             closeToTraySwitch.Checked = true;
             closeToTraySwitch.CheckState = CheckState.Checked;
-            closeToTraySwitch.Location = new Point(24, 45);
+            closeToTraySwitch.Location = new Point(24, 48);
             closeToTraySwitch.Margin = new Padding(4, 3, 4, 3);
             closeToTraySwitch.Name = "closeToTraySwitch";
             closeToTraySwitch.Size = new Size(117, 20);
@@ -454,17 +454,17 @@ namespace MinimalFirewall
             mainSettingsPanel.Location = new Point(0, 0);
             mainSettingsPanel.Margin = new Padding(4, 2, 4, 2);
             mainSettingsPanel.Name = "mainSettingsPanel";
-            mainSettingsPanel.Size = new Size(888, 694);
+            mainSettingsPanel.Size = new Size(888, 740);
             mainSettingsPanel.TabIndex = 27;
             // 
             // exportDiagnosticButton
             // 
             exportDiagnosticButton.FlatAppearance.BorderSize = 0;
             exportDiagnosticButton.FlatStyle = FlatStyle.Flat;
-            exportDiagnosticButton.Location = new Point(24, 560);
+            exportDiagnosticButton.Location = new Point(24, 597);
             exportDiagnosticButton.Margin = new Padding(4, 3, 4, 3);
             exportDiagnosticButton.Name = "exportDiagnosticButton";
-            exportDiagnosticButton.Size = new Size(210, 28);
+            exportDiagnosticButton.Size = new Size(210, 30);
             exportDiagnosticButton.TabIndex = 32;
             exportDiagnosticButton.Text = "Export Diagnostic Package...";
             exportDiagnosticButton.UseVisualStyleBackColor = true;
@@ -474,10 +474,10 @@ namespace MinimalFirewall
             // 
             importReplaceButton.FlatAppearance.BorderSize = 0;
             importReplaceButton.FlatStyle = FlatStyle.Flat;
-            importReplaceButton.Location = new Point(465, 515);
+            importReplaceButton.Location = new Point(465, 549);
             importReplaceButton.Margin = new Padding(4, 3, 4, 3);
             importReplaceButton.Name = "importReplaceButton";
-            importReplaceButton.Size = new Size(210, 28);
+            importReplaceButton.Size = new Size(210, 30);
             importReplaceButton.TabIndex = 30;
             importReplaceButton.Text = "Import && Replace Rules...";
             importReplaceButton.UseVisualStyleBackColor = true;
@@ -487,10 +487,10 @@ namespace MinimalFirewall
             // 
             importMergeButton.FlatAppearance.BorderSize = 0;
             importMergeButton.FlatStyle = FlatStyle.Flat;
-            importMergeButton.Location = new Point(245, 515);
+            importMergeButton.Location = new Point(245, 549);
             importMergeButton.Margin = new Padding(4, 3, 4, 3);
             importMergeButton.Name = "importMergeButton";
-            importMergeButton.Size = new Size(210, 28);
+            importMergeButton.Size = new Size(210, 30);
             importMergeButton.TabIndex = 29;
             importMergeButton.Text = "Import && Add Rules...";
             importMergeButton.UseVisualStyleBackColor = true;
@@ -500,10 +500,10 @@ namespace MinimalFirewall
             // 
             exportRulesButton.FlatAppearance.BorderSize = 0;
             exportRulesButton.FlatStyle = FlatStyle.Flat;
-            exportRulesButton.Location = new Point(24, 515);
+            exportRulesButton.Location = new Point(24, 549);
             exportRulesButton.Margin = new Padding(4, 3, 4, 3);
             exportRulesButton.Name = "exportRulesButton";
-            exportRulesButton.Size = new Size(210, 28);
+            exportRulesButton.Size = new Size(210, 30);
             exportRulesButton.TabIndex = 28;
             exportRulesButton.Text = "Export Rules...";
             exportRulesButton.UseVisualStyleBackColor = true;
@@ -513,10 +513,10 @@ namespace MinimalFirewall
             // 
             cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
             cleanUpOrphanedRulesButton.FlatStyle = FlatStyle.Flat;
-            cleanUpOrphanedRulesButton.Location = new Point(24, 470);
+            cleanUpOrphanedRulesButton.Location = new Point(24, 501);
             cleanUpOrphanedRulesButton.Margin = new Padding(4, 3, 4, 3);
             cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
-            cleanUpOrphanedRulesButton.Size = new Size(210, 28);
+            cleanUpOrphanedRulesButton.Size = new Size(210, 30);
             cleanUpOrphanedRulesButton.TabIndex = 27;
             cleanUpOrphanedRulesButton.Text = "Clean Up Orphaned Rules";
             cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
@@ -525,7 +525,7 @@ namespace MinimalFirewall
             // dividerPanel1
             // 
             dividerPanel1.BackColor = SystemColors.ControlDark;
-            dividerPanel1.Location = new Point(24, 265);
+            dividerPanel1.Location = new Point(24, 283);
             dividerPanel1.Margin = new Padding(4, 3, 4, 3);
             dividerPanel1.Name = "dividerPanel1";
             dividerPanel1.Size = new Size(650, 1);
@@ -534,7 +534,7 @@ namespace MinimalFirewall
             // dividerPanel2
             // 
             dividerPanel2.BackColor = SystemColors.ControlDark;
-            dividerPanel2.Location = new Point(24, 405);
+            dividerPanel2.Location = new Point(24, 432);
             dividerPanel2.Margin = new Padding(4, 3, 4, 3);
             dividerPanel2.Name = "dividerPanel2";
             dividerPanel2.Size = new Size(650, 1);
@@ -542,13 +542,13 @@ namespace MinimalFirewall
             // 
             // SettingsControl
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(mainSettingsPanel);
-            Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(4, 2, 4, 2);
             Name = "SettingsControl";
-            Size = new Size(888, 694);
+            Size = new Size(888, 740);
             coffeePanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
             mainSettingsPanel.ResumeLayout(false);

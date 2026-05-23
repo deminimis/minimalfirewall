@@ -433,5 +433,10 @@ namespace MinimalFirewall
         private void localAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
         private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
         private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateIcmpString);
+
+        private void programGroupBox_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

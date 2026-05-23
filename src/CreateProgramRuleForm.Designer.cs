@@ -26,108 +26,121 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.programListLabel = new System.Windows.Forms.Label();
-            this.actionGroupBox = new System.Windows.Forms.GroupBox();
-            this.blockRadio = new System.Windows.Forms.RadioButton();
-            this.allowRadio = new System.Windows.Forms.RadioButton();
-            this.okButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.blockDirectionCombo = new DarkModeForms.FlatComboBox();
-            this.allowDirectionCombo = new DarkModeForms.FlatComboBox();
-            this.actionGroupBox.SuspendLayout();
-            this.SuspendLayout();
-
-            this.programListLabel.Location = new System.Drawing.Point(23, 80);
-            this.programListLabel.Name = "programListLabel";
-            this.programListLabel.Size = new System.Drawing.Size(454, 50);
-            this.programListLabel.TabIndex = 0;
-            this.programListLabel.Text = "Program List";
-            this.programListLabel.AutoEllipsis = true;
-
-            this.actionGroupBox.Controls.Add(this.blockDirectionCombo);
-            this.actionGroupBox.Controls.Add(this.allowDirectionCombo);
-            this.actionGroupBox.Controls.Add(this.blockRadio);
-            this.actionGroupBox.Controls.Add(this.allowRadio);
-            this.actionGroupBox.Location = new System.Drawing.Point(23, 140);
-            this.actionGroupBox.Name = "actionGroupBox";
-            this.actionGroupBox.Size = new System.Drawing.Size(454, 150);
-            this.actionGroupBox.TabIndex = 1;
-            this.actionGroupBox.TabStop = false;
-            this.actionGroupBox.Text = "Action";
-
-            this.blockRadio.AutoSize = true;
-            this.blockRadio.Location = new System.Drawing.Point(20, 90);
-            this.blockRadio.Name = "blockRadio";
-            this.blockRadio.Size = new System.Drawing.Size(54, 19);
-            this.blockRadio.TabIndex = 1;
-            this.blockRadio.TabStop = true;
-            this.blockRadio.Text = "Block";
-            this.blockRadio.UseVisualStyleBackColor = true;
-
-            this.allowRadio.AutoSize = true;
-            this.allowRadio.Checked = true;
-            this.allowRadio.Location = new System.Drawing.Point(20, 30);
-            this.allowRadio.Name = "allowRadio";
-            this.allowRadio.Size = new System.Drawing.Size(55, 19);
-            this.allowRadio.TabIndex = 0;
-            this.allowRadio.TabStop = true;
-            this.allowRadio.Text = "Allow";
-            this.allowRadio.UseVisualStyleBackColor = true;
-
-            this.okButton.Location = new System.Drawing.Point(260, 310);
-            this.okButton.Name = "okButton";
-            this.okButton.Size = new System.Drawing.Size(100, 36);
-            this.okButton.TabIndex = 2;
-            this.okButton.Text = "OK";
-            this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Click += new System.EventHandler(this.OkButton_Click);
-
-            this.cancelButton.Location = new System.Drawing.Point(377, 310);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(100, 36);
-            this.cancelButton.TabIndex = 3;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
-
-            this.blockDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.blockDirectionCombo.FormattingEnabled = true;
-            this.blockDirectionCombo.Items.AddRange(new object[] {
-            "Outbound",
-            "Inbound",
-            "All"});
-            this.blockDirectionCombo.Location = new System.Drawing.Point(150, 90);
-            this.blockDirectionCombo.Name = "blockDirectionCombo";
-            this.blockDirectionCombo.Size = new System.Drawing.Size(280, 23);
-            this.blockDirectionCombo.TabIndex = 3;
-
-            this.allowDirectionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.allowDirectionCombo.FormattingEnabled = true;
-            this.allowDirectionCombo.Items.AddRange(new object[] {
-            "Outbound",
-            "Inbound",
-            "All"});
-            this.allowDirectionCombo.Location = new System.Drawing.Point(150, 30);
-            this.allowDirectionCombo.Name = "allowDirectionCombo";
-            this.allowDirectionCombo.Size = new System.Drawing.Size(280, 23);
-            this.allowDirectionCombo.TabIndex = 2;
-
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(500, 370);
-            this.Controls.Add(this.cancelButton);
-            this.Controls.Add(this.okButton);
-            this.Controls.Add(this.actionGroupBox);
-            this.Controls.Add(this.programListLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "CreateProgramRuleForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Create Program Rule";
-            this.actionGroupBox.ResumeLayout(false);
-            this.actionGroupBox.PerformLayout();
-            this.ResumeLayout(false);
+            programListLabel = new Label();
+            actionGroupBox = new GroupBox();
+            blockDirectionCombo = new DarkModeForms.FlatComboBox();
+            allowDirectionCombo = new DarkModeForms.FlatComboBox();
+            blockRadio = new RadioButton();
+            allowRadio = new RadioButton();
+            okButton = new Button();
+            cancelButton = new Button();
+            actionGroupBox.SuspendLayout();
+            SuspendLayout();
+            // 
+            // programListLabel
+            // 
+            programListLabel.AutoEllipsis = true;
+            programListLabel.Location = new Point(23, 85);
+            programListLabel.Name = "programListLabel";
+            programListLabel.Size = new Size(454, 53);
+            programListLabel.TabIndex = 0;
+            programListLabel.Text = "Program List";
+            // 
+            // actionGroupBox
+            // 
+            actionGroupBox.Controls.Add(blockDirectionCombo);
+            actionGroupBox.Controls.Add(allowDirectionCombo);
+            actionGroupBox.Controls.Add(blockRadio);
+            actionGroupBox.Controls.Add(allowRadio);
+            actionGroupBox.Location = new Point(23, 149);
+            actionGroupBox.Name = "actionGroupBox";
+            actionGroupBox.Size = new Size(454, 160);
+            actionGroupBox.TabIndex = 1;
+            actionGroupBox.TabStop = false;
+            actionGroupBox.Text = "Action";
+            // 
+            // blockDirectionCombo
+            // 
+            blockDirectionCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+            blockDirectionCombo.FormattingEnabled = true;
+            blockDirectionCombo.Items.AddRange(new object[] { "Outbound", "Inbound", "All" });
+            blockDirectionCombo.Location = new Point(150, 96);
+            blockDirectionCombo.Name = "blockDirectionCombo";
+            blockDirectionCombo.Size = new Size(280, 24);
+            blockDirectionCombo.TabIndex = 3;
+            // 
+            // allowDirectionCombo
+            // 
+            allowDirectionCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+            allowDirectionCombo.FormattingEnabled = true;
+            allowDirectionCombo.Items.AddRange(new object[] { "Outbound", "Inbound", "All" });
+            allowDirectionCombo.Location = new Point(150, 32);
+            allowDirectionCombo.Name = "allowDirectionCombo";
+            allowDirectionCombo.Size = new Size(280, 24);
+            allowDirectionCombo.TabIndex = 2;
+            // 
+            // blockRadio
+            // 
+            blockRadio.AutoSize = true;
+            blockRadio.Location = new Point(20, 96);
+            blockRadio.Name = "blockRadio";
+            blockRadio.Size = new Size(60, 20);
+            blockRadio.TabIndex = 1;
+            blockRadio.TabStop = true;
+            blockRadio.Text = "Block";
+            blockRadio.UseVisualStyleBackColor = true;
+            // 
+            // allowRadio
+            // 
+            allowRadio.AutoSize = true;
+            allowRadio.Checked = true;
+            allowRadio.Location = new Point(20, 32);
+            allowRadio.Name = "allowRadio";
+            allowRadio.Size = new Size(60, 20);
+            allowRadio.TabIndex = 0;
+            allowRadio.TabStop = true;
+            allowRadio.Text = "Allow";
+            allowRadio.UseVisualStyleBackColor = true;
+            // 
+            // okButton
+            // 
+            okButton.Location = new Point(260, 331);
+            okButton.Name = "okButton";
+            okButton.Size = new Size(100, 38);
+            okButton.TabIndex = 2;
+            okButton.Text = "OK";
+            okButton.UseVisualStyleBackColor = true;
+            okButton.Click += OkButton_Click;
+            // 
+            // cancelButton
+            // 
+            cancelButton.Location = new Point(377, 331);
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new Size(100, 38);
+            cancelButton.TabIndex = 3;
+            cancelButton.Text = "Cancel";
+            cancelButton.UseVisualStyleBackColor = true;
+            cancelButton.Click += CancelButton_Click;
+            // 
+            // CreateProgramRuleForm
+            // 
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(500, 395);
+            Controls.Add(cancelButton);
+            Controls.Add(okButton);
+            Controls.Add(actionGroupBox);
+            Controls.Add(programListLabel);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "CreateProgramRuleForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Create Program Rule";
+            actionGroupBox.ResumeLayout(false);
+            actionGroupBox.PerformLayout();
+            ResumeLayout(false);
         }
         #endregion
     }

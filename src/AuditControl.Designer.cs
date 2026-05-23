@@ -32,7 +32,6 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            var dataGridViewCellStyle1 = new DataGridViewCellStyle();
             auditSearchTextBox = new TextBox();
             auditContextMenu = new ContextMenuStrip(components);
             enableSelectedToolStripMenuItem = new ToolStripMenuItem();
@@ -45,11 +44,6 @@ namespace MinimalFirewall
             topPanel = new Panel();
             splitContainer = new SplitContainer();
             systemChangesDataGridView = new DataGridView();
-            diffRichTextBox = new RichTextBox();
-            diffLabel = new Label();
-            statusStrip1 = new StatusStrip();
-            statusLabel = new ToolStripStatusLabel();
-            toolTip1 = new ToolTip(components);
             advTimestampColumn = new DataGridViewTextBoxColumn();
             advNameColumn = new DataGridViewTextBoxColumn();
             advInterventionColumn = new DataGridViewTextBoxColumn();
@@ -65,6 +59,11 @@ namespace MinimalFirewall
             advGroupingColumn = new DataGridViewTextBoxColumn();
             advDescColumn = new DataGridViewTextBoxColumn();
             advPublisherColumn = new DataGridViewTextBoxColumn();
+            diffRichTextBox = new RichTextBox();
+            diffLabel = new Label();
+            statusStrip1 = new StatusStrip();
+            statusLabel = new ToolStripStatusLabel();
+            toolTip1 = new ToolTip(components);
             auditContextMenu.SuspendLayout();
             topPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
@@ -78,7 +77,7 @@ namespace MinimalFirewall
             // auditSearchTextBox
             // 
             auditSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            auditSearchTextBox.Location = new Point(619, 20);
+            auditSearchTextBox.Location = new Point(619, 21);
             auditSearchTextBox.Name = "auditSearchTextBox";
             auditSearchTextBox.PlaceholderText = "Search history...";
             auditSearchTextBox.Size = new Size(250, 23);
@@ -145,14 +144,14 @@ namespace MinimalFirewall
             topPanel.Location = new Point(0, 0);
             topPanel.Margin = new Padding(3, 2, 3, 2);
             topPanel.Name = "topPanel";
-            topPanel.Size = new Size(875, 58);
+            topPanel.Size = new Size(875, 62);
             topPanel.TabIndex = 4;
             // 
             // splitContainer
             // 
             splitContainer.Dock = DockStyle.Fill;
             splitContainer.FixedPanel = FixedPanel.Panel2;
-            splitContainer.Location = new Point(0, 58);
+            splitContainer.Location = new Point(0, 62);
             splitContainer.Margin = new Padding(3, 2, 3, 2);
             splitContainer.Name = "splitContainer";
             splitContainer.Orientation = Orientation.Horizontal;
@@ -166,8 +165,8 @@ namespace MinimalFirewall
             splitContainer.Panel2.Controls.Add(diffRichTextBox);
             splitContainer.Panel2.Controls.Add(diffLabel);
             splitContainer.Panel2MinSize = 100;
-            splitContainer.Size = new Size(875, 632);
-            splitContainer.SplitterDistance = 483;
+            splitContainer.Size = new Size(875, 674);
+            splitContainer.SplitterDistance = 516;
             splitContainer.SplitterWidth = 3;
             splitContainer.TabIndex = 5;
             // 
@@ -181,14 +180,6 @@ namespace MinimalFirewall
             systemChangesDataGridView.BorderStyle = BorderStyle.None;
             systemChangesDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
             systemChangesDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = SystemColors.Control;
-            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            systemChangesDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             systemChangesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             systemChangesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advTimestampColumn, advNameColumn, advInterventionColumn, advStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, advPublisherColumn });
             systemChangesDataGridView.ContextMenuStrip = auditContextMenu;
@@ -202,7 +193,7 @@ namespace MinimalFirewall
             systemChangesDataGridView.RowHeadersVisible = false;
             systemChangesDataGridView.RowTemplate.Height = 28;
             systemChangesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            systemChangesDataGridView.Size = new Size(875, 483);
+            systemChangesDataGridView.Size = new Size(875, 516);
             systemChangesDataGridView.TabIndex = 0;
             systemChangesDataGridView.CellFormatting += SystemChangesDataGridView_CellFormatting;
             systemChangesDataGridView.CellMouseDown += SystemChangesDataGridView_CellMouseDown;
@@ -211,47 +202,6 @@ namespace MinimalFirewall
             systemChangesDataGridView.ColumnHeaderMouseClick += SystemChangesDataGridView_ColumnHeaderMouseClick;
             systemChangesDataGridView.RowPostPaint += SystemChangesDataGridView_RowPostPaint;
             systemChangesDataGridView.SelectionChanged += SystemChangesDataGridView_SelectionChanged;
-            // 
-            // diffRichTextBox
-            // 
-            diffRichTextBox.BackColor = Color.White;
-            diffRichTextBox.BorderStyle = BorderStyle.None;
-            diffRichTextBox.Dock = DockStyle.Fill;
-            diffRichTextBox.Font = new Font("Consolas", 9.75F);
-            diffRichTextBox.Location = new Point(0, 19);
-            diffRichTextBox.Margin = new Padding(3, 2, 3, 2);
-            diffRichTextBox.Name = "diffRichTextBox";
-            diffRichTextBox.ReadOnly = true;
-            diffRichTextBox.Size = new Size(875, 127);
-            diffRichTextBox.TabIndex = 2;
-            diffRichTextBox.Text = "";
-            // 
-            // diffLabel
-            // 
-            diffLabel.Dock = DockStyle.Top;
-            diffLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-            diffLabel.Location = new Point(0, 0);
-            diffLabel.Name = "diffLabel";
-            diffLabel.Padding = new Padding(4, 4, 0, 0);
-            diffLabel.Size = new Size(875, 19);
-            diffLabel.TabIndex = 1;
-            diffLabel.Text = "Change Details:";
-            // 
-            // statusStrip1
-            // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { statusLabel });
-            statusStrip1.Location = new Point(0, 668);
-            statusStrip1.Name = "statusStrip1";
-            statusStrip1.Padding = new Padding(1, 0, 12, 0);
-            statusStrip1.Size = new Size(875, 22);
-            statusStrip1.TabIndex = 6;
-            statusStrip1.Text = "statusStrip1";
-            // 
-            // statusLabel
-            // 
-            statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(39, 17);
-            statusLabel.Text = "Ready";
             // 
             // advTimestampColumn
             // 
@@ -388,17 +338,59 @@ namespace MinimalFirewall
             advPublisherColumn.ReadOnly = true;
             advPublisherColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
+            // diffRichTextBox
+            // 
+            diffRichTextBox.BackColor = Color.White;
+            diffRichTextBox.BorderStyle = BorderStyle.None;
+            diffRichTextBox.Dock = DockStyle.Fill;
+            diffRichTextBox.Font = new Font("Consolas", 9.75F);
+            diffRichTextBox.Location = new Point(0, 20);
+            diffRichTextBox.Margin = new Padding(3, 2, 3, 2);
+            diffRichTextBox.Name = "diffRichTextBox";
+            diffRichTextBox.ReadOnly = true;
+            diffRichTextBox.Size = new Size(875, 135);
+            diffRichTextBox.TabIndex = 2;
+            diffRichTextBox.Text = "";
+            // 
+            // diffLabel
+            // 
+            diffLabel.Dock = DockStyle.Top;
+            diffLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            diffLabel.Location = new Point(0, 0);
+            diffLabel.Name = "diffLabel";
+            diffLabel.Padding = new Padding(4, 4, 0, 0);
+            diffLabel.Size = new Size(875, 20);
+            diffLabel.TabIndex = 1;
+            diffLabel.Text = "Change Details:";
+            // 
+            // statusStrip1
+            // 
+            statusStrip1.Items.AddRange(new ToolStripItem[] { statusLabel });
+            statusStrip1.Location = new Point(0, 714);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Padding = new Padding(1, 0, 13, 0);
+            statusStrip1.Size = new Size(875, 22);
+            statusStrip1.TabIndex = 6;
+            statusStrip1.Text = "statusStrip1";
+            // 
+            // statusLabel
+            // 
+            statusLabel.Name = "statusLabel";
+            statusLabel.Size = new Size(39, 17);
+            statusLabel.Text = "Ready";
+            // 
             // AuditControl
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(statusStrip1);
             Controls.Add(splitContainer);
             Controls.Add(topPanel);
             DoubleBuffered = true;
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(3, 2, 3, 2);
             Name = "AuditControl";
-            Size = new Size(875, 690);
+            Size = new Size(875, 736);
             auditContextMenu.ResumeLayout(false);
             topPanel.ResumeLayout(false);
             topPanel.PerformLayout();

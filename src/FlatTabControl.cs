@@ -22,7 +22,7 @@ namespace DarkModeForms
         {
             base.OnHandleCreated(e);
             float scaleFactor = DeviceDpi / 96f;
-            int baseWidth = 70;
+            int baseWidth = 85;
             int baseHeight = 120;
             var scaledSize = new Size((int)(baseWidth * scaleFactor), (int)(baseHeight * scaleFactor));
             if (ItemSize.Width < scaledSize.Width)

@@ -1,4 +1,4 @@
-﻿// File: ManagePublishersForm.Designer.cs
+// File: ManagePublishersForm.Designer.cs
 namespace MinimalFirewall
 {
     partial class ManagePublishersForm
@@ -21,57 +21,67 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.publishersListBox = new System.Windows.Forms.ListBox();
-            this.removeButton = new System.Windows.Forms.Button();
-            this.closeButton = new System.Windows.Forms.Button();
-            this.infoLabel = new System.Windows.Forms.Label();
-            this.SuspendLayout();
-
-            this.publishersListBox.FormattingEnabled = true;
-            this.publishersListBox.ItemHeight = 15;
-            this.publishersListBox.Location = new System.Drawing.Point(12, 35);
-            this.publishersListBox.Name = "publishersListBox";
-            this.publishersListBox.Size = new System.Drawing.Size(460, 199);
-            this.publishersListBox.TabIndex = 0;
-
-            this.removeButton.Location = new System.Drawing.Point(12, 240);
-            this.removeButton.Name = "removeButton";
-            this.removeButton.Size = new System.Drawing.Size(120, 29);
-            this.removeButton.TabIndex = 1;
-            this.removeButton.Text = "Remove Selected";
-            this.removeButton.UseVisualStyleBackColor = true;
-            this.removeButton.Click += new System.EventHandler(this.removeButton_Click);
-
-            this.closeButton.Location = new System.Drawing.Point(397, 240);
-            this.closeButton.Name = "closeButton";
-            this.closeButton.Size = new System.Drawing.Size(75, 29);
-            this.closeButton.TabIndex = 2;
-            this.closeButton.Text = "Close";
-            this.closeButton.UseVisualStyleBackColor = true;
-            this.closeButton.Click += new System.EventHandler(this.closeButton_Click);
-
-            this.infoLabel.AutoSize = true;
-            this.infoLabel.Location = new System.Drawing.Point(12, 9);
-            this.infoLabel.Name = "infoLabel";
-            this.infoLabel.Size = new System.Drawing.Size(262, 15);
-            this.infoLabel.TabIndex = 3;
-            this.infoLabel.Text = "Applications from these publishers will be allowed automatically.";
-
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(484, 281);
-            this.Controls.Add(this.infoLabel);
-            this.Controls.Add(this.closeButton);
-            this.Controls.Add(this.removeButton);
-            this.Controls.Add(this.publishersListBox);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "ManagePublishersForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Manage Trusted Publishers";
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            publishersListBox = new ListBox();
+            removeButton = new Button();
+            closeButton = new Button();
+            infoLabel = new Label();
+            SuspendLayout();
+            // 
+            // publishersListBox
+            // 
+            publishersListBox.FormattingEnabled = true;
+            publishersListBox.Location = new Point(12, 37);
+            publishersListBox.Name = "publishersListBox";
+            publishersListBox.Size = new Size(460, 212);
+            publishersListBox.TabIndex = 0;
+            // 
+            // removeButton
+            // 
+            removeButton.Location = new Point(12, 256);
+            removeButton.Name = "removeButton";
+            removeButton.Size = new Size(120, 31);
+            removeButton.TabIndex = 1;
+            removeButton.Text = "Remove Selected";
+            removeButton.UseVisualStyleBackColor = true;
+            removeButton.Click += removeButton_Click;
+            // 
+            // closeButton
+            // 
+            closeButton.Location = new Point(397, 256);
+            closeButton.Name = "closeButton";
+            closeButton.Size = new Size(75, 31);
+            closeButton.TabIndex = 2;
+            closeButton.Text = "Close";
+            closeButton.UseVisualStyleBackColor = true;
+            closeButton.Click += closeButton_Click;
+            // 
+            // infoLabel
+            // 
+            infoLabel.AutoSize = true;
+            infoLabel.Location = new Point(12, 10);
+            infoLabel.Name = "infoLabel";
+            infoLabel.Size = new Size(462, 16);
+            infoLabel.TabIndex = 3;
+            infoLabel.Text = "Applications from these publishers will be allowed automatically.";
+            // 
+            // ManagePublishersForm
+            // 
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(484, 300);
+            Controls.Add(infoLabel);
+            Controls.Add(closeButton);
+            Controls.Add(removeButton);
+            Controls.Add(publishersListBox);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "ManagePublishersForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Manage Trusted Publishers";
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

@@ -1,4 +1,4 @@
-﻿// File: RulesControl.Designer.cs
+// File: RulesControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class RulesControl
@@ -22,22 +22,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
         private System.Windows.Forms.DataGridView rulesDataGridView;
-        private System.Windows.Forms.DataGridViewImageColumn advIconColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advNameColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn inboundStatusColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn outboundStatusColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProtocolColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advLocalPortsColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advRemotePortsColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advLocalAddressColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advRemoteAddressColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProgramColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advServiceColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProfilesColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn dateAddedColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn autoAllowedColumn;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
         private System.Windows.Forms.CheckBox programFilterCheckBox;
         private System.Windows.Forms.CheckBox serviceFilterCheckBox;
@@ -67,505 +51,498 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.rulesSearchTextBox = new System.Windows.Forms.TextBox();
-            this.createRuleButton = new System.Windows.Forms.Button();
-            this.rulesContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.allowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.allowOutboundToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.allowInboundToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.allowAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.blockToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.blockOutboundToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.blockInboundToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.blockAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.editRuleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.deleteRuleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.rulesDataGridView = new System.Windows.Forms.DataGridView();
-            this.advIconColumn = new System.Windows.Forms.DataGridViewImageColumn();
-            this.advNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.inboundStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.outboundStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProtocolColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advLocalPortsColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advRemotePortsColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advLocalAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advRemoteAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProgramColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advServiceColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProfilesColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.dateAddedColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.autoAllowedColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.filterPanel = new System.Windows.Forms.FlowLayoutPanel();
-            this.programFilterCheckBox = new System.Windows.Forms.CheckBox();
-            this.serviceFilterCheckBox = new System.Windows.Forms.CheckBox();
-            this.uwpFilterCheckBox = new System.Windows.Forms.CheckBox();
-            this.wildcardFilterCheckBox = new System.Windows.Forms.CheckBox();
-            this.systemFilterCheckBox = new System.Windows.Forms.CheckBox();
-            this.topPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.rulesContextMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.rulesDataGridView)).BeginInit();
-            this.filterPanel.SuspendLayout();
-            this.topPanel.SuspendLayout();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            var dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            rulesSearchTextBox = new TextBox();
+            createRuleButton = new Button();
+            rulesContextMenu = new ContextMenuStrip(components);
+            allowToolStripMenuItem = new ToolStripMenuItem();
+            allowOutboundToolStripMenuItem = new ToolStripMenuItem();
+            allowInboundToolStripMenuItem = new ToolStripMenuItem();
+            allowAllToolStripMenuItem = new ToolStripMenuItem();
+            blockToolStripMenuItem = new ToolStripMenuItem();
+            blockOutboundToolStripMenuItem = new ToolStripMenuItem();
+            blockInboundToolStripMenuItem = new ToolStripMenuItem();
+            blockAllToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            editRuleToolStripMenuItem = new ToolStripMenuItem();
+            deleteRuleToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            openFileLocationToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
+            copyDetailsToolStripMenuItem = new ToolStripMenuItem();
+            rulesDataGridView = new DataGridView();
+            filterPanel = new FlowLayoutPanel();
+            programFilterCheckBox = new CheckBox();
+            serviceFilterCheckBox = new CheckBox();
+            uwpFilterCheckBox = new CheckBox();
+            wildcardFilterCheckBox = new CheckBox();
+            systemFilterCheckBox = new CheckBox();
+            topPanel = new TableLayoutPanel();
+            advIconColumn = new DataGridViewImageColumn();
+            advNameColumn = new DataGridViewTextBoxColumn();
+            inboundStatusColumn = new DataGridViewTextBoxColumn();
+            outboundStatusColumn = new DataGridViewTextBoxColumn();
+            advProtocolColumn = new DataGridViewTextBoxColumn();
+            advLocalPortsColumn = new DataGridViewTextBoxColumn();
+            advRemotePortsColumn = new DataGridViewTextBoxColumn();
+            advLocalAddressColumn = new DataGridViewTextBoxColumn();
+            advRemoteAddressColumn = new DataGridViewTextBoxColumn();
+            advProgramColumn = new DataGridViewTextBoxColumn();
+            advServiceColumn = new DataGridViewTextBoxColumn();
+            advProfilesColumn = new DataGridViewTextBoxColumn();
+            advGroupingColumn = new DataGridViewTextBoxColumn();
+            advDescColumn = new DataGridViewTextBoxColumn();
+            dateAddedColumn = new DataGridViewTextBoxColumn();
+            autoAllowedColumn = new DataGridViewTextBoxColumn();
+            rulesContextMenu.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).BeginInit();
+            filterPanel.SuspendLayout();
+            topPanel.SuspendLayout();
+            SuspendLayout();
             // 
             // rulesSearchTextBox
             // 
-            this.rulesSearchTextBox.Anchor = System.Windows.Forms.AnchorStyles.Right;
-            this.rulesSearchTextBox.Location = new System.Drawing.Point(714, 16);
-            this.rulesSearchTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 12, 4);
-            this.rulesSearchTextBox.Name = "rulesSearchTextBox";
-            this.rulesSearchTextBox.PlaceholderText = "Search rules...";
-            this.rulesSearchTextBox.Size = new System.Drawing.Size(285, 27);
-            this.rulesSearchTextBox.TabIndex = 16;
-            this.rulesSearchTextBox.TextChanged += new System.EventHandler(this.SearchTextBox_TextChanged);
+            rulesSearchTextBox.Anchor = AnchorStyles.Right;
+            rulesSearchTextBox.Location = new Point(705, 18);
+            rulesSearchTextBox.Margin = new Padding(3, 4, 12, 4);
+            rulesSearchTextBox.Name = "rulesSearchTextBox";
+            rulesSearchTextBox.PlaceholderText = "Search rules...";
+            rulesSearchTextBox.Size = new Size(285, 23);
+            rulesSearchTextBox.TabIndex = 16;
+            rulesSearchTextBox.TextChanged += SearchTextBox_TextChanged;
             // 
             // createRuleButton
             // 
-            this.createRuleButton.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.createRuleButton.Location = new System.Drawing.Point(12, 8);
-            this.createRuleButton.Margin = new System.Windows.Forms.Padding(12, 8, 8, 8);
-            this.createRuleButton.Name = "createRuleButton";
-            this.createRuleButton.Size = new System.Drawing.Size(160, 44);
-            this.createRuleButton.TabIndex = 9;
-            this.createRuleButton.Text = "Create New Rule...";
-            this.createRuleButton.UseVisualStyleBackColor = true;
-            this.createRuleButton.Click += new System.EventHandler(this.CreateRuleButton_Click);
+            createRuleButton.Anchor = AnchorStyles.Left;
+            createRuleButton.Location = new Point(12, 8);
+            createRuleButton.Margin = new Padding(12, 8, 8, 8);
+            createRuleButton.Name = "createRuleButton";
+            createRuleButton.Size = new Size(160, 44);
+            createRuleButton.TabIndex = 9;
+            createRuleButton.Text = "Create New Rule...";
+            createRuleButton.UseVisualStyleBackColor = true;
+            createRuleButton.Click += CreateRuleButton_Click;
             // 
             // rulesContextMenu
             // 
-            this.rulesContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.rulesContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.allowToolStripMenuItem,
-            this.blockToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.editRuleToolStripMenuItem,
-            this.deleteRuleToolStripMenuItem,
-            this.toolStripSeparator2,
-            this.openFileLocationToolStripMenuItem,
-            this.toolStripSeparator3,
-            this.copyDetailsToolStripMenuItem});
-            this.rulesContextMenu.Name = "rulesContextMenu";
-            this.rulesContextMenu.Size = new System.Drawing.Size(207, 194);
-            this.rulesContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.rulesContextMenu_Opening);
+            rulesContextMenu.ImageScalingSize = new Size(20, 20);
+            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, editRuleToolStripMenuItem, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, toolStripSeparator3, copyDetailsToolStripMenuItem });
+            rulesContextMenu.Name = "rulesContextMenu";
+            rulesContextMenu.Size = new Size(174, 154);
+            rulesContextMenu.Opening += rulesContextMenu_Opening;
             // 
             // allowToolStripMenuItem
             // 
-            this.allowToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.allowOutboundToolStripMenuItem,
-            this.allowInboundToolStripMenuItem,
-            this.allowAllToolStripMenuItem});
-            this.allowToolStripMenuItem.Name = "allowToolStripMenuItem";
-            this.allowToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.allowToolStripMenuItem.Text = "Allow";
+            allowToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { allowOutboundToolStripMenuItem, allowInboundToolStripMenuItem, allowAllToolStripMenuItem });
+            allowToolStripMenuItem.Name = "allowToolStripMenuItem";
+            allowToolStripMenuItem.Size = new Size(173, 22);
+            allowToolStripMenuItem.Text = "Allow";
             // 
             // allowOutboundToolStripMenuItem
             // 
-            this.allowOutboundToolStripMenuItem.Name = "allowOutboundToolStripMenuItem";
-            this.allowOutboundToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.allowOutboundToolStripMenuItem.Tag = "Allow (Outbound)";
-            this.allowOutboundToolStripMenuItem.Text = "Outbound";
-            this.allowOutboundToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            allowOutboundToolStripMenuItem.Name = "allowOutboundToolStripMenuItem";
+            allowOutboundToolStripMenuItem.Size = new Size(129, 22);
+            allowOutboundToolStripMenuItem.Tag = "Allow (Outbound)";
+            allowOutboundToolStripMenuItem.Text = "Outbound";
+            allowOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // allowInboundToolStripMenuItem
             // 
-            this.allowInboundToolStripMenuItem.Name = "allowInboundToolStripMenuItem";
-            this.allowInboundToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.allowInboundToolStripMenuItem.Tag = "Allow (Inbound)";
-            this.allowInboundToolStripMenuItem.Text = "Inbound";
-            this.allowInboundToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            allowInboundToolStripMenuItem.Name = "allowInboundToolStripMenuItem";
+            allowInboundToolStripMenuItem.Size = new Size(129, 22);
+            allowInboundToolStripMenuItem.Tag = "Allow (Inbound)";
+            allowInboundToolStripMenuItem.Text = "Inbound";
+            allowInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // allowAllToolStripMenuItem
             // 
-            this.allowAllToolStripMenuItem.Name = "allowAllToolStripMenuItem";
-            this.allowAllToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.allowAllToolStripMenuItem.Tag = "Allow (All)";
-            this.allowAllToolStripMenuItem.Text = "All";
-            this.allowAllToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            allowAllToolStripMenuItem.Name = "allowAllToolStripMenuItem";
+            allowAllToolStripMenuItem.Size = new Size(129, 22);
+            allowAllToolStripMenuItem.Tag = "Allow (All)";
+            allowAllToolStripMenuItem.Text = "All";
+            allowAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // blockToolStripMenuItem
             // 
-            this.blockToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.blockOutboundToolStripMenuItem,
-            this.blockInboundToolStripMenuItem,
-            this.blockAllToolStripMenuItem});
-            this.blockToolStripMenuItem.Name = "blockToolStripMenuItem";
-            this.blockToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.blockToolStripMenuItem.Text = "Block";
+            blockToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { blockOutboundToolStripMenuItem, blockInboundToolStripMenuItem, blockAllToolStripMenuItem });
+            blockToolStripMenuItem.Name = "blockToolStripMenuItem";
+            blockToolStripMenuItem.Size = new Size(173, 22);
+            blockToolStripMenuItem.Text = "Block";
             // 
             // blockOutboundToolStripMenuItem
             // 
-            this.blockOutboundToolStripMenuItem.Name = "blockOutboundToolStripMenuItem";
-            this.blockOutboundToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.blockOutboundToolStripMenuItem.Tag = "Block (Outbound)";
-            this.blockOutboundToolStripMenuItem.Text = "Outbound";
-            this.blockOutboundToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            blockOutboundToolStripMenuItem.Name = "blockOutboundToolStripMenuItem";
+            blockOutboundToolStripMenuItem.Size = new Size(129, 22);
+            blockOutboundToolStripMenuItem.Tag = "Block (Outbound)";
+            blockOutboundToolStripMenuItem.Text = "Outbound";
+            blockOutboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // blockInboundToolStripMenuItem
             // 
-            this.blockInboundToolStripMenuItem.Name = "blockInboundToolStripMenuItem";
-            this.blockInboundToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.blockInboundToolStripMenuItem.Tag = "Block (Inbound)";
-            this.blockInboundToolStripMenuItem.Text = "Inbound";
-            this.blockInboundToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            blockInboundToolStripMenuItem.Name = "blockInboundToolStripMenuItem";
+            blockInboundToolStripMenuItem.Size = new Size(129, 22);
+            blockInboundToolStripMenuItem.Tag = "Block (Inbound)";
+            blockInboundToolStripMenuItem.Text = "Inbound";
+            blockInboundToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // blockAllToolStripMenuItem
             // 
-            this.blockAllToolStripMenuItem.Name = "blockAllToolStripMenuItem";
-            this.blockAllToolStripMenuItem.Size = new System.Drawing.Size(159, 26);
-            this.blockAllToolStripMenuItem.Tag = "Block (All)";
-            this.blockAllToolStripMenuItem.Text = "All";
-            this.blockAllToolStripMenuItem.Click += new System.EventHandler(this.ApplyRuleMenuItem_Click);
+            blockAllToolStripMenuItem.Name = "blockAllToolStripMenuItem";
+            blockAllToolStripMenuItem.Size = new Size(129, 22);
+            blockAllToolStripMenuItem.Tag = "Block (All)";
+            blockAllToolStripMenuItem.Text = "All";
+            blockAllToolStripMenuItem.Click += ApplyRuleMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(203, 6);
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(170, 6);
             // 
             // editRuleToolStripMenuItem
             // 
-            this.editRuleToolStripMenuItem.Name = "editRuleToolStripMenuItem";
-            this.editRuleToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.editRuleToolStripMenuItem.Text = "Edit Rule...";
-            this.editRuleToolStripMenuItem.Click += new System.EventHandler(this.editRuleToolStripMenuItem_Click);
+            editRuleToolStripMenuItem.Name = "editRuleToolStripMenuItem";
+            editRuleToolStripMenuItem.Size = new Size(173, 22);
+            editRuleToolStripMenuItem.Text = "Edit Rule...";
+            editRuleToolStripMenuItem.Click += editRuleToolStripMenuItem_Click;
             // 
             // deleteRuleToolStripMenuItem
             // 
-            this.deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
-            this.deleteRuleToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
-            this.deleteRuleToolStripMenuItem.Click += new System.EventHandler(this.DeleteRuleMenuItem_Click);
+            deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
+            deleteRuleToolStripMenuItem.Size = new Size(173, 22);
+            deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
+            deleteRuleToolStripMenuItem.Click += DeleteRuleMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(203, 6);
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(170, 6);
             // 
             // openFileLocationToolStripMenuItem
             // 
-            this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
-            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.openFileLocationToolStripMenuItem.Text = "Open File Location";
-            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem_Click);
+            openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
+            openFileLocationToolStripMenuItem.Size = new Size(173, 22);
+            openFileLocationToolStripMenuItem.Text = "Open File Location";
+            openFileLocationToolStripMenuItem.Click += openFileLocationToolStripMenuItem_Click;
             // 
             // toolStripSeparator3
             // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(203, 6);
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(170, 6);
             // 
             // copyDetailsToolStripMenuItem
             // 
-            this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
-            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(206, 24);
-            this.copyDetailsToolStripMenuItem.Text = "Copy Details";
-            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
+            copyDetailsToolStripMenuItem.Size = new Size(173, 22);
+            copyDetailsToolStripMenuItem.Text = "Copy Details";
+            copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
             // 
             // rulesDataGridView
             // 
-            this.rulesDataGridView.AllowUserToAddRows = false;
-            this.rulesDataGridView.AllowUserToDeleteRows = false;
-            this.rulesDataGridView.AllowUserToResizeRows = false;
-            this.rulesDataGridView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.rulesDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.rulesDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
-            this.rulesDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.rulesDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
-            this.rulesDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.rulesDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.rulesDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.rulesDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.advIconColumn,
-            this.advNameColumn,
-            this.inboundStatusColumn,
-            this.outboundStatusColumn,
-            this.advProtocolColumn,
-            this.advLocalPortsColumn,
-            this.advRemotePortsColumn,
-            this.advLocalAddressColumn,
-            this.advRemoteAddressColumn,
-            this.advProgramColumn,
-            this.advServiceColumn,
-            this.advProfilesColumn,
-            this.advGroupingColumn,
-            this.advDescColumn,
-            this.dateAddedColumn,
-            this.autoAllowedColumn});
-            this.rulesDataGridView.ContextMenuStrip = this.rulesContextMenu;
-            this.rulesDataGridView.EnableHeadersVisualStyles = false;
-            this.rulesDataGridView.GridColor = System.Drawing.SystemColors.Control;
-            this.rulesDataGridView.Location = new System.Drawing.Point(3, 66);
-            this.rulesDataGridView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 3);
-            this.rulesDataGridView.Name = "rulesDataGridView";
-            this.rulesDataGridView.ReadOnly = true;
-            this.rulesDataGridView.RowHeadersVisible = false;
-            this.rulesDataGridView.RowTemplate.Height = 28;
-            this.rulesDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.rulesDataGridView.ShowCellToolTips = true;
-            this.rulesDataGridView.Size = new System.Drawing.Size(996, 839);
-            this.rulesDataGridView.TabIndex = 18;
-            this.rulesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.rulesDataGridView_CellFormatting);
-            this.rulesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.rulesDataGridView_CellMouseDown);
-            this.rulesDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.rulesDataGridView_CellMouseEnter);
-            this.rulesDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.rulesDataGridView_CellMouseLeave);
-            this.rulesDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.rulesDataGridView_ColumnHeaderMouseClick);
-            this.rulesDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.rulesDataGridView_RowPostPaint);
+            rulesDataGridView.AllowUserToAddRows = false;
+            rulesDataGridView.AllowUserToDeleteRows = false;
+            rulesDataGridView.AllowUserToResizeRows = false;
+            rulesDataGridView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            rulesDataGridView.BackgroundColor = SystemColors.Control;
+            rulesDataGridView.BorderStyle = BorderStyle.None;
+            rulesDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
+            rulesDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
+            rulesDataGridView.ContextMenuStrip = rulesContextMenu;
+            rulesDataGridView.EnableHeadersVisualStyles = false;
+            rulesDataGridView.GridColor = SystemColors.Control;
+            rulesDataGridView.Location = new Point(3, 66);
+            rulesDataGridView.Margin = new Padding(3, 6, 3, 3);
+            rulesDataGridView.Name = "rulesDataGridView";
+            rulesDataGridView.ReadOnly = true;
+            rulesDataGridView.RowHeadersVisible = false;
+            rulesDataGridView.RowTemplate.Height = 28;
+            rulesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            rulesDataGridView.Size = new Size(996, 839);
+            rulesDataGridView.TabIndex = 18;
+            rulesDataGridView.VirtualMode = true;
+            rulesDataGridView.CellFormatting += rulesDataGridView_CellFormatting;
+            rulesDataGridView.CellMouseDown += rulesDataGridView_CellMouseDown;
+            rulesDataGridView.CellMouseEnter += rulesDataGridView_CellMouseEnter;
+            rulesDataGridView.CellMouseLeave += rulesDataGridView_CellMouseLeave;
+            rulesDataGridView.ColumnHeaderMouseClick += rulesDataGridView_ColumnHeaderMouseClick;
+            rulesDataGridView.RowPostPaint += rulesDataGridView_RowPostPaint;
             // 
-            // advIconColumn
-            // 
-            this.advIconColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.advIconColumn.FillWeight = 3F;
-            this.advIconColumn.HeaderText = "";
-            this.advIconColumn.ImageLayout = System.Windows.Forms.DataGridViewImageCellLayout.Zoom;
-            this.advIconColumn.MinimumWidth = 32;
-            this.advIconColumn.Name = "advIconColumn";
-            this.advIconColumn.ReadOnly = true;
-            this.advIconColumn.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.advIconColumn.Width = 32;
-            // 
-            // advNameColumn
-            // 
-            this.advNameColumn.DataPropertyName = "Name";
-            this.advNameColumn.FillWeight = 20F;
-            this.advNameColumn.HeaderText = "Name";
-            this.advNameColumn.Name = "advNameColumn";
-            this.advNameColumn.ReadOnly = true;
-            // 
-            // inboundStatusColumn
-            // 
-            this.inboundStatusColumn.DataPropertyName = "InboundStatus";
-            this.inboundStatusColumn.FillWeight = 10F;
-            this.inboundStatusColumn.HeaderText = "Inbound";
-            this.inboundStatusColumn.Name = "inboundStatusColumn";
-            this.inboundStatusColumn.ReadOnly = true;
-            // 
-            // outboundStatusColumn
-            // 
-            this.outboundStatusColumn.DataPropertyName = "OutboundStatus";
-            this.outboundStatusColumn.FillWeight = 10F;
-            this.outboundStatusColumn.HeaderText = "Outbound";
-            this.outboundStatusColumn.Name = "outboundStatusColumn";
-            this.outboundStatusColumn.ReadOnly = true;
-            // 
-            // advProtocolColumn
-            // 
-            this.advProtocolColumn.DataPropertyName = "ProtocolName";
-            this.advProtocolColumn.FillWeight = 8F;
-            this.advProtocolColumn.HeaderText = "Protocol";
-            this.advProtocolColumn.Name = "advProtocolColumn";
-            this.advProtocolColumn.ReadOnly = true;
-            // 
-            // advLocalPortsColumn
-            // 
-            this.advLocalPortsColumn.DataPropertyName = "LocalPorts";
-            this.advLocalPortsColumn.FillWeight = 12F;
-            this.advLocalPortsColumn.HeaderText = "Local Ports";
-            this.advLocalPortsColumn.Name = "advLocalPortsColumn";
-            this.advLocalPortsColumn.ReadOnly = true;
-            // 
-            // advRemotePortsColumn
-            // 
-            this.advRemotePortsColumn.DataPropertyName = "RemotePorts";
-            this.advRemotePortsColumn.FillWeight = 12F;
-            this.advRemotePortsColumn.HeaderText = "Remote Ports";
-            this.advRemotePortsColumn.Name = "advRemotePortsColumn";
-            this.advRemotePortsColumn.ReadOnly = true;
-            // 
-            // advLocalAddressColumn
-            // 
-            this.advLocalAddressColumn.DataPropertyName = "LocalAddresses";
-            this.advLocalAddressColumn.FillWeight = 15F;
-            this.advLocalAddressColumn.HeaderText = "Local Address";
-            this.advLocalAddressColumn.Name = "advLocalAddressColumn";
-            this.advLocalAddressColumn.ReadOnly = true;
-            // 
-            // advRemoteAddressColumn
-            // 
-            this.advRemoteAddressColumn.DataPropertyName = "RemoteAddresses";
-            this.advRemoteAddressColumn.FillWeight = 15F;
-            this.advRemoteAddressColumn.HeaderText = "Remote Address";
-            this.advRemoteAddressColumn.Name = "advRemoteAddressColumn";
-            this.advRemoteAddressColumn.ReadOnly = true;
-            // 
-            // advProgramColumn
-            // 
-            this.advProgramColumn.DataPropertyName = "ApplicationName";
-            this.advProgramColumn.FillWeight = 25F;
-            this.advProgramColumn.HeaderText = "Program";
-            this.advProgramColumn.Name = "advProgramColumn";
-            this.advProgramColumn.ReadOnly = true;
-            // 
-            // advServiceColumn
-            // 
-            this.advServiceColumn.DataPropertyName = "ServiceName";
-            this.advServiceColumn.FillWeight = 15F;
-            this.advServiceColumn.HeaderText = "Service";
-            this.advServiceColumn.Name = "advServiceColumn";
-            this.advServiceColumn.ReadOnly = true;
-            // 
-            // advProfilesColumn
-            // 
-            this.advProfilesColumn.DataPropertyName = "Profiles";
-            this.advProfilesColumn.FillWeight = 10F;
-            this.advProfilesColumn.HeaderText = "Profiles";
-            this.advProfilesColumn.Name = "advProfilesColumn";
-            this.advProfilesColumn.ReadOnly = true;
-            // 
-            // advGroupingColumn
-            // 
-            this.advGroupingColumn.DataPropertyName = "Grouping";
-            this.advGroupingColumn.FillWeight = 15F;
-            this.advGroupingColumn.HeaderText = "Group";
-            this.advGroupingColumn.Name = "advGroupingColumn";
-            this.advGroupingColumn.ReadOnly = true;
-            // 
-            // advDescColumn
-            // 
-            this.advDescColumn.DataPropertyName = "Description";
-            this.advDescColumn.FillWeight = 30F;
-            this.advDescColumn.HeaderText = "Description";
-            this.advDescColumn.Name = "advDescColumn";
-            this.advDescColumn.ReadOnly = true;
-            // 
-            // dateAddedColumn
-            // 
-            this.dateAddedColumn.DataPropertyName = "DateAdded";
-            this.dateAddedColumn.DefaultCellStyle.Format = "yyyy-MM-dd HH:mm";
-            this.dateAddedColumn.FillWeight = 12F;
-            this.dateAddedColumn.HeaderText = "Date Added";
-            this.dateAddedColumn.Name = "dateAddedColumn";
-            this.dateAddedColumn.ReadOnly = true;
-            // 
-            // autoAllowedColumn
-            //
-            this.autoAllowedColumn.DataPropertyName = "AutoAllowedPublisher";
-            this.autoAllowedColumn.FillWeight = 8F;
-            this.autoAllowedColumn.HeaderText = "Origin";
-            this.autoAllowedColumn.Name = "autoAllowedColumn";
-            this.autoAllowedColumn.ReadOnly = true;
-            //
             // filterPanel
             // 
-            this.filterPanel.Anchor = System.Windows.Forms.AnchorStyles.Left;
-            this.filterPanel.AutoSize = true;
-            this.filterPanel.Controls.Add(this.programFilterCheckBox);
-            this.filterPanel.Controls.Add(this.serviceFilterCheckBox);
-            this.filterPanel.Controls.Add(this.uwpFilterCheckBox);
-            this.filterPanel.Controls.Add(this.wildcardFilterCheckBox);
-            this.filterPanel.Controls.Add(this.systemFilterCheckBox);
-            this.filterPanel.Location = new System.Drawing.Point(188, 12);
-            this.filterPanel.Margin = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.filterPanel.Name = "filterPanel";
-            this.filterPanel.Size = new System.Drawing.Size(421, 32);
-            this.filterPanel.TabIndex = 19;
-            this.filterPanel.WrapContents = false;
+            filterPanel.Anchor = AnchorStyles.Left;
+            filterPanel.AutoSize = true;
+            filterPanel.Controls.Add(programFilterCheckBox);
+            filterPanel.Controls.Add(serviceFilterCheckBox);
+            filterPanel.Controls.Add(uwpFilterCheckBox);
+            filterPanel.Controls.Add(wildcardFilterCheckBox);
+            filterPanel.Controls.Add(systemFilterCheckBox);
+            filterPanel.Location = new Point(188, 17);
+            filterPanel.Margin = new Padding(8, 4, 8, 4);
+            filterPanel.Name = "filterPanel";
+            filterPanel.Size = new Size(377, 26);
+            filterPanel.TabIndex = 19;
+            filterPanel.WrapContents = false;
             // 
             // programFilterCheckBox
             // 
-            this.programFilterCheckBox.AutoSize = true;
-            this.programFilterCheckBox.Checked = true;
-            this.programFilterCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.programFilterCheckBox.Location = new System.Drawing.Point(3, 3);
-            this.programFilterCheckBox.Name = "programFilterCheckBox";
-            this.programFilterCheckBox.Size = new System.Drawing.Size(91, 24);
-            this.programFilterCheckBox.TabIndex = 0;
-            this.programFilterCheckBox.Text = "Program";
-            this.programFilterCheckBox.UseVisualStyleBackColor = true;
+            programFilterCheckBox.AutoSize = true;
+            programFilterCheckBox.Checked = true;
+            programFilterCheckBox.CheckState = CheckState.Checked;
+            programFilterCheckBox.Location = new Point(3, 3);
+            programFilterCheckBox.Name = "programFilterCheckBox";
+            programFilterCheckBox.Size = new Size(75, 20);
+            programFilterCheckBox.TabIndex = 0;
+            programFilterCheckBox.Text = "Program";
+            programFilterCheckBox.UseVisualStyleBackColor = true;
             // 
             // serviceFilterCheckBox
             // 
-            this.serviceFilterCheckBox.AutoSize = true;
-            this.serviceFilterCheckBox.Checked = true;
-            this.serviceFilterCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.serviceFilterCheckBox.Location = new System.Drawing.Point(100, 3);
-            this.serviceFilterCheckBox.Name = "serviceFilterCheckBox";
-            this.serviceFilterCheckBox.Size = new System.Drawing.Size(78, 24);
-            this.serviceFilterCheckBox.TabIndex = 1;
-            this.serviceFilterCheckBox.Text = "Service";
-            this.serviceFilterCheckBox.UseVisualStyleBackColor = true;
+            serviceFilterCheckBox.AutoSize = true;
+            serviceFilterCheckBox.Checked = true;
+            serviceFilterCheckBox.CheckState = CheckState.Checked;
+            serviceFilterCheckBox.Location = new Point(84, 3);
+            serviceFilterCheckBox.Name = "serviceFilterCheckBox";
+            serviceFilterCheckBox.Size = new Size(75, 20);
+            serviceFilterCheckBox.TabIndex = 1;
+            serviceFilterCheckBox.Text = "Service";
+            serviceFilterCheckBox.UseVisualStyleBackColor = true;
             // 
             // uwpFilterCheckBox
             // 
-            this.uwpFilterCheckBox.AutoSize = true;
-            this.uwpFilterCheckBox.Checked = true;
-            this.uwpFilterCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.uwpFilterCheckBox.Location = new System.Drawing.Point(184, 3);
-            this.uwpFilterCheckBox.Name = "uwpFilterCheckBox";
-            this.uwpFilterCheckBox.Size = new System.Drawing.Size(64, 24);
-            this.uwpFilterCheckBox.TabIndex = 2;
-            this.uwpFilterCheckBox.Text = "UWP";
-            this.uwpFilterCheckBox.UseVisualStyleBackColor = true;
+            uwpFilterCheckBox.AutoSize = true;
+            uwpFilterCheckBox.Checked = true;
+            uwpFilterCheckBox.CheckState = CheckState.Checked;
+            uwpFilterCheckBox.Location = new Point(165, 3);
+            uwpFilterCheckBox.Name = "uwpFilterCheckBox";
+            uwpFilterCheckBox.Size = new Size(47, 20);
+            uwpFilterCheckBox.TabIndex = 2;
+            uwpFilterCheckBox.Text = "UWP";
+            uwpFilterCheckBox.UseVisualStyleBackColor = true;
             // 
             // wildcardFilterCheckBox
             // 
-            this.wildcardFilterCheckBox.AutoSize = true;
-            this.wildcardFilterCheckBox.Checked = true;
-            this.wildcardFilterCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.wildcardFilterCheckBox.Location = new System.Drawing.Point(254, 3);
-            this.wildcardFilterCheckBox.Name = "wildcardFilterCheckBox";
-            this.wildcardFilterCheckBox.Size = new System.Drawing.Size(88, 24);
-            this.wildcardFilterCheckBox.TabIndex = 3;
-            this.wildcardFilterCheckBox.Text = "Wildcard";
-            this.wildcardFilterCheckBox.UseVisualStyleBackColor = true;
+            wildcardFilterCheckBox.AutoSize = true;
+            wildcardFilterCheckBox.Checked = true;
+            wildcardFilterCheckBox.CheckState = CheckState.Checked;
+            wildcardFilterCheckBox.Location = new Point(218, 3);
+            wildcardFilterCheckBox.Name = "wildcardFilterCheckBox";
+            wildcardFilterCheckBox.Size = new Size(82, 20);
+            wildcardFilterCheckBox.TabIndex = 3;
+            wildcardFilterCheckBox.Text = "Wildcard";
+            wildcardFilterCheckBox.UseVisualStyleBackColor = true;
             // 
             // systemFilterCheckBox
             // 
-            this.systemFilterCheckBox.AutoSize = true;
-            this.systemFilterCheckBox.Location = new System.Drawing.Point(348, 3);
-            this.systemFilterCheckBox.Name = "systemFilterCheckBox";
-            this.systemFilterCheckBox.Size = new System.Drawing.Size(79, 24);
-            this.systemFilterCheckBox.TabIndex = 5;
-            this.systemFilterCheckBox.Text = "System";
-            this.systemFilterCheckBox.UseVisualStyleBackColor = true;
-            this.systemFilterCheckBox.CheckedChanged += new System.EventHandler(this.filterCheckBox_CheckedChanged);
+            systemFilterCheckBox.AutoSize = true;
+            systemFilterCheckBox.Location = new Point(306, 3);
+            systemFilterCheckBox.Name = "systemFilterCheckBox";
+            systemFilterCheckBox.Size = new Size(68, 20);
+            systemFilterCheckBox.TabIndex = 5;
+            systemFilterCheckBox.Text = "System";
+            systemFilterCheckBox.UseVisualStyleBackColor = true;
+            systemFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
             // 
             // topPanel
             // 
-            this.topPanel.ColumnCount = 3;
-            this.topPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.topPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.topPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.topPanel.Controls.Add(this.createRuleButton, 0, 0);
-            this.topPanel.Controls.Add(this.rulesSearchTextBox, 2, 0);
-            this.topPanel.Controls.Add(this.filterPanel, 1, 0);
-            this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.topPanel.Location = new System.Drawing.Point(0, 0);
-            this.topPanel.Margin = new System.Windows.Forms.Padding(0);
-            this.topPanel.Name = "topPanel";
-            this.topPanel.RowCount = 1;
-            this.topPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.topPanel.Size = new System.Drawing.Size(1002, 60);
-            this.topPanel.TabIndex = 20;
+            topPanel.ColumnCount = 3;
+            topPanel.ColumnStyles.Add(new ColumnStyle());
+            topPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            topPanel.ColumnStyles.Add(new ColumnStyle());
+            topPanel.Controls.Add(createRuleButton, 0, 0);
+            topPanel.Controls.Add(rulesSearchTextBox, 2, 0);
+            topPanel.Controls.Add(filterPanel, 1, 0);
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Location = new Point(0, 0);
+            topPanel.Margin = new Padding(0);
+            topPanel.Name = "topPanel";
+            topPanel.RowCount = 1;
+            topPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            topPanel.Size = new Size(1002, 60);
+            topPanel.TabIndex = 20;
+            // 
+            // advIconColumn
+            // 
+            advIconColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            advIconColumn.FillWeight = 3F;
+            advIconColumn.HeaderText = "";
+            advIconColumn.ImageLayout = DataGridViewImageCellLayout.Zoom;
+            advIconColumn.MinimumWidth = 32;
+            advIconColumn.Name = "advIconColumn";
+            advIconColumn.ReadOnly = true;
+            advIconColumn.Resizable = DataGridViewTriState.False;
+            advIconColumn.Width = 32;
+            // 
+            // advNameColumn
+            // 
+            advNameColumn.DataPropertyName = "Name";
+            advNameColumn.FillWeight = 20F;
+            advNameColumn.HeaderText = "Name";
+            advNameColumn.Name = "advNameColumn";
+            advNameColumn.ReadOnly = true;
+            advNameColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // inboundStatusColumn
+            // 
+            inboundStatusColumn.DataPropertyName = "InboundStatus";
+            inboundStatusColumn.FillWeight = 10F;
+            inboundStatusColumn.HeaderText = "Inbound";
+            inboundStatusColumn.Name = "inboundStatusColumn";
+            inboundStatusColumn.ReadOnly = true;
+            inboundStatusColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // outboundStatusColumn
+            // 
+            outboundStatusColumn.DataPropertyName = "OutboundStatus";
+            outboundStatusColumn.FillWeight = 10F;
+            outboundStatusColumn.HeaderText = "Outbound";
+            outboundStatusColumn.Name = "outboundStatusColumn";
+            outboundStatusColumn.ReadOnly = true;
+            outboundStatusColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advProtocolColumn
+            // 
+            advProtocolColumn.DataPropertyName = "ProtocolName";
+            advProtocolColumn.FillWeight = 8F;
+            advProtocolColumn.HeaderText = "Protocol";
+            advProtocolColumn.Name = "advProtocolColumn";
+            advProtocolColumn.ReadOnly = true;
+            advProtocolColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advLocalPortsColumn
+            // 
+            advLocalPortsColumn.DataPropertyName = "LocalPorts";
+            advLocalPortsColumn.FillWeight = 12F;
+            advLocalPortsColumn.HeaderText = "Local Ports";
+            advLocalPortsColumn.Name = "advLocalPortsColumn";
+            advLocalPortsColumn.ReadOnly = true;
+            advLocalPortsColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advRemotePortsColumn
+            // 
+            advRemotePortsColumn.DataPropertyName = "RemotePorts";
+            advRemotePortsColumn.FillWeight = 12F;
+            advRemotePortsColumn.HeaderText = "Remote Ports";
+            advRemotePortsColumn.Name = "advRemotePortsColumn";
+            advRemotePortsColumn.ReadOnly = true;
+            advRemotePortsColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advLocalAddressColumn
+            // 
+            advLocalAddressColumn.DataPropertyName = "LocalAddresses";
+            advLocalAddressColumn.FillWeight = 15F;
+            advLocalAddressColumn.HeaderText = "Local Address";
+            advLocalAddressColumn.Name = "advLocalAddressColumn";
+            advLocalAddressColumn.ReadOnly = true;
+            advLocalAddressColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advRemoteAddressColumn
+            // 
+            advRemoteAddressColumn.DataPropertyName = "RemoteAddresses";
+            advRemoteAddressColumn.FillWeight = 15F;
+            advRemoteAddressColumn.HeaderText = "Remote Address";
+            advRemoteAddressColumn.Name = "advRemoteAddressColumn";
+            advRemoteAddressColumn.ReadOnly = true;
+            advRemoteAddressColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advProgramColumn
+            // 
+            advProgramColumn.DataPropertyName = "ApplicationName";
+            advProgramColumn.FillWeight = 25F;
+            advProgramColumn.HeaderText = "Program";
+            advProgramColumn.Name = "advProgramColumn";
+            advProgramColumn.ReadOnly = true;
+            advProgramColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advServiceColumn
+            // 
+            advServiceColumn.DataPropertyName = "ServiceName";
+            advServiceColumn.FillWeight = 15F;
+            advServiceColumn.HeaderText = "Service";
+            advServiceColumn.Name = "advServiceColumn";
+            advServiceColumn.ReadOnly = true;
+            advServiceColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advProfilesColumn
+            // 
+            advProfilesColumn.DataPropertyName = "Profiles";
+            advProfilesColumn.FillWeight = 10F;
+            advProfilesColumn.HeaderText = "Profiles";
+            advProfilesColumn.Name = "advProfilesColumn";
+            advProfilesColumn.ReadOnly = true;
+            advProfilesColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advGroupingColumn
+            // 
+            advGroupingColumn.DataPropertyName = "Grouping";
+            advGroupingColumn.FillWeight = 15F;
+            advGroupingColumn.HeaderText = "Group";
+            advGroupingColumn.Name = "advGroupingColumn";
+            advGroupingColumn.ReadOnly = true;
+            advGroupingColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advDescColumn
+            // 
+            advDescColumn.DataPropertyName = "Description";
+            advDescColumn.FillWeight = 30F;
+            advDescColumn.HeaderText = "Description";
+            advDescColumn.Name = "advDescColumn";
+            advDescColumn.ReadOnly = true;
+            advDescColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // dateAddedColumn
+            // 
+            dateAddedColumn.DataPropertyName = "DateAdded";
+            dataGridViewCellStyle1.Format = "yyyy-MM-dd HH:mm";
+            dateAddedColumn.DefaultCellStyle = dataGridViewCellStyle1;
+            dateAddedColumn.FillWeight = 12F;
+            dateAddedColumn.HeaderText = "Date Added";
+            dateAddedColumn.Name = "dateAddedColumn";
+            dateAddedColumn.ReadOnly = true;
+            dateAddedColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // autoAllowedColumn
+            // 
+            autoAllowedColumn.DataPropertyName = "AutoAllowedPublisher";
+            autoAllowedColumn.FillWeight = 8F;
+            autoAllowedColumn.HeaderText = "Origin";
+            autoAllowedColumn.Name = "autoAllowedColumn";
+            autoAllowedColumn.ReadOnly = true;
+            autoAllowedColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // RulesControl
             // 
-            this.Controls.Add(this.topPanel);
-            this.Controls.Add(this.rulesDataGridView);
-            this.Name = "RulesControl";
-            this.Size = new System.Drawing.Size(1002, 911);
-            this.rulesContextMenu.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.rulesDataGridView)).EndInit();
-            this.filterPanel.ResumeLayout(false);
-            this.filterPanel.PerformLayout();
-            this.topPanel.ResumeLayout(false);
-            this.topPanel.PerformLayout();
-            this.ResumeLayout(false);
+            Controls.Add(topPanel);
+            Controls.Add(rulesDataGridView);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Name = "RulesControl";
+            Size = new Size(1002, 911);
+            rulesContextMenu.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).EndInit();
+            filterPanel.ResumeLayout(false);
+            filterPanel.PerformLayout();
+            topPanel.ResumeLayout(false);
+            topPanel.PerformLayout();
+            ResumeLayout(false);
         }
+
+        private DataGridViewImageColumn advIconColumn;
+        private DataGridViewTextBoxColumn advNameColumn;
+        private DataGridViewTextBoxColumn inboundStatusColumn;
+        private DataGridViewTextBoxColumn outboundStatusColumn;
+        private DataGridViewTextBoxColumn advProtocolColumn;
+        private DataGridViewTextBoxColumn advLocalPortsColumn;
+        private DataGridViewTextBoxColumn advRemotePortsColumn;
+        private DataGridViewTextBoxColumn advLocalAddressColumn;
+        private DataGridViewTextBoxColumn advRemoteAddressColumn;
+        private DataGridViewTextBoxColumn advProgramColumn;
+        private DataGridViewTextBoxColumn advServiceColumn;
+        private DataGridViewTextBoxColumn advProfilesColumn;
+        private DataGridViewTextBoxColumn advGroupingColumn;
+        private DataGridViewTextBoxColumn advDescColumn;
+        private DataGridViewTextBoxColumn dateAddedColumn;
+        private DataGridViewTextBoxColumn autoAllowedColumn;
     }
 }

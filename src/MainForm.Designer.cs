@@ -59,7 +59,7 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             mainTabControl = new DarkModeForms.FlatTabControl();
             dashboardTabPage = new TabPage();
             logoPictureBox = new PictureBox();
@@ -85,9 +85,9 @@ namespace MinimalFirewall
             appIconList = new ImageList(components);
             mainTabControl.SuspendLayout();
             dashboardTabPage.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(logoPictureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)logoPictureBox).BeginInit();
             logoPictureBox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(arrowPictureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)arrowPictureBox).BeginInit();
             rulesTabPage.SuspendLayout();
             wildcardRulesTabPage.SuspendLayout();
             systemChangesTabPage.SuspendLayout();
@@ -109,12 +109,12 @@ namespace MinimalFirewall
             mainTabControl.Dock = DockStyle.Fill;
             mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             mainTabControl.ImageList = appImageList;
-            mainTabControl.ItemSize = new Size(70, 120);
+            mainTabControl.ItemSize = new Size(85, 120);
             mainTabControl.Location = new Point(0, 0);
             mainTabControl.Multiline = true;
             mainTabControl.Name = "mainTabControl";
             mainTabControl.SelectedIndex = 0;
-            mainTabControl.Size = new Size(1000, 700);
+            mainTabControl.Size = new Size(1000, 747);
             mainTabControl.SizeMode = TabSizeMode.Fixed;
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
@@ -127,8 +127,8 @@ namespace MinimalFirewall
             dashboardTabPage.ImageIndex = 3;
             dashboardTabPage.Location = new Point(124, 4);
             dashboardTabPage.Name = "dashboardTabPage";
-            dashboardTabPage.Padding = new Padding(3, 3, 3, 3);
-            dashboardTabPage.Size = new Size(872, 692);
+            dashboardTabPage.Padding = new Padding(3);
+            dashboardTabPage.Size = new Size(872, 739);
             dashboardTabPage.TabIndex = 0;
             dashboardTabPage.Text = "Dashboard";
             dashboardTabPage.UseVisualStyleBackColor = true;
@@ -140,7 +140,7 @@ namespace MinimalFirewall
             logoPictureBox.Dock = DockStyle.Fill;
             logoPictureBox.Location = new Point(3, 3);
             logoPictureBox.Name = "logoPictureBox";
-            logoPictureBox.Size = new Size(866, 686);
+            logoPictureBox.Size = new Size(866, 733);
             logoPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             logoPictureBox.TabIndex = 1;
             logoPictureBox.TabStop = false;
@@ -149,9 +149,9 @@ namespace MinimalFirewall
             // 
             arrowPictureBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             arrowPictureBox.BackColor = Color.Transparent;
-            arrowPictureBox.Location = new Point(20, 620);
+            arrowPictureBox.Location = new Point(20, 662);
             arrowPictureBox.Name = "arrowPictureBox";
-            arrowPictureBox.Size = new Size(60, 40);
+            arrowPictureBox.Size = new Size(60, 43);
             arrowPictureBox.TabIndex = 3;
             arrowPictureBox.TabStop = false;
             arrowPictureBox.Paint += ArrowPictureBox_Paint;
@@ -162,7 +162,7 @@ namespace MinimalFirewall
             instructionLabel.AutoSize = true;
             instructionLabel.BackColor = Color.Transparent;
             instructionLabel.Font = new Font("Segoe UI", 9F);
-            instructionLabel.Location = new Point(20, 590);
+            instructionLabel.Location = new Point(20, 630);
             instructionLabel.Name = "instructionLabel";
             instructionLabel.Size = new Size(241, 15);
             instructionLabel.TabIndex = 2;
@@ -174,7 +174,7 @@ namespace MinimalFirewall
             dashboardControl1.Location = new Point(3, 3);
             dashboardControl1.Margin = new Padding(3, 2, 3, 2);
             dashboardControl1.Name = "dashboardControl1";
-            dashboardControl1.Size = new Size(866, 686);
+            dashboardControl1.Size = new Size(866, 733);
             dashboardControl1.TabIndex = 2;
             // 
             // rulesTabPage
@@ -183,8 +183,8 @@ namespace MinimalFirewall
             rulesTabPage.ImageIndex = 8;
             rulesTabPage.Location = new Point(124, 4);
             rulesTabPage.Name = "rulesTabPage";
-            rulesTabPage.Padding = new Padding(3, 3, 3, 3);
-            rulesTabPage.Size = new Size(872, 692);
+            rulesTabPage.Padding = new Padding(3);
+            rulesTabPage.Size = new Size(872, 739);
             rulesTabPage.TabIndex = 1;
             rulesTabPage.Text = "Rules";
             rulesTabPage.UseVisualStyleBackColor = true;
@@ -195,7 +195,7 @@ namespace MinimalFirewall
             rulesControl1.Location = new Point(3, 3);
             rulesControl1.Margin = new Padding(3, 2, 3, 2);
             rulesControl1.Name = "rulesControl1";
-            rulesControl1.Size = new Size(866, 686);
+            rulesControl1.Size = new Size(866, 733);
             rulesControl1.TabIndex = 0;
             // 
             // wildcardRulesTabPage
@@ -206,7 +206,7 @@ namespace MinimalFirewall
             wildcardRulesTabPage.Margin = new Padding(3, 2, 3, 2);
             wildcardRulesTabPage.Name = "wildcardRulesTabPage";
             wildcardRulesTabPage.Padding = new Padding(3, 2, 3, 2);
-            wildcardRulesTabPage.Size = new Size(872, 692);
+            wildcardRulesTabPage.Size = new Size(872, 739);
             wildcardRulesTabPage.TabIndex = 7;
             wildcardRulesTabPage.Text = "Wildcard Rules";
             wildcardRulesTabPage.UseVisualStyleBackColor = true;
@@ -217,7 +217,7 @@ namespace MinimalFirewall
             wildcardRulesControl1.Location = new Point(3, 2);
             wildcardRulesControl1.Margin = new Padding(3, 2, 3, 2);
             wildcardRulesControl1.Name = "wildcardRulesControl1";
-            wildcardRulesControl1.Size = new Size(866, 688);
+            wildcardRulesControl1.Size = new Size(866, 735);
             wildcardRulesControl1.TabIndex = 0;
             // 
             // systemChangesTabPage
@@ -226,7 +226,7 @@ namespace MinimalFirewall
             systemChangesTabPage.ImageIndex = 1;
             systemChangesTabPage.Location = new Point(124, 4);
             systemChangesTabPage.Name = "systemChangesTabPage";
-            systemChangesTabPage.Size = new Size(872, 692);
+            systemChangesTabPage.Size = new Size(872, 739);
             systemChangesTabPage.TabIndex = 2;
             systemChangesTabPage.Text = "Audit";
             systemChangesTabPage.UseVisualStyleBackColor = true;
@@ -237,7 +237,7 @@ namespace MinimalFirewall
             auditControl1.Location = new Point(0, 0);
             auditControl1.Margin = new Padding(3, 2, 3, 2);
             auditControl1.Name = "auditControl1";
-            auditControl1.Size = new Size(872, 692);
+            auditControl1.Size = new Size(872, 739);
             auditControl1.TabIndex = 0;
             // 
             // groupsTabPage
@@ -246,8 +246,8 @@ namespace MinimalFirewall
             groupsTabPage.ImageIndex = 4;
             groupsTabPage.Location = new Point(124, 4);
             groupsTabPage.Name = "groupsTabPage";
-            groupsTabPage.Padding = new Padding(3, 3, 3, 3);
-            groupsTabPage.Size = new Size(872, 692);
+            groupsTabPage.Padding = new Padding(3);
+            groupsTabPage.Size = new Size(872, 739);
             groupsTabPage.TabIndex = 5;
             groupsTabPage.Text = "Groups";
             groupsTabPage.UseVisualStyleBackColor = true;
@@ -258,7 +258,7 @@ namespace MinimalFirewall
             groupsControl1.Location = new Point(3, 3);
             groupsControl1.Margin = new Padding(3, 2, 3, 2);
             groupsControl1.Name = "groupsControl1";
-            groupsControl1.Size = new Size(866, 686);
+            groupsControl1.Size = new Size(866, 733);
             groupsControl1.TabIndex = 0;
             // 
             // liveConnectionsTabPage
@@ -267,8 +267,8 @@ namespace MinimalFirewall
             liveConnectionsTabPage.ImageIndex = 0;
             liveConnectionsTabPage.Location = new Point(124, 4);
             liveConnectionsTabPage.Name = "liveConnectionsTabPage";
-            liveConnectionsTabPage.Padding = new Padding(3, 3, 3, 3);
-            liveConnectionsTabPage.Size = new Size(872, 692);
+            liveConnectionsTabPage.Padding = new Padding(3);
+            liveConnectionsTabPage.Size = new Size(872, 739);
             liveConnectionsTabPage.TabIndex = 6;
             liveConnectionsTabPage.Text = "Live Connections";
             liveConnectionsTabPage.UseVisualStyleBackColor = true;
@@ -279,7 +279,7 @@ namespace MinimalFirewall
             liveConnectionsControl1.Location = new Point(3, 3);
             liveConnectionsControl1.Margin = new Padding(3, 2, 3, 2);
             liveConnectionsControl1.Name = "liveConnectionsControl1";
-            liveConnectionsControl1.Size = new Size(866, 686);
+            liveConnectionsControl1.Size = new Size(866, 733);
             liveConnectionsControl1.TabIndex = 0;
             // 
             // settingsTabPage
@@ -288,7 +288,7 @@ namespace MinimalFirewall
             settingsTabPage.ImageIndex = 9;
             settingsTabPage.Location = new Point(124, 4);
             settingsTabPage.Name = "settingsTabPage";
-            settingsTabPage.Size = new Size(872, 692);
+            settingsTabPage.Size = new Size(872, 739);
             settingsTabPage.TabIndex = 4;
             settingsTabPage.Text = "Settings";
             settingsTabPage.UseVisualStyleBackColor = true;
@@ -296,10 +296,11 @@ namespace MinimalFirewall
             // settingsControl1
             // 
             settingsControl1.Dock = DockStyle.Fill;
+            settingsControl1.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             settingsControl1.Location = new Point(0, 0);
             settingsControl1.Margin = new Padding(3, 2, 3, 2);
             settingsControl1.Name = "settingsControl1";
-            settingsControl1.Size = new Size(872, 692);
+            settingsControl1.Size = new Size(872, 739);
             settingsControl1.TabIndex = 0;
             // 
             // appImageList
@@ -327,9 +328,9 @@ namespace MinimalFirewall
             lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
             lockdownButton.FlatAppearance.BorderSize = 2;
             lockdownButton.FlatStyle = FlatStyle.Flat;
-            lockdownButton.Location = new Point(68, 648);
+            lockdownButton.Location = new Point(68, 691);
             lockdownButton.Name = "lockdownButton";
-            lockdownButton.Size = new Size(44, 44);
+            lockdownButton.Size = new Size(44, 47);
             lockdownButton.TabIndex = 3;
             lockdownButton.UseVisualStyleBackColor = false;
             lockdownButton.Click += ToggleLockdownButton_Click;
@@ -343,9 +344,9 @@ namespace MinimalFirewall
             rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
             rescanButton.FlatAppearance.BorderSize = 2;
             rescanButton.FlatStyle = FlatStyle.Flat;
-            rescanButton.Location = new Point(16, 648);
+            rescanButton.Location = new Point(16, 691);
             rescanButton.Name = "rescanButton";
-            rescanButton.Size = new Size(44, 44);
+            rescanButton.Size = new Size(44, 47);
             rescanButton.TabIndex = 1;
             rescanButton.UseVisualStyleBackColor = false;
             rescanButton.Click += RescanButton_Click;
@@ -360,20 +361,21 @@ namespace MinimalFirewall
             // 
             // MainForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1000, 700);
+            ClientSize = new Size(1000, 747);
             Controls.Add(rescanButton);
             Controls.Add(lockdownButton);
             Controls.Add(mainTabControl);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Name = "MainForm";
             FormClosing += MainForm_FormClosing;
             mainTabControl.ResumeLayout(false);
             dashboardTabPage.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(logoPictureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)logoPictureBox).EndInit();
             logoPictureBox.ResumeLayout(false);
             logoPictureBox.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(arrowPictureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)arrowPictureBox).EndInit();
             rulesTabPage.ResumeLayout(false);
             wildcardRulesTabPage.ResumeLayout(false);
             systemChangesTabPage.ResumeLayout(false);

@@ -1,4 +1,4 @@
-﻿namespace MinimalFirewall
+namespace MinimalFirewall
 {
     partial class BrowseServicesForm
     {
@@ -22,91 +22,91 @@
 
         private void InitializeComponent()
         {
-            this.searchTextBox = new System.Windows.Forms.TextBox();
-            this.servicesListBox = new System.Windows.Forms.ListBox();
-            this.okButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.bottomPanel = new System.Windows.Forms.Panel();
-            this.bottomPanel.SuspendLayout();
-            this.SuspendLayout();
+            searchTextBox = new TextBox();
+            servicesListBox = new ListBox();
+            okButton = new Button();
+            cancelButton = new Button();
+            bottomPanel = new Panel();
+            bottomPanel.SuspendLayout();
+            SuspendLayout();
             // 
             // searchTextBox
             // 
-            this.searchTextBox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.searchTextBox.Location = new System.Drawing.Point(10, 10);
-            this.searchTextBox.Name = "searchTextBox";
-            this.searchTextBox.PlaceholderText = "Search services...";
-            this.searchTextBox.Size = new System.Drawing.Size(464, 23);
-            this.searchTextBox.TabIndex = 0;
-            this.searchTextBox.TextChanged += new System.EventHandler(this.searchTextBox_TextChanged);
+            searchTextBox.Dock = DockStyle.Top;
+            searchTextBox.Location = new Point(10, 11);
+            searchTextBox.Name = "searchTextBox";
+            searchTextBox.PlaceholderText = "Search services...";
+            searchTextBox.Size = new Size(464, 23);
+            searchTextBox.TabIndex = 0;
+            searchTextBox.TextChanged += searchTextBox_TextChanged;
             // 
             // servicesListBox
             // 
-            this.servicesListBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.servicesListBox.FormattingEnabled = true;
-            this.servicesListBox.IntegralHeight = false;
-            this.servicesListBox.ItemHeight = 15;
-            this.servicesListBox.Location = new System.Drawing.Point(10, 33);
-            this.servicesListBox.Name = "servicesListBox";
-            this.servicesListBox.Size = new System.Drawing.Size(464, 358);
-            this.servicesListBox.TabIndex = 1;
-            this.servicesListBox.DoubleClick += new System.EventHandler(this.servicesListBox_DoubleClick);
+            servicesListBox.Dock = DockStyle.Fill;
+            servicesListBox.FormattingEnabled = true;
+            servicesListBox.IntegralHeight = false;
+            servicesListBox.Location = new Point(10, 34);
+            servicesListBox.Name = "servicesListBox";
+            servicesListBox.Size = new Size(464, 383);
+            servicesListBox.TabIndex = 1;
+            servicesListBox.DoubleClick += servicesListBox_DoubleClick;
             // 
             // okButton
             // 
-            this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.okButton.Location = new System.Drawing.Point(265, 12);
-            this.okButton.Name = "okButton";
-            this.okButton.Size = new System.Drawing.Size(100, 36);
-            this.okButton.TabIndex = 0;
-            this.okButton.Text = "OK";
-            this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+            okButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            okButton.Location = new Point(245, 13);
+            okButton.Name = "okButton";
+            okButton.Size = new Size(100, 38);
+            okButton.TabIndex = 0;
+            okButton.Text = "OK";
+            okButton.UseVisualStyleBackColor = true;
+            okButton.Click += okButton_Click;
             // 
             // cancelButton
             // 
-            this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.Location = new System.Drawing.Point(371, 12);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(100, 36);
-            this.cancelButton.TabIndex = 1;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            cancelButton.DialogResult = DialogResult.Cancel;
+            cancelButton.Location = new Point(351, 13);
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new Size(100, 38);
+            cancelButton.TabIndex = 1;
+            cancelButton.Text = "Cancel";
+            cancelButton.UseVisualStyleBackColor = true;
+            cancelButton.Click += cancelButton_Click;
             // 
             // bottomPanel
             // 
-            this.bottomPanel.Controls.Add(this.cancelButton);
-            this.bottomPanel.Controls.Add(this.okButton);
-            this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.bottomPanel.Location = new System.Drawing.Point(0, 391);
-            this.bottomPanel.Name = "bottomPanel";
-            this.bottomPanel.Size = new System.Drawing.Size(484, 60);
-            this.bottomPanel.TabIndex = 2;
+            bottomPanel.Controls.Add(cancelButton);
+            bottomPanel.Controls.Add(okButton);
+            bottomPanel.Dock = DockStyle.Bottom;
+            bottomPanel.Location = new Point(10, 417);
+            bottomPanel.Name = "bottomPanel";
+            bottomPanel.Size = new Size(464, 64);
+            bottomPanel.TabIndex = 2;
             // 
             // BrowseServicesForm
             // 
-            this.AcceptButton = this.okButton;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.cancelButton;
-            this.ClientSize = new System.Drawing.Size(484, 451);
-            this.Controls.Add(this.servicesListBox);
-            this.Controls.Add(this.searchTextBox);
-            this.Controls.Add(this.bottomPanel);
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(400, 300);
-            this.Name = "BrowseServicesForm";
-            this.Padding = new System.Windows.Forms.Padding(10, 10, 10, 0);
-            this.ShowIcon = false;
-            this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Browse Services";
-            this.bottomPanel.ResumeLayout(false);
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AcceptButton = okButton;
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            CancelButton = cancelButton;
+            ClientSize = new Size(484, 481);
+            Controls.Add(servicesListBox);
+            Controls.Add(searchTextBox);
+            Controls.Add(bottomPanel);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            MinimumSize = new Size(400, 317);
+            Name = "BrowseServicesForm";
+            Padding = new Padding(10, 11, 10, 0);
+            ShowIcon = false;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Browse Services";
+            bottomPanel.ResumeLayout(false);
+            ResumeLayout(false);
+            PerformLayout();
 
         }
 
