@@ -124,6 +124,7 @@ namespace MinimalFirewall
             mainPanel = new Panel();
             bottomPanel = new Panel();
             errorProvider1 = new ErrorProvider(components);
+            toolTip1 = new ToolTip(components);
             actionGroupBox.SuspendLayout();
             directionGroupBox.SuspendLayout();
             programGroupBox.SuspendLayout();
@@ -333,6 +334,7 @@ namespace MinimalFirewall
             serviceNameTextBox.Name = "serviceNameTextBox";
             serviceNameTextBox.Size = new Size(521, 23);
             serviceNameTextBox.TabIndex = 4;
+            toolTip1.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
             // 
             // labelService
             // 
@@ -526,6 +528,7 @@ namespace MinimalFirewall
             remoteAddressTextBox.Size = new Size(539, 23);
             remoteAddressTextBox.TabIndex = 3;
             remoteAddressTextBox.Text = "*";
+            toolTip1.SetToolTip(remoteAddressTextBox, "Supports IPs, Subnets, Ranges, and keywords: \\nLocalSubnet\\nDNS\\nDHCP\\nWINS\\nDefaultGateway");
             remoteAddressTextBox.Validating += remoteAddressTextBox_Validating;
             // 
             // labelRemoteAddress
@@ -546,6 +549,7 @@ namespace MinimalFirewall
             localAddressTextBox.Size = new Size(539, 23);
             localAddressTextBox.TabIndex = 1;
             localAddressTextBox.Text = "*";
+            toolTip1.SetToolTip(localAddressTextBox, "Supports IPs, Subnets, Ranges, and keywords: \\nLocalSubnet\\nDNS\\nDHCP\\nWINS\\nDefaultGateway");
             localAddressTextBox.Validating += localAddressTextBox_Validating;
             // 
             // labelLocalAddress
@@ -705,6 +709,7 @@ namespace MinimalFirewall
             groupComboBox.Name = "groupComboBox";
             groupComboBox.Size = new Size(337, 24);
             groupComboBox.TabIndex = 17;
+            toolTip1.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
             // 
             // addGroupButton
             // 
@@ -764,6 +769,7 @@ namespace MinimalFirewall
             // 
             AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
+            AutoValidate = AutoValidate.EnableAllowFocusChange;
             ClientSize = new Size(730, 526);
             Controls.Add(mainPanel);
             Controls.Add(bottomPanel);
@@ -799,5 +805,7 @@ namespace MinimalFirewall
 
         }
         #endregion
+
+        private ToolTip toolTip1;
     }
 }

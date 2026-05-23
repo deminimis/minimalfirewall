@@ -22,7 +22,6 @@ namespace MinimalFirewall
         private readonly FirewallActionsService _actionsService;
         private readonly FirewallRuleViewModel _viewModel;
         private readonly FirewallGroupManager _groupManager;
-        private readonly ToolTip _toolTip;
         private readonly AppSettings _appSettings;
         public AdvancedRuleViewModel? RuleVm { get; private set; }
         private readonly AdvancedRuleViewModel? _originalRuleVm;
@@ -30,39 +29,18 @@ namespace MinimalFirewall
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, AppSettings appSettings)
         {
             InitializeComponent();
-            AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
+
             _appSettings = appSettings;
-
-
-            dm = new DarkModeCS(this)
-            {
-                ColorMode = appSettings.Theme == "Dark" ?
-                    DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
-            };
             _actionsService = actionsService;
             _groupManager = new FirewallGroupManager();
-            _toolTip = new ToolTip();
             _viewModel = new FirewallRuleViewModel();
-            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
+            InitializeState();
 
-            protocolComboBox.Items.AddRange(
-            [
-                ProtocolTypes.Any,
-                ProtocolTypes.TCP,
-                ProtocolTypes.UDP,
-                ProtocolTypes.ICMPv4,
-                ProtocolTypes.ICMPv6,
-                ProtocolTypes.IGMP
-            ]);
-            protocolComboBox.SelectedItem = ProtocolTypes.Any;
-            LoadFirewallGroups();
-            _toolTip.SetToolTip(groupComboBox, "Select an existing group, or type a new name to create a new group.");
-            _toolTip.SetToolTip(serviceNameTextBox, "Enter the exact service name (not display name).");
+            dm = new DarkModeCS(this);
+            ApplyDynamicTheme();
 
-            string addressTooltip = "Supports IPs, Subnets, Ranges, and keywords:\nLocalSubnet\nDNS\nDHCP\nWINS\nDefaultGateway";
-            _toolTip.SetToolTip(localAddressTextBox, addressTooltip);
-            _toolTip.SetToolTip(remoteAddressTextBox, addressTooltip);
+            BindDynamicUI();
         }
 
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, string appPath, string direction, AppSettings appSettings)
@@ -94,7 +72,41 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            dm.ApplyTheme(_appSettings.Theme == "Dark");
+            ApplyDynamicLayout();
+        }
+
+        // Logic, theme, layout
+
+        private void InitializeState()
+        {
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        }
+
+        private void ApplyDynamicTheme()
+        {
+            bool isDark = _appSettings.Theme == "Dark";
+            dm.ColorMode = isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ApplyTheme(isDark);
+        }
+
+        private void BindDynamicUI()
+        {
+            // Custom struct/type in code, not designer
+            protocolComboBox.Items.AddRange(
+            [
+                ProtocolTypes.Any,
+                ProtocolTypes.TCP,
+                ProtocolTypes.UDP,
+                ProtocolTypes.ICMPv4,
+                ProtocolTypes.ICMPv6,
+                ProtocolTypes.IGMP
+            ]);
+            protocolComboBox.SelectedItem = ProtocolTypes.Any;
+            LoadFirewallGroups();
+        }
+
+        private void ApplyDynamicLayout()
+        {
             var workingArea = Screen.FromControl(this).WorkingArea;
             if (Height > workingArea.Height)
             {
