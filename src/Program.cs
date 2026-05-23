@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace MinimalFirewall
@@ -24,6 +25,8 @@ namespace MinimalFirewall
                 Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+
+                Application.SetDefaultFont(new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point));
 
                 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
                 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;

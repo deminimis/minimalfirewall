@@ -1,4 +1,4 @@
-﻿// File: WildcardCreatorForm.Designer.cs
+// File: WildcardCreatorForm.Designer.cs
 namespace MinimalFirewall
 {
     public partial class WildcardCreatorForm
@@ -40,283 +40,298 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.browseButton = new System.Windows.Forms.Button();
-            this.folderPathTextBox = new System.Windows.Forms.TextBox();
-            this.exeNameTextBox = new System.Windows.Forms.TextBox();
-            this.actionGroupBox = new System.Windows.Forms.GroupBox();
-            this.directionCombo = new DarkModeForms.FlatComboBox();
-            this.blockRadio = new System.Windows.Forms.RadioButton();
-            this.allowRadio = new System.Windows.Forms.RadioButton();
-            this.okButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.instructionLabel = new System.Windows.Forms.Label();
-            this.exeNameNoteLabel = new System.Windows.Forms.Label();
-            this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
-            this.advancedButton = new System.Windows.Forms.Button();
-            this.advancedGroupBox = new System.Windows.Forms.GroupBox();
-            this.remoteAddressTextBox = new System.Windows.Forms.TextBox();
-            this.labelRemoteAddress = new System.Windows.Forms.Label();
-            this.remotePortsTextBox = new System.Windows.Forms.TextBox();
-            this.labelRemotePorts = new System.Windows.Forms.Label();
-            this.localPortsTextBox = new System.Windows.Forms.TextBox();
-            this.labelLocalPorts = new System.Windows.Forms.Label();
-            this.protocolComboBox = new DarkModeForms.FlatComboBox();
-            this.labelProtocol = new System.Windows.Forms.Label();
-            this.actionGroupBox.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
-            this.advancedGroupBox.SuspendLayout();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            var resources = new System.ComponentModel.ComponentResourceManager(typeof(WildcardCreatorForm));
+            browseButton = new Button();
+            folderPathTextBox = new TextBox();
+            exeNameTextBox = new TextBox();
+            actionGroupBox = new GroupBox();
+            directionCombo = new DarkModeForms.FlatComboBox();
+            blockRadio = new RadioButton();
+            allowRadio = new RadioButton();
+            okButton = new Button();
+            cancelButton = new Button();
+            instructionLabel = new Label();
+            exeNameNoteLabel = new Label();
+            errorProvider1 = new ErrorProvider(components);
+            advancedButton = new Button();
+            advancedGroupBox = new GroupBox();
+            remoteAddressTextBox = new TextBox();
+            labelRemoteAddress = new Label();
+            remotePortsTextBox = new TextBox();
+            labelRemotePorts = new Label();
+            localPortsTextBox = new TextBox();
+            labelLocalPorts = new Label();
+            protocolComboBox = new DarkModeForms.FlatComboBox();
+            labelProtocol = new Label();
+            actionGroupBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)errorProvider1).BeginInit();
+            advancedGroupBox.SuspendLayout();
+            SuspendLayout();
             // 
             // browseButton
             // 
-            this.browseButton.Location = new System.Drawing.Point(377, 120);
-            this.browseButton.Name = "browseButton";
-            this.browseButton.Size = new System.Drawing.Size(100, 29);
-            this.browseButton.TabIndex = 0;
-            this.browseButton.Text = "Browse...";
-            this.browseButton.UseVisualStyleBackColor = true;
-            this.browseButton.Click += new System.EventHandler(this.browseButton_Click);
+            browseButton.Location = new Point(330, 96);
+            browseButton.Margin = new Padding(3, 2, 3, 2);
+            browseButton.Name = "browseButton";
+            browseButton.Size = new Size(88, 23);
+            browseButton.TabIndex = 0;
+            browseButton.Text = "Browse...";
+            browseButton.UseVisualStyleBackColor = true;
+            browseButton.Click += browseButton_Click;
             // 
             // folderPathTextBox
             // 
-            this.folderPathTextBox.Location = new System.Drawing.Point(23, 120);
-            this.folderPathTextBox.Name = "folderPathTextBox";
-            this.folderPathTextBox.Size = new System.Drawing.Size(347, 27);
-            this.folderPathTextBox.TabIndex = 1;
-            this.folderPathTextBox.PlaceholderText = "Enter folder path";
+            folderPathTextBox.Location = new Point(20, 96);
+            folderPathTextBox.Margin = new Padding(3, 2, 3, 2);
+            folderPathTextBox.Name = "folderPathTextBox";
+            folderPathTextBox.PlaceholderText = "Enter folder path";
+            folderPathTextBox.Size = new Size(304, 23);
+            folderPathTextBox.TabIndex = 1;
             // 
             // exeNameTextBox
             // 
-            this.exeNameTextBox.Location = new System.Drawing.Point(23, 170);
-            this.exeNameTextBox.Name = "exeNameTextBox";
-            this.exeNameTextBox.Size = new System.Drawing.Size(454, 27);
-            this.exeNameTextBox.TabIndex = 2;
-            this.exeNameTextBox.PlaceholderText = "Optional: Filter by .exe name (e.g., svchost.exe or vs_*.exe)";
+            exeNameTextBox.Location = new Point(20, 137);
+            exeNameTextBox.Margin = new Padding(3, 2, 3, 2);
+            exeNameTextBox.Name = "exeNameTextBox";
+            exeNameTextBox.PlaceholderText = "Optional: Filter by .exe name (e.g., svchost.exe or vs_*.exe)";
+            exeNameTextBox.Size = new Size(398, 23);
+            exeNameTextBox.TabIndex = 2;
             // 
             // actionGroupBox
             // 
-            this.actionGroupBox.Controls.Add(this.directionCombo);
-            this.actionGroupBox.Controls.Add(this.blockRadio);
-            this.actionGroupBox.Controls.Add(this.allowRadio);
-            this.actionGroupBox.Location = new System.Drawing.Point(23, 240);
-            this.actionGroupBox.Name = "actionGroupBox";
-            this.actionGroupBox.Size = new System.Drawing.Size(454, 150);
-            this.actionGroupBox.TabIndex = 3;
-            this.actionGroupBox.TabStop = false;
-            this.actionGroupBox.Text = "Action";
+            actionGroupBox.Controls.Add(directionCombo);
+            actionGroupBox.Controls.Add(blockRadio);
+            actionGroupBox.Controls.Add(allowRadio);
+            actionGroupBox.Location = new Point(20, 192);
+            actionGroupBox.Margin = new Padding(3, 2, 3, 2);
+            actionGroupBox.Name = "actionGroupBox";
+            actionGroupBox.Padding = new Padding(3, 2, 3, 2);
+            actionGroupBox.Size = new Size(397, 119);
+            actionGroupBox.TabIndex = 3;
+            actionGroupBox.TabStop = false;
+            actionGroupBox.Text = "Action";
             // 
             // directionCombo
             // 
-            this.directionCombo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.directionCombo.FormattingEnabled = true;
-            this.directionCombo.Items.AddRange(new object[] {
-            "Outbound",
-            "Inbound",
-            "All"});
-            this.directionCombo.Location = new System.Drawing.Point(150, 60);
-            this.directionCombo.Name = "directionCombo";
-            this.directionCombo.Size = new System.Drawing.Size(280, 28);
-            this.directionCombo.TabIndex = 2;
+            directionCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+            directionCombo.FormattingEnabled = true;
+            directionCombo.Items.AddRange(new object[] { "Outbound", "Inbound", "All" });
+            directionCombo.Location = new Point(131, 48);
+            directionCombo.Margin = new Padding(3, 2, 3, 2);
+            directionCombo.Name = "directionCombo";
+            directionCombo.Size = new Size(246, 24);
+            directionCombo.TabIndex = 2;
             // 
             // blockRadio
             // 
-            this.blockRadio.AutoSize = true;
-            this.blockRadio.Location = new System.Drawing.Point(20, 90);
-            this.blockRadio.Name = "blockRadio";
-            this.blockRadio.Size = new System.Drawing.Size(66, 24);
-            this.blockRadio.TabIndex = 1;
-            this.blockRadio.TabStop = true;
-            this.blockRadio.Text = "Block";
-            this.blockRadio.UseVisualStyleBackColor = true;
+            blockRadio.AutoSize = true;
+            blockRadio.Location = new Point(18, 73);
+            blockRadio.Margin = new Padding(3, 2, 3, 2);
+            blockRadio.Name = "blockRadio";
+            blockRadio.Size = new Size(60, 20);
+            blockRadio.TabIndex = 1;
+            blockRadio.TabStop = true;
+            blockRadio.Text = "Block";
+            blockRadio.UseVisualStyleBackColor = true;
             // 
             // allowRadio
             // 
-            this.allowRadio.AutoSize = true;
-            this.allowRadio.Checked = true;
-            this.allowRadio.Location = new System.Drawing.Point(20, 30);
-            this.allowRadio.Name = "allowRadio";
-            this.allowRadio.Size = new System.Drawing.Size(68, 24);
-            this.allowRadio.TabIndex = 0;
-            this.allowRadio.TabStop = true;
-            this.allowRadio.Text = "Allow";
-            this.allowRadio.UseVisualStyleBackColor = true;
+            allowRadio.AutoSize = true;
+            allowRadio.Checked = true;
+            allowRadio.Location = new Point(18, 23);
+            allowRadio.Margin = new Padding(3, 2, 3, 2);
+            allowRadio.Name = "allowRadio";
+            allowRadio.Size = new Size(60, 20);
+            allowRadio.TabIndex = 0;
+            allowRadio.TabStop = true;
+            allowRadio.Text = "Allow";
+            allowRadio.UseVisualStyleBackColor = true;
             // 
             // okButton
             // 
-            this.okButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.okButton.Location = new System.Drawing.Point(260, 622);
-            this.okButton.Name = "okButton";
-            this.okButton.Size = new System.Drawing.Size(100, 36);
-            this.okButton.TabIndex = 4;
-            this.okButton.Text = "OK";
-            this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+            okButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            okButton.Location = new Point(228, 497);
+            okButton.Margin = new Padding(3, 2, 3, 2);
+            okButton.Name = "okButton";
+            okButton.Size = new Size(88, 29);
+            okButton.TabIndex = 4;
+            okButton.Text = "OK";
+            okButton.UseVisualStyleBackColor = true;
+            okButton.Click += okButton_Click;
             // 
             // cancelButton
             // 
-            this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cancelButton.Location = new System.Drawing.Point(377, 622);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(100, 36);
-            this.cancelButton.TabIndex = 5;
-            this.cancelButton.Text = "Cancel";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            cancelButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            cancelButton.DialogResult = DialogResult.Cancel;
+            cancelButton.Location = new Point(330, 497);
+            cancelButton.Margin = new Padding(3, 2, 3, 2);
+            cancelButton.Name = "cancelButton";
+            cancelButton.Size = new Size(88, 29);
+            cancelButton.TabIndex = 5;
+            cancelButton.Text = "Cancel";
+            cancelButton.UseVisualStyleBackColor = true;
+            cancelButton.Click += cancelButton_Click;
             // 
             // instructionLabel
             // 
-            this.instructionLabel.Location = new System.Drawing.Point(23, 20);
-            this.instructionLabel.Name = "instructionLabel";
-            this.instructionLabel.Size = new System.Drawing.Size(454, 80);
-            this.instructionLabel.TabIndex = 6;
-            this.instructionLabel.Text = "Enter a folder path below, or use the Browse button. The rule will apply to all " +
-    "matching executables within that folder and its subfolders.\r\n\r\nFor temporary f" +
-    "olders, you can type in environment variables directly. Common examples: %APPDATA% ; %Temp% ;  %LOCALAPPDATA%\\Temp ";
+            instructionLabel.Location = new Point(20, 16);
+            instructionLabel.Name = "instructionLabel";
+            instructionLabel.Size = new Size(397, 64);
+            instructionLabel.TabIndex = 6;
+            instructionLabel.Text = resources.GetString("instructionLabel.Text");
             // 
             // exeNameNoteLabel
             // 
-            this.exeNameNoteLabel.AutoSize = true;
-            this.exeNameNoteLabel.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.exeNameNoteLabel.Location = new System.Drawing.Point(23, 196);
-            this.exeNameNoteLabel.Name = "exeNameNoteLabel";
-            this.exeNameNoteLabel.Size = new System.Drawing.Size(465, 20);
-            this.exeNameNoteLabel.TabIndex = 7;
-            this.exeNameNoteLabel.Text = "If left blank, the rule will apply to all executables in the selected folder.";
+            exeNameNoteLabel.AutoSize = true;
+            exeNameNoteLabel.ForeColor = SystemColors.GrayText;
+            exeNameNoteLabel.Location = new Point(20, 157);
+            exeNameNoteLabel.Name = "exeNameNoteLabel";
+            exeNameNoteLabel.Size = new Size(546, 16);
+            exeNameNoteLabel.TabIndex = 7;
+            exeNameNoteLabel.Text = "If left blank, the rule will apply to all executables in the selected folder.";
             // 
             // errorProvider1
             // 
-            this.errorProvider1.ContainerControl = this;
+            errorProvider1.ContainerControl = this;
             // 
             // advancedButton
             // 
-            this.advancedButton.Location = new System.Drawing.Point(23, 397);
-            this.advancedButton.Name = "advancedButton";
-            this.advancedButton.Size = new System.Drawing.Size(121, 29);
-            this.advancedButton.TabIndex = 8;
-            this.advancedButton.Text = "Advanced...";
-            this.advancedButton.UseVisualStyleBackColor = true;
-            this.advancedButton.Click += new System.EventHandler(this.advancedButton_Click);
+            advancedButton.Location = new Point(20, 318);
+            advancedButton.Margin = new Padding(3, 2, 3, 2);
+            advancedButton.Name = "advancedButton";
+            advancedButton.Size = new Size(106, 23);
+            advancedButton.TabIndex = 8;
+            advancedButton.Text = "Advanced...";
+            advancedButton.UseVisualStyleBackColor = true;
+            advancedButton.Click += advancedButton_Click;
             // 
             // advancedGroupBox
             // 
-            this.advancedGroupBox.Controls.Add(this.remoteAddressTextBox);
-            this.advancedGroupBox.Controls.Add(this.labelRemoteAddress);
-            this.advancedGroupBox.Controls.Add(this.remotePortsTextBox);
-            this.advancedGroupBox.Controls.Add(this.labelRemotePorts);
-            this.advancedGroupBox.Controls.Add(this.localPortsTextBox);
-            this.advancedGroupBox.Controls.Add(this.labelLocalPorts);
-            this.advancedGroupBox.Controls.Add(this.protocolComboBox);
-            this.advancedGroupBox.Controls.Add(this.labelProtocol);
-            this.advancedGroupBox.Location = new System.Drawing.Point(23, 432);
-            this.advancedGroupBox.Name = "advancedGroupBox";
-            this.advancedGroupBox.Size = new System.Drawing.Size(454, 172);
-            this.advancedGroupBox.TabIndex = 9;
-            this.advancedGroupBox.TabStop = false;
-            this.advancedGroupBox.Text = "Advanced Settings";
-            this.advancedGroupBox.Visible = false;
+            advancedGroupBox.Controls.Add(remoteAddressTextBox);
+            advancedGroupBox.Controls.Add(labelRemoteAddress);
+            advancedGroupBox.Controls.Add(remotePortsTextBox);
+            advancedGroupBox.Controls.Add(labelRemotePorts);
+            advancedGroupBox.Controls.Add(localPortsTextBox);
+            advancedGroupBox.Controls.Add(labelLocalPorts);
+            advancedGroupBox.Controls.Add(protocolComboBox);
+            advancedGroupBox.Controls.Add(labelProtocol);
+            advancedGroupBox.Location = new Point(20, 346);
+            advancedGroupBox.Margin = new Padding(3, 2, 3, 2);
+            advancedGroupBox.Name = "advancedGroupBox";
+            advancedGroupBox.Padding = new Padding(3, 2, 3, 2);
+            advancedGroupBox.Size = new Size(397, 138);
+            advancedGroupBox.TabIndex = 9;
+            advancedGroupBox.TabStop = false;
+            advancedGroupBox.Text = "Advanced Settings";
+            advancedGroupBox.Visible = false;
             // 
             // remoteAddressTextBox
             // 
-            this.remoteAddressTextBox.Location = new System.Drawing.Point(124, 127);
-            this.remoteAddressTextBox.Name = "remoteAddressTextBox";
-            this.remoteAddressTextBox.Size = new System.Drawing.Size(306, 27);
-            this.remoteAddressTextBox.TabIndex = 7;
-            this.remoteAddressTextBox.Text = "*";
-            this.remoteAddressTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.remoteAddressTextBox_Validating);
+            remoteAddressTextBox.Location = new Point(108, 101);
+            remoteAddressTextBox.Margin = new Padding(3, 2, 3, 2);
+            remoteAddressTextBox.Name = "remoteAddressTextBox";
+            remoteAddressTextBox.Size = new Size(268, 23);
+            remoteAddressTextBox.TabIndex = 7;
+            remoteAddressTextBox.Text = "*";
+            remoteAddressTextBox.Validating += remoteAddressTextBox_Validating;
             // 
             // labelRemoteAddress
             // 
-            this.labelRemoteAddress.AutoSize = true;
-            this.labelRemoteAddress.Location = new System.Drawing.Point(6, 130);
-            this.labelRemoteAddress.Name = "labelRemoteAddress";
-            this.labelRemoteAddress.Size = new System.Drawing.Size(117, 20);
-            this.labelRemoteAddress.TabIndex = 6;
-            this.labelRemoteAddress.Text = "Remote Address";
+            labelRemoteAddress.AutoSize = true;
+            labelRemoteAddress.Location = new Point(5, 105);
+            labelRemoteAddress.Name = "labelRemoteAddress";
+            labelRemoteAddress.Size = new Size(105, 16);
+            labelRemoteAddress.TabIndex = 6;
+            labelRemoteAddress.Text = "Remote Address";
             // 
             // remotePortsTextBox
             // 
-            this.remotePortsTextBox.Location = new System.Drawing.Point(124, 94);
-            this.remotePortsTextBox.Name = "remotePortsTextBox";
-            this.remotePortsTextBox.Size = new System.Drawing.Size(306, 27);
-            this.remotePortsTextBox.TabIndex = 5;
-            this.remotePortsTextBox.Text = "*";
-            this.remotePortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
+            remotePortsTextBox.Location = new Point(108, 75);
+            remotePortsTextBox.Margin = new Padding(3, 2, 3, 2);
+            remotePortsTextBox.Name = "remotePortsTextBox";
+            remotePortsTextBox.Size = new Size(268, 23);
+            remotePortsTextBox.TabIndex = 5;
+            remotePortsTextBox.Text = "*";
+            remotePortsTextBox.Validating += ValidatePortTextBox_Validating;
             // 
             // labelRemotePorts
             // 
-            this.labelRemotePorts.AutoSize = true;
-            this.labelRemotePorts.Location = new System.Drawing.Point(6, 97);
-            this.labelRemotePorts.Name = "labelRemotePorts";
-            this.labelRemotePorts.Size = new System.Drawing.Size(95, 20);
-            this.labelRemotePorts.TabIndex = 4;
-            this.labelRemotePorts.Text = "Remote Ports";
+            labelRemotePorts.AutoSize = true;
+            labelRemotePorts.Location = new Point(5, 78);
+            labelRemotePorts.Name = "labelRemotePorts";
+            labelRemotePorts.Size = new Size(91, 16);
+            labelRemotePorts.TabIndex = 4;
+            labelRemotePorts.Text = "Remote Ports";
             // 
             // localPortsTextBox
             // 
-            this.localPortsTextBox.Location = new System.Drawing.Point(124, 61);
-            this.localPortsTextBox.Name = "localPortsTextBox";
-            this.localPortsTextBox.Size = new System.Drawing.Size(306, 27);
-            this.localPortsTextBox.TabIndex = 3;
-            this.localPortsTextBox.Text = "*";
-            this.localPortsTextBox.Validating += new System.ComponentModel.CancelEventHandler(this.ValidatePortTextBox_Validating);
+            localPortsTextBox.Location = new Point(108, 49);
+            localPortsTextBox.Margin = new Padding(3, 2, 3, 2);
+            localPortsTextBox.Name = "localPortsTextBox";
+            localPortsTextBox.Size = new Size(268, 23);
+            localPortsTextBox.TabIndex = 3;
+            localPortsTextBox.Text = "*";
+            localPortsTextBox.Validating += ValidatePortTextBox_Validating;
             // 
             // labelLocalPorts
             // 
-            this.labelLocalPorts.AutoSize = true;
-            this.labelLocalPorts.Location = new System.Drawing.Point(6, 64);
-            this.labelLocalPorts.Name = "labelLocalPorts";
-            this.labelLocalPorts.Size = new System.Drawing.Size(81, 20);
-            this.labelLocalPorts.TabIndex = 2;
-            this.labelLocalPorts.Text = "Local Ports";
+            labelLocalPorts.AutoSize = true;
+            labelLocalPorts.Location = new Point(5, 51);
+            labelLocalPorts.Name = "labelLocalPorts";
+            labelLocalPorts.Size = new Size(84, 16);
+            labelLocalPorts.TabIndex = 2;
+            labelLocalPorts.Text = "Local Ports";
             // 
             // protocolComboBox
             // 
-            this.protocolComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.protocolComboBox.FormattingEnabled = true;
-            this.protocolComboBox.Location = new System.Drawing.Point(124, 27);
-            this.protocolComboBox.Name = "protocolComboBox";
-            this.protocolComboBox.Size = new System.Drawing.Size(151, 28);
-            this.protocolComboBox.TabIndex = 1;
+            protocolComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            protocolComboBox.FormattingEnabled = true;
+            protocolComboBox.Location = new Point(108, 21);
+            protocolComboBox.Margin = new Padding(3, 2, 3, 2);
+            protocolComboBox.Name = "protocolComboBox";
+            protocolComboBox.Size = new Size(133, 24);
+            protocolComboBox.TabIndex = 1;
             // 
             // labelProtocol
             // 
-            this.labelProtocol.AutoSize = true;
-            this.labelProtocol.Location = new System.Drawing.Point(6, 30);
-            this.labelProtocol.Name = "labelProtocol";
-            this.labelProtocol.Size = new System.Drawing.Size(64, 20);
-            this.labelProtocol.TabIndex = 0;
-            this.labelProtocol.Text = "Protocol";
+            labelProtocol.AutoSize = true;
+            labelProtocol.Location = new Point(5, 23);
+            labelProtocol.Name = "labelProtocol";
+            labelProtocol.Size = new Size(63, 16);
+            labelProtocol.TabIndex = 0;
+            labelProtocol.Text = "Protocol";
             // 
             // WildcardCreatorForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(500, 670);
-            this.Controls.Add(this.advancedGroupBox);
-            this.Controls.Add(this.advancedButton);
-            this.Controls.Add(this.exeNameNoteLabel);
-            this.Controls.Add(this.instructionLabel);
-            this.Controls.Add(this.cancelButton);
-            this.Controls.Add(this.okButton);
-            this.Controls.Add(this.actionGroupBox);
-            this.Controls.Add(this.exeNameTextBox);
-            this.Controls.Add(this.folderPathTextBox);
-            this.Controls.Add(this.browseButton);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "WildcardCreatorForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Create Wildcard Rule";
-            this.actionGroupBox.ResumeLayout(false);
-            this.actionGroupBox.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
-            this.advancedGroupBox.ResumeLayout(false);
-            this.advancedGroupBox.PerformLayout();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(438, 535);
+            Controls.Add(advancedGroupBox);
+            Controls.Add(advancedButton);
+            Controls.Add(exeNameNoteLabel);
+            Controls.Add(instructionLabel);
+            Controls.Add(cancelButton);
+            Controls.Add(okButton);
+            Controls.Add(actionGroupBox);
+            Controls.Add(exeNameTextBox);
+            Controls.Add(folderPathTextBox);
+            Controls.Add(browseButton);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            Margin = new Padding(3, 2, 3, 2);
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "WildcardCreatorForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Create Wildcard Rule";
+            actionGroupBox.ResumeLayout(false);
+            actionGroupBox.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)errorProvider1).EndInit();
+            advancedGroupBox.ResumeLayout(false);
+            advancedGroupBox.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
         }
         #endregion
     }

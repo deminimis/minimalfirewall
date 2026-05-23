@@ -1,4 +1,4 @@
-﻿// File: GroupsControl.Designer.cs
+// File: GroupsControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class GroupsControl
@@ -21,98 +21,98 @@ namespace MinimalFirewall
         #region Component Designer generated code
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.groupsContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.deleteGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupsDataGridView = new System.Windows.Forms.DataGridView();
-            this.groupNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.groupEnabledColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.groupsContextMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.groupsDataGridView)).BeginInit();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            var dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            groupsContextMenu = new ContextMenuStrip(components);
+            deleteGroupToolStripMenuItem = new ToolStripMenuItem();
+            groupsDataGridView = new DataGridView();
+            groupNameColumn = new DataGridViewTextBoxColumn();
+            groupEnabledColumn = new DataGridViewTextBoxColumn();
+            groupsContextMenu.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)groupsDataGridView).BeginInit();
+            SuspendLayout();
             // 
             // groupsContextMenu
             // 
-            this.groupsContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.groupsContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.deleteGroupToolStripMenuItem});
-            this.groupsContextMenu.Name = "groupsContextMenu";
-            this.groupsContextMenu.Size = new System.Drawing.Size(177, 28);
+            groupsContextMenu.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            groupsContextMenu.ImageScalingSize = new Size(20, 20);
+            groupsContextMenu.Items.AddRange(new ToolStripItem[] { deleteGroupToolStripMenuItem });
+            groupsContextMenu.Name = "groupsContextMenu";
+            groupsContextMenu.Size = new Size(180, 26);
             // 
             // deleteGroupToolStripMenuItem
             // 
-            this.deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
-            this.deleteGroupToolStripMenuItem.Size = new System.Drawing.Size(176, 24);
-            this.deleteGroupToolStripMenuItem.Text = "Delete Group...";
-            this.deleteGroupToolStripMenuItem.Click += new System.EventHandler(this.deleteGroupToolStripMenuItem_Click);
+            deleteGroupToolStripMenuItem.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
+            deleteGroupToolStripMenuItem.Size = new Size(179, 22);
+            deleteGroupToolStripMenuItem.Text = "Delete Group...";
+            deleteGroupToolStripMenuItem.Click += deleteGroupToolStripMenuItem_Click;
             // 
             // groupsDataGridView
             // 
-            this.groupsDataGridView.AllowUserToAddRows = false;
-            this.groupsDataGridView.AllowUserToDeleteRows = false;
-            this.groupsDataGridView.AllowUserToResizeRows = false;
-            this.groupsDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.None;
-            this.groupsDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
-            this.groupsDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.groupsDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
-            this.groupsDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.groupsDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.groupsDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.groupsDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.groupNameColumn,
-            this.groupEnabledColumn});
-            this.groupsDataGridView.ContextMenuStrip = this.groupsContextMenu;
-            this.groupsDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupsDataGridView.EnableHeadersVisualStyles = false;
-            this.groupsDataGridView.GridColor = System.Drawing.SystemColors.Control;
-            this.groupsDataGridView.Location = new System.Drawing.Point(0, 0);
-            this.groupsDataGridView.Name = "groupsDataGridView";
-            this.groupsDataGridView.ReadOnly = true;
-            this.groupsDataGridView.RowHeadersVisible = false;
-            this.groupsDataGridView.RowTemplate.Height = 35;
-            this.groupsDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.groupsDataGridView.ShowCellToolTips = true;
-            this.groupsDataGridView.Size = new System.Drawing.Size(800, 600);
-            this.groupsDataGridView.TabIndex = 1;
-            this.groupsDataGridView.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.groupsDataGridView_CellClick);
-            this.groupsDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.groupsDataGridView_CellMouseDown);
-            this.groupsDataGridView.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.groupsDataGridView_CellPainting);
-            this.groupsDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.groupsDataGridView_ColumnHeaderMouseClick);
+            groupsDataGridView.AllowUserToAddRows = false;
+            groupsDataGridView.AllowUserToDeleteRows = false;
+            groupsDataGridView.AllowUserToResizeRows = false;
+            groupsDataGridView.BackgroundColor = SystemColors.Control;
+            groupsDataGridView.BorderStyle = BorderStyle.None;
+            groupsDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
+            groupsDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = SystemColors.Control;
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 12F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            groupsDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            groupsDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            groupsDataGridView.Columns.AddRange(new DataGridViewColumn[] { groupNameColumn, groupEnabledColumn });
+            groupsDataGridView.ContextMenuStrip = groupsContextMenu;
+            groupsDataGridView.Dock = DockStyle.Fill;
+            groupsDataGridView.EnableHeadersVisualStyles = false;
+            groupsDataGridView.GridColor = SystemColors.Control;
+            groupsDataGridView.Location = new Point(0, 0);
+            groupsDataGridView.Margin = new Padding(3, 2, 3, 2);
+            groupsDataGridView.Name = "groupsDataGridView";
+            groupsDataGridView.ReadOnly = true;
+            groupsDataGridView.RowHeadersVisible = false;
+            groupsDataGridView.RowTemplate.Height = 35;
+            groupsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            groupsDataGridView.Size = new Size(700, 480);
+            groupsDataGridView.TabIndex = 1;
+            groupsDataGridView.CellClick += groupsDataGridView_CellClick;
+            groupsDataGridView.CellMouseDown += groupsDataGridView_CellMouseDown;
+            groupsDataGridView.CellPainting += groupsDataGridView_CellPainting;
+            groupsDataGridView.ColumnHeaderMouseClick += groupsDataGridView_ColumnHeaderMouseClick;
             // 
             // groupNameColumn
             // 
-            this.groupNameColumn.DataPropertyName = "Name";
-            this.groupNameColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill; 
-            this.groupNameColumn.HeaderText = "Group Name";
-            this.groupNameColumn.Name = "groupNameColumn";
-            this.groupNameColumn.ReadOnly = true;
+            groupNameColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            groupNameColumn.DataPropertyName = "Name";
+            groupNameColumn.HeaderText = "Group Name";
+            groupNameColumn.Name = "groupNameColumn";
+            groupNameColumn.ReadOnly = true;
             // 
             // groupEnabledColumn
             // 
-            this.groupEnabledColumn.DataPropertyName = "IsEnabled";
-            this.groupEnabledColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
-            this.groupEnabledColumn.HeaderText = "Enabled";
-            this.groupEnabledColumn.Name = "groupEnabledColumn";
-            this.groupEnabledColumn.ReadOnly = true;
+            groupEnabledColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            groupEnabledColumn.DataPropertyName = "IsEnabled";
+            groupEnabledColumn.HeaderText = "Enabled";
+            groupEnabledColumn.Name = "groupEnabledColumn";
+            groupEnabledColumn.ReadOnly = true;
             // 
             // GroupsControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.groupsDataGridView);
-            this.Name = "GroupsControl";
-            this.Size = new System.Drawing.Size(800, 600);
-            this.groupsContextMenu.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.groupsDataGridView)).EndInit();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(groupsDataGridView);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Margin = new Padding(3, 2, 3, 2);
+            Name = "GroupsControl";
+            Size = new Size(700, 480);
+            groupsContextMenu.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)groupsDataGridView).EndInit();
+            ResumeLayout(false);
         }
         #endregion
     }

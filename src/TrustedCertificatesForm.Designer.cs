@@ -1,4 +1,4 @@
-﻿namespace MinimalFirewall
+namespace MinimalFirewall
 {
     partial class TrustedCertificatesForm
     {
@@ -21,71 +21,80 @@
 
         private void InitializeComponent()
         {
-            this.certGrid = new System.Windows.Forms.DataGridView();
-            this.closeButton = new System.Windows.Forms.Button();
-            this.infoLabel = new System.Windows.Forms.Label();
-            this.countLabel = new System.Windows.Forms.Label();
-            ((System.ComponentModel.ISupportInitialize)(this.certGrid)).BeginInit();
-            this.SuspendLayout();
-
-            // infoLabel
-            this.infoLabel.AutoSize = true;
-            this.infoLabel.Location = new System.Drawing.Point(12, 9);
-            this.infoLabel.Name = "infoLabel";
-            this.infoLabel.Size = new System.Drawing.Size(400, 30);
-            this.infoLabel.TabIndex = 0;
-            this.infoLabel.Text = "These are the root certificate authorities (CAs) trusted by your system.\r\nWhen the auto-allow setting is on, any app signed with a certificate chaining to one of these CAs will be allowed automatically.";
-
+            certGrid = new DataGridView();
+            closeButton = new Button();
+            infoLabel = new Label();
+            countLabel = new Label();
+            ((System.ComponentModel.ISupportInitialize)certGrid).BeginInit();
+            SuspendLayout();
+            // 
             // certGrid
-            this.certGrid.AllowUserToAddRows = false;
-            this.certGrid.AllowUserToDeleteRows = false;
-            this.certGrid.AllowUserToResizeRows = false;
-            this.certGrid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.certGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.certGrid.Location = new System.Drawing.Point(12, 45);
-            this.certGrid.MultiSelect = false;
-            this.certGrid.Name = "certGrid";
-            this.certGrid.ReadOnly = true;
-            this.certGrid.RowHeadersVisible = false;
-            this.certGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.certGrid.Size = new System.Drawing.Size(730, 340);
-            this.certGrid.TabIndex = 1;
-
-            // countLabel
-            this.countLabel.AutoSize = true;
-            this.countLabel.Location = new System.Drawing.Point(12, 392);
-            this.countLabel.Name = "countLabel";
-            this.countLabel.Size = new System.Drawing.Size(200, 15);
-            this.countLabel.TabIndex = 2;
-
+            // 
+            certGrid.AllowUserToAddRows = false;
+            certGrid.AllowUserToDeleteRows = false;
+            certGrid.AllowUserToResizeRows = false;
+            certGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            certGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            certGrid.Location = new Point(12, 72);
+            certGrid.MultiSelect = false;
+            certGrid.Name = "certGrid";
+            certGrid.ReadOnly = true;
+            certGrid.RowHeadersVisible = false;
+            certGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            certGrid.Size = new Size(730, 350);
+            certGrid.TabIndex = 1;
+            // 
             // closeButton
-            this.closeButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            this.closeButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.closeButton.Location = new System.Drawing.Point(667, 420);
-            this.closeButton.Name = "closeButton";
-            this.closeButton.Size = new System.Drawing.Size(75, 29);
-            this.closeButton.TabIndex = 3;
-            this.closeButton.Text = "Close";
-            this.closeButton.UseVisualStyleBackColor = true;
-            this.closeButton.Click += new System.EventHandler(this.closeButton_Click);
-
+            // 
+            closeButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            closeButton.DialogResult = DialogResult.Cancel;
+            closeButton.Location = new Point(667, 448);
+            closeButton.Name = "closeButton";
+            closeButton.Size = new Size(75, 31);
+            closeButton.TabIndex = 3;
+            closeButton.Text = "Close";
+            closeButton.UseVisualStyleBackColor = true;
+            closeButton.Click += closeButton_Click;
+            // 
+            // infoLabel
+            // 
+            infoLabel.AutoSize = true;
+            infoLabel.Dock = DockStyle.Left;
+            infoLabel.Location = new Point(0, 0);
+            infoLabel.Margin = new Padding(3, 2, 3, 2);
+            infoLabel.Name = "infoLabel";
+            infoLabel.Size = new Size(588, 32);
+            infoLabel.TabIndex = 0;
+            infoLabel.Text = "These are the root certificate authorities (CAs) trusted by your system.\r\nWhen auto-allow is on in settings, apps signed with these CAs will be auto-allowed.";
+            infoLabel.Click += infoLabel_Click;
+            // 
+            // countLabel
+            // 
+            countLabel.AutoSize = true;
+            countLabel.Location = new Point(12, 418);
+            countLabel.Name = "countLabel";
+            countLabel.Size = new Size(0, 16);
+            countLabel.TabIndex = 2;
+            // 
             // TrustedCertificatesForm
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(754, 461);
-            this.Controls.Add(this.infoLabel);
-            this.Controls.Add(this.certGrid);
-            this.Controls.Add(this.countLabel);
-            this.Controls.Add(this.closeButton);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "TrustedCertificatesForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Trusted Root Certificate Authorities";
-            ((System.ComponentModel.ISupportInitialize)(this.certGrid)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            // 
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(754, 492);
+            Controls.Add(infoLabel);
+            Controls.Add(certGrid);
+            Controls.Add(countLabel);
+            Controls.Add(closeButton);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "TrustedCertificatesForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Trusted Root Certificate Authorities";
+            ((System.ComponentModel.ISupportInitialize)certGrid).EndInit();
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

@@ -134,7 +134,7 @@ namespace MinimalFirewall
             // allow2MinutesToolStripMenuItem
             // 
             allow2MinutesToolStripMenuItem.Name = "allow2MinutesToolStripMenuItem";
-            allow2MinutesToolStripMenuItem.Size = new Size(132, 22);
+            allow2MinutesToolStripMenuItem.Size = new Size(180, 22);
             allow2MinutesToolStripMenuItem.Tag = "2";
             allow2MinutesToolStripMenuItem.Text = "2 minutes";
             allow2MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
@@ -142,15 +142,16 @@ namespace MinimalFirewall
             // allow5MinutesToolStripMenuItem
             // 
             allow5MinutesToolStripMenuItem.Name = "allow5MinutesToolStripMenuItem";
-            allow5MinutesToolStripMenuItem.Size = new Size(132, 22);
+            allow5MinutesToolStripMenuItem.Size = new Size(180, 22);
             allow5MinutesToolStripMenuItem.Tag = "5";
             allow5MinutesToolStripMenuItem.Text = "5 minutes";
             allow5MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
             // 
             // allow15MinutesToolStripMenuItem
             // 
+            allow15MinutesToolStripMenuItem.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             allow15MinutesToolStripMenuItem.Name = "allow15MinutesToolStripMenuItem";
-            allow15MinutesToolStripMenuItem.Size = new Size(132, 22);
+            allow15MinutesToolStripMenuItem.Size = new Size(180, 22);
             allow15MinutesToolStripMenuItem.Tag = "15";
             allow15MinutesToolStripMenuItem.Text = "15 minutes";
             allow15MinutesToolStripMenuItem.Click += TempAllowMenuItem_Click;
@@ -158,7 +159,7 @@ namespace MinimalFirewall
             // allow1HourToolStripMenuItem
             // 
             allow1HourToolStripMenuItem.Name = "allow1HourToolStripMenuItem";
-            allow1HourToolStripMenuItem.Size = new Size(132, 22);
+            allow1HourToolStripMenuItem.Size = new Size(180, 22);
             allow1HourToolStripMenuItem.Tag = "60";
             allow1HourToolStripMenuItem.Text = "1 hour";
             allow1HourToolStripMenuItem.Click += TempAllowMenuItem_Click;
@@ -166,7 +167,7 @@ namespace MinimalFirewall
             // allow3HoursToolStripMenuItem
             // 
             allow3HoursToolStripMenuItem.Name = "allow3HoursToolStripMenuItem";
-            allow3HoursToolStripMenuItem.Size = new Size(132, 22);
+            allow3HoursToolStripMenuItem.Size = new Size(180, 22);
             allow3HoursToolStripMenuItem.Tag = "180";
             allow3HoursToolStripMenuItem.Text = "3 hours";
             allow3HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
@@ -174,7 +175,7 @@ namespace MinimalFirewall
             // allow8HoursToolStripMenuItem
             // 
             allow8HoursToolStripMenuItem.Name = "allow8HoursToolStripMenuItem";
-            allow8HoursToolStripMenuItem.Size = new Size(132, 22);
+            allow8HoursToolStripMenuItem.Size = new Size(180, 22);
             allow8HoursToolStripMenuItem.Tag = "480";
             allow8HoursToolStripMenuItem.Text = "8 hours";
             allow8HoursToolStripMenuItem.Click += TempAllowMenuItem_Click;
@@ -323,7 +324,7 @@ namespace MinimalFirewall
             dashboardDataGridView.RowHeadersVisible = false;
             dashboardDataGridView.RowTemplate.Height = 40;
             dashboardDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dashboardDataGridView.Size = new Size(700, 360);
+            dashboardDataGridView.Size = new Size(700, 361);
             dashboardDataGridView.TabIndex = 2;
             dashboardDataGridView.CellContentClick += DashboardDataGridView_CellContentClick;
             dashboardDataGridView.CellFormatting += DashboardDataGridView_CellFormatting;
@@ -453,7 +454,7 @@ namespace MinimalFirewall
             splitContainer.Panel2.Controls.Add(detailsLabel);
             splitContainer.Panel2MinSize = 100;
             splitContainer.Size = new Size(700, 480);
-            splitContainer.SplitterDistance = 360;
+            splitContainer.SplitterDistance = 361;
             splitContainer.SplitterWidth = 3;
             splitContainer.TabIndex = 3;
             // 
@@ -467,7 +468,7 @@ namespace MinimalFirewall
             detailsRichTextBox.Margin = new Padding(3, 2, 3, 2);
             detailsRichTextBox.Name = "detailsRichTextBox";
             detailsRichTextBox.ReadOnly = true;
-            detailsRichTextBox.Size = new Size(700, 97);
+            detailsRichTextBox.Size = new Size(700, 96);
             detailsRichTextBox.TabIndex = 2;
             detailsRichTextBox.Text = "";
             // 

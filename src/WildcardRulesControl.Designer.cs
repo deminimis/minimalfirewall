@@ -1,4 +1,4 @@
-﻿// File: WildcardRulesControl.Designer.cs
+// File: WildcardRulesControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class WildcardRulesControl
@@ -18,211 +18,205 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.topPanel = new System.Windows.Forms.Panel();
-            this.deleteRuleButton = new System.Windows.Forms.Button();
-            this.editRuleButton = new System.Windows.Forms.Button();
-            this.addRuleButton = new System.Windows.Forms.Button();
-            this.wildcardDataGridView = new System.Windows.Forms.DataGridView();
-            this.colFolderPath = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colExeName = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colAction = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colProtocol = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colLocalPorts = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRemotePorts = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRemoteAddresses = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.wildcardContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.deleteDefinitionAndRulesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.deleteDefinitionOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.deleteGeneratedRulesOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.topPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.wildcardDataGridView)).BeginInit();
-            this.wildcardContextMenu.SuspendLayout();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            topPanel = new Panel();
+            deleteRuleButton = new Button();
+            editRuleButton = new Button();
+            addRuleButton = new Button();
+            wildcardDataGridView = new DataGridView();
+            colFolderPath = new DataGridViewTextBoxColumn();
+            colExeName = new DataGridViewTextBoxColumn();
+            colAction = new DataGridViewTextBoxColumn();
+            colProtocol = new DataGridViewTextBoxColumn();
+            colLocalPorts = new DataGridViewTextBoxColumn();
+            colRemotePorts = new DataGridViewTextBoxColumn();
+            colRemoteAddresses = new DataGridViewTextBoxColumn();
+            wildcardContextMenu = new ContextMenuStrip(components);
+            editToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            deleteDefinitionAndRulesToolStripMenuItem = new ToolStripMenuItem();
+            deleteDefinitionOnlyToolStripMenuItem = new ToolStripMenuItem();
+            deleteGeneratedRulesOnlyToolStripMenuItem = new ToolStripMenuItem();
+            topPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)wildcardDataGridView).BeginInit();
+            wildcardContextMenu.SuspendLayout();
+            SuspendLayout();
             // 
             // topPanel
             // 
-            this.topPanel.Controls.Add(this.deleteRuleButton);
-            this.topPanel.Controls.Add(this.editRuleButton);
-            this.topPanel.Controls.Add(this.addRuleButton);
-            this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.topPanel.Location = new System.Drawing.Point(0, 0);
-            this.topPanel.Name = "topPanel";
-            this.topPanel.Size = new System.Drawing.Size(800, 50);
-            this.topPanel.TabIndex = 0;
+            topPanel.Controls.Add(deleteRuleButton);
+            topPanel.Controls.Add(editRuleButton);
+            topPanel.Controls.Add(addRuleButton);
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Location = new Point(0, 0);
+            topPanel.Margin = new Padding(3, 2, 3, 2);
+            topPanel.Name = "topPanel";
+            topPanel.Size = new Size(700, 41);
+            topPanel.TabIndex = 0;
             // 
             // deleteRuleButton
             // 
-            this.deleteRuleButton.Location = new System.Drawing.Point(225, 10);
-            this.deleteRuleButton.Name = "deleteRuleButton";
-            this.deleteRuleButton.Size = new System.Drawing.Size(100, 30);
-            this.deleteRuleButton.TabIndex = 2;
-            this.deleteRuleButton.Text = "Delete Rule(s)";
-            this.deleteRuleButton.UseVisualStyleBackColor = true;
-            this.deleteRuleButton.Click += new System.EventHandler(this.deleteRuleButton_Click);
+            deleteRuleButton.Location = new Point(197, 9);
+            deleteRuleButton.Margin = new Padding(3, 2, 3, 2);
+            deleteRuleButton.Name = "deleteRuleButton";
+            deleteRuleButton.Size = new Size(88, 23);
+            deleteRuleButton.TabIndex = 2;
+            deleteRuleButton.Text = "Delete Rule(s)";
+            deleteRuleButton.UseVisualStyleBackColor = true;
+            deleteRuleButton.Click += deleteRuleButton_Click;
             // 
             // editRuleButton
             // 
-            this.editRuleButton.Location = new System.Drawing.Point(119, 10);
-            this.editRuleButton.Name = "editRuleButton";
-            this.editRuleButton.Size = new System.Drawing.Size(100, 30);
-            this.editRuleButton.TabIndex = 1;
-            this.editRuleButton.Text = "Edit Rule...";
-            this.editRuleButton.UseVisualStyleBackColor = true;
-            this.editRuleButton.Click += new System.EventHandler(this.editRuleButton_Click);
+            editRuleButton.Location = new Point(104, 9);
+            editRuleButton.Margin = new Padding(3, 2, 3, 2);
+            editRuleButton.Name = "editRuleButton";
+            editRuleButton.Size = new Size(88, 23);
+            editRuleButton.TabIndex = 1;
+            editRuleButton.Text = "Edit Rule...";
+            editRuleButton.UseVisualStyleBackColor = true;
+            editRuleButton.Click += editRuleButton_Click;
             // 
             // addRuleButton
             // 
-            this.addRuleButton.Location = new System.Drawing.Point(13, 10);
-            this.addRuleButton.Name = "addRuleButton";
-            this.addRuleButton.Size = new System.Drawing.Size(100, 30);
-            this.addRuleButton.TabIndex = 0;
-            this.addRuleButton.Text = "Add Rule...";
-            this.addRuleButton.UseVisualStyleBackColor = true;
-            this.addRuleButton.Click += new System.EventHandler(this.addRuleButton_Click);
+            addRuleButton.Location = new Point(11, 9);
+            addRuleButton.Margin = new Padding(3, 2, 3, 2);
+            addRuleButton.Name = "addRuleButton";
+            addRuleButton.Size = new Size(88, 23);
+            addRuleButton.TabIndex = 0;
+            addRuleButton.Text = "Add Rule...";
+            addRuleButton.UseVisualStyleBackColor = true;
+            addRuleButton.Click += addRuleButton_Click;
             // 
             // wildcardDataGridView
             // 
-            this.wildcardDataGridView.AllowUserToAddRows = false;
-            this.wildcardDataGridView.AllowUserToDeleteRows = false;
-            this.wildcardDataGridView.AllowUserToResizeRows = false;
-            this.wildcardDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.wildcardDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.wildcardDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.wildcardDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colFolderPath,
-            this.colExeName,
-            this.colAction,
-            this.colProtocol,
-            this.colLocalPorts,
-            this.colRemotePorts,
-            this.colRemoteAddresses});
-            this.wildcardDataGridView.ContextMenuStrip = this.wildcardContextMenu;
-            this.wildcardDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.wildcardDataGridView.Location = new System.Drawing.Point(0, 50);
-            this.wildcardDataGridView.Name = "wildcardDataGridView";
-            this.wildcardDataGridView.ReadOnly = true;
-            this.wildcardDataGridView.RowHeadersVisible = false;
-            this.wildcardDataGridView.RowTemplate.Height = 25;
-            this.wildcardDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.wildcardDataGridView.Size = new System.Drawing.Size(800, 550);
-            this.wildcardDataGridView.TabIndex = 1;
+            wildcardDataGridView.AllowUserToAddRows = false;
+            wildcardDataGridView.AllowUserToDeleteRows = false;
+            wildcardDataGridView.AllowUserToResizeRows = false;
+            wildcardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            wildcardDataGridView.BorderStyle = BorderStyle.None;
+            wildcardDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            wildcardDataGridView.Columns.AddRange(new DataGridViewColumn[] { colFolderPath, colExeName, colAction, colProtocol, colLocalPorts, colRemotePorts, colRemoteAddresses });
+            wildcardDataGridView.ContextMenuStrip = wildcardContextMenu;
+            wildcardDataGridView.Dock = DockStyle.Fill;
+            wildcardDataGridView.Location = new Point(0, 41);
+            wildcardDataGridView.Margin = new Padding(3, 2, 3, 2);
+            wildcardDataGridView.Name = "wildcardDataGridView";
+            wildcardDataGridView.ReadOnly = true;
+            wildcardDataGridView.RowHeadersVisible = false;
+            wildcardDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            wildcardDataGridView.Size = new Size(700, 439);
+            wildcardDataGridView.TabIndex = 1;
             // 
             // colFolderPath
             // 
-            this.colFolderPath.DataPropertyName = "FolderPath";
-            this.colFolderPath.FillWeight = 30F;
-            this.colFolderPath.HeaderText = "Folder Path";
-            this.colFolderPath.Name = "colFolderPath";
-            this.colFolderPath.ReadOnly = true;
+            colFolderPath.DataPropertyName = "FolderPath";
+            colFolderPath.FillWeight = 30F;
+            colFolderPath.HeaderText = "Folder Path";
+            colFolderPath.Name = "colFolderPath";
+            colFolderPath.ReadOnly = true;
             // 
             // colExeName
             // 
-            this.colExeName.DataPropertyName = "ExeName";
-            this.colExeName.FillWeight = 15F;
-            this.colExeName.HeaderText = "Executable Name";
-            this.colExeName.Name = "colExeName";
-            this.colExeName.ReadOnly = true;
+            colExeName.DataPropertyName = "ExeName";
+            colExeName.FillWeight = 15F;
+            colExeName.HeaderText = "Executable Name";
+            colExeName.Name = "colExeName";
+            colExeName.ReadOnly = true;
             // 
             // colAction
             // 
-            this.colAction.DataPropertyName = "Action";
-            this.colAction.FillWeight = 10F;
-            this.colAction.HeaderText = "Action";
-            this.colAction.Name = "colAction";
-            this.colAction.ReadOnly = true;
+            colAction.DataPropertyName = "Action";
+            colAction.FillWeight = 10F;
+            colAction.HeaderText = "Action";
+            colAction.Name = "colAction";
+            colAction.ReadOnly = true;
             // 
             // colProtocol
             // 
-            this.colProtocol.DataPropertyName = "Protocol";
-            this.colProtocol.FillWeight = 8F;
-            this.colProtocol.HeaderText = "Protocol";
-            this.colProtocol.Name = "colProtocol";
-            this.colProtocol.ReadOnly = true;
+            colProtocol.DataPropertyName = "Protocol";
+            colProtocol.FillWeight = 8F;
+            colProtocol.HeaderText = "Protocol";
+            colProtocol.Name = "colProtocol";
+            colProtocol.ReadOnly = true;
             // 
             // colLocalPorts
             // 
-            this.colLocalPorts.DataPropertyName = "LocalPorts";
-            this.colLocalPorts.FillWeight = 10F;
-            this.colLocalPorts.HeaderText = "Local Ports";
-            this.colLocalPorts.Name = "colLocalPorts";
-            this.colLocalPorts.ReadOnly = true;
+            colLocalPorts.DataPropertyName = "LocalPorts";
+            colLocalPorts.FillWeight = 10F;
+            colLocalPorts.HeaderText = "Local Ports";
+            colLocalPorts.Name = "colLocalPorts";
+            colLocalPorts.ReadOnly = true;
             // 
             // colRemotePorts
             // 
-            this.colRemotePorts.DataPropertyName = "RemotePorts";
-            this.colRemotePorts.FillWeight = 10F;
-            this.colRemotePorts.HeaderText = "Remote Ports";
-            this.colRemotePorts.Name = "colRemotePorts";
-            this.colRemotePorts.ReadOnly = true;
+            colRemotePorts.DataPropertyName = "RemotePorts";
+            colRemotePorts.FillWeight = 10F;
+            colRemotePorts.HeaderText = "Remote Ports";
+            colRemotePorts.Name = "colRemotePorts";
+            colRemotePorts.ReadOnly = true;
             // 
             // colRemoteAddresses
             // 
-            this.colRemoteAddresses.DataPropertyName = "RemoteAddresses";
-            this.colRemoteAddresses.FillWeight = 17F;
-            this.colRemoteAddresses.HeaderText = "Remote Addresses";
-            this.colRemoteAddresses.Name = "colRemoteAddresses";
-            this.colRemoteAddresses.ReadOnly = true;
+            colRemoteAddresses.DataPropertyName = "RemoteAddresses";
+            colRemoteAddresses.FillWeight = 17F;
+            colRemoteAddresses.HeaderText = "Remote Addresses";
+            colRemoteAddresses.Name = "colRemoteAddresses";
+            colRemoteAddresses.ReadOnly = true;
             // 
             // wildcardContextMenu
             // 
-            this.wildcardContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.wildcardContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.editToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.deleteDefinitionAndRulesToolStripMenuItem,
-            this.deleteDefinitionOnlyToolStripMenuItem,
-            this.deleteGeneratedRulesOnlyToolStripMenuItem});
-            this.wildcardContextMenu.Name = "wildcardContextMenu";
-            this.wildcardContextMenu.Size = new System.Drawing.Size(286, 106);
+            wildcardContextMenu.ImageScalingSize = new Size(20, 20);
+            wildcardContextMenu.Items.AddRange(new ToolStripItem[] { editToolStripMenuItem, toolStripSeparator1, deleteDefinitionAndRulesToolStripMenuItem, deleteDefinitionOnlyToolStripMenuItem, deleteGeneratedRulesOnlyToolStripMenuItem });
+            wildcardContextMenu.Name = "wildcardContextMenu";
+            wildcardContextMenu.Size = new Size(224, 98);
             // 
             // editToolStripMenuItem
             // 
-            this.editToolStripMenuItem.Name = "editToolStripMenuItem";
-            this.editToolStripMenuItem.Size = new System.Drawing.Size(285, 24);
-            this.editToolStripMenuItem.Text = "Edit...";
-            this.editToolStripMenuItem.Click += new System.EventHandler(this.editRuleButton_Click);
+            editToolStripMenuItem.Name = "editToolStripMenuItem";
+            editToolStripMenuItem.Size = new Size(223, 22);
+            editToolStripMenuItem.Text = "Edit...";
+            editToolStripMenuItem.Click += editRuleButton_Click;
             // 
             // toolStripSeparator1
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(282, 6);
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(220, 6);
             // 
             // deleteDefinitionAndRulesToolStripMenuItem
             // 
-            this.deleteDefinitionAndRulesToolStripMenuItem.Name = "deleteDefinitionAndRulesToolStripMenuItem";
-            this.deleteDefinitionAndRulesToolStripMenuItem.Size = new System.Drawing.Size(285, 24);
-            this.deleteDefinitionAndRulesToolStripMenuItem.Text = "Delete Definition && Rules";
-            this.deleteDefinitionAndRulesToolStripMenuItem.Click += new System.EventHandler(this.deleteRuleButton_Click);
+            deleteDefinitionAndRulesToolStripMenuItem.Name = "deleteDefinitionAndRulesToolStripMenuItem";
+            deleteDefinitionAndRulesToolStripMenuItem.Size = new Size(223, 22);
+            deleteDefinitionAndRulesToolStripMenuItem.Text = "Delete Definition && Rules";
+            deleteDefinitionAndRulesToolStripMenuItem.Click += deleteRuleButton_Click;
             // 
             // deleteDefinitionOnlyToolStripMenuItem
             // 
-            this.deleteDefinitionOnlyToolStripMenuItem.Name = "deleteDefinitionOnlyToolStripMenuItem";
-            this.deleteDefinitionOnlyToolStripMenuItem.Size = new System.Drawing.Size(285, 24);
-            this.deleteDefinitionOnlyToolStripMenuItem.Text = "Delete Definition Only";
-            this.deleteDefinitionOnlyToolStripMenuItem.Click += new System.EventHandler(this.deleteDefinitionOnlyToolStripMenuItem_Click);
+            deleteDefinitionOnlyToolStripMenuItem.Name = "deleteDefinitionOnlyToolStripMenuItem";
+            deleteDefinitionOnlyToolStripMenuItem.Size = new Size(223, 22);
+            deleteDefinitionOnlyToolStripMenuItem.Text = "Delete Definition Only";
+            deleteDefinitionOnlyToolStripMenuItem.Click += deleteDefinitionOnlyToolStripMenuItem_Click;
             // 
             // deleteGeneratedRulesOnlyToolStripMenuItem
             // 
-            this.deleteGeneratedRulesOnlyToolStripMenuItem.Name = "deleteGeneratedRulesOnlyToolStripMenuItem";
-            this.deleteGeneratedRulesOnlyToolStripMenuItem.Size = new System.Drawing.Size(285, 24);
-            this.deleteGeneratedRulesOnlyToolStripMenuItem.Text = "Delete Generated Rules Only";
-            this.deleteGeneratedRulesOnlyToolStripMenuItem.Click += new System.EventHandler(this.deleteAllGeneratedRulesToolStripMenuItem_Click);
+            deleteGeneratedRulesOnlyToolStripMenuItem.Name = "deleteGeneratedRulesOnlyToolStripMenuItem";
+            deleteGeneratedRulesOnlyToolStripMenuItem.Size = new Size(223, 22);
+            deleteGeneratedRulesOnlyToolStripMenuItem.Text = "Delete Generated Rules Only";
+            deleteGeneratedRulesOnlyToolStripMenuItem.Click += deleteAllGeneratedRulesToolStripMenuItem_Click;
             // 
             // WildcardRulesControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.wildcardDataGridView);
-            this.Controls.Add(this.topPanel);
-            this.Name = "WildcardRulesControl";
-            this.Size = new System.Drawing.Size(800, 600);
-            this.topPanel.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.wildcardDataGridView)).EndInit();
-            this.wildcardContextMenu.ResumeLayout(false);
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(7F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(wildcardDataGridView);
+            Controls.Add(topPanel);
+            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Margin = new Padding(3, 2, 3, 2);
+            Name = "WildcardRulesControl";
+            Size = new Size(700, 480);
+            topPanel.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)wildcardDataGridView).EndInit();
+            wildcardContextMenu.ResumeLayout(false);
+            ResumeLayout(false);
 
         }
 

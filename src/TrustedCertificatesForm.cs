@@ -91,5 +91,10 @@ namespace MinimalFirewall
         {
             Close();
         }
+
+        private void infoLabel_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
