@@ -29,7 +29,7 @@ namespace MinimalFirewall
         public LiveConnectionsControl()
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
+            DoubleBuffered = true;
         }
 
         public void Initialize(
@@ -90,9 +90,9 @@ namespace MinimalFirewall
         {
             if (e.PropertyName == nameof(TrafficMonitorViewModel.ActiveConnections))
             {
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                 {
-                    this.Invoke(new Action(UpdateLiveConnectionsView));
+                    Invoke(new Action(UpdateLiveConnectionsView));
                 }
                 else
                 {
@@ -367,7 +367,7 @@ namespace MinimalFirewall
             if (TryGetSelectedConnection(out var connection) && connection != null && !string.IsNullOrEmpty(connection.ProcessPath))
             {
                 using var dialog = new CreateAdvancedRuleForm(_actionsService, connection.ProcessPath, "", _appSettings);
-                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
                 {
                     if (dialog.RuleVm != null)
                     {

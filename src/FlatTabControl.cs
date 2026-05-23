@@ -14,20 +14,20 @@ namespace DarkModeForms
         public FlatTabControl()
         {
             SetStyle(ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
-            this.DrawMode = TabDrawMode.OwnerDrawFixed;
-            this.SizeMode = TabSizeMode.Fixed;
+            DrawMode = TabDrawMode.OwnerDrawFixed;
+            SizeMode = TabSizeMode.Fixed;
         }
 
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            float scaleFactor = this.DeviceDpi / 96f;
+            float scaleFactor = DeviceDpi / 96f;
             int baseWidth = 70;
             int baseHeight = 120;
             var scaledSize = new Size((int)(baseWidth * scaleFactor), (int)(baseHeight * scaleFactor));
-            if (this.ItemSize.Width < scaledSize.Width)
+            if (ItemSize.Width < scaledSize.Width)
             {
-                this.ItemSize = scaledSize;
+                ItemSize = scaledSize;
             }
         }
 
@@ -42,19 +42,19 @@ namespace DarkModeForms
             if (!Visible) return;
             using (Brush bBackColor = new SolidBrush(Theme.Colors.Background))
             {
-                g.FillRectangle(bBackColor, this.ClientRectangle);
+                g.FillRectangle(bBackColor, ClientRectangle);
             }
 
-            for (int i = 0; i < this.TabCount; i++)
+            for (int i = 0; i < TabCount; i++)
             {
-                DrawTab(g, this.TabPages[i], i);
+                DrawTab(g, TabPages[i], i);
             }
         }
 
         internal void DrawTab(Graphics g, TabPage customTabPage, int nIndex)
         {
-            Rectangle tabRect = this.GetTabRect(nIndex);
-            bool isSelected = (this.SelectedIndex == nIndex);
+            Rectangle tabRect = GetTabRect(nIndex);
+            bool isSelected = (SelectedIndex == nIndex);
 
             Color tabBackColor = isSelected ? Theme.Colors.Surface : Theme.Colors.SurfaceDark;
             Color textColor = isSelected ? Theme.Colors.TextActive : Theme.Colors.TextInactive;
@@ -62,7 +62,7 @@ namespace DarkModeForms
 
             UIHelpers.SetHighQualityGraphics(g);
 
-            if (this.Alignment == TabAlignment.Left)
+            if (Alignment == TabAlignment.Left)
             {
                 using (Brush b = new SolidBrush(tabBackColor))
                 {
@@ -78,13 +78,13 @@ namespace DarkModeForms
                 Rectangle textRect = tabRect;
                 TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
 
-                if (this.ImageList != null && customTabPage.ImageIndex >= 0 && customTabPage.ImageIndex < this.ImageList.Images.Count)
+                if (ImageList != null && customTabPage.ImageIndex >= 0 && customTabPage.ImageIndex < ImageList.Images.Count)
                 {
-                    Image originalIcon = this.ImageList.Images[customTabPage.ImageIndex];
+                    Image originalIcon = ImageList.Images[customTabPage.ImageIndex];
                     if (originalIcon != null)
                     {
-                        int iconW = this.ImageList.ImageSize.Width;
-                        int iconH = this.ImageList.ImageSize.Height;
+                        int iconW = ImageList.ImageSize.Width;
+                        int iconH = ImageList.ImageSize.Height;
                         int iconX = tabRect.X + (tabRect.Width - iconW) / 2;
                         int iconY = tabRect.Y + UIHelpers.Scale(15, g);
 

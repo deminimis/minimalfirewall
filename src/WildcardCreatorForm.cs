@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Forms;
@@ -33,7 +33,7 @@ namespace MinimalFirewall
 
             if (ruleToEdit != null)
             {
-                this.Text = "Edit Wildcard Rule";
+                Text = "Edit Wildcard Rule";
                 NewRule = ruleToEdit;
                 PopulateForm(ruleToEdit);
             }
@@ -180,7 +180,7 @@ namespace MinimalFirewall
         {
             bool isVisible = advancedGroupBox.Visible;
             advancedGroupBox.Visible = !isVisible;
-            this.Height += isVisible ? -advancedGroupBox.Height : advancedGroupBox.Height;
+            Height += isVisible ? -advancedGroupBox.Height : advancedGroupBox.Height;
         }
 
         // --- Non-Blocking Validation Events ---

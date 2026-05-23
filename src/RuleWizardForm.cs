@@ -53,8 +53,8 @@ namespace MinimalFirewall
             _backgroundTaskService = backgroundTaskService;
             _appSettings = appSettings;
 
-            this.AcceptButton = nextButton;
-            this.CancelButton = cancelButton;
+            AcceptButton = nextButton;
+            CancelButton = cancelButton;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -83,7 +83,7 @@ namespace MinimalFirewall
 
         private Panel SetupStepUI(Panel panel, string title, string headerText, string nextBtnText = "Next")
         {
-            this.Text = title;
+            Text = title;
             mainHeaderLabel.Text = headerText;
             nextButton.Text = nextBtnText;
             return panel;
@@ -93,7 +93,7 @@ namespace MinimalFirewall
         {
             _currentStep = newStep;
 
-            foreach (Control c in this.Controls)
+            foreach (Control c in Controls)
             {
                 if (c is Panel p && p.Name.StartsWith("pnl") && p.Name != "bottomPanel" && p.Name != "topPanel")
                 {
@@ -174,13 +174,13 @@ namespace MinimalFirewall
                 var services = SystemDiscoveryService.GetServicesWithExePaths()
                                     .OrderBy(s => s.DisplayName).ToList();
 
-                if (this.IsDisposed || !this.IsHandleCreated) return;
+                if (IsDisposed || !IsHandleCreated) return;
 
                 try
                 {
-                    this.Invoke(new Action(() =>
+                    Invoke(new Action(() =>
                     {
-                        if (this.IsDisposed) return;
+                        if (IsDisposed) return;
                         serviceListBox.Items.Clear();
                         foreach (var service in services)
                         {
@@ -211,8 +211,8 @@ namespace MinimalFirewall
 
         private void cancelButton_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         #endregion
@@ -240,8 +240,8 @@ namespace MinimalFirewall
             {
                 var newRule = wildcardDialog.NewRule;
                 _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, newRule));
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                DialogResult = DialogResult.OK;
+                Close();
             }
         }
 
@@ -255,8 +255,8 @@ namespace MinimalFirewall
                     var payload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
                     _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
                 }
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                DialogResult = DialogResult.OK;
+                Close();
             }
         }
 
@@ -447,8 +447,8 @@ namespace MinimalFirewall
                     if (_selectedTemplate == RuleTemplate.BatchProgramRule)
                     {
                         CreateRule();
-                        this.DialogResult = DialogResult.OK;
-                        this.Close();
+                        DialogResult = DialogResult.OK;
+                        Close();
                     }
                     else
                     {
@@ -500,8 +500,8 @@ namespace MinimalFirewall
 
                 case WizardStep.Summary:
                     CreateRule();
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
+                    DialogResult = DialogResult.OK;
+                    Close();
                     break;
             }
         }

@@ -1,4 +1,4 @@
-﻿// File: AdaptiveUI.cs
+// File: AdaptiveUI.cs
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -28,7 +28,7 @@ namespace MinimalFirewall
         }
 
         public override string ToString() => Name;
-        public bool Equals(ProtocolTypes other) => this.Value == other.Value;
+        public bool Equals(ProtocolTypes other) => Value == other.Value;
         public override bool Equals(object? obj) => obj is ProtocolTypes other && Equals(other);
         public override int GetHashCode() => Value.GetHashCode();
     }

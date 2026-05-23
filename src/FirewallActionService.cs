@@ -50,8 +50,8 @@ namespace MinimalFirewall
             this.activityLogger = activityLogger;
             this.eventListenerService = eventListenerService;
             this.sentryService = sentryService;
-            this._whitelistService = whitelistService;
-            this._wildcardRuleService = wildcardRuleService;
+            _whitelistService = whitelistService;
+            _wildcardRuleService = wildcardRuleService;
             _temporaryRuleManager = new TemporaryRuleManager();
             _dataService = dataService;
         }

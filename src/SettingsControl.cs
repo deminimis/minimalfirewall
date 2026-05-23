@@ -82,17 +82,17 @@ namespace MinimalFirewall
             _dm = dm;
 
             versionLabel.Text = version;
-            loggingSwitch.CheckedChanged += new System.EventHandler(this.loggingSwitch_CheckedChanged);
+            loggingSwitch.CheckedChanged += new System.EventHandler(loggingSwitch_CheckedChanged);
 
             // Wire live-apply handlers for controls that the Designer does not already wire.
             // AppSettings.SetField debounces a Save() on every property change, so assigning
             // the property here is sufficient to both update in-memory state (consumed by
             // services like FirewallEventListenerService) and persist to disk.
-            closeToTraySwitch.CheckedChanged += new System.EventHandler(this.closeToTraySwitch_CheckedChanged);
-            autoAllowWhitelistedPublishersCheck.CheckedChanged += new System.EventHandler(this.autoAllowWhitelistedPublishersCheck_CheckedChanged);
-            autoAllowSystemSignedAppsCheck.CheckedChanged += new System.EventHandler(this.autoAllowSystemSignedAppsCheck_CheckedChanged);
-            auditAlertsSwitch.CheckedChanged += new System.EventHandler(this.auditAlertsSwitch_CheckedChanged);
-            autoRefreshTextBox.Leave += new System.EventHandler(this.autoRefreshTextBox_Leave);
+            closeToTraySwitch.CheckedChanged += new System.EventHandler(closeToTraySwitch_CheckedChanged);
+            autoAllowWhitelistedPublishersCheck.CheckedChanged += new System.EventHandler(autoAllowWhitelistedPublishersCheck_CheckedChanged);
+            autoAllowSystemSignedAppsCheck.CheckedChanged += new System.EventHandler(autoAllowSystemSignedAppsCheck_CheckedChanged);
+            auditAlertsSwitch.CheckedChanged += new System.EventHandler(auditAlertsSwitch_CheckedChanged);
+            autoRefreshTextBox.Leave += new System.EventHandler(autoRefreshTextBox_Leave);
 
             if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
             {
@@ -324,19 +324,19 @@ namespace MinimalFirewall
         private void managePublishersButton_Click(object? sender, EventArgs e)
         {
             using var form = new ManagePublishersForm(_whitelistService, _appSettings);
-            form.ShowDialog(this.FindForm());
+            form.ShowDialog(FindForm());
         }
 
         private void viewTrustedCertsButton_Click(object? sender, EventArgs e)
         {
             using var form = new TrustedCertificatesForm(_appSettings);
-            form.ShowDialog(this.FindForm());
+            form.ShowDialog(FindForm());
         }
 
         private void excludedFoldersButton_Click(object? sender, EventArgs e)
         {
             using var form = new ExcludedFoldersForm(_appSettings);
-            form.ShowDialog(this.FindForm());
+            form.ShowDialog(FindForm());
         }
 
         private void OpenFirewallButton_Click(object? sender, EventArgs e)
@@ -562,7 +562,7 @@ namespace MinimalFirewall
             {
                 string zipPath = saveDialog.FileName;
                 var statusForm = new StatusForm("Gathering diagnostic data...", _appSettings);
-                statusForm.Show(this.FindForm());
+                statusForm.Show(FindForm());
                 Application.DoEvents(); 
 
                 try

@@ -27,7 +27,7 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
-            _bindingSource = new BindingSource(this.components);
+            _bindingSource = new BindingSource(components);
 
             EnableDoubleBuffering(groupsDataGridView);
         }
@@ -67,9 +67,9 @@ namespace MinimalFirewall
             {
                 var groups = await Task.Run(() => _groupManager.GetAllGroups());
 
-                if (this.InvokeRequired)
+                if (InvokeRequired)
                 {
-                    this.Invoke(new Action(() => _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups)));
+                    Invoke(new Action(() => _bindingSource.DataSource = new SortableBindingList<FirewallGroup>(groups)));
                 }
                 else
                 {

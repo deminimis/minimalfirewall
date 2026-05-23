@@ -1,4 +1,4 @@
-﻿// File: ManagePublishersForm.cs
+// File: ManagePublishersForm.cs
 using DarkModeForms;
 using System.Data; // Required for LINQ extensions if not globally imported
 
@@ -22,7 +22,7 @@ namespace MinimalFirewall
             _whitelistService = whitelistService;
 
             // Ensure we track selection changes to update button states
-            this.publishersListBox.SelectedIndexChanged += new System.EventHandler(this.publishersListBox_SelectedIndexChanged);
+            publishersListBox.SelectedIndexChanged += new System.EventHandler(publishersListBox_SelectedIndexChanged);
 
             LoadPublishers();
         }
@@ -87,7 +87,7 @@ namespace MinimalFirewall
 
         private void closeButton_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }

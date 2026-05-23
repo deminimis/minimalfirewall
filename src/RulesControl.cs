@@ -38,7 +38,7 @@ namespace MinimalFirewall
         public RulesControl()
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
+            DoubleBuffered = true;
 
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
             _searchDebounceTimer.Tick += async (s, e) =>
@@ -108,9 +108,9 @@ namespace MinimalFirewall
 
         private void OnRulesListUpdated()
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(OnRulesListUpdated);
+                Invoke(OnRulesListUpdated);
                 return;
             }
 
@@ -181,7 +181,7 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            if (this.Disposing || this.IsDisposed) return;
+            if (Disposing || IsDisposed) return;
             createRuleButton.FlatAppearance.BorderSize = 1;
 
             createRuleButton.FlatAppearance.BorderColor = Theme.Colors.ControlDark;
@@ -282,7 +282,7 @@ namespace MinimalFirewall
                     }
 
                     using var dialog = new CreateAdvancedRuleForm(_actionsService, originalRule, _appSettings);
-                    if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                    if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
                     {
                         if (dialog.RuleVm != null)
                         {
@@ -327,7 +327,7 @@ namespace MinimalFirewall
             try
             {
                 using var dialog = new RuleWizardForm(_actionsService, _wildcardRuleService, _backgroundTaskService, _appSettings);
-                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
                 {
                     await _backgroundTaskService.WhenIdleAsync();
                     if (DataRefreshRequested != null)

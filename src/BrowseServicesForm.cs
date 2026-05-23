@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using System.Data;
 
 namespace MinimalFirewall
@@ -58,8 +58,8 @@ namespace MinimalFirewall
             if (servicesListBox.SelectedItem is ServiceListItem selectedItem)
             {
                 SelectedService = selectedItem.Service;
-                this.DialogResult = DialogResult.OK;
-                this.Close();
+                DialogResult = DialogResult.OK;
+                Close();
             }
             else
             {
@@ -68,8 +68,8 @@ namespace MinimalFirewall
 
         private void cancelButton_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void servicesListBox_DoubleClick(object sender, EventArgs e)

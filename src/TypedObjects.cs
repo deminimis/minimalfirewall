@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -288,7 +288,7 @@ namespace MinimalFirewall.TypedObjects
         }
 
         public override string ToString() => Name;
-        public bool Equals(ProtocolTypes other) => this.Value == other.Value;
+        public bool Equals(ProtocolTypes other) => Value == other.Value;
         public override bool Equals(object? obj) => obj is ProtocolTypes other && Equals(other);
         public override int GetHashCode() => Value.GetHashCode();
 

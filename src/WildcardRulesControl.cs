@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -16,7 +16,7 @@ namespace MinimalFirewall
         public WildcardRulesControl()
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
+            DoubleBuffered = true;
 
             wildcardDataGridView.AutoGenerateColumns = false;
             wildcardDataGridView.DataSource = _bindingSource;
@@ -48,7 +48,7 @@ namespace MinimalFirewall
             if (_wildcardRuleService == null || _appSettings == null || _backgroundTaskService == null) return;
 
             using var form = new WildcardCreatorForm(_wildcardRuleService, _appSettings);
-            if (form.ShowDialog(this.FindForm()) == DialogResult.OK)
+            if (form.ShowDialog(FindForm()) == DialogResult.OK)
             {
                 var newRule = form.NewRule;
 
@@ -70,7 +70,7 @@ namespace MinimalFirewall
             }
 
             using var form = new WildcardCreatorForm(_wildcardRuleService, _appSettings, selectedRule);
-            if (form.ShowDialog(this.FindForm()) == DialogResult.OK)
+            if (form.ShowDialog(FindForm()) == DialogResult.OK)
             {
                 var updatedRule = form.NewRule;
                 var payload = new UpdateWildcardRulePayload { OldRule = selectedRule, NewRule = updatedRule };

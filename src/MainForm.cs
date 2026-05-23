@@ -81,12 +81,12 @@ namespace MinimalFirewall
             InitializeComponent();
 
             // UI Initialization
-            this.Opacity = 0;
-            this.ShowInTaskbar = false;
-            this.DoubleBuffered = true;
-            this.Text = "Minimal Firewall";
+            Opacity = 0;
+            ShowInTaskbar = false;
+            DoubleBuffered = true;
+            Text = "Minimal Firewall";
 
-            using (Graphics g = this.CreateGraphics())
+            using (Graphics g = CreateGraphics())
             {
                 float dpiScale = g.DpiY / 96f;
                 if (dpiScale > 1f)
@@ -102,9 +102,9 @@ namespace MinimalFirewall
             _appSettings = AppSettings.Load();
             _appSettings.PropertyChanged += AppSettings_PropertyChanged;
             dm = new DarkModeCS(this);
-            if (this.components != null)
+            if (components != null)
             {
-                dm.Components = this.components.Components;
+                dm.Components = components.Components;
             }
 
             InitializeServices();
@@ -140,7 +140,7 @@ namespace MinimalFirewall
         {
             _startupService = new StartupService();
             _groupManager = new FirewallGroupManager();
-            _iconService = new IconService { ImageList = this.appIconList };
+            _iconService = new IconService { ImageList = appIconList };
             _whitelistService = new PublisherWhitelistService();
             _firewallRuleService = new FirewallRuleService();
             _activityLogger = new UserActivityLogger { IsEnabled = _appSettings.IsLoggingEnabled };
@@ -232,7 +232,7 @@ namespace MinimalFirewall
             {
                 await DisplayCurrentTabData();
 
-                this.ShowInTaskbar = true;
+                ShowInTaskbar = true;
 
                 var fadeTimer = new System.Windows.Forms.Timer
                 {
@@ -240,17 +240,17 @@ namespace MinimalFirewall
                 };
                 fadeTimer.Tick += (sender, args) =>
                 {
-                    this.Opacity += 0.1;
-                    if (this.Opacity >= 1.0)
+                    Opacity += 0.1;
+                    if (Opacity >= 1.0)
                     {
                         fadeTimer.Stop();
                         fadeTimer.Dispose();
-                        this.Opacity = 1.0;
+                        Opacity = 1.0;
                     }
                 };
                 fadeTimer.Start();
 
-                this.Activate();
+                Activate();
             }
             else
             {
@@ -312,7 +312,7 @@ namespace MinimalFirewall
             lockdownButton.AutoSize = false;
             rescanButton.AutoSize = false;
 
-            using (var g = this.CreateGraphics())
+            using (var g = CreateGraphics())
             {
                 float dpiScale = g.DpiY / 96f;
                 int scaledSize = (int)(44 * dpiScale);
@@ -329,7 +329,7 @@ namespace MinimalFirewall
                 
                 // Align bottom with same margin
                 int bottomMargin = (int)(8 * dpiScale);
-                rescanButton.Top = this.ClientSize.Height - scaledSize - bottomMargin;
+                rescanButton.Top = ClientSize.Height - scaledSize - bottomMargin;
                 lockdownButton.Top = rescanButton.Top;
             }
         }
@@ -358,7 +358,7 @@ namespace MinimalFirewall
                 if (stream != null)
                 {
                     var icon = new Icon(stream);
-                    this.Icon = icon;
+                    Icon = icon;
                     _defaultTrayIcon = icon;
                     _unlockedTrayIcon = CreateRecoloredIcon(icon, Color.Red);
                     _alertTrayIcon = CreateRecoloredIcon(icon, Color.Orange);
@@ -410,7 +410,7 @@ namespace MinimalFirewall
 
         private void UpdateThemeAndColors()
         {
-            this.SuspendLayout();
+            SuspendLayout();
             bool isAuto = _appSettings.Theme == "Auto";
             bool isDark = IsDarkModeEnabled;
 
@@ -428,10 +428,10 @@ namespace MinimalFirewall
 
             rescanButton.Invalidate();
             UpdateTrayStatus();
-            this.ResumeLayout(true);
-            this.Refresh();
-            lockdownButton.FlatAppearance.BorderColor = this.BackColor;
-            rescanButton.FlatAppearance.BorderColor = this.BackColor;
+            ResumeLayout(true);
+            Refresh();
+            lockdownButton.FlatAppearance.BorderColor = BackColor;
+            rescanButton.FlatAppearance.BorderColor = BackColor;
             lockdownButton.BringToFront();
             rescanButton.BringToFront();
         }
@@ -622,7 +622,7 @@ namespace MinimalFirewall
                 if (sender is not NotifierForm notifier) return;
                 notifier.FormClosed -= RuleNotifier_FormClosed;
 
-                if (this.IsDisposed || this.Disposing) return;
+                if (IsDisposed || Disposing) return;
 
                 var rule = notifier.RuleChange;
                 var result = notifier.Result;
@@ -692,7 +692,7 @@ namespace MinimalFirewall
                 if (sender is not NotifierForm notifier) return;
                 notifier.FormClosed -= Notifier_FormClosed;
 
-                if (this.IsDisposed || this.Disposing) return;
+                if (IsDisposed || Disposing) return;
 
                 var pending = notifier.PendingConnection;
                 var result = notifier.Result;
@@ -702,7 +702,7 @@ namespace MinimalFirewall
                 _mainViewModel.PendingConnections.Remove(pending);
                 if (result == NotifierForm.NotifierResult.CreateWildcard)
                 {
-                    this.BeginInvoke(new Action(() =>
+                    BeginInvoke(new Action(() =>
                     {
                         using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath, _appSettings);
                         if (wildcardDialog.ShowDialog(this) == DialogResult.OK)
@@ -812,9 +812,9 @@ namespace MinimalFirewall
             contextMenu.Items.Add(new ToolStripMenuItem("Show", null, ShowWindow));
             contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, ExitApplication));
             contextMenu.Opening += TrayContextMenu_Opening;
-            notifyIcon = new NotifyIcon(this.components)
+            notifyIcon = new NotifyIcon(components)
             {
-                Icon = this.Icon,
+                Icon = Icon,
                 Text = "Minimal Firewall",
                 Visible = true,
                 ContextMenuStrip = contextMenu
@@ -844,16 +844,16 @@ namespace MinimalFirewall
                 var interval = TimeSpan.FromMinutes(_appSettings.AutoRefreshIntervalMinutes);
                 _autoRefreshTimer = new System.Threading.Timer(_ =>
                 {
-                    if (this.IsDisposed || !this.IsHandleCreated)
+                    if (IsDisposed || !IsHandleCreated)
                     {
                         return;
                     }
 
                     try
                     {
-                        this.Invoke(new Action(async () =>
+                        Invoke(new Action(async () =>
                         {
-                            if (this.Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
+                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
                             {
                                 await ForceDataRefreshAsync();
                             }
@@ -871,18 +871,18 @@ namespace MinimalFirewall
         {
             if (_appSettings.WindowSize.Width > 0 && _appSettings.WindowSize.Height > 0)
             {
-                this.Size = _appSettings.WindowSize;
+                Size = _appSettings.WindowSize;
             }
 
             bool isVisible = Screen.AllScreens.Any(screen => screen.WorkingArea.Contains(_appSettings.WindowLocation));
 
             if (isVisible)
             {
-                this.Location = _appSettings.WindowLocation;
+                Location = _appSettings.WindowLocation;
             }
             else
             {
-                this.StartPosition = FormStartPosition.CenterScreen;
+                StartPosition = FormStartPosition.CenterScreen;
             }
 
             var savedState = (FormWindowState)_appSettings.WindowState;
@@ -891,17 +891,17 @@ namespace MinimalFirewall
                 savedState = FormWindowState.Normal;
             }
 
-            this.WindowState = savedState;
+            WindowState = savedState;
         }
 
         private async void ShowWindow(object? sender, EventArgs e)
         {
-            this.Opacity = 1;
-            this.ShowInTaskbar = true;
+            Opacity = 1;
+            ShowInTaskbar = true;
 
             ApplyLastWindowState();
-            this.Show();
-            this.Activate();
+            Show();
+            Activate();
             if (_mainViewModel.IsLockedDown)
             {
                 _eventListenerService.Start();
@@ -923,10 +923,10 @@ namespace MinimalFirewall
 
         private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
-            bool isNormal = this.WindowState == FormWindowState.Normal;
-            _appSettings.WindowLocation = isNormal ? this.Location : this.RestoreBounds.Location;
-            _appSettings.WindowSize = isNormal ? this.Size : this.RestoreBounds.Size;
-            _appSettings.WindowState = this.WindowState == FormWindowState.Maximized ? (int)FormWindowState.Maximized : (int)FormWindowState.Normal;
+            bool isNormal = WindowState == FormWindowState.Normal;
+            _appSettings.WindowLocation = isNormal ? Location : RestoreBounds.Location;
+            _appSettings.WindowSize = isNormal ? Size : RestoreBounds.Size;
+            _appSettings.WindowState = WindowState == FormWindowState.Maximized ? (int)FormWindowState.Maximized : (int)FormWindowState.Normal;
 
             settingsControl1.SaveSettingsFromUI();
             bool isExiting = !(_appSettings.CloseToTray && e.CloseReason == CloseReason.UserClosing);
@@ -934,7 +934,7 @@ namespace MinimalFirewall
             if (!isExiting)
             {
                 e.Cancel = true;
-                this.Hide();
+                Hide();
                 if (notifyIcon != null)
                 {
                     notifyIcon.Visible = true;
@@ -1002,7 +1002,7 @@ namespace MinimalFirewall
             var selectedTab = mainTabControl.SelectedTab;
             if (selectedTab == null) return;
 
-            this.SuspendLayout();
+            SuspendLayout();
             if (selectedTab != liveConnectionsTabPage)
             {
                 liveConnectionsControl1.OnTabDeselected();
@@ -1038,7 +1038,7 @@ namespace MinimalFirewall
                 }
             }
             catch (OperationCanceledException) { }
-            this.ResumeLayout(true);
+            ResumeLayout(true);
         }
 
         public async Task ForceDataRefreshAsync(bool forceUwpScan = false, bool showStatus = true, StatusForm? statusFormInstance = null)
@@ -1052,7 +1052,7 @@ namespace MinimalFirewall
             {
                 _isRefreshingData = true;
                 statusForm = statusFormInstance;
-                if (showStatus && statusForm == null && this.Visible)
+                if (showStatus && statusForm == null && Visible)
                 {
                     statusForm = new StatusForm("Scanning firewall rules...", _appSettings);
                     statusForm.Show(this);
@@ -1088,7 +1088,7 @@ namespace MinimalFirewall
             try
             {
                 await rulesControl1.RefreshDataAsync();
-                if (this.Visible)
+                if (Visible)
                 {
                     await DisplayCurrentTabData();
                 }
@@ -1125,7 +1125,7 @@ namespace MinimalFirewall
 
             try
             {
-                if (showStatusWindow && this.Visible)
+                if (showStatusWindow && Visible)
                 {
                     _auditStatusForm = new StatusForm("Scanning for system changes...", _appSettings);
                     var progressIndicator = new Progress<int>(p => _auditStatusForm?.UpdateProgress(p));
@@ -1165,7 +1165,7 @@ namespace MinimalFirewall
             {
                 _isRefreshingData = true;
                 statusForm = statusFormInstance;
-                if (statusForm == null && this.Visible)
+                if (statusForm == null && Visible)
                 {
                     statusForm = new StatusForm("Scanning live connections...", _appSettings);
                     statusForm.Show(this);
@@ -1228,7 +1228,7 @@ namespace MinimalFirewall
         private void UnloadTabData(object? state)
         {
             if (state is not string tabName) return;
-            this.BeginInvoke(new Action(() =>
+            BeginInvoke(new Action(() =>
             {
                 if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
                 {
@@ -1386,7 +1386,7 @@ namespace MinimalFirewall
         private void OwnerDrawnButton_Paint(object? sender, PaintEventArgs e)
         {
             if (sender is not Button button) return;
-            e.Graphics.Clear(this.BackColor);
+            e.Graphics.Clear(BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
@@ -1439,11 +1439,11 @@ namespace MinimalFirewall
 
         private void SafeInvoke(Action action)
         {
-            if (this.Disposing || this.IsDisposed || !this.IsHandleCreated) return;
+            if (Disposing || IsDisposed || !IsHandleCreated) return;
 
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(action);
+                Invoke(action);
             }
             else
             {

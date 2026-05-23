@@ -57,13 +57,13 @@ namespace MinimalFirewall
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
-            this.Text = "New Firewall Rule Detected";
+            Text = "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
             pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
             pathLabel.WordWrap = false;
 
-            this.AcceptButton = this.ignoreButton;
+            AcceptButton = ignoreButton;
 
             if (tempAllowButton != null) tempAllowButton.Visible = false;
             if (createWildcardButton != null) createWildcardButton.Visible = false;
@@ -82,13 +82,13 @@ namespace MinimalFirewall
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
-            this.Text = "Connection Blocked";
+            Text = "Connection Blocked";
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
             pathLabel.Text = pending.AppPath;
             pathLabel.WordWrap = false;
 
-            this.AcceptButton = this.ignoreButton;
+            AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
         }
@@ -99,8 +99,8 @@ namespace MinimalFirewall
             base.OnLoad(e);
 
             // Ensure the notification is seen over other apps
-            this.TopMost = true;
-            this.Activate();
+            TopMost = true;
+            Activate();
 
             try
             {
@@ -112,14 +112,14 @@ namespace MinimalFirewall
                     if (settings != null)
                     {
                         // Restore Size
-                        if (settings.Width >= this.MinimumSize.Width && settings.Height >= this.MinimumSize.Height)
+                        if (settings.Width >= MinimumSize.Width && settings.Height >= MinimumSize.Height)
                         {
-                            this.Size = new Size(settings.Width, settings.Height);
+                            Size = new Size(settings.Width, settings.Height);
                         }
 
                         // Restore Location only if visible on current screens
                         var savedLoc = new Point(settings.X, settings.Y);
-                        var targetRect = new Rectangle(savedLoc, this.Size);
+                        var targetRect = new Rectangle(savedLoc, Size);
                         bool isVisible = false;
 
                         // Check intersection to ensure window isn't lost off-screen
@@ -134,8 +134,8 @@ namespace MinimalFirewall
 
                         if (isVisible)
                         {
-                            this.StartPosition = FormStartPosition.Manual;
-                            this.Location = savedLoc;
+                            StartPosition = FormStartPosition.Manual;
+                            Location = savedLoc;
                         }
                     }
                 }
@@ -181,14 +181,14 @@ namespace MinimalFirewall
         {
             try
             {
-                if (this.WindowState == FormWindowState.Normal)
+                if (WindowState == FormWindowState.Normal)
                 {
                     var settings = new NotifierLayoutSettings
                     {
-                        X = this.Location.X,
-                        Y = this.Location.Y,
-                        Width = this.Size.Width,
-                        Height = this.Size.Height
+                        X = Location.X,
+                        Y = Location.Y,
+                        Width = Size.Width,
+                        Height = Size.Height
                     };
 
                     string json = JsonSerializer.Serialize(settings);
@@ -217,30 +217,30 @@ namespace MinimalFirewall
         {
             Result = NotifierResult.TemporaryAllow;
             TemporaryDuration = duration;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         private void allowButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Allow;
             TrustPublisher = trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         private void blockButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Block;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         private void ignoreButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Ignore;
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void tempAllowButton_Click(object sender, EventArgs e)
@@ -251,8 +251,8 @@ namespace MinimalFirewall
         private void createWildcardButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.CreateWildcard;
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
 
         private async void copyDetailsButton_Click(object sender, EventArgs e)
@@ -305,7 +305,7 @@ namespace MinimalFirewall
 
                 await Task.Delay(2000);
 
-                if (!this.IsDisposed && this.IsHandleCreated)
+                if (!IsDisposed && IsHandleCreated)
                 {
                     copyDetailsButton.Text = "📋";
                 }

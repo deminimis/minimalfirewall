@@ -23,11 +23,11 @@ namespace MinimalFirewall
             dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
 
-            this.Text = title;
-            this.statusLabel.Text = title;
-            this.progressLabel.Text = "0%";
-            this.progressBar.Value = 0;
-            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Blocks;
+            Text = title;
+            statusLabel.Text = title;
+            progressLabel.Text = "0%";
+            progressBar.Value = 0;
+            progressBar.Style = System.Windows.Forms.ProgressBarStyle.Blocks;
 
             _fakeProgress = 0;
             _realProgressStarted = false;
@@ -81,20 +81,20 @@ namespace MinimalFirewall
 
         public void UpdateStatus(string message)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new Action(() => UpdateStatus(message)));
+                Invoke(new Action(() => UpdateStatus(message)));
                 return;
             }
 
-            this.statusLabel.Text = message;
+            statusLabel.Text = message;
         }
 
         public void UpdateProgress(int percentage)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(() => UpdateProgress(percentage));
+                Invoke(() => UpdateProgress(percentage));
                 return;
             }
 
@@ -121,23 +121,23 @@ namespace MinimalFirewall
 
         public void Complete(string message)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new Action(() => Complete(message)));
+                Invoke(new Action(() => Complete(message)));
                 return;
             }
 
-            this.statusLabel.Text = message;
-            this.progressBar.Visible = false;
-            this.progressLabel.Visible = false;
-            this.okButton.Visible = true;
-            this.Text = "Scan Complete";
-            this.okButton.Focus();
+            statusLabel.Text = message;
+            progressBar.Visible = false;
+            progressLabel.Visible = false;
+            okButton.Visible = true;
+            Text = "Scan Complete";
+            okButton.Focus();
         }
 
         private void okButton_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }

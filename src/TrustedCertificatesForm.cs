@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using System.Data;
 using System.Security.Cryptography.X509Certificates;
 
@@ -83,7 +83,7 @@ namespace MinimalFirewall
 
         private void closeButton_Click(object sender, EventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }

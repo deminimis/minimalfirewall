@@ -66,7 +66,7 @@ namespace DarkModeForms
 
             // Background
             using Brush backBrush = new SolidBrush(Theme.Colors.ControlLight);
-            g.FillRectangle(backBrush, this.ClientRectangle);
+            g.FillRectangle(backBrush, ClientRectangle);
 
             // Foreground Bar
             using (var brush = new SolidBrush(Theme.Colors.Primary)) // Centralized accent color

@@ -775,8 +775,8 @@ namespace DarkModeForms
         };
         public List<Base64Image> Icons
         {
-            get => this._Icons;
-            set => this._Icons = value;
+            get => _Icons;
+            set => _Icons = value;
         }
 
         public Image? GetIcon(string pName) => _Icons?.Find(x => x.Name == pName)?.Image;

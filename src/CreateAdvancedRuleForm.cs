@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using MinimalFirewall.TypedObjects;
 using System.ComponentModel;
 using NetFwTypeLib;
@@ -30,7 +30,7 @@ namespace MinimalFirewall
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, AppSettings appSettings)
         {
             InitializeComponent();
-            this.AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
+            AutoValidate = System.Windows.Forms.AutoValidate.EnableAllowFocusChange;
             _appSettings = appSettings;
 
 
@@ -78,7 +78,7 @@ namespace MinimalFirewall
             : this(actionsService, appSettings)
         {
             _originalRuleVm = ruleToEdit;
-            this.Text = "Edit Advanced Rule";
+            Text = "Edit Advanced Rule";
             PopulateFormFromRule(ruleToEdit);
         }
 
@@ -87,11 +87,11 @@ namespace MinimalFirewall
             base.OnLoad(e);
             dm.ApplyTheme(_appSettings.Theme == "Dark");
             var workingArea = Screen.FromControl(this).WorkingArea;
-            if (this.Height > workingArea.Height)
+            if (Height > workingArea.Height)
             {
-                this.Height = workingArea.Height;
+                Height = workingArea.Height;
             }
-            this.CenterToParent();
+            CenterToParent();
         }
 
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)
@@ -196,7 +196,7 @@ namespace MinimalFirewall
 
         private void OkButton_Click(object sender, EventArgs e)
         {
-            if (!this.ValidateChildren())
+            if (!ValidateChildren())
             {
                 Messenger.MessageBox("Please correct the validation errors before submitting.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -268,7 +268,7 @@ namespace MinimalFirewall
                 IcmpTypesAndCodes = finalIcmp.Trim()
             };
 
-            this.RuleVm = rule;
+            RuleVm = rule;
 
             DialogResult = DialogResult.OK;
             Close();
@@ -313,7 +313,7 @@ namespace MinimalFirewall
         {
             try
             {
-                this.Cursor = Cursors.WaitCursor;
+                Cursor = Cursors.WaitCursor;
                 browseServiceButton.Enabled = false;
 
                 var services = await Task.Run(() => SystemDiscoveryService.GetServicesWithExePaths());
@@ -334,15 +334,15 @@ namespace MinimalFirewall
             }
             finally
             {
-                this.Cursor = Cursors.Default;
+                Cursor = Cursors.Default;
                 browseServiceButton.Enabled = true;
             }
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void AddGroupButton_Click(object sender, EventArgs e)
