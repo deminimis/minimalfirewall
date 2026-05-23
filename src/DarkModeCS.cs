@@ -14,7 +14,7 @@ using System.Windows.Forms;
 
 namespace DarkModeForms
 {
-    public class DarkModeCS : IDisposable
+    public partial class DarkModeCS : IDisposable
     {
         private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
         private static readonly ConditionalWeakTable<Control, PaintEventHandler> _roundBorderPainters = new();
@@ -24,7 +24,7 @@ namespace DarkModeForms
             public int Count { get; set; }
         }
 
-        public void SetNotificationCount(Control control, int count)
+        public static void SetNotificationCount(Control control, int count)
         {
             if (count > 0)
             {
@@ -51,10 +51,10 @@ namespace DarkModeForms
             }
         }
 
-        private void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
+        private static void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
         {
-            using Font notifFont = new Font("Segoe UI", 7F, FontStyle.Bold);
-            SizeF textSize = g.MeasureString(text, notifFont);
+            using Font notifFont = new("Segoe UI", 7F, FontStyle.Bold);
+            var textSize = g.MeasureString(text, notifFont);
             int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
             int x, y;
             switch (alignment)
@@ -70,13 +70,13 @@ namespace DarkModeForms
                     break;
             }
 
-            Rectangle bubbleRect = new Rectangle(x, y, diameter, diameter);
+            var bubbleRect = new Rectangle(x, y, diameter, diameter);
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
             using (var path = new GraphicsPath())
             {
                 path.AddEllipse(bubbleRect);
-                PointF point1 = PointF.Empty, point2 = PointF.Empty, point3 = PointF.Empty;
+                PointF point1, point2, point3;
                 switch (alignment)
                 {
                     case TabAlignment.Left:
@@ -96,24 +96,18 @@ namespace DarkModeForms
                         break;
                 }
 
-                path.AddPolygon(new[] { point1, point2, point3 });
-                using (SolidBrush redBrush = new SolidBrush(Color.Red))
-                {
-                    g.FillPath(redBrush, path);
-                }
+                path.AddPolygon([point1, point2, point3]);
+                using var redBrush = new SolidBrush(Color.Red);
+                g.FillPath(redBrush, path);
             }
 
-            using (SolidBrush whiteBrush = new SolidBrush(Color.White))
+            using var whiteBrush = new SolidBrush(Color.White);
+            using var sf = new StringFormat
             {
-                using (StringFormat sf = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                })
-                {
-                    g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
-                }
-            }
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+            g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
         }
 
 
@@ -134,32 +128,24 @@ namespace DarkModeForms
             DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
         }
 
-        [DllImport("user32.dll")]
-        private static extern int SendMessage(IntPtr hWnd, int wMsg, bool wParam, int lParam);
+        [LibraryImport("user32.dll", EntryPoint = "SendMessageW")]
+        private static partial int SendMessage(IntPtr hWnd, int wMsg, [MarshalAs(UnmanagedType.Bool)] bool wParam, int lParam);
         private const int WM_SETREDRAW = 0x000B;
 
-        [DllImport("DwmApi")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, int[] attrValue, int attrSize);
+        [LibraryImport("dwmapi.dll", EntryPoint = "DwmSetWindowAttribute")]
+        private static partial int DwmSetWindowAttribute(IntPtr hwnd, int attr, [In] int[] attrValue, int attrSize);
 
-        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private static extern int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
+        [LibraryImport("uxtheme.dll", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
 
-        [DllImport("dwmapi.dll", EntryPoint = "#127")]
-        private static extern void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
+        [LibraryImport("dwmapi.dll", EntryPoint = "#127")]
+        private static partial void DwmGetColorizationParameters(ref DWMCOLORIZATIONcolors colors);
 
-        [DllImport("Gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
-        private static extern IntPtr CreateRoundRectRgn
-        (
-          int nLeftRect,
-          int nTopRect,
-          int nRightRect,
-          int nBottomRect,
-          int nWidthEllipse,
-          int nHeightEllipse
-        );
+        [LibraryImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+        private static partial IntPtr CreateRoundRectRgn(int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nWidthEllipse, int nHeightEllipse);
 
-        [DllImport("user32.dll", ExactSpelling = true, CharSet = CharSet.Auto)]
-        private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+        [LibraryImport("user32.dll", EntryPoint = "GetWindow")]
+        private static partial IntPtr GetWindow(IntPtr hWnd, uint uCmd);
         private const uint GW_CHILD = 5;
 
         private static readonly ControlStatusStorage controlStatusStorage = new();
@@ -194,7 +180,7 @@ namespace DarkModeForms
             Components = null;
             ColorizeIcons = _ColorizeIcons;
             RoundedPanels = _RoundedPanels;
-            OScolors = GetSystemColors(isDarkMode() ? 0 : 1);
+            OScolors = GetSystemColors(IsSystemDarkMode() ? 0 : 1);
             OwnerForm.HandleCreated += (sender, e) => ApplyTitleBarTheme();
         }
 
@@ -214,13 +200,12 @@ namespace DarkModeForms
             if (OwnerForm.Handle != IntPtr.Zero)
             {
                 bool useDark = (ColorMode == DisplayMode.DarkMode) ||
-                    (ColorMode == DisplayMode.SystemDefault && isDarkMode());
+                    (ColorMode == DisplayMode.SystemDefault && IsSystemDarkMode());
                 int[] DarkModeOn = useDark ? [0x01] : [0x00];
                 DwmSetWindowAttribute(OwnerForm.Handle, (int)DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, DarkModeOn, 4);
             }
         }
-
-        public static bool isDarkMode()
+        public static bool IsSystemDarkMode()
         {
             return GetWindowsColorMode() <= 0;
         }
@@ -275,7 +260,7 @@ namespace DarkModeForms
         {
             if (ColorMode == pColorMode) return;
             ColorMode = pColorMode;
-            ApplyTheme(ColorMode == DisplayMode.SystemDefault ? isDarkMode() : ColorMode == DisplayMode.DarkMode);
+            ApplyTheme(ColorMode == DisplayMode.SystemDefault ? IsSystemDarkMode() : ColorMode == DisplayMode.DarkMode);
         }
 
         private void ListView_DrawColumnHeader(object? sender, DrawListViewColumnHeaderEventArgs e)
@@ -533,7 +518,7 @@ namespace DarkModeForms
 
         private void Label_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not Label lbl || !(!lbl.Enabled && IsDarkMode && lbl.Parent != null)) return;
+            if (sender is not Label lbl || lbl.Enabled || !IsDarkMode || lbl.Parent == null) return;
             e.Graphics.Clear(lbl.Parent.BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
             using Brush B = new SolidBrush(lbl.ForeColor);
@@ -546,8 +531,8 @@ namespace DarkModeForms
 
         private void GroupBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not GroupBox gBox || !(!gBox.Enabled && IsDarkMode)) return;
-            using Brush B = new SolidBrush(gBox.ForeColor);
+            if (sender is not GroupBox gBox || gBox.Enabled || !IsDarkMode) return;
+            using var B = new SolidBrush(gBox.ForeColor);
             e.Graphics.DrawString(gBox.Text, gBox.Font, B, new PointF(6, 0));
         }
 
@@ -556,7 +541,7 @@ namespace DarkModeForms
             if (sender is not TabControl tab || tab.Parent == null) return;
 
             //  Check bounds before filling to prevent overflow
-            using (SolidBrush headerBrush = new SolidBrush(tab.Parent.BackColor))
+            using (var headerBrush = new SolidBrush(tab.Parent.BackColor))
             {
                 e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
             }
@@ -573,7 +558,7 @@ namespace DarkModeForms
                 bool isSelected = tab.SelectedIndex == i;
                 if (isSelected)
                 {
-                    using (SolidBrush tabBackColor = new SolidBrush(OScolors.Surface))
+                    using (var tabBackColor = new SolidBrush(OScolors.Surface))
                     {
                         e.Graphics.FillRectangle(tabBackColor, tabRect);
                     }
@@ -632,8 +617,8 @@ namespace DarkModeForms
 
         private void CheckBoxAndRadio_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not ButtonBase btn || !(!btn.Enabled && IsDarkMode)) return;
-            using Brush B = new SolidBrush(btn.ForeColor);
+            if (sender is not ButtonBase btn || btn.Enabled || !IsDarkMode) return;
+            using var B = new SolidBrush(btn.ForeColor);
             e.Graphics.DrawString(btn.Text, btn.Font, B, new PointF(16, 0));
         }
 
@@ -676,7 +661,7 @@ namespace DarkModeForms
         {
             try
             {
-                DWMCOLORIZATIONcolors colors = new DWMCOLORIZATIONcolors();
+                var colors = new DWMCOLORIZATIONcolors();
                 DwmGetColorizationParameters(ref colors);
 
                 if (IsWindows10orGreater())
@@ -787,7 +772,7 @@ namespace DarkModeForms
                     _roundBorderPainters.Remove(_Control);
                 }
 
-                PaintEventHandler newHandler = (sender, e) =>
+                void newHandler(object? sender, PaintEventArgs e)
                 {
                     Graphics graph = e.Graphics;
                     if (Radius > 1 && _Control.Parent != null)
@@ -840,20 +825,17 @@ namespace DarkModeForms
                 float g_ = newColor.G / 255f;
                 float b = newColor.B / 255f;
                 var colorMatrix = new ColorMatrix(
-                new float[][]
-                {
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 1, 0},
-                    new float[] {r, g_, b, 0, 1}
-                });
-                using (var attributes = new ImageAttributes())
-                {
-                    attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-                    g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
-                }
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [r, g_, b, 0, 1]
+                ]);
+                using var attributes = new ImageAttributes();
+                attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                    0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
             }
             return newBitmap;
         }
@@ -1171,7 +1153,7 @@ namespace DarkModeForms
             if (!_imageCache.TryGetValue(cacheKey, out Image? imageToDraw))
             {
                 // Image creation logic
-                if (e.Item.GetType().FullName == "System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem")
+                if (e.Item.GetType().FullName?.Equals("System.Windows.Forms.MdiControlStrip+ControlBoxMenuItem") == true)
                 {
                     Color _ClearColor = e.Item.Enabled ?
                         MyColors.TextActive : MyColors.SurfaceDark;
@@ -1208,15 +1190,12 @@ namespace DarkModeForms
         }
     }
 
-    public class CustomColorTable : ProfessionalColorTable
+    public class CustomColorTable(OSThemeColors _Colors) : ProfessionalColorTable
     {
-        public OSThemeColors Colors
-        { get; set; }
+        public OSThemeColors Colors { get; set; } = _Colors;
 
-        public CustomColorTable(OSThemeColors _Colors)
+        public CustomColorTable(OSThemeColors _Colors, bool dummy) : this(_Colors)
         {
-            Colors = _Colors;
-            UseSystemColors = false;
         }
 
         public override Color ImageMarginGradientBegin => Colors.Control;
@@ -1257,6 +1236,6 @@ namespace DarkModeForms
 
     public static class Theme
     {
-        public static OSThemeColors Colors { get; set; } = DarkModeCS.GetSystemColors(DarkModeCS.isDarkMode() ? 0 : 1);
+        public static OSThemeColors Colors { get; set; } = DarkModeCS.GetSystemColors(DarkModeCS.IsSystemDarkMode() ? 0 : 1);
     }
 }

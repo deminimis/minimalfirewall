@@ -1,4 +1,3 @@
-﻿// File: CreateProgramRuleForm.cs
 using DarkModeForms;
 
 namespace MinimalFirewall

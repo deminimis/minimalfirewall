@@ -533,12 +533,12 @@ namespace MinimalFirewall
                 if (_appSettings.AlertOnForeignRules && _mainViewModel.UnseenSystemChangesCount > 0)
                 {
                     systemChangesTabPage.Text = "Audit";
-                    dm.SetNotificationCount(systemChangesTabPage, _mainViewModel.UnseenSystemChangesCount);
+                    DarkModeCS.SetNotificationCount(systemChangesTabPage, _mainViewModel.UnseenSystemChangesCount);
                 }
                 else
                 {
                     systemChangesTabPage.Text = "Audit";
-                    dm.SetNotificationCount(systemChangesTabPage, 0);
+                    DarkModeCS.SetNotificationCount(systemChangesTabPage, 0);
                 }
                 UpdateTrayStatus();
             });
@@ -885,7 +885,7 @@ namespace MinimalFirewall
                 this.StartPosition = FormStartPosition.CenterScreen;
             }
 
-            FormWindowState savedState = (FormWindowState)_appSettings.WindowState;
+            var savedState = (FormWindowState)_appSettings.WindowState;
             if (savedState == FormWindowState.Minimized)
             {
                 savedState = FormWindowState.Normal;
@@ -1435,7 +1435,7 @@ namespace MinimalFirewall
             return _scanCts.Token;
         }
 
-        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? DarkModeCS.isDarkMode() : _appSettings.Theme == "Dark";
+        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? DarkModeCS.IsSystemDarkMode() : _appSettings.Theme == "Dark";
 
         private void SafeInvoke(Action action)
         {

@@ -86,7 +86,7 @@ namespace DarkModeForms
 
         public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
         {
-            using (Form form = new Form
+            using (var form = new Form
             {
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = FormStartPosition.CenterParent,
@@ -103,7 +103,7 @@ namespace DarkModeForms
                     form.Owner = owner;
                 }
 
-                DarkModeCS DMode = new DarkModeCS(form)
+                var DMode = new DarkModeCS(form)
                 {
                     ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
                 };
@@ -114,7 +114,7 @@ namespace DarkModeForms
 
                 #region Bottom Panel & Buttons
 
-                Panel bottomPanel = new Panel
+                var bottomPanel = new Panel
                 {
                     Dock = DockStyle.Bottom,
                     Height = 48,
@@ -165,10 +165,10 @@ namespace DarkModeForms
 
                 #region Icon
 
-                Rectangle picBox = new Rectangle(2, 10, 0, 0);
+                var picBox = new Rectangle(2, 10, 0, 0);
                 if (icon != MsgIcon.None)
                 {
-                    PictureBox picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(64, 64) };
+                    var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(64, 64) };
                     picIcon.Image = _sharedIcons.GetIcon(icon);
                     form.Controls.Add(picIcon);
 
@@ -181,7 +181,7 @@ namespace DarkModeForms
 
                 #region Prompt Text
 
-                Label lblPrompt = new Label
+                var lblPrompt = new Label
                 {
                     Text = Message,
                     AutoSize = true,
@@ -224,7 +224,7 @@ namespace DarkModeForms
 
         public static DialogResult InputBox(string title, string promptText, ref List<KeyValue> Fields, MsgIcon icon = MsgIcon.None, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true)
         {
-            using (Form form = new Form
+            using (var form = new Form
             {
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = FormStartPosition.CenterParent,
@@ -235,13 +235,13 @@ namespace DarkModeForms
                 Height = 170
             })
             {
-                DarkModeCS DMode = new DarkModeCS(form) { ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode };
+                var DMode = new DarkModeCS(form) { ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode };
                 DMode.ApplyTheme(pIsDarkMode);
-                ErrorProvider Err = new ErrorProvider();
+                var Err = new ErrorProvider();
 
                 #region Bottom Panel
 
-                Panel bottomPanel = new Panel
+                var bottomPanel = new Panel
                 {
                     Dock = DockStyle.Bottom,
                     Height = 48,
@@ -256,7 +256,7 @@ namespace DarkModeForms
 
                 if (icon != MsgIcon.None)
                 {
-                    PictureBox picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(48, 48) };
+                    var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(48, 48) };
                     picIcon.Image = _sharedIcons.GetIcon(icon);
                     bottomPanel.Controls.Add(picIcon);
                     picIcon.SetBounds(0, 2, 48, 48);
@@ -286,7 +286,7 @@ namespace DarkModeForms
 
                 #region Prompt Text
 
-                Label lblPrompt = new Label();
+                var lblPrompt = new Label();
                 if (!string.IsNullOrWhiteSpace(promptText))
                 {
                     lblPrompt.Dock = DockStyle.Top;
@@ -307,7 +307,7 @@ namespace DarkModeForms
 
                 #region Controls for KeyValues
 
-                TableLayoutPanel Contenedor = new TableLayoutPanel
+                var Contenedor = new TableLayoutPanel
                 {
                     Size = new Size(form.ClientSize.Width - 20, 50),
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -327,7 +327,7 @@ namespace DarkModeForms
                 int currentRow = 0;
                 foreach (KeyValue field in Fields)
                 {
-                    Label field_label = new Label
+                    var field_label = new Label
                     {
                         Text = field.Key,
                         AutoSize = false,
@@ -484,7 +484,7 @@ namespace DarkModeForms
                 {
                     if (form.ActiveControl == form.AcceptButton)
                     {
-                        ValidateEventArgs cArgs = new ValidateEventArgs(null);
+                        var cArgs = new ValidateEventArgs(null);
                         ValidateControlsHandler?.Invoke(form, cArgs);
 
                         e.Cancel = cArgs.Cancel;
@@ -549,7 +549,7 @@ namespace DarkModeForms
 
         private static List<Button> GenerateDialogButtons(Form form, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
         {
-            List<Button> CmdButtons = new List<Button>();
+            var CmdButtons = new List<Button>();
 
             Button CreateBtn(DialogResult result, string textKey, bool isFlat = true)
             {

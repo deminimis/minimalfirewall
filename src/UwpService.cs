@@ -1,4 +1,4 @@
-﻿// File: UwpService.cs
+// File: UwpService.cs
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -36,10 +36,10 @@ namespace MinimalFirewall
             {
                 var uwpApps = new Dictionary<string, UwpApp>(StringComparer.OrdinalIgnoreCase);
 
-                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
                 if (policyType == null) return new List<UwpApp>();
 
-                INetFwPolicy2? firewallPolicy = (INetFwPolicy2?)Activator.CreateInstance(policyType);
+                var firewallPolicy = (INetFwPolicy2?)Activator.CreateInstance(policyType);
                 if (firewallPolicy?.Rules == null) return new List<UwpApp>();
 
                 var comRules = firewallPolicy.Rules;

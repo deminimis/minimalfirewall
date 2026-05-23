@@ -157,7 +157,7 @@ namespace MinimalFirewall
             int thumbSize = (int)(ThumbSizeBase * scaleFactor);
             int padding = (int)(2 * scaleFactor);
 
-            Rectangle switchRect = new Rectangle(
+            var switchRect = new Rectangle(
                 bounds.X + (bounds.Width - switchWidth) / 2,
                 bounds.Y + (bounds.Height - switchHeight) / 2,
                 switchWidth,
@@ -181,7 +181,7 @@ namespace MinimalFirewall
                 switchRect.Right - thumbSize - padding :
                 switchRect.X + padding;
 
-            Rectangle thumbRect = new Rectangle(
+            var thumbRect = new Rectangle(
                 thumbX,
                 switchRect.Y + (switchRect.Height - thumbSize) / 2,
                 thumbSize,

@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -16,7 +16,7 @@ namespace MinimalFirewall
             INetFwMgr fwMgr = null;
             try
             {
-                Type fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
+                var fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
                 if (fwMgrType != null)
                 {
                     fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);

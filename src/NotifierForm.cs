@@ -118,8 +118,8 @@ namespace MinimalFirewall
                         }
 
                         // Restore Location only if visible on current screens
-                        Point savedLoc = new Point(settings.X, settings.Y);
-                        Rectangle targetRect = new Rectangle(savedLoc, this.Size);
+                        var savedLoc = new Point(settings.X, settings.Y);
+                        var targetRect = new Rectangle(savedLoc, this.Size);
                         bool isVisible = false;
 
                         // Check intersection to ensure window isn't lost off-screen

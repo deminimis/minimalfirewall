@@ -39,7 +39,7 @@ namespace MinimalFirewall
             InitializeComponent();
 
             // Divider 1 
-            Panel divider1 = new Panel
+            var divider1 = new Panel
             {
                 Height = 1,
                 Width = 650,
@@ -50,7 +50,7 @@ namespace MinimalFirewall
             DarkModeCS.ExcludeFromProcessing(divider1);
 
             // Divider 2 
-            Panel divider2 = new Panel
+            var divider2 = new Panel
             {
                 Height = 1,
                 Width = 650,
@@ -130,7 +130,7 @@ namespace MinimalFirewall
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
             autoThemeSwitch.Checked = _appSettings.Theme == "Auto";
-            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && DarkModeCS.isDarkMode());
+            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && DarkModeCS.IsSystemDarkMode());
             darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;

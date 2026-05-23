@@ -13,7 +13,7 @@ namespace DarkModeForms
 
         public FlatComboBox()
         {
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
         }
 
         protected override void WndProc(ref Message m)
@@ -21,11 +21,10 @@ namespace DarkModeForms
             if (m.Msg == 0xF && DropDownStyle != ComboBoxStyle.Simple)
             {
                 base.WndProc(ref m);
-                using (Graphics g = Graphics.FromHwnd(Handle))
-                {
-                    UIHelpers.SetHighQualityGraphics(g);
+                using var g = Graphics.FromHwnd(Handle);
+                UIHelpers.SetHighQualityGraphics(g);
 
-                    var clientRect = ClientRectangle;
+                var clientRect = ClientRectangle;
                     var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
                     if (dropDownButtonWidth < UIHelpers.Scale(12, g)) dropDownButtonWidth = UIHelpers.Scale(16, g);
 
@@ -51,31 +50,28 @@ namespace DarkModeForms
                     #endregion
 
                     #region Chevron
-                    Point middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
-                    Size cSize = new Size(UIHelpers.Scale(8, g), UIHelpers.Scale(4, g));
-                    var chevron = new Point[]
-                    {
-                        new Point(middle.X - (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
-                        new Point(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
-                        new Point(middle.X, middle.Y + (cSize.Height / 2))
-                    };
-                    using (var chevronPen = new Pen(Theme.Colors.TextInactive, UIHelpers.Scale(2, g)))
+                    var middle = new Point(dropDownRect.Left + dropDownRect.Width / 2, dropDownRect.Top + dropDownRect.Height / 2);
+                    var cSize = new Size(UIHelpers.Scale(8, g), UIHelpers.Scale(4, g));
+                Point[] chevron =
+                [
+                    new(middle.X - (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
+                        new(middle.X + (cSize.Width / 2), middle.Y - (cSize.Height / 2)),
+                        new(middle.X, middle.Y + (cSize.Height / 2))
+                ];
+                using (var chevronPen = new Pen(Theme.Colors.TextInactive, UIHelpers.Scale(2, g)))
                     {
                         g.DrawLine(chevronPen, chevron[0], chevron[2]);
                         g.DrawLine(chevronPen, chevron[1], chevron[2]);
                     }
-                    #endregion
+                #endregion
 
-                    #region Borders
-                    using (var p = new Pen(Enabled ? Theme.Colors.ControlDark : Theme.Colors.ControlLight, UIHelpers.Scale(1, g)))
-                    {
-                        Rectangle borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
-                        g.DrawRectangle(p, borderRect);
+                #region Borders
+                using var p = new Pen(Enabled ? Theme.Colors.ControlDark : Theme.Colors.ControlLight, UIHelpers.Scale(1, g));
+                var borderRect = new Rectangle(0, 0, clientRect.Width - 1, clientRect.Height - 1);
+                g.DrawRectangle(p, borderRect);
 
-                        g.DrawLine(p, dropDownRect.Left, dropDownRect.Top, dropDownRect.Left, dropDownRect.Bottom);
-                    }
-                    #endregion
-                }
+                g.DrawLine(p, dropDownRect.Left, dropDownRect.Top, dropDownRect.Left, dropDownRect.Bottom);
+                #endregion
                 return;
             }
 

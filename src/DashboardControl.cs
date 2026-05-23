@@ -27,14 +27,12 @@ namespace MinimalFirewall
         public DashboardControl()
         {
             InitializeComponent();
-            this.DoubleBuffered = true;
+            DoubleBuffered = true;
 
             if (dashboardDataGridView != null)
             {
-                typeof(Control).InvokeMember("DoubleBuffered",
-                    BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
-                    null, dashboardDataGridView, new object[] { true });
-                dashboardDataGridView.CellMouseDown += dashboardDataGridView_CellMouseDown;
+                typeof(Control).InvokeMember("DoubleBuffered", BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic, null, dashboardDataGridView, [true]);
+                dashboardDataGridView.CellMouseDown += DashboardDataGridView_CellMouseDown;
                 dashboardDataGridView.SelectionChanged += DashboardDataGridView_SelectionChanged;
             }
         }
@@ -102,13 +100,13 @@ namespace MinimalFirewall
             {
                 pubName = await Task.Run(() =>
                 {
-                    SignatureValidationService.GetPublisherInfo(pending.AppPath, out string name);
+                    SignatureValidationService.GetPublisherInfo(pending.AppPath, out string? name);
                     return name;
                 });
             }
 
             // Safety check 
-            if (this.IsDisposed || GetSelectedPendingConnection() != pending) return;
+            if (IsDisposed || GetSelectedPendingConnection() != pending) return;
 
 
             RenderConnectionDetails(pending, pubName);
@@ -158,20 +156,17 @@ namespace MinimalFirewall
 
         public void SetIconColumnVisibility(bool visible)
         {
-            if (dashIconColumn != null)
-            {
-                dashIconColumn.Visible = visible;
-            }
+            if (dashIconColumn != null) dashIconColumn.Visible = visible;
         }
 
         private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             // Don't try to update if the window is closing
-            if (this.Disposing || this.IsDisposed || !this.IsHandleCreated) return;
+            if (Disposing || IsDisposed || !IsHandleCreated) return;
 
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.BeginInvoke(new Action(LoadDashboardItems));
+                BeginInvoke(new Action(LoadDashboardItems));
             }
             else
             {
@@ -191,7 +186,7 @@ namespace MinimalFirewall
             dashboardDataGridView.ResumeLayout();
         }
 
-        private void dashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        private void DashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
             if (sender is not DataGridView grid) return;
@@ -213,7 +208,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        private void DashboardDataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
 
@@ -279,7 +274,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_RowPostPaint(object? sender, DataGridViewRowPostPaintEventArgs e)
+        private void DashboardDataGridView_RowPostPaint(object? sender, DataGridViewRowPostPaintEventArgs e)
         {
             if (sender is not DataGridView grid) return;
             if (grid.Rows[e.RowIndex].Selected) return;
@@ -294,7 +289,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
+        private void DashboardDataGridView_CellMouseEnter(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -302,7 +297,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
+        private void DashboardDataGridView_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -310,7 +305,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void dashboardDataGridView_CellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
+        private void DashboardDataGridView_CellMouseDown(object? sender, DataGridViewCellMouseEventArgs e)
         {
             // If it's a right-click on a valid row, update the selection before the context menu opens
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0 && e.ColumnIndex >= 0)
@@ -356,12 +351,12 @@ namespace MinimalFirewall
             }
         }
 
-        private void createWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreateWildcardRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending)
             {
                 using var wildcardDialog = new WildcardCreatorForm(_wildcardRuleService, pending.AppPath, _appSettings);
-                if (wildcardDialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                if (wildcardDialog.ShowDialog(FindForm()) == DialogResult.OK)
                 {
                     _viewModel.CreateWildcardRule(pending, wildcardDialog.NewRule);
                 }
@@ -383,44 +378,44 @@ namespace MinimalFirewall
                 SignatureValidationService.IsSignatureTrusted(pending.AppPath, out _);
         }
 
-        private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreateAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending)
             {
                 using var dialog = new CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
-                if (dialog.ShowDialog(this.FindForm()) == DialogResult.OK)
+                if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
                 {
-                    // Clean up the alert from dashbaord
+                    // Clean up the alert from dashboard
                     _viewModel.ProcessDashboardAction(pending, "Ignore");
                 }
             }
         }
 
-        private void openFileLocationToolStripMenuItem1_Click(object sender, EventArgs e)
+        private void OpenFileLocationToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
             {
                 if (!File.Exists(pending.AppPath) && !Directory.Exists(pending.AppPath))
                 {
-                    DarkModeForms.Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 try
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
+                    Process.Start("explorer.exe", $"/select, \"{pending.AppPath}\"");
                 }
                 catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
                 {
-                    DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             else
             {
-                DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-        private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CopyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending)
             {
@@ -444,7 +439,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void showBlockingRuleInfoToolStripMenuItem_Click(object sender, EventArgs e)
+        private void ShowBlockingRuleInfoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending)
             {
@@ -459,17 +454,17 @@ namespace MinimalFirewall
                                  "You can use these IDs to search within the advanced 'Windows Defender Firewall' console (wf.msc) or with PowerShell's " +
                                  "Get-NetFirewallRule / Get-NetFirewallFilter commands to find the specific rule/filter.";
 
-                DarkModeForms.Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
+                Messenger.MessageBox(message, "Blocking Rule Information", MessageBoxButtons.OK, DarkModeForms.MsgIcon.Info);
             }
         }
 
-        private async void copyHashToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void CopyHashToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
             {
                 if (!File.Exists(pending.AppPath))
                 {
-                    DarkModeForms.Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -486,7 +481,7 @@ namespace MinimalFirewall
                 }
                 else
                 {
-                    DarkModeForms.Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
 
                 copyHashToolStripMenuItem.Text = "Copy File Hash (SHA-256)";
@@ -494,13 +489,13 @@ namespace MinimalFirewall
             }
         }
 
-        private async void checkVirusTotalToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void CheckVirusTotalToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
             {
                 if (!File.Exists(pending.AppPath))
                 {
-                    DarkModeForms.Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -514,7 +509,7 @@ namespace MinimalFirewall
 
                 if (!string.IsNullOrEmpty(hash))
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = $"https://www.virustotal.com/gui/file/{hash}",
                         UseShellExecute = true
@@ -522,7 +517,7 @@ namespace MinimalFirewall
                 }
                 else
                 {
-                    DarkModeForms.Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

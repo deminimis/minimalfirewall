@@ -11,8 +11,6 @@ using System.Windows.Forms;
 using System.IO;
 using System.Reflection;
 
-#pragma warning disable IDE1006
-
 namespace MinimalFirewall
 {
     public partial class AuditControl : UserControl
@@ -35,7 +33,7 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
-            this.DoubleBuffered = true;
+            DoubleBuffered = true;
 
             // Enable Double Buffering on the DataGridView
             typeof(DataGridView).InvokeMember("DoubleBuffered",
@@ -47,7 +45,7 @@ namespace MinimalFirewall
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
             _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
 
-            this.Disposed += OnDisposed;
+            Disposed += OnDisposed;
         }
 
         private void OnDisposed(object? sender, EventArgs e)
@@ -93,9 +91,9 @@ namespace MinimalFirewall
 
         private void OnSystemChangesUpdated()
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new Action(OnSystemChangesUpdated));
+                Invoke(new Action(OnSystemChangesUpdated));
                 return;
             }
             ApplySearchFilter();
@@ -103,26 +101,25 @@ namespace MinimalFirewall
 
         private void OnStatusTextChanged(string text)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
                 // BeginInvoke (not Invoke) so worker thread never blocks on UI thread;
                 // prevents shutdown deadlock when UI is in BackgroundTaskService.Dispose's _worker.Wait.
-                if (!this.IsDisposed && this.IsHandleCreated)
+                if (!IsDisposed && IsHandleCreated)
                 {
-                    try { this.BeginInvoke(() => OnStatusTextChanged(text)); }
+                    try { BeginInvoke(() => OnStatusTextChanged(text)); }
                     catch (ObjectDisposedException) { }
                     catch (InvalidOperationException) { }
                 }
                 return;
             }
+
             statusLabel.Text = text;
         }
 
         public void ApplyThemeFixes()
         {
-            if (_dm == null) return;
-
-            if (_dm.IsDarkMode)
+            if (DarkModeCS.IsSystemDarkMode())
             {
                 statusStrip1.BackColor = Theme.Colors.Surface;
                 statusLabel.ForeColor = Theme.Colors.TextActive;
@@ -143,7 +140,7 @@ namespace MinimalFirewall
             {
                 _bindingSource.RaiseListChangedEvents = false;
 
-                var changesCopy = _viewModel.SystemChanges.ToList();
+                List<FirewallRuleChange> changesCopy = [.. _viewModel.SystemChanges];
 
                 var filteredChanges = await Task.Run(() =>
                 {
@@ -155,9 +152,9 @@ namespace MinimalFirewall
                           (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase))).ToList();
                 });
 
-                if (this.IsDisposed) return;
+                if (IsDisposed) return;
 
-                var bindableList = new SortableBindingList<FirewallRuleChange>([.. filteredChanges]);
+                SortableBindingList<FirewallRuleChange> bindableList = [.. filteredChanges];
 
                 int sortColIndex = _appSettings.AuditSortColumn;
                 ListSortDirection sortDirection = _appSettings.AuditSortOrder == 0 ?
@@ -210,13 +207,13 @@ namespace MinimalFirewall
             }
         }
 
-        private void auditSearchTextBox_TextChanged(object sender, EventArgs e)
+        private void AuditSearchTextBox_TextChanged(object sender, EventArgs e)
         {
             _searchDebounceTimer.Stop();
             _searchDebounceTimer.Start();
         }
 
-        private void systemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        private void SystemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.ColumnIndex < 0) return;
 
@@ -244,7 +241,7 @@ namespace MinimalFirewall
             return !string.IsNullOrEmpty(appPath);
         }
 
-        private void auditContextMenu_Opening(object sender, CancelEventArgs e)
+        private void AuditContextMenu_Opening(object sender, CancelEventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count == 0)
             {
@@ -298,27 +295,27 @@ namespace MinimalFirewall
             }
         }
 
-        private void enableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        private void EnableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ProcessSelectedChanges((change, index) => _viewModel.EnableForeignRule(change));
         }
 
-        private void disableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
+        private void DisableSelectedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ProcessSelectedChanges((change, index) => _viewModel.DisableForeignRule(change));
         }
 
-        private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        private void OpenFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (!TryGetSelectedAppContext(out string? appPath) || string.IsNullOrEmpty(appPath))
             {
-                DarkModeForms.Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("The path for this item is not available.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             if (!File.Exists(appPath) && !Directory.Exists(appPath))
             {
-                DarkModeForms.Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -328,11 +325,12 @@ namespace MinimalFirewall
             }
             catch (Exception ex) when (ex is Win32Exception or FileNotFoundException)
             {
-                DarkModeForms.Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox($"Could not open file location.\n\nError: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+
+        private void CopyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count > 0)
             {
@@ -369,11 +367,12 @@ namespace MinimalFirewall
             }
         }
 
-        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
+
+        private void DeleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count == 0) return;
 
-            var result = DarkModeForms.Messenger.MessageBox(
+            var result = Messenger.MessageBox(
                 $"Are you sure you want to permanently delete {systemChangesDataGridView.SelectedRows.Count} rule(s)?",
                 "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
@@ -383,14 +382,15 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+
+        private void SystemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
             if (sender is not DataGridView grid) return;
 
             if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
 
-            bool isDarkMode = _dm?.IsDarkMode == true;
+            bool isDarkMode = DarkModeCS.IsSystemDarkMode();
 
             // Default fallback colors
             Color rowBackColor = isDarkMode ? grid.DefaultCellStyle.BackColor : SystemColors.Window;
@@ -447,7 +447,8 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+
+        private void SystemChangesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             if (sender is not DataGridView grid) return;
             var row = grid.Rows[e.RowIndex];
@@ -457,14 +458,14 @@ namespace MinimalFirewall
             var cursor = grid.PointToClient(MousePosition);
             var mouseOverRow = grid.HitTest(cursor.X, cursor.Y).RowIndex;
 
-            if (e.RowIndex == mouseOverRow)
+            if (e.RowIndex == mouseOverRow && _cachedOverlayBrush != null)
             {
-                if (_cachedOverlayBrush != null)
-                    e.Graphics.FillRectangle(_cachedOverlayBrush, e.RowBounds);
+                e.Graphics.FillRectangle(_cachedOverlayBrush, e.RowBounds);
             }
         }
 
-        private void systemChangesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+
+        private void SystemChangesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -473,7 +474,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        private void SystemChangesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -482,7 +483,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        private void SystemChangesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
@@ -497,7 +498,8 @@ namespace MinimalFirewall
             }
         }
 
-        private void systemChangesDataGridView_SelectionChanged(object sender, EventArgs e)
+
+        private void SystemChangesDataGridView_SelectionChanged(object sender, EventArgs e)
         {
             if (systemChangesDataGridView.SelectedRows.Count != 1)
             {
@@ -515,7 +517,7 @@ namespace MinimalFirewall
         {
             diffRichTextBox.Clear();
 
-            bool isDark = _dm?.IsDarkMode == true;
+            bool isDark = DarkModeCS.IsSystemDarkMode();
 
             diffRichTextBox.BackColor = isDark ? _dm!.OScolors.Surface : Color.White;
             diffRichTextBox.ForeColor = isDark ? _dm!.OScolors.TextActive : Color.Black;

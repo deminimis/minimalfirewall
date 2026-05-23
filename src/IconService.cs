@@ -1,4 +1,4 @@
-﻿// File: IconService.cs
+// File: IconService.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -140,7 +140,7 @@ namespace MinimalFirewall
 
                 if (hIcon != IntPtr.Zero)
                 {
-                    Icon icon = (Icon)Icon.FromHandle(hIcon).Clone();
+                    var icon = (Icon)Icon.FromHandle(hIcon).Clone();
                     _imageList.Images.Add(filePath, icon);
 
                     int newIndex = _imageList.Images.Count - 1;
@@ -162,7 +162,7 @@ namespace MinimalFirewall
 
             try
             {
-                using (Icon? icon = Icon.ExtractAssociatedIcon(filePath))
+                using (var icon = Icon.ExtractAssociatedIcon(filePath))
                 {
                     if (icon != null)
                     {

@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -68,7 +68,7 @@ namespace MinimalFirewall.Groups
         {
             try
             {
-                Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+                var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
                 if (policyType == null)
                 {
                     throw new InvalidOperationException("Firewall policy type could not be retrieved.");

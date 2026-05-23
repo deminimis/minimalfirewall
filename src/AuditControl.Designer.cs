@@ -99,7 +99,7 @@ namespace MinimalFirewall
             this.auditSearchTextBox.PlaceholderText = "Search history...";
             this.auditSearchTextBox.Size = new System.Drawing.Size(285, 27);
             this.auditSearchTextBox.TabIndex = 3;
-            this.auditSearchTextBox.TextChanged += new System.EventHandler(this.auditSearchTextBox_TextChanged);
+            this.auditSearchTextBox.TextChanged += new System.EventHandler(AuditSearchTextBox_TextChanged);
             // 
             // auditContextMenu
             // 
@@ -114,21 +114,21 @@ namespace MinimalFirewall
             this.openFileLocationToolStripMenuItem});
             this.auditContextMenu.Name = "auditContextMenu";
             this.auditContextMenu.Size = new System.Drawing.Size(211, 208);
-            this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.auditContextMenu_Opening);
+            this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(AuditContextMenu_Opening);
             // 
             // enableSelectedToolStripMenuItem
             // 
             this.enableSelectedToolStripMenuItem.Name = "enableSelectedToolStripMenuItem";
             this.enableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.enableSelectedToolStripMenuItem.Text = "Enable Selected";
-            this.enableSelectedToolStripMenuItem.Click += new System.EventHandler(this.enableSelectedToolStripMenuItem_Click);
+            this.enableSelectedToolStripMenuItem.Click += new System.EventHandler(EnableSelectedToolStripMenuItem_Click);
             // 
             // disableSelectedToolStripMenuItem
             // 
             this.disableSelectedToolStripMenuItem.Name = "disableSelectedToolStripMenuItem";
             this.disableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.disableSelectedToolStripMenuItem.Text = "Disable Selected";
-            this.disableSelectedToolStripMenuItem.Click += new System.EventHandler(this.disableSelectedToolStripMenuItem_Click);
+            this.disableSelectedToolStripMenuItem.Click += new System.EventHandler(DisableSelectedToolStripMenuItem_Click);
             // 
             // toolStripSeparator1
             // 
@@ -140,7 +140,7 @@ namespace MinimalFirewall
             this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
             this.deleteToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.deleteToolStripMenuItem.Text = "Delete Rule";
-            this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
+            this.deleteToolStripMenuItem.Click += new System.EventHandler(DeleteToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
@@ -152,14 +152,14 @@ namespace MinimalFirewall
             this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
-            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(CopyDetailsToolStripMenuItem_Click);
             // 
             // openFileLocationToolStripMenuItem
             // 
             this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
             this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
             this.openFileLocationToolStripMenuItem.Text = "Open File Location";
-            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem_Click);
+            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(OpenFileLocationToolStripMenuItem_Click);
             // 
             // topPanel
             // 
@@ -240,13 +240,13 @@ namespace MinimalFirewall
             this.systemChangesDataGridView.ShowCellToolTips = true;
             this.systemChangesDataGridView.Size = new System.Drawing.Size(1000, 643);
             this.systemChangesDataGridView.TabIndex = 0;
-            this.systemChangesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.systemChangesDataGridView_CellFormatting);
-            this.systemChangesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.systemChangesDataGridView_CellMouseDown);
-            this.systemChangesDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellMouseEnter);
-            this.systemChangesDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.systemChangesDataGridView_CellMouseLeave);
-            this.systemChangesDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.systemChangesDataGridView_ColumnHeaderMouseClick);
-            this.systemChangesDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.systemChangesDataGridView_RowPostPaint);
-            this.systemChangesDataGridView.SelectionChanged += new System.EventHandler(this.systemChangesDataGridView_SelectionChanged);
+            this.systemChangesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(SystemChangesDataGridView_CellFormatting);
+            this.systemChangesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(SystemChangesDataGridView_CellMouseDown);
+            this.systemChangesDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(SystemChangesDataGridView_CellMouseEnter);
+            this.systemChangesDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(SystemChangesDataGridView_CellMouseLeave);
+            this.systemChangesDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(SystemChangesDataGridView_ColumnHeaderMouseClick);
+            this.systemChangesDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(SystemChangesDataGridView_RowPostPaint);
+            this.systemChangesDataGridView.SelectionChanged += new System.EventHandler(SystemChangesDataGridView_SelectionChanged);
             // 
             // diffLabel
             // 

@@ -1,6 +1,7 @@
 using System;
-using System.Drawing;
 using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -8,7 +9,7 @@ namespace DarkModeForms
 {
     public class FlatProgressBar : ProgressBar
     {
-        private Timer marqueeTimer;
+        private readonly Timer marqueeTimer;
         private int marqueePosition = 0;
         private ProgressBarStyle style = ProgressBarStyle.Blocks;
 
@@ -27,26 +28,25 @@ namespace DarkModeForms
                 {
                     marqueeTimer.Stop();
                 }
-                this.Invalidate();
+                Invalidate();
             }
         }
 
         public FlatProgressBar()
         {
-            this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
-            marqueeTimer = new Timer();
-            marqueeTimer.Interval = 30;
+            SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
+            marqueeTimer = new Timer { Interval = 30 };
             marqueeTimer.Tick += MarqueeTimer_Tick;
         }
 
         private void MarqueeTimer_Tick(object? sender, EventArgs e)
         {
             marqueePosition += 5;
-            if (marqueePosition > this.Width)
+            if (marqueePosition > Width)
             {
-                marqueePosition = -this.Width / 2;
+                marqueePosition = -Width / 2;
             }
-            this.Invalidate();
+            Invalidate();
         }
 
         private int min = 0;
@@ -56,33 +56,33 @@ namespace DarkModeForms
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            this.Invalidate();
+            Invalidate();
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
+            g.SmoothingMode = SmoothingMode.None;
 
             // Background
             using Brush backBrush = new SolidBrush(Theme.Colors.ControlLight);
             g.FillRectangle(backBrush, this.ClientRectangle);
 
             // Foreground Bar
-            using (SolidBrush brush = new SolidBrush(Theme.Colors.Primary)) // Centralized accent color
+            using (var brush = new SolidBrush(Theme.Colors.Primary)) // Centralized accent color
             {
                 if (Style == ProgressBarStyle.Marquee)
                 {
-                    int marqueeWidth = this.Width / 3;
-                    Rectangle marqueeRect = new Rectangle(marqueePosition, 0, marqueeWidth, this.Height);
-                    if (marqueeRect.X < this.Width)
+                    int marqueeWidth = Width / 3;
+                    var marqueeRect = new Rectangle(marqueePosition, 0, marqueeWidth, Height);
+                    if (marqueeRect.X < Width)
                         g.FillRectangle(brush, marqueeRect);
                 }
                 else
                 {
                     float percent = Math.Clamp((float)(val - min) / (max - min), 0f, 1f);
 
-                    Rectangle rect = this.ClientRectangle;
+                    Rectangle rect = ClientRectangle;
                     rect.Width = (int)((float)rect.Width * percent);
                     g.FillRectangle(brush, rect);
                 }
@@ -141,10 +141,8 @@ namespace DarkModeForms
             int penWidth = UIHelpers.Scale(1, g);
             if (penWidth < 1) penWidth = 1;
 
-            using (Pen pen = new Pen(Theme.Colors.ControlDark, penWidth))
-            {
-                g.DrawRectangle(pen, 0, 0, this.Width - penWidth, this.Height - penWidth);
-            }
+            using var pen = new Pen(Theme.Colors.ControlDark, penWidth);
+            g.DrawRectangle(pen, 0, 0, Width - penWidth, Height - penWidth);
         }
 
         protected override void Dispose(bool disposing)

@@ -1,4 +1,4 @@
-﻿// File: StatusForm.cs
+// File: StatusForm.cs
 using DarkModeForms;
 using System;
 using System.Drawing;
@@ -19,7 +19,7 @@ namespace MinimalFirewall
             InitializeComponent();
             dm = new DarkModeCS(this);
             bool isAuto = appSettings.Theme == "Auto";
-            bool isDark = isAuto ? DarkModeCS.isDarkMode() : appSettings.Theme == "Dark";
+            bool isDark = isAuto ? DarkModeCS.IsSystemDarkMode() : appSettings.Theme == "Dark";
             dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
 

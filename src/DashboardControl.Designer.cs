@@ -1,4 +1,4 @@
-﻿// File: DashboardControl.Designer.cs
+// File: DashboardControl.Designer.cs
 namespace MinimalFirewall
 {
     partial class DashboardControl
@@ -141,7 +141,7 @@ namespace MinimalFirewall
             this.checkVirusTotalToolStripMenuItem});
             this.dashboardContextMenu.Name = "dashboardContextMenu";
             this.dashboardContextMenu.Size = new System.Drawing.Size(228, 290);
-            this.dashboardContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.ContextMenu_Opening);
+            this.dashboardContextMenu.Opening += new System.ComponentModel.CancelEventHandler(ContextMenu_Opening);
             //
             // tempAllowToolStripMenuItem
             //
@@ -162,7 +162,7 @@ namespace MinimalFirewall
             this.allow2MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow2MinutesToolStripMenuItem.Tag = "2";
             this.allow2MinutesToolStripMenuItem.Text = "2 minutes";
-            this.allow2MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow2MinutesToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // allow5MinutesToolStripMenuItem
             //
@@ -170,7 +170,7 @@ namespace MinimalFirewall
             this.allow5MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow5MinutesToolStripMenuItem.Tag = "5";
             this.allow5MinutesToolStripMenuItem.Text = "5 minutes";
-            this.allow5MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow5MinutesToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // allow15MinutesToolStripMenuItem
             //
@@ -178,7 +178,7 @@ namespace MinimalFirewall
             this.allow15MinutesToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow15MinutesToolStripMenuItem.Tag = "15";
             this.allow15MinutesToolStripMenuItem.Text = "15 minutes";
-            this.allow15MinutesToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow15MinutesToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // allow1HourToolStripMenuItem
             //
@@ -186,7 +186,7 @@ namespace MinimalFirewall
             this.allow1HourToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow1HourToolStripMenuItem.Tag = "60";
             this.allow1HourToolStripMenuItem.Text = "1 hour";
-            this.allow1HourToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow1HourToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // allow3HoursToolStripMenuItem
             //
@@ -194,7 +194,7 @@ namespace MinimalFirewall
             this.allow3HoursToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow3HoursToolStripMenuItem.Tag = "180";
             this.allow3HoursToolStripMenuItem.Text = "3 hours";
-            this.allow3HoursToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow3HoursToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // allow8HoursToolStripMenuItem
             //
@@ -202,7 +202,7 @@ namespace MinimalFirewall
             this.allow8HoursToolStripMenuItem.Size = new System.Drawing.Size(162, 26);
             this.allow8HoursToolStripMenuItem.Tag = "480";
             this.allow8HoursToolStripMenuItem.Text = "8 hours";
-            this.allow8HoursToolStripMenuItem.Click += new System.EventHandler(this.TempAllowMenuItem_Click);
+            this.allow8HoursToolStripMenuItem.Click += new System.EventHandler(TempAllowMenuItem_Click);
             //
             // toolStripSeparator3
             //
@@ -214,28 +214,28 @@ namespace MinimalFirewall
             this.permanentAllowToolStripMenuItem.Name = "permanentAllowToolStripMenuItem";
             this.permanentAllowToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.permanentAllowToolStripMenuItem.Text = "Allow";
-            this.permanentAllowToolStripMenuItem.Click += new System.EventHandler(this.PermanentAllowToolStripMenuItem_Click);
+            this.permanentAllowToolStripMenuItem.Click += new System.EventHandler(PermanentAllowToolStripMenuItem_Click);
             //
             // allowAndTrustPublisherToolStripMenuItem
             //
             this.allowAndTrustPublisherToolStripMenuItem.Name = "allowAndTrustPublisherToolStripMenuItem";
             this.allowAndTrustPublisherToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.allowAndTrustPublisherToolStripMenuItem.Text = "Allow and Trust Publisher";
-            this.allowAndTrustPublisherToolStripMenuItem.Click += new System.EventHandler(this.AllowAndTrustPublisherToolStripMenuItem_Click);
+            this.allowAndTrustPublisherToolStripMenuItem.Click += new System.EventHandler(AllowAndTrustPublisherToolStripMenuItem_Click);
             //
             // permanentBlockToolStripMenuItem
             //
             this.permanentBlockToolStripMenuItem.Name = "permanentBlockToolStripMenuItem";
             this.permanentBlockToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.permanentBlockToolStripMenuItem.Text = "Block";
-            this.permanentBlockToolStripMenuItem.Click += new System.EventHandler(this.PermanentBlockToolStripMenuItem_Click);
+            this.permanentBlockToolStripMenuItem.Click += new System.EventHandler(PermanentBlockToolStripMenuItem_Click);
             //
             // ignoreToolStripMenuItem
             //
             this.ignoreToolStripMenuItem.Name = "ignoreToolStripMenuItem";
             this.ignoreToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.ignoreToolStripMenuItem.Text = "Ignore";
-            this.ignoreToolStripMenuItem.Click += new System.EventHandler(this.IgnoreToolStripMenuItem_Click);
+            this.ignoreToolStripMenuItem.Click += new System.EventHandler(IgnoreToolStripMenuItem_Click);
             //
             // toolStripSeparator4
             //
@@ -247,7 +247,7 @@ namespace MinimalFirewall
             this.createWildcardRuleToolStripMenuItem.Name = "createWildcardRuleToolStripMenuItem";
             this.createWildcardRuleToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.createWildcardRuleToolStripMenuItem.Text = "Create Wildcard Rule...";
-            this.createWildcardRuleToolStripMenuItem.Click += new System.EventHandler(this.createWildcardRuleToolStripMenuItem_Click);
+            this.createWildcardRuleToolStripMenuItem.Click += new System.EventHandler(CreateWildcardRuleToolStripMenuItem_Click);
             //
             // toolStripSeparator5
             //
@@ -259,7 +259,7 @@ namespace MinimalFirewall
             this.createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
             this.createAdvancedRuleToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
-            this.createAdvancedRuleToolStripMenuItem.Click += new System.EventHandler(this.createAdvancedRuleToolStripMenuItem_Click);
+            this.createAdvancedRuleToolStripMenuItem.Click += new System.EventHandler(CreateAdvancedRuleToolStripMenuItem_Click);
             //
             // toolStripSeparator7
             //
@@ -271,7 +271,7 @@ namespace MinimalFirewall
             this.openFileLocationToolStripMenuItem1.Name = "openFileLocationToolStripMenuItem1";
             this.openFileLocationToolStripMenuItem1.Size = new System.Drawing.Size(227, 24);
             this.openFileLocationToolStripMenuItem1.Text = "Open File Location";
-            this.openFileLocationToolStripMenuItem1.Click += new System.EventHandler(this.openFileLocationToolStripMenuItem1_Click);
+            this.openFileLocationToolStripMenuItem1.Click += new System.EventHandler(OpenFileLocationToolStripMenuItem1_Click);
             //
             // toolStripSeparator8
             //
@@ -283,7 +283,7 @@ namespace MinimalFirewall
             this.showBlockingRuleInfoToolStripMenuItem.Name = "showBlockingRuleInfoToolStripMenuItem";
             this.showBlockingRuleInfoToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.showBlockingRuleInfoToolStripMenuItem.Text = "Show Blocking Rule Info";
-            this.showBlockingRuleInfoToolStripMenuItem.Click += new System.EventHandler(this.showBlockingRuleInfoToolStripMenuItem_Click);
+            this.showBlockingRuleInfoToolStripMenuItem.Click += new System.EventHandler(ShowBlockingRuleInfoToolStripMenuItem_Click);
             //
             // toolStripSeparator6
             //
@@ -295,7 +295,7 @@ namespace MinimalFirewall
             this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.copyDetailsToolStripMenuItem.Text = "Copy Details";
-            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(this.copyDetailsToolStripMenuItem_Click);
+            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(CopyDetailsToolStripMenuItem_Click);
             // 
             // toolStripSeparator9
             // 
@@ -307,14 +307,14 @@ namespace MinimalFirewall
             this.copyHashToolStripMenuItem.Name = "copyHashToolStripMenuItem";
             this.copyHashToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.copyHashToolStripMenuItem.Text = "Copy File Hash (SHA-256)";
-            this.copyHashToolStripMenuItem.Click += new System.EventHandler(this.copyHashToolStripMenuItem_Click);
+            this.copyHashToolStripMenuItem.Click += new System.EventHandler(CopyHashToolStripMenuItem_Click);
             // 
             // checkVirusTotalToolStripMenuItem
             // 
             this.checkVirusTotalToolStripMenuItem.Name = "checkVirusTotalToolStripMenuItem";
             this.checkVirusTotalToolStripMenuItem.Size = new System.Drawing.Size(227, 24);
             this.checkVirusTotalToolStripMenuItem.Text = "Check on VirusTotal";
-            this.checkVirusTotalToolStripMenuItem.Click += new System.EventHandler(this.checkVirusTotalToolStripMenuItem_Click);
+            this.checkVirusTotalToolStripMenuItem.Click += new System.EventHandler(CheckVirusTotalToolStripMenuItem_Click);
             //
             // dashboardDataGridView
             //
@@ -358,11 +358,11 @@ namespace MinimalFirewall
             this.dashboardDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dashboardDataGridView.Size = new System.Drawing.Size(800, 600);
             this.dashboardDataGridView.TabIndex = 2;
-            this.dashboardDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellContentClick);
-            this.dashboardDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.dashboardDataGridView_CellFormatting);
-            this.dashboardDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseEnter);
-            this.dashboardDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(this.dashboardDataGridView_CellMouseLeave);
-            this.dashboardDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(this.dashboardDataGridView_RowPostPaint);
+            this.dashboardDataGridView.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(DashboardDataGridView_CellContentClick);
+            this.dashboardDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(DashboardDataGridView_CellFormatting);
+            this.dashboardDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(DashboardDataGridView_CellMouseEnter);
+            this.dashboardDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(DashboardDataGridView_CellMouseLeave);
+            this.dashboardDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(DashboardDataGridView_RowPostPaint);
             //
             // dashIconColumn
             //

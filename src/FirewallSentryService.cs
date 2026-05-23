@@ -190,10 +190,10 @@ namespace MinimalFirewall
         private List<FirewallRuleChange> PerformFullBaselineScan(IProgress<int>? progress, CancellationToken token)
         {
             var changes = new List<FirewallRuleChange>();
-            Type? policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+            var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
             if (policyType == null) return changes;
 
-            NetFwTypeLib.INetFwPolicy2? firewallPolicy = (NetFwTypeLib.INetFwPolicy2?)Activator.CreateInstance(policyType);
+            var firewallPolicy = (NetFwTypeLib.INetFwPolicy2?)Activator.CreateInstance(policyType);
             if (firewallPolicy?.Rules == null) return changes;
 
             var comRules = firewallPolicy.Rules;

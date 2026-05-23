@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -18,7 +18,7 @@ namespace MinimalFirewall
             Application.ThreadException += (s, e) => HandleException(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => HandleException(e.ExceptionObject as Exception);
 
-            using (Mutex mutex = new Mutex(true, AppGuid, out bool createdNew))
+            using (var mutex = new Mutex(true, AppGuid, out bool createdNew))
             {
                 if (createdNew)
                 {

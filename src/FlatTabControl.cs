@@ -13,7 +13,7 @@ namespace DarkModeForms
 
         public FlatTabControl()
         {
-            this.SetStyle(ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            SetStyle(ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
             this.DrawMode = TabDrawMode.OwnerDrawFixed;
             this.SizeMode = TabSizeMode.Fixed;
         }
@@ -24,7 +24,7 @@ namespace DarkModeForms
             float scaleFactor = this.DeviceDpi / 96f;
             int baseWidth = 70;
             int baseHeight = 120;
-            Size scaledSize = new Size((int)(baseWidth * scaleFactor), (int)(baseHeight * scaleFactor));
+            var scaledSize = new Size((int)(baseWidth * scaleFactor), (int)(baseHeight * scaleFactor));
             if (this.ItemSize.Width < scaledSize.Width)
             {
                 this.ItemSize = scaledSize;
@@ -69,7 +69,7 @@ namespace DarkModeForms
                     g.FillRectangle(b, tabRect);
                 }
 
-                using (Pen p = new Pen(Theme.Colors.ControlDark))
+                using (var p = new Pen(Theme.Colors.ControlDark))
                 {
                     int offset = UIHelpers.Scale(1, g);
                     g.DrawRectangle(p, tabRect.X, tabRect.Y, tabRect.Width, tabRect.Height - offset);
@@ -116,7 +116,7 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    using (Pen p = new Pen(Theme.Colors.Accent, UIHelpers.Scale(3, g)))
+                    using (var p = new Pen(Theme.Colors.Accent, UIHelpers.Scale(3, g)))
                     {
                         g.DrawLine(p, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Top, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Bottom - UIHelpers.Scale(1, g));
                     }
@@ -141,7 +141,7 @@ namespace DarkModeForms
                 using (Brush brush = new SolidBrush(tabBackColor))
                 {
                     g.FillPolygon(brush, points);
-                    using (Pen borderPen = new Pen(Theme.Colors.ControlDark))
+                    using (var borderPen = new Pen(Theme.Colors.ControlDark))
                     {
                         g.DrawPolygon(borderPen, points);
                     }
@@ -164,14 +164,14 @@ namespace DarkModeForms
                 float r = newColor.R / 255f;
                 float g_ = newColor.G / 255f;
                 float b = newColor.B / 255f;
-                var colorMatrix = new ColorMatrix(new float[][]
-                {
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 0, 0},
-                    new float[] {0, 0, 0, 1, 0},
-                    new float[] {r, g_, b, 0, 1}
-                });
+                var colorMatrix = new ColorMatrix(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [r, g_, b, 0, 1]
+                ]);
                 using (var attributes = new ImageAttributes())
                 {
                     attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);

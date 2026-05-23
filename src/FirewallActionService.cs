@@ -582,8 +582,8 @@ namespace MinimalFirewall
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
-            TimeSpan shortSnoozeDuration = TimeSpan.FromSeconds(10);
-            TimeSpan longSnoozeDuration = TimeSpan.FromMinutes(2);
+            var shortSnoozeDuration = TimeSpan.FromSeconds(10);
+            var longSnoozeDuration = TimeSpan.FromMinutes(2);
             if (trustPublisher && SignatureValidationService.IsSignatureTrusted(pending.AppPath, out var publisherName) && !string.IsNullOrEmpty(publisherName))
             {
                 _whitelistService.Add(publisherName);
@@ -843,7 +843,7 @@ namespace MinimalFirewall
 
             var protocolsToCreate = new List<int> { vm.Protocol };
 
-            List<string> errors = new List<string>();
+            var errors = new List<string>();
             int successCount = 0;
 
             // Execute Batch
