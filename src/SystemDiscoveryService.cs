@@ -1,4 +1,4 @@
-﻿using DarkModeForms;
+using DarkModeForms;
 using System.IO;
 using System.Management;
 using System.Diagnostics;
@@ -26,7 +26,10 @@ namespace MinimalFirewall
                 {
                     using var service = (ManagementObject)serviceBaseObject;
                     string rawPath = service["PathName"]?.ToString() ?? string.Empty;
-                    if (string.IsNullOrEmpty(rawPath)) continue;
+                    if (string.IsNullOrEmpty(rawPath))
+                    {
+                        continue;
+                    }
 
                     string pathName = rawPath.Trim('"');
                     int exeIndex = pathName.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
@@ -84,26 +87,24 @@ namespace MinimalFirewall
 
                 foreach (ManagementBaseObject processBaseObject in results)
                 {
-                    using (var process = (ManagementObject)processBaseObject)
+                    using var process = (ManagementObject)processBaseObject;
+                    commandLine = process["CommandLine"]?.ToString() ?? string.Empty;
+                    parentPid = process["ParentProcessId"]?.ToString() ?? string.Empty;
+
+                    // retrieve process owner
+                    try
                     {
-                        commandLine = process["CommandLine"]?.ToString() ?? string.Empty;
-                        parentPid = process["ParentProcessId"]?.ToString() ?? string.Empty;
-
-                        // retrieve process owner
-                        try
+                        var ownerResult = process.InvokeMethod("GetOwner", null, null);
+                        if (ownerResult != null && (uint)ownerResult["returnValue"] == 0)
                         {
-                            var ownerResult = process.InvokeMethod("GetOwner", null, null);
-                            if (ownerResult != null && (uint)ownerResult["returnValue"] == 0)
-                            {
-                                string user = ownerResult["User"]?.ToString() ?? string.Empty;
-                                string domain = ownerResult["Domain"]?.ToString() ?? string.Empty;
-                                owner = string.IsNullOrEmpty(domain) ? user : $"{domain}\\{user}";
-                            }
+                            string user = ownerResult["User"]?.ToString() ?? string.Empty;
+                            string domain = ownerResult["Domain"]?.ToString() ?? string.Empty;
+                            owner = string.IsNullOrEmpty(domain) ? user : $"{domain}\\{user}";
                         }
-                        catch { /* Ignore errors if lacking permissions */ }
-
-                        break;
                     }
+                    catch { /* Ignore errors if lacking permissions */ }
+
+                    break;
                 }
 
                 // name query for parent PID
@@ -114,11 +115,9 @@ namespace MinimalFirewall
                     using var parentResults = parentSearcher.Get();
                     foreach (ManagementBaseObject parentObj in parentResults)
                     {
-                        using (var pObj = (ManagementObject)parentObj)
-                        {
-                            parentName = pObj["Name"]?.ToString() ?? string.Empty;
-                            break;
-                        }
+                        using var pObj = (ManagementObject)parentObj;
+                        parentName = pObj["Name"]?.ToString() ?? string.Empty;
+                        break;
                     }
                 }
             }
@@ -149,10 +148,8 @@ namespace MinimalFirewall
                 using var results = searcher.Get();
                 foreach (ManagementBaseObject serviceBaseObject in results)
                 {
-                    using (var service = (ManagementObject)serviceBaseObject)
-                    {
-                        serviceNames.Add(service["Name"]?.ToString());
-                    }
+                    using var service = (ManagementObject)serviceBaseObject;
+                    serviceNames.Add(service["Name"]?.ToString());
                 }
                 return string.Join(", ", serviceNames.Where(n => !string.IsNullOrEmpty(n)));
             }
@@ -204,7 +201,11 @@ namespace MinimalFirewall
 
         public static async Task<string> CalculateSHA256Async(string filePath)
         {
-            if (!File.Exists(filePath)) return string.Empty;
+            if (!File.Exists(filePath))
+            {
+                return string.Empty;
+            }
+
             try
             {
                 using var sha256 = SHA256.Create();

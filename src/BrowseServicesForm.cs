@@ -14,7 +14,7 @@ namespace MinimalFirewall
             InitializeComponent();
 
             // prevents crashes if null list is passed
-            _allServices = services ?? new List<ServiceViewModel>();
+            _allServices = services ?? [];
 
             dm = new DarkModeCS(this);
             dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;

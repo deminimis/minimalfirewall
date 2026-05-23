@@ -41,9 +41,16 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    if (!File.Exists(_path)) return;
+                    if (!File.Exists(_path))
+                    {
+                        return;
+                    }
+
                     string json = File.ReadAllText(_path);
-                    if (string.IsNullOrWhiteSpace(json)) return;
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        return;
+                    }
 
                     var loaded = JsonSerializer.Deserialize(json, RuleTimestampJsonContext.Default.DictionaryStringDateTime);
                     if (loaded != null)
@@ -64,7 +71,11 @@ namespace MinimalFirewall
         // as an Unknown sentinel and returns null. MinValue is also translated to null on read.
         public DateTime? EnsureStamped(string ruleName, DateTime stamp, bool treatAsBaseline = false)
         {
-            if (string.IsNullOrEmpty(ruleName)) return treatAsBaseline ? null : stamp;
+            if (string.IsNullOrEmpty(ruleName))
+            {
+                return treatAsBaseline ? null : stamp;
+            }
+
             lock (_lock)
             {
                 if (_timestamps.TryGetValue(ruleName, out var existing))
@@ -80,18 +91,29 @@ namespace MinimalFirewall
 
         public DateTime? Get(string ruleName)
         {
-            if (string.IsNullOrEmpty(ruleName)) return null;
+            if (string.IsNullOrEmpty(ruleName))
+            {
+                return null;
+            }
+
             lock (_lock)
             {
                 if (_timestamps.TryGetValue(ruleName, out var ts) && ts != DateTime.MinValue)
+                {
                     return ts;
+                }
+
                 return null;
             }
         }
 
         public void Set(string ruleName, DateTime stamp)
         {
-            if (string.IsNullOrEmpty(ruleName)) return;
+            if (string.IsNullOrEmpty(ruleName))
+            {
+                return;
+            }
+
             lock (_lock)
             {
                 _timestamps[ruleName] = stamp;
@@ -105,8 +127,16 @@ namespace MinimalFirewall
             lock (_lock)
             {
                 var toRemove = _timestamps.Keys.Where(k => !active.Contains(k)).ToList();
-                if (toRemove.Count == 0) return;
-                foreach (var k in toRemove) _timestamps.Remove(k);
+                if (toRemove.Count == 0)
+                {
+                    return;
+                }
+
+                foreach (var k in toRemove)
+                {
+                    _timestamps.Remove(k);
+                }
+
                 _dirty = true;
             }
         }
@@ -115,7 +145,11 @@ namespace MinimalFirewall
         {
             lock (_lock)
             {
-                if (!_dirty) return;
+                if (!_dirty)
+                {
+                    return;
+                }
+
                 try
                 {
                     string json = JsonSerializer.Serialize(_timestamps, RuleTimestampJsonContext.Default.DictionaryStringDateTime);
@@ -135,7 +169,11 @@ namespace MinimalFirewall
         {
             lock (_lock)
             {
-                if (_timestamps.Count == 0) return;
+                if (_timestamps.Count == 0)
+                {
+                    return;
+                }
+
                 _timestamps.Clear();
                 _dirty = true;
             }

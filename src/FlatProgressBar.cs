@@ -76,7 +76,9 @@ namespace DarkModeForms
                     int marqueeWidth = Width / 3;
                     var marqueeRect = new Rectangle(marqueePosition, 0, marqueeWidth, Height);
                     if (marqueeRect.X < Width)
+                    {
                         g.FillRectangle(brush, marqueeRect);
+                    }
                 }
                 else
                 {
@@ -132,14 +134,20 @@ namespace DarkModeForms
                 val = Math.Clamp(value, min, max);
 
                 base.Value = val;
-                if (val != oldValue) Invalidate();
+                if (val != oldValue)
+                {
+                    Invalidate();
+                }
             }
         }
 
         private void Draw3DBorder(Graphics g)
         {
             int penWidth = UIHelpers.Scale(1, g);
-            if (penWidth < 1) penWidth = 1;
+            if (penWidth < 1)
+            {
+                penWidth = 1;
+            }
 
             using var pen = new Pen(Theme.Colors.ControlDark, penWidth);
             g.DrawRectangle(pen, 0, 0, Width - penWidth, Height - penWidth);

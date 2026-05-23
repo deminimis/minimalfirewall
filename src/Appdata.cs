@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 
 namespace MinimalFirewall
@@ -18,17 +18,23 @@ namespace MinimalFirewall
             string appDataSettings = Path.Combine(_standardAppDataDirectory, "settings.json");
 
             // Portable Mode. If settings exist next to the EXE, always use that.
-            if (File.Exists(exeSettings)) return _exeDirectory;
+            if (File.Exists(exeSettings))
+            {
+                return _exeDirectory;
+            }
 
             // Installed Mode. If settings exist in AppData, use that.
-            if (File.Exists(appDataSettings)) return _standardAppDataDirectory;
+            if (File.Exists(appDataSettings))
+            {
+                return _standardAppDataDirectory;
+            }
 
             // Default for new users.
             return _exeDirectory;
         }
 
-        private static readonly List<string> _managedConfigFiles = new List<string>
-        {
+        private static readonly List<string> _managedConfigFiles =
+        [
             "wildcard_rules.json",
             "foreign_rules_baseline.json",
             "temporary_rules.json",
@@ -37,7 +43,7 @@ namespace MinimalFirewall
             "uwp_apps.json",
             "trusted_publishers.json",
             "rule_timestamps.json"
-        };
+        ];
 
         public static void EnsureStorageDirectoryExists()
         {

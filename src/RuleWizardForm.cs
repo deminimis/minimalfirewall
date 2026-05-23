@@ -164,7 +164,10 @@ namespace MinimalFirewall
 
         private void LoadServicesAsync()
         {
-            if (serviceListBox.Items.Count > 0) return;
+            if (serviceListBox.Items.Count > 0)
+            {
+                return;
+            }
 
             serviceListBox.Items.Add("Loading services...");
             serviceListBox.Enabled = false;
@@ -174,13 +177,20 @@ namespace MinimalFirewall
                 var services = SystemDiscoveryService.GetServicesWithExePaths()
                                     .OrderBy(s => s.DisplayName).ToList();
 
-                if (IsDisposed || !IsHandleCreated) return;
+                if (IsDisposed || !IsHandleCreated)
+                {
+                    return;
+                }
 
                 try
                 {
                     Invoke(new Action(() =>
                     {
-                        if (IsDisposed) return;
+                        if (IsDisposed)
+                        {
+                            return;
+                        }
+
                         serviceListBox.Items.Clear();
                         foreach (var service in services)
                         {
@@ -200,7 +210,11 @@ namespace MinimalFirewall
 
         private void nextButton_Click(object sender, EventArgs e)
         {
-            if (!ValidateStep()) return;
+            if (!ValidateStep())
+            {
+                return;
+            }
+
             ProcessStepLogic();
         }
 
@@ -325,7 +339,9 @@ namespace MinimalFirewall
         private bool ValidateFile(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(Environment.ExpandEnvironmentVariables(path)))
+            {
                 return ShowError("Please select a valid program file.", "Invalid File");
+            }
 
             return true;
         }
@@ -333,13 +349,19 @@ namespace MinimalFirewall
         private bool ValidatePortString(string portString, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(portString) || portString == "*") return true;
+            if (string.IsNullOrWhiteSpace(portString) || portString == "*")
+            {
+                return true;
+            }
 
             var parts = portString.Split(',');
             foreach (var part in parts)
             {
                 var trimmedPart = part.Trim();
-                if (string.IsNullOrEmpty(trimmedPart)) continue;
+                if (string.IsNullOrEmpty(trimmedPart))
+                {
+                    continue;
+                }
 
                 if (trimmedPart.Contains('-'))
                 {
@@ -368,40 +390,71 @@ namespace MinimalFirewall
             {
                 case WizardStep.GetFolder:
                     if (string.IsNullOrWhiteSpace(batchFolderPathTextBox.Text) || !Directory.Exists(Environment.ExpandEnvironmentVariables(batchFolderPathTextBox.Text)))
+                    {
                         return ShowError("Please select a valid folder.", "Invalid Folder");
+                    }
+
                     if (!exeCheckBox.Checked && !dllCheckBox.Checked)
+                    {
                         return ShowError("Please select at least one file type to apply rules to (.exe or .dll).", "No File Type Selected");
+                    }
+
                     break;
                 case WizardStep.GetProgram:
-                    if (!ValidateFile(programPathTextBox.Text)) return false;
+                    if (!ValidateFile(programPathTextBox.Text))
+                    {
+                        return false;
+                    }
+
                     break;
                 case WizardStep.GetPorts:
                     if (!ValidatePortString(portsTextBox.Text, out string portError))
+                    {
                         return ShowError(portError, "Invalid Port");
-                    if (restrictToProgramCheckBox.Checked && !ValidateFile(portsProgramPathTextBox.Text)) return false;
+                    }
+
+                    if (restrictToProgramCheckBox.Checked && !ValidateFile(portsProgramPathTextBox.Text))
+                    {
+                        return false;
+                    }
+
                     break;
                 case WizardStep.GetName:
                     if (string.IsNullOrWhiteSpace(ruleNameTextBox.Text))
+                    {
                         return ShowError("Please enter a name for the rule.", "Invalid Name");
+                    }
+
                     break;
                 case WizardStep.GetService:
                     string serviceName = GetSelectedServiceName();
                     if (string.IsNullOrWhiteSpace(serviceName))
+                    {
                         return ShowError("Please select a service from the list or enter a service name.", "No Service Selected");
+                    }
+
                     if (serviceListBox.Items.Count > 0 && serviceListBox.Enabled)
                     {
                         var services = SystemDiscoveryService.GetServicesWithExePaths();
                         if (!services.Any(s => s.ServiceName.Equals(serviceName, StringComparison.OrdinalIgnoreCase)))
+                        {
                             return ShowError($"Service '{serviceName}' not found on this system.", "Invalid Service");
+                        }
                     }
                     break;
                 case WizardStep.GetFileShareIP:
                     if (!IPAddress.TryParse(fileShareIpTextBox.Text, out _))
+                    {
                         return ShowError("Please enter a valid IP address.", "Invalid IP");
+                    }
+
                     break;
                 case WizardStep.GetBlockDeviceIP:
                     if (!IPAddress.TryParse(blockDeviceIpTextBox.Text, out _))
+                    {
                         return ShowError("Please enter a valid IP address.", "Invalid IP");
+                    }
+
                     break;
             }
             return true;
@@ -440,9 +493,18 @@ namespace MinimalFirewall
                     break;
 
                 case WizardStep.GetDirection:
-                    if (inboundRadioButton.Checked) _wizardDirection = Directions.Incoming;
-                    else if (outboundRadioButton.Checked) _wizardDirection = Directions.Outgoing;
-                    else _wizardDirection = Directions.Incoming | Directions.Outgoing;
+                    if (inboundRadioButton.Checked)
+                    {
+                        _wizardDirection = Directions.Incoming;
+                    }
+                    else if (outboundRadioButton.Checked)
+                    {
+                        _wizardDirection = Directions.Outgoing;
+                    }
+                    else
+                    {
+                        _wizardDirection = Directions.Incoming | Directions.Outgoing;
+                    }
 
                     if (_selectedTemplate == RuleTemplate.BatchProgramRule)
                     {
@@ -463,9 +525,18 @@ namespace MinimalFirewall
                     break;
 
                 case WizardStep.GetProtocol:
-                    if (tcpRadioButton.Checked) _wizardProtocol = ProtocolTCP;
-                    else if (udpRadioButton.Checked) _wizardProtocol = ProtocolUDP;
-                    else _wizardProtocol = ProtocolAny;
+                    if (tcpRadioButton.Checked)
+                    {
+                        _wizardProtocol = ProtocolTCP;
+                    }
+                    else if (udpRadioButton.Checked)
+                    {
+                        _wizardProtocol = ProtocolUDP;
+                    }
+                    else
+                    {
+                        _wizardProtocol = ProtocolAny;
+                    }
 
                     ruleNameTextBox.Text = string.IsNullOrEmpty(_wizardAppPath)
                         ? $"Port {_wizardPorts}"
@@ -609,8 +680,15 @@ namespace MinimalFirewall
         private void CreateBatchProgramRule()
         {
             var searchPatterns = new List<string>();
-            if (exeCheckBox.Checked) searchPatterns.Add("*.exe");
-            if (dllCheckBox.Checked) searchPatterns.Add("*.dll");
+            if (exeCheckBox.Checked)
+            {
+                searchPatterns.Add("*.exe");
+            }
+
+            if (dllCheckBox.Checked)
+            {
+                searchPatterns.Add("*.dll");
+            }
 
             var executables = SystemDiscoveryService.GetFilesInFolder(_wizardFolderPath, searchPatterns);
             if (executables.Count == 0)

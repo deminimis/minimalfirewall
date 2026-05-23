@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using System.IO;
 using System.Linq;
 using MinimalFirewall.TypedObjects;
@@ -75,13 +75,20 @@ namespace MinimalFirewall
                 var activeNames = new List<string>(mfwRules.Count);
                 foreach (var rule in mfwRules)
                 {
-                    if (string.IsNullOrEmpty(rule.Name)) continue;
+                    if (string.IsNullOrEmpty(rule.Name))
+                    {
+                        continue;
+                    }
+
                     rule.DateAdded = _ruleTimestampService.EnsureStamped(rule.Name, now, isBaseline);
                     activeNames.Add(rule.Name);
                 }
                 _ruleTimestampService.PruneTo(activeNames);
                 _ruleTimestampService.Flush();
-                if (isBaseline) _ruleTimestampService.EndBaselineSession();
+                if (isBaseline)
+                {
+                    _ruleTimestampService.EndBaselineSession();
+                }
 
                 return mfwRules;
             }, token);
@@ -113,7 +120,10 @@ namespace MinimalFirewall
             }
 
             var allMfwRules = await GetMfwRulesAsync(token);
-            if (token.IsCancellationRequested) return [];
+            if (token.IsCancellationRequested)
+            {
+                return [];
+            }
 
             var aggregatedRules = await Task.Run(() =>
             {
@@ -121,7 +131,7 @@ namespace MinimalFirewall
                 if (totalRules == 0)
                 {
                     progress?.Report(100);
-                    return new List<AggregatedRuleViewModel>();
+                    return [];
                 }
 
                 var groupedByGroupingAndProtocol = allMfwRules
@@ -134,7 +144,11 @@ namespace MinimalFirewall
 
                 foreach (var group in groupedByGroupingAndProtocol)
                 {
-                    if (token.IsCancellationRequested) return [];
+                    if (token.IsCancellationRequested)
+                    {
+                        return [];
+                    }
+
                     var groupList = group.ToList();
                     aggRules.Add(CreateAggregatedViewModelForRuleGroup(groupList));
                     processedCount += groupList.Count;
@@ -145,7 +159,10 @@ namespace MinimalFirewall
                 return aggRules.OrderBy(r => r.Name).ToList();
             }, token);
 
-            if (token.IsCancellationRequested) return [];
+            if (token.IsCancellationRequested)
+            {
+                return [];
+            }
 
             var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
             _localCache.Set(AggregatedRulesCacheKey, aggregatedRules, cacheEntryOptions);
@@ -185,10 +202,16 @@ namespace MinimalFirewall
             bool hasOutBlock = group.Exists(r => r.Status == "Block" && r.Direction.HasFlag(Directions.Outgoing));
 
             aggRule.InboundStatus = hasInAllow ? "Allow" : (hasInBlock ? "Block" : "-");
-            if (hasInAllow && hasInBlock) aggRule.InboundStatus = "Allow, Block";
+            if (hasInAllow && hasInBlock)
+            {
+                aggRule.InboundStatus = "Allow, Block";
+            }
 
             aggRule.OutboundStatus = hasOutAllow ? "Allow" : (hasOutBlock ? "Block" : "-");
-            if (hasOutAllow && hasOutBlock) aggRule.OutboundStatus = "Allow, Block";
+            if (hasOutAllow && hasOutBlock)
+            {
+                aggRule.OutboundStatus = "Allow, Block";
+            }
 
             aggRule.LocalPorts = MergeDistinct(group.Select(r => r.LocalPorts));
             aggRule.RemotePorts = MergeDistinct(group.Select(r => r.RemotePorts));
@@ -200,8 +223,15 @@ namespace MinimalFirewall
 
         private static string GetCommonName(List<AdvancedRuleViewModel> group)
         {
-            if (group.Count == 0) return string.Empty;
-            if (group.Count == 1) return group[0].Name ?? string.Empty;
+            if (group.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (group.Count == 1)
+            {
+                return group[0].Name ?? string.Empty;
+            }
 
             var names = group.Select(r => r.Name ?? string.Empty).ToList();
             string first = names[0];
@@ -240,7 +270,9 @@ namespace MinimalFirewall
             }
 
             if (!string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*")
+            {
                 return RuleType.Service;
+            }
 
             if (!string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*")
             {
@@ -283,8 +315,15 @@ namespace MinimalFirewall
 
             foreach (var rule in mfwRules)
             {
-                if (rule == null) continue;
-                if (!rule.Direction.HasFlag(dirEnum)) continue;
+                if (rule == null)
+                {
+                    continue;
+                }
+
+                if (!rule.Direction.HasFlag(dirEnum))
+                {
+                    continue;
+                }
 
                 bool ruleHasService = !string.IsNullOrEmpty(rule.ServiceName) && rule.ServiceName != "*";
                 bool ruleHasApp = !string.IsNullOrEmpty(rule.ApplicationName) && rule.ApplicationName != "*";
@@ -314,12 +353,23 @@ namespace MinimalFirewall
                         foundBlock = true;
                     }
 
-                    if (foundBlock) break;
+                    if (foundBlock)
+                    {
+                        break;
+                    }
                 }
             }
 
-            if (foundBlock) return MfwRuleStatus.MfwBlock;
-            if (foundAllow) return MfwRuleStatus.MfwAllow;
+            if (foundBlock)
+            {
+                return MfwRuleStatus.MfwBlock;
+            }
+
+            if (foundAllow)
+            {
+                return MfwRuleStatus.MfwAllow;
+            }
+
             return MfwRuleStatus.None;
         }
 
@@ -389,11 +439,27 @@ namespace MinimalFirewall
 
         private static string GetProfileString(int profiles)
         {
-            if (profiles == (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL) return "All";
+            if (profiles == (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL)
+            {
+                return "All";
+            }
+
             List<string> profileNames = [];
-            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0) profileNames.Add("Domain");
-            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0) profileNames.Add("Private");
-            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0) profileNames.Add("Public");
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN) != 0)
+            {
+                profileNames.Add("Domain");
+            }
+
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE) != 0)
+            {
+                profileNames.Add("Private");
+            }
+
+            if ((profiles & (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC) != 0)
+            {
+                profileNames.Add("Public");
+            }
+
             return string.Join(", ", profileNames);
         }
     }

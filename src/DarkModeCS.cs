@@ -16,8 +16,8 @@ namespace DarkModeForms
 {
     public partial class DarkModeCS : IDisposable
     {
-        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = new();
-        private static readonly ConditionalWeakTable<Control, PaintEventHandler> _roundBorderPainters = new();
+        private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = [];
+        private static readonly ConditionalWeakTable<Control, PaintEventHandler> _roundBorderPainters = [];
 
         private class NotificationInfo
         {
@@ -245,7 +245,9 @@ namespace DarkModeForms
                 if (Components != null)
                 {
                     foreach (var item in Components.OfType<ContextMenuStrip>())
+                    {
                         ThemeControl(item);
+                    }
                 }
                 OwnerForm.ResumeLayout(true);
                 ResumeDrawing(OwnerForm);
@@ -258,14 +260,22 @@ namespace DarkModeForms
 
         public void ApplyTheme(DisplayMode pColorMode)
         {
-            if (ColorMode == pColorMode) return;
+            if (ColorMode == pColorMode)
+            {
+                return;
+            }
+
             ColorMode = pColorMode;
             ApplyTheme(ColorMode == DisplayMode.SystemDefault ? IsSystemDarkMode() : ColorMode == DisplayMode.DarkMode);
         }
 
         private void ListView_DrawColumnHeader(object? sender, DrawListViewColumnHeaderEventArgs e)
         {
-            if (sender is not ListView listView) return;
+            if (sender is not ListView listView)
+            {
+                return;
+            }
+
             if (IsDarkMode)
             {
                 using (var backBrush = new SolidBrush(OScolors.Surface))
@@ -294,8 +304,16 @@ namespace DarkModeForms
             var info = controlStatusStorage.GetControlStatusInfo(control);
             if (info != null)
             {
-                if (info.IsExcluded) return;
-                if (info.LastThemeAppliedIsDark == IsDarkMode) return;
+                if (info.IsExcluded)
+                {
+                    return;
+                }
+
+                if (info.LastThemeAppliedIsDark == IsDarkMode)
+                {
+                    return;
+                }
+
                 info.LastThemeAppliedIsDark = IsDarkMode;
             }
             else
@@ -368,8 +386,9 @@ namespace DarkModeForms
                     control.BeginInvoke(new Action(() =>
                     {
                         if (control is ComboBox invokedComboBox && !invokedComboBox.DropDownStyle.Equals(ComboBoxStyle.DropDownList))
+                        {
                             invokedComboBox.SelectionLength = 0;
-
+                        }
                     }));
                 }
 
@@ -511,7 +530,10 @@ namespace DarkModeForms
             }
 
             if (control.ContextMenuStrip != null)
+            {
                 ThemeControl(control.ContextMenuStrip);
+            }
+
             foreach (Control childControl in control.Controls)
             {
                 ThemeControl(childControl);
@@ -521,7 +543,11 @@ namespace DarkModeForms
 
         private void Label_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not Label lbl || lbl.Enabled || !IsDarkMode || lbl.Parent == null) return;
+            if (sender is not Label lbl || lbl.Enabled || !IsDarkMode || lbl.Parent == null)
+            {
+                return;
+            }
+
             e.Graphics.Clear(lbl.Parent.BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
             using Brush B = new SolidBrush(lbl.ForeColor);
@@ -534,14 +560,21 @@ namespace DarkModeForms
 
         private void GroupBox_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not GroupBox gBox || gBox.Enabled || !IsDarkMode) return;
+            if (sender is not GroupBox gBox || gBox.Enabled || !IsDarkMode)
+            {
+                return;
+            }
+
             using var B = new SolidBrush(gBox.ForeColor);
             e.Graphics.DrawString(gBox.Text, gBox.Font, B, new PointF(6, 0));
         }
 
         private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
         {
-            if (sender is not TabControl tab || tab.Parent == null) return;
+            if (sender is not TabControl tab || tab.Parent == null)
+            {
+                return;
+            }
 
             //  Check bounds before filling to prevent overflow
             using var headerBrush = new SolidBrush(tab.Parent.BackColor);
@@ -559,10 +592,8 @@ namespace DarkModeForms
                 bool isSelected = tab.SelectedIndex == i;
                 if (isSelected)
                 {
-                    using (var tabBackColor = new SolidBrush(OScolors.Surface))
-                    {
-                        e.Graphics.FillRectangle(tabBackColor, tabRect);
-                    }
+                    using var tabBackColor = new SolidBrush(OScolors.Surface);
+                    e.Graphics.FillRectangle(tabBackColor, tabRect);
                 }
                 Image? icon = null;
                 if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
@@ -580,7 +611,6 @@ namespace DarkModeForms
                 {
                     if (icon != null)
                     {
-                        int iconHeight = tab.ImageList.ImageSize.Height;
                         int iconWidth = tab.ImageList.ImageSize.Width;
                         int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
                         int iconY = tabRect.Y + 15;
@@ -591,6 +621,7 @@ namespace DarkModeForms
                             imageToDraw = RecolorImage(icon, Color.White);
                             shouldDispose = true;
                         }
+                        int iconHeight = tab.ImageList.ImageSize.Height;
                         e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
                         if (shouldDispose)
                         {
@@ -618,14 +649,22 @@ namespace DarkModeForms
 
         private void CheckBoxAndRadio_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not ButtonBase btn || btn.Enabled || !IsDarkMode) return;
+            if (sender is not ButtonBase btn || btn.Enabled || !IsDarkMode)
+            {
+                return;
+            }
+
             using var B = new SolidBrush(btn.ForeColor);
             e.Graphics.DrawString(btn.Text, btn.Font, B, new PointF(16, 0));
         }
 
         private void DataGridView_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not DataGridView dgv) return;
+            if (sender is not DataGridView dgv)
+            {
+                return;
+            }
+
             PropertyInfo? hsp = typeof(DataGridView).GetProperty("HorizontalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
             PropertyInfo? vsp = typeof(DataGridView).GetProperty("VerticalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
             if (hsp?.GetValue(dgv) is HScrollBar hs && hs.Visible && vsp?.GetValue(dgv) is VScrollBar vs && vs.Visible)
@@ -874,12 +913,23 @@ namespace DarkModeForms
 
         private static int WindowsVersion()
         {
-            if (Environment.OSVersion.Version.Major >= 10) return Environment.OSVersion.Version.Major;
+            if (Environment.OSVersion.Version.Major >= 10)
+            {
+                return Environment.OSVersion.Version.Major;
+            }
+
             try
             {
                 using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
-                if (key?.GetValue("CurrentMajorVersionNumber") is int majorInt) return majorInt;
-                if (key?.GetValue("ProductName")?.ToString()?.Contains("Windows 1") == true) return 10;
+                if (key?.GetValue("CurrentMajorVersionNumber") is int majorInt)
+                {
+                    return majorInt;
+                }
+
+                if (key?.GetValue("ProductName")?.ToString()?.Contains("Windows 1") == true)
+                {
+                    return 10;
+                }
             }
             catch (Exception ex)
             {
@@ -978,7 +1028,7 @@ namespace DarkModeForms
 
     public class MyRenderer : ToolStripProfessionalRenderer
     {
-        private readonly Dictionary<string, Image> _imageCache = new();
+        private readonly Dictionary<string, Image> _imageCache = [];
 
         public bool ColorizeIcons { get; set; } = true;
 
@@ -989,7 +1039,11 @@ namespace DarkModeForms
             set
             {
                 _myColors = value;
-                foreach (var img in _imageCache.Values) img.Dispose();
+                foreach (var img in _imageCache.Values)
+                {
+                    img.Dispose();
+                }
+
                 _imageCache.Clear();
             }
         }
@@ -1029,7 +1083,11 @@ namespace DarkModeForms
 
         protected override void OnRenderButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            if (e.Item is not ToolStripButton button) return;
+            if (e.Item is not ToolStripButton button)
+            {
+                return;
+            }
+
             Graphics g = e.Graphics;
             Rectangle bounds = new(Point.Empty, e.Item.Size);
 
@@ -1086,13 +1144,21 @@ namespace DarkModeForms
 
         protected override void OnRenderDropDownButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            if (e.Item == null) return;
+            if (e.Item == null)
+            {
+                return;
+            }
+
             DrawGradientItemBackground(e.Graphics, e.Item, new Rectangle(Point.Empty, e.Item.Size), false);
         }
 
         protected override void OnRenderSplitButtonBackground(ToolStripItemRenderEventArgs e)
         {
-            if (e.Item == null) return;
+            if (e.Item == null)
+            {
+                return;
+            }
+
             Rectangle bounds = new(Point.Empty, e.Item.Size);
             DrawGradientItemBackground(e.Graphics, e.Item, bounds, false);
 
@@ -1173,7 +1239,9 @@ namespace DarkModeForms
                 }
 
                 if (imageToDraw != null)
+                {
                     _imageCache[cacheKey] = imageToDraw;
+                }
             }
 
             // Draw cached image
@@ -1206,7 +1274,7 @@ namespace DarkModeForms
 
     public class ControlStatusStorage
     {
-        private readonly ConditionalWeakTable<Control, ControlStatusInfo> _controlsProcessed = new();
+        private readonly ConditionalWeakTable<Control, ControlStatusInfo> _controlsProcessed = [];
         public void ExcludeFromProcessing(Control control)
         {
             _controlsProcessed.Remove(control);

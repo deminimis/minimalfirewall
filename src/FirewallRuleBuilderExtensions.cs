@@ -1,4 +1,4 @@
-﻿// FirewallRuleBuilderExtensions.cs
+// FirewallRuleBuilderExtensions.cs
 using System;
 using System.Linq;
 using MinimalFirewall.TypedObjects;
@@ -11,7 +11,9 @@ namespace MinimalFirewall
         public static INetFwRule2 WithName(this INetFwRule2 rule, string name)
         {
             if (string.IsNullOrWhiteSpace(name))
+            {
                 throw new ArgumentException("Rule name cannot be null or empty.", nameof(name));
+            }
 
             rule.Name = name;
             return rule;
@@ -67,7 +69,9 @@ namespace MinimalFirewall
         public static INetFwRule2 WithLocalPorts(this INetFwRule2 rule, params int[] ports)
         {
             if (ports == null || ports.Length == 0)
+            {
                 throw new ArgumentException("Must provide at least one port.", nameof(ports));
+            }
 
             rule.LocalPorts = string.Join(",", ports);
             return rule;

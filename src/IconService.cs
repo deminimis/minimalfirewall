@@ -66,7 +66,11 @@ namespace MinimalFirewall
 
         private void AddDefaultIcon()
         {
-            if (_imageList == null || _imageList.Images.ContainsKey("default")) return;
+            if (_imageList == null || _imageList.Images.ContainsKey("default"))
+            {
+                return;
+            }
+
             try
             {
                 var bmp = new Bitmap(32, 32);
@@ -87,7 +91,11 @@ namespace MinimalFirewall
 
         private void AddSystemIcon()
         {
-            if (_imageList == null || _imageList.Images.ContainsKey("system_icon")) return;
+            if (_imageList == null || _imageList.Images.ContainsKey("system_icon"))
+            {
+                return;
+            }
+
             try
             {
                 if (_imageList.Images.ContainsKey("advanced.png"))
@@ -162,16 +170,14 @@ namespace MinimalFirewall
 
             try
             {
-                using (var icon = Icon.ExtractAssociatedIcon(filePath))
+                using var icon = Icon.ExtractAssociatedIcon(filePath);
+                if (icon != null)
                 {
-                    if (icon != null)
-                    {
-                        _imageList.Images.Add(filePath, (Icon)icon.Clone());
+                    _imageList.Images.Add(filePath, (Icon)icon.Clone());
 
-                        int newIndex = _imageList.Images.Count - 1;
-                        _iconCache[filePath] = newIndex;
-                        return newIndex;
-                    }
+                    int newIndex = _imageList.Images.Count - 1;
+                    _iconCache[filePath] = newIndex;
+                    return newIndex;
                 }
             }
             catch (Exception ex)

@@ -61,7 +61,10 @@ namespace MinimalFirewall
 
         private async Task DisplayGroupsAsync()
         {
-            if (groupsDataGridView is null || _groupManager is null) return;
+            if (groupsDataGridView is null || _groupManager is null)
+            {
+                return;
+            }
 
             try
             {
@@ -148,7 +151,10 @@ namespace MinimalFirewall
 
         private void DrawToggleSwitch(Graphics g, Rectangle bounds, bool isChecked)
         {
-            if (_dm == null) return;
+            if (_dm == null)
+            {
+                return;
+            }
 
             // DPI Scaling calculation
             float scaleFactor = g.DpiY / 96f;
@@ -193,12 +199,18 @@ namespace MinimalFirewall
 
         private void groupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0) return;
+            if (e.ColumnIndex < 0)
+            {
+                return;
+            }
 
             var column = groupsDataGridView.Columns[e.ColumnIndex];
             string propertyName = column.DataPropertyName;
 
-            if (string.IsNullOrEmpty(propertyName)) return;
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return;
+            }
 
             var direction = ListSortDirection.Ascending;
             if (column.HeaderCell.SortGlyphDirection == SortOrder.Ascending)
@@ -213,7 +225,10 @@ namespace MinimalFirewall
 
             foreach (DataGridViewColumn col in groupsDataGridView.Columns)
             {
-                if (col != column) col.HeaderCell.SortGlyphDirection = SortOrder.None;
+                if (col != column)
+                {
+                    col.HeaderCell.SortGlyphDirection = SortOrder.None;
+                }
             }
 
             column.HeaderCell.SortGlyphDirection = direction == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending;

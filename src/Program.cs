@@ -18,27 +18,25 @@ namespace MinimalFirewall
             Application.ThreadException += (s, e) => HandleException(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => HandleException(e.ExceptionObject as Exception);
 
-            using (var mutex = new Mutex(true, AppGuid, out bool createdNew))
+            using var mutex = new Mutex(true, AppGuid, out bool createdNew);
+            if (createdNew)
             {
-                if (createdNew)
-                {
-                    Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-                    Application.EnableVisualStyles();
-                    Application.SetCompatibleTextRenderingDefault(false);
+                Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
 
-                    CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-                    CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+                CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+                CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-                    var args = Environment.GetCommandLineArgs();
-                    bool startMinimized = args.Contains("-tray", StringComparer.OrdinalIgnoreCase);
+                var args = Environment.GetCommandLineArgs();
+                bool startMinimized = args.Contains("-tray", StringComparer.OrdinalIgnoreCase);
 
-                    var mainForm = new MainForm(startMinimized);
-                    Application.Run(mainForm);
-                }
-                else
-                {
-                    MessageBox.Show("Minimal Firewall is already running.", "Application Already Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+                var mainForm = new MainForm(startMinimized);
+                Application.Run(mainForm);
+            }
+            else
+            {
+                MessageBox.Show("Minimal Firewall is already running.", "Application Already Running", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

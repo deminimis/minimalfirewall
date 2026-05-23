@@ -112,7 +112,10 @@ namespace MinimalFirewall
 
                 var connections = Firewall.Traffic.TcpTrafficTracker.GetConnections().Distinct().ToList();
 
-                if (token.IsCancellationRequested) return new List<TcpConnectionViewModel>();
+                if (token.IsCancellationRequested)
+                {
+                    return [];
+                }
 
                 progress?.Report(20);
 
@@ -134,7 +137,10 @@ namespace MinimalFirewall
 
                 foreach (var pid in pidsToResolve)
                 {
-                    if (token.IsCancellationRequested) break;
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
 
                     var info = ResolveProcessInfo(pid);
                     _processCache[pid] = info;
@@ -160,7 +166,10 @@ namespace MinimalFirewall
                 return viewModels;
             }, token);
 
-            if (token.IsCancellationRequested) return;
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
 
             TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>(vms);
         }
@@ -169,8 +178,15 @@ namespace MinimalFirewall
         {
             try
             {
-                if (pid == 0) return ("System Idle", string.Empty, string.Empty);
-                if (pid == 4) return ("System", string.Empty, string.Empty);
+                if (pid == 0)
+                {
+                    return ("System Idle", string.Empty, string.Empty);
+                }
+
+                if (pid == 4)
+                {
+                    return ("System", string.Empty, string.Empty);
+                }
 
                 using var p = Process.GetProcessById((int)pid);
                 string name = p.ProcessName;
@@ -179,7 +195,10 @@ namespace MinimalFirewall
 
                 try
                 {
-                    if (p.MainModule != null) path = p.MainModule.FileName;
+                    if (p.MainModule != null)
+                    {
+                        path = p.MainModule.FileName;
+                    }
                 }
                 catch (Win32Exception) { path = "N/A (Access Denied)"; }
                 catch (Exception ex)
@@ -233,7 +252,7 @@ namespace MinimalFirewall
         {
             newRule.DateAdded ??= DateTime.UtcNow;
             AllAggregatedRules.Add(newRule);
-            ApplyRulesFilters(string.Empty, new HashSet<RuleType>(), false);
+            ApplyRulesFilters(string.Empty, [], false);
         }
 
         private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
@@ -374,9 +393,15 @@ namespace MinimalFirewall
         public async Task ScanForSystemChangesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             var incrementalChanges = await Task.Run(() => _firewallSentryService.CheckForChanges(progress, token), token);
-            if (token.IsCancellationRequested) return;
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
 
-            if (incrementalChanges.Count == 0) return; // Nothing to update
+            if (incrementalChanges.Count == 0)
+            {
+                return; // Nothing to update
+            }
 
             var knownState = _snapshotService.LoadSnapshot();
             bool isFirstInitialization = knownState.Count == 0 && !_snapshotService.SnapshotExists();
@@ -532,7 +557,10 @@ namespace MinimalFirewall
         public void ApplyRuleChange(AggregatedRuleViewModel item, string action)
         {
             var firstRule = item.UnderlyingRules.FirstOrDefault();
-            if (firstRule == null) return;
+            if (firstRule == null)
+            {
+                return;
+            }
 
             switch (firstRule.Type)
             {
@@ -582,8 +610,15 @@ namespace MinimalFirewall
             var ruleToUpdate = AllAggregatedRules.FirstOrDefault(r => r == item);
             if (ruleToUpdate != null)
             {
-                if (parsedDirection.HasFlag(Directions.Incoming)) ruleToUpdate.InboundStatus = parsedAction.ToString();
-                if (parsedDirection.HasFlag(Directions.Outgoing)) ruleToUpdate.OutboundStatus = parsedAction.ToString();
+                if (parsedDirection.HasFlag(Directions.Incoming))
+                {
+                    ruleToUpdate.InboundStatus = parsedAction.ToString();
+                }
+
+                if (parsedDirection.HasFlag(Directions.Outgoing))
+                {
+                    ruleToUpdate.OutboundStatus = parsedAction.ToString();
+                }
             }
             RulesListUpdated?.Invoke();
         }

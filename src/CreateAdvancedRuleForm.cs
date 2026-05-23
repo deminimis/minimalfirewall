@@ -69,9 +69,18 @@ namespace MinimalFirewall
                : this(actionsService, appSettings)
         {
             programPathTextBox.Text = appPath;
-            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase)) inboundRadioButton.Checked = true;
-            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase)) outboundRadioButton.Checked = true;
-            else bothDirRadioButton.Checked = true;
+            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+            {
+                inboundRadioButton.Checked = true;
+            }
+            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+            {
+                outboundRadioButton.Checked = true;
+            }
+            else
+            {
+                bothDirRadioButton.Checked = true;
+            }
         }
 
         public CreateAdvancedRuleForm(FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit, AppSettings appSettings)
@@ -101,16 +110,26 @@ namespace MinimalFirewall
             enabledCheckBox.Checked = rule.IsEnabled;
 
             if (rule.Status == "Allow")
+            {
                 allowRadioButton.Checked = true;
+            }
             else
+            {
                 blockRadioButton.Checked = true;
+            }
 
             if (rule.Direction == (Directions.Incoming | Directions.Outgoing))
+            {
                 bothDirRadioButton.Checked = true;
+            }
             else if (rule.Direction == Directions.Incoming)
+            {
                 inboundRadioButton.Checked = true;
+            }
             else
+            {
                 outboundRadioButton.Checked = true;
+            }
 
             programPathTextBox.Text = rule.ApplicationName;
             serviceNameTextBox.Text = (rule.ServiceName == "*" || string.IsNullOrEmpty(rule.ServiceName)) ? string.Empty : rule.ServiceName;
@@ -279,20 +298,52 @@ namespace MinimalFirewall
         private string GetProfileString()
         {
             var profiles = new List<string>(3);
-            if (domainCheckBox.Checked) profiles.Add("Domain");
-            if (privateCheckBox.Checked) profiles.Add("Private");
-            if (publicCheckBox.Checked) profiles.Add("Public");
-            if (profiles.Count == 3 || profiles.Count == 0) return "All";
+            if (domainCheckBox.Checked)
+            {
+                profiles.Add("Domain");
+            }
+
+            if (privateCheckBox.Checked)
+            {
+                profiles.Add("Private");
+            }
+
+            if (publicCheckBox.Checked)
+            {
+                profiles.Add("Public");
+            }
+
+            if (profiles.Count == 3 || profiles.Count == 0)
+            {
+                return "All";
+            }
+
             return string.Join(", ", profiles);
         }
 
         public string GetInterfaceTypes()
         {
             var types = new List<string>(3);
-            if (remoteAccessCheckBox.Checked) types.Add("RemoteAccess");
-            if (wirelessCheckBox.Checked) types.Add("Wireless");
-            if (lanCheckBox.Checked) types.Add("Lan");
-            if (types.Count == 3 || types.Count == 0) return "All";
+            if (remoteAccessCheckBox.Checked)
+            {
+                types.Add("RemoteAccess");
+            }
+
+            if (wirelessCheckBox.Checked)
+            {
+                types.Add("Wireless");
+            }
+
+            if (lanCheckBox.Checked)
+            {
+                types.Add("Lan");
+            }
+
+            if (types.Count == 3 || types.Count == 0)
+            {
+                return "All";
+            }
+
             return string.Join(",", types);
         }
 

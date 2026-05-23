@@ -1,4 +1,4 @@
-﻿using MinimalFirewall;
+using MinimalFirewall;
 using MinimalFirewall.TypedObjects;
 using System;
 using System.Collections.Generic;
@@ -246,7 +246,10 @@ namespace Firewall.Traffic.ViewModels
 
         private void BlockIp()
         {
-            if (_backgroundTaskService == null) return;
+            if (_backgroundTaskService == null)
+            {
+                return;
+            }
 
             var rule = new AdvancedRuleViewModel
             {
@@ -276,7 +279,7 @@ namespace Firewall.Traffic.ViewModels
 
     public class TrafficMonitorViewModel : INotifyPropertyChanged
     {
-        private ObservableCollection<TcpConnectionViewModel> _activeConnections = new ObservableCollection<TcpConnectionViewModel>();
+        private ObservableCollection<TcpConnectionViewModel> _activeConnections = [];
 
         public ObservableCollection<TcpConnectionViewModel> ActiveConnections
         {

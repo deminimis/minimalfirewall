@@ -65,9 +65,9 @@ namespace MinimalFirewall
 
             AcceptButton = ignoreButton;
 
-            if (tempAllowButton != null) tempAllowButton.Visible = false;
-            if (createWildcardButton != null) createWildcardButton.Visible = false;
-            if (trustPublisherCheckBox != null) trustPublisherCheckBox.Visible = false;
+            tempAllowButton?.Visible = false;
+            createWildcardButton?.Visible = false;
+            trustPublisherCheckBox?.Visible = false;
         }
 
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
@@ -151,7 +151,11 @@ namespace MinimalFirewall
             base.OnShown(e);
             try
             {
-                if (PendingConnection == null) return;
+                if (PendingConnection == null)
+                {
+                    return;
+                }
+
                 string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
 
@@ -274,7 +278,10 @@ namespace MinimalFirewall
                     details.AppendLine($"Path: {PendingConnection.AppPath}");
                     details.AppendLine($"PID: {PendingConnection.ProcessId}");
                     if (!string.IsNullOrEmpty(PendingConnection.ProcessOwner))
+                    {
                         details.AppendLine($"Owner: {PendingConnection.ProcessOwner}");
+                    }
+
                     if (!string.IsNullOrEmpty(PendingConnection.ParentProcessId))
                     {
                         string parentDisplay = string.IsNullOrEmpty(PendingConnection.ParentProcessName) ?
@@ -284,7 +291,9 @@ namespace MinimalFirewall
                     details.AppendLine($"Service: {PendingConnection.ServiceName}");
                     details.AppendLine($"Direction: {PendingConnection.Direction}");
                     if (!string.IsNullOrEmpty(PendingConnection.CommandLine))
+                    {
                         details.AppendLine($"CMD: {PendingConnection.CommandLine}");
+                    }
                 }
                 // clipboard retry logic
                 for (int i = 0; i < 5; i++)
@@ -296,7 +305,11 @@ namespace MinimalFirewall
                     }
                     catch (ExternalException)
                     {
-                        if (i == 4) throw;
+                        if (i == 4)
+                        {
+                            throw;
+                        }
+
                         await Task.Delay(50);
                     }
                 }

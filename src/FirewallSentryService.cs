@@ -36,7 +36,11 @@ namespace MinimalFirewall
 
         public void Start()
         {
-            if (_isStarted) return;
+            if (_isStarted)
+            {
+                return;
+            }
+
             try
             {
                 var scope = new ManagementScope(@"root\StandardCimv2");
@@ -59,7 +63,11 @@ namespace MinimalFirewall
 
         public void Stop()
         {
-            if (!_isStarted || _watcher == null) return;
+            if (!_isStarted || _watcher == null)
+            {
+                return;
+            }
+
             try
             {
                 _watcher.EventArrived -= OnFirewallRuleChangeEvent;
@@ -90,7 +98,10 @@ namespace MinimalFirewall
                 string ruleName = targetInstance["InstanceID"]?.ToString() ?? string.Empty;
                 string grouping = targetInstance["DisplayGroup"]?.ToString() ?? string.Empty;
 
-                if (string.IsNullOrEmpty(ruleName) || IsMfwRule(grouping)) return;
+                if (string.IsNullOrEmpty(ruleName) || IsMfwRule(grouping))
+                {
+                    return;
+                }
 
                 ChangeType type = eventClass switch
                 {
@@ -127,7 +138,10 @@ namespace MinimalFirewall
 
             while (_pendingChanges.TryDequeue(out var changeEvent))
             {
-                if (token.IsCancellationRequested) break;
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
 
                 processed++;
                 progress?.Report(total > 0 ? (processed * 100) / total : 100);
@@ -191,10 +205,16 @@ namespace MinimalFirewall
         {
             var changes = new List<FirewallRuleChange>();
             var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-            if (policyType == null) return changes;
+            if (policyType == null)
+            {
+                return changes;
+            }
 
             var firewallPolicy = (NetFwTypeLib.INetFwPolicy2?)Activator.CreateInstance(policyType);
-            if (firewallPolicy?.Rules == null) return changes;
+            if (firewallPolicy?.Rules == null)
+            {
+                return changes;
+            }
 
             var comRules = firewallPolicy.Rules;
             try
@@ -205,15 +225,26 @@ namespace MinimalFirewall
                 int processedRules = 0;
                 foreach (NetFwTypeLib.INetFwRule2 rule in comRules)
                 {
-                    if (token.IsCancellationRequested) break;
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     processedRules++;
                     progress?.Report((processedRules * 100) / totalRules);
 
-                    if (rule == null) continue;
+                    if (rule == null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         string ruleName = rule.Name;
-                        if (string.IsNullOrEmpty(ruleName) || IsMfwRule(rule.Grouping)) continue;
+                        if (string.IsNullOrEmpty(ruleName) || IsMfwRule(rule.Grouping))
+                        {
+                            continue;
+                        }
 
                         var ruleVm = FirewallDataService.CreateAdvancedRuleViewModel(rule);
                         var changeObj = new FirewallRuleChange { Type = ChangeType.New, Rule = ruleVm };
@@ -228,15 +259,25 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
             return changes;
         }
 
         private void EnrichWithPublisher(FirewallRuleChange changeObj, string? appPath)
         {
-            if (string.IsNullOrWhiteSpace(appPath)) return;
+            if (string.IsNullOrWhiteSpace(appPath))
+            {
+                return;
+            }
 
             if (string.Equals(appPath, "System", StringComparison.OrdinalIgnoreCase))
             {
@@ -264,7 +305,11 @@ namespace MinimalFirewall
         // Changed to accept string directly to avoid passing COM objects
         private static bool IsMfwRule(string grouping)
         {
-            if (string.IsNullOrEmpty(grouping)) return false;
+            if (string.IsNullOrEmpty(grouping))
+            {
+                return false;
+            }
+
             return grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
                    grouping == MFWConstants.MainRuleGroup ||
                    grouping == MFWConstants.WildcardRuleGroup;

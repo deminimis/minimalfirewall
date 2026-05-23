@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -87,7 +87,7 @@ namespace MinimalFirewall
     public class PropertyComparer<T> : IComparer<T>
     {
         private readonly ListSortDirection _direction;
-        private readonly List<PropertyInfo> _propertyChain = new List<PropertyInfo>();
+        private readonly List<PropertyInfo> _propertyChain = [];
 
         public PropertyComparer(PropertyDescriptor prop, ListSortDirection direction)
         {
@@ -100,7 +100,11 @@ namespace MinimalFirewall
                 foreach (var part in prop.Name.Split('.'))
                 {
                     PropertyInfo? info = currentType.GetProperty(part);
-                    if (info == null) break;
+                    if (info == null)
+                    {
+                        break;
+                    }
+
                     _propertyChain.Add(info);
                     currentType = info.PropertyType;
                 }
@@ -114,9 +118,18 @@ namespace MinimalFirewall
 
             int result;
 
-            if (valueX == null && valueY == null) result = 0;
-            else if (valueX == null) result = -1;
-            else if (valueY == null) result = 1;
+            if (valueX == null && valueY == null)
+            {
+                result = 0;
+            }
+            else if (valueX == null)
+            {
+                result = -1;
+            }
+            else if (valueY == null)
+            {
+                result = 1;
+            }
             else if (valueX is string s1 && valueY is string s2)
             {
                 result = NativeSort.StrCmpLogicalW(s1, s2);
@@ -136,13 +149,19 @@ namespace MinimalFirewall
 
         private object? GetValue(object? obj)
         {
-            if (obj == null || _propertyChain.Count == 0) return null;
+            if (obj == null || _propertyChain.Count == 0)
+            {
+                return null;
+            }
 
             object? current = obj;
             foreach (var propInfo in _propertyChain)
             {
                 current = propInfo.GetValue(current, null);
-                if (current == null) return null;
+                if (current == null)
+                {
+                    return null;
+                }
             }
             return current;
         }

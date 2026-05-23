@@ -106,7 +106,10 @@ public class AdvancedRuleViewModel
     // Checks if all firewall-relevant properties match (Case-Insensitive for strings)
     public bool HasSameSettings(AdvancedRuleViewModel? other)
     {
-        if (other is null) return false;
+        if (other is null)
+        {
+            return false;
+        }
 
         static bool Eq(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 

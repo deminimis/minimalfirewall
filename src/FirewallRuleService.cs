@@ -1,4 +1,4 @@
-﻿using NetFwTypeLib;
+using NetFwTypeLib;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -28,14 +28,21 @@ namespace MinimalFirewall
         {
             var mappedList = new List<T>();
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return mappedList;
+            if (firewallPolicy?.Rules == null)
+            {
+                return mappedList;
+            }
 
             var comRules = firewallPolicy.Rules;
             try
             {
                 foreach (INetFwRule2 rule in comRules)
                 {
-                    if (rule == null) continue;
+                    if (rule == null)
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         mappedList.Add(mapper(rule));
@@ -53,8 +60,15 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
             return mappedList;
         }
@@ -62,7 +76,10 @@ namespace MinimalFirewall
         public List<INetFwRule2> GetAllRules()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return [];
+            if (firewallPolicy?.Rules == null)
+            {
+                return [];
+            }
 
             var rulesList = new List<INetFwRule2>();
             var comRules = firewallPolicy.Rules;
@@ -85,8 +102,15 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
@@ -94,7 +118,10 @@ namespace MinimalFirewall
         {
             var matchedNames = new List<string>();
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return matchedNames;
+            if (firewallPolicy?.Rules == null)
+            {
+                return matchedNames;
+            }
 
             var comRules = firewallPolicy.Rules;
             try
@@ -114,14 +141,24 @@ namespace MinimalFirewall
                     }
                     finally
                     {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
+                        if (rule != null)
+                        {
+                            Marshal.ReleaseComObject(rule);
+                        }
                     }
                 }
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
             return matchedNames;
         }
@@ -129,7 +166,11 @@ namespace MinimalFirewall
         public INetFwRule2? GetRuleByName(string name)
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null) return null;
+            if (firewallPolicy == null)
+            {
+                return null;
+            }
+
             INetFwRules? rulesCollection = null;
             try
             {
@@ -151,15 +192,25 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
         public void SetDefaultOutboundAction(NET_FW_ACTION_ action)
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null) return;
+            if (firewallPolicy == null)
+            {
+                return;
+            }
 
             foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
             {
@@ -181,7 +232,10 @@ namespace MinimalFirewall
                     }
                 }
             }
-            if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            if (firewallPolicy != null)
+            {
+                Marshal.ReleaseComObject(firewallPolicy);
+            }
         }
 
         public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
@@ -197,19 +251,30 @@ namespace MinimalFirewall
 
         public List<INetFwRule2> GetRulesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
         {
-            if (string.IsNullOrEmpty(appPath)) return [];
+            if (string.IsNullOrEmpty(appPath))
+            {
+                return [];
+            }
+
             string normalizedAppPath = PathResolver.NormalizePath(appPath);
             var matchingRules = new List<INetFwRule2>();
 
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return matchingRules;
+            if (firewallPolicy?.Rules == null)
+            {
+                return matchingRules;
+            }
 
             var comRules = firewallPolicy.Rules;
             try
             {
                 foreach (INetFwRule2 rule in comRules)
                 {
-                    if (rule == null) continue;
+                    if (rule == null)
+                    {
+                        continue;
+                    }
+
                     bool keep = false;
                     try
                     {
@@ -227,14 +292,24 @@ namespace MinimalFirewall
                     }
                     finally
                     {
-                        if (!keep) Marshal.ReleaseComObject(rule);
+                        if (!keep)
+                        {
+                            Marshal.ReleaseComObject(rule);
+                        }
                     }
                 }
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
             return matchingRules;
         }
@@ -242,7 +317,11 @@ namespace MinimalFirewall
         public NET_FW_ACTION_ GetDefaultOutboundAction()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null) return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+            if (firewallPolicy == null)
+            {
+                return NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+            }
+
             try
             {
                 var currentProfileTypes = (NET_FW_PROFILE_TYPE2_)firewallPolicy.CurrentProfileTypes;
@@ -268,7 +347,10 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
@@ -281,7 +363,11 @@ namespace MinimalFirewall
 
         public List<string> DeleteRulesByPath(List<string> appPaths)
         {
-            if (appPaths.Count == 0) return [];
+            if (appPaths.Count == 0)
+            {
+                return [];
+            }
+
             var pathSet = new HashSet<string>(appPaths.Select(PathResolver.NormalizePath), StringComparer.OrdinalIgnoreCase);
 
             return ExecuteDeleteAndReturnNames(rule =>
@@ -292,13 +378,21 @@ namespace MinimalFirewall
 
         public List<string> DeleteRulesByServiceName(string serviceName)
         {
-            if (string.IsNullOrEmpty(serviceName)) return [];
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                return [];
+            }
+
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase));
         }
 
         public List<string> DeleteConflictingServiceRules(string serviceName, NET_FW_ACTION_ newAction, NET_FW_RULE_DIRECTION_ newDirection)
         {
-            if (string.IsNullOrEmpty(serviceName)) return [];
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                return [];
+            }
+
             NET_FW_ACTION_ conflictingAction = (newAction == NET_FW_ACTION_.NET_FW_ACTION_ALLOW)
                 ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
                 : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
@@ -312,7 +406,11 @@ namespace MinimalFirewall
 
         public List<string> DeleteUwpRules(List<string> packageFamilyNames)
         {
-            if (packageFamilyNames.Count == 0) return [];
+            if (packageFamilyNames.Count == 0)
+            {
+                return [];
+            }
+
             var pfnSet = new HashSet<string>(packageFamilyNames, StringComparer.OrdinalIgnoreCase);
 
             return ExecuteDeleteAndReturnNames(rule =>
@@ -328,9 +426,16 @@ namespace MinimalFirewall
 
         public void DeleteRulesByName(List<string> ruleNames)
         {
-            if (ruleNames.Count == 0) return;
+            if (ruleNames.Count == 0)
+            {
+                return;
+            }
+
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return;
+            if (firewallPolicy?.Rules == null)
+            {
+                return;
+            }
 
             var rulesCollection = firewallPolicy.Rules;
             try
@@ -365,8 +470,15 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
@@ -416,21 +528,40 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (rule != null) Marshal.ReleaseComObject(rule);
-                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (rule != null)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
+
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
         public List<string> DeleteRulesByDescription(string description)
         {
-            if (string.IsNullOrEmpty(description)) return [];
+            if (string.IsNullOrEmpty(description))
+            {
+                return [];
+            }
+
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase));
         }
 
         public List<string> DeleteRulesByGroup(string groupName)
         {
-            if (string.IsNullOrEmpty(groupName)) return [];
+            if (string.IsNullOrEmpty(groupName))
+            {
+                return [];
+            }
+
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -454,15 +585,25 @@ namespace MinimalFirewall
 
         private void SetRuleEnabledState(string ruleName, bool isEnabled, string callerName)
         {
-            if (string.IsNullOrEmpty(ruleName)) return;
+            if (string.IsNullOrEmpty(ruleName))
+            {
+                return;
+            }
+
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null) return;
+            if (firewallPolicy == null)
+            {
+                return;
+            }
 
             INetFwRules? rulesCollection = null;
             try
             {
                 rulesCollection = firewallPolicy.Rules;
-                if (rulesCollection == null) return;
+                if (rulesCollection == null)
+                {
+                    return;
+                }
 
                 if (rulesCollection.Item(ruleName) is INetFwRule2 rule)
                 {
@@ -480,8 +621,15 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 

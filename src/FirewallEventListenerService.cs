@@ -120,7 +120,11 @@ namespace MinimalFirewall
 
         private void OnEventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
         {
-            if (e.EventRecord == null) return;
+            if (e.EventRecord == null)
+            {
+                return;
+            }
+
             try
             {
                 string xmlContent = e.EventRecord.ToXml();
@@ -155,10 +159,22 @@ namespace MinimalFirewall
                 string layerId = GetValueFromXml(xmlContent, "LayerId");
 
                 // Reliable Direction extraction using LayerId (bypasses OS language localization issues)
-                if (layerId == "48" || layerId == "50") direction = DirectionOutbound;
-                else if (layerId == "44" || layerId == "46") direction = DirectionInbound;
-                else if (rawDirectionCode.HasValue) direction = ParseDirectionFromCode(rawDirectionCode.Value);
-                else direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                if (layerId == "48" || layerId == "50")
+                {
+                    direction = DirectionOutbound;
+                }
+                else if (layerId == "44" || layerId == "46")
+                {
+                    direction = DirectionInbound;
+                }
+                else if (rawDirectionCode.HasValue)
+                {
+                    direction = ParseDirectionFromCode(rawDirectionCode.Value);
+                }
+                else
+                {
+                    direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+                }
 
                 string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
                 string remotePort = GetValueFromXml(xmlContent, "RemotePort");
@@ -168,19 +184,32 @@ namespace MinimalFirewall
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
 
                 // filter noise (e.g. broadcasts, multicasts)
-                if (IsNetworkNoise(remoteAddress)) return;
+                if (IsNetworkNoise(remoteAddress))
+                {
+                    return;
+                }
 
                 string serviceName = (xmlServiceName == "N/A" || string.IsNullOrEmpty(xmlServiceName)) ?
                                      string.Empty : xmlServiceName;
 
-                if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase)) return;
+                if (!string.IsNullOrEmpty(rawAppPath) && rawAppPath.Contains(_currentAssemblyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
                 appPath = ResolveAppPath(rawAppPath);
 
                 // Filter system
-                if (!IsValidAppPath(appPath)) return;
+                if (!IsValidAppPath(appPath))
+                {
+                    return;
+                }
 
                 string notificationKey = $"{appPath}|{direction}";
-                if (!_pendingNotifications.TryAdd(notificationKey, true)) return;
+                if (!_pendingNotifications.TryAdd(notificationKey, true))
+                {
+                    return;
+                }
 
                 // check if snoozed/locked down
                 if (!ShouldProcessEvent(appPath))
@@ -285,7 +314,11 @@ namespace MinimalFirewall
             try
             {
                 string converted = PathResolver.ConvertDevicePathToDrivePath(rawPath);
-                if (!string.IsNullOrEmpty(converted)) finalPath = converted;
+                if (!string.IsNullOrEmpty(converted))
+                {
+                    finalPath = converted;
+                }
+
                 finalPath = PathResolver.NormalizePath(finalPath);
             }
             catch { /* Keep original on failure */ }
@@ -294,14 +327,26 @@ namespace MinimalFirewall
 
         private bool IsValidAppPath(string path)
         {
-            if (string.IsNullOrEmpty(path)) return false;
-            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase)) return false;
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             return true;
         }
 
         private string ResolveServiceName(string appPath, string currentService, string pid)
         {
-            if (!string.IsNullOrEmpty(currentService)) return currentService;
+            if (!string.IsNullOrEmpty(currentService))
+            {
+                return currentService;
+            }
+
             if (Path.GetFileName(appPath).Equals("svchost.exe", StringComparison.OrdinalIgnoreCase) &&
                 !string.IsNullOrEmpty(pid) &&
                 pid != "0")
@@ -315,7 +360,10 @@ namespace MinimalFirewall
 
         private bool IsNoisyService(string serviceName)
         {
-            if (string.IsNullOrEmpty(serviceName)) return false;
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                return false;
+            }
 
             // Do NOT ignore Dhcp or Dnscache. 
             return serviceName.Equals("Ssdpsrv", StringComparison.OrdinalIgnoreCase);
@@ -340,7 +388,10 @@ namespace MinimalFirewall
             bool checkWhitelist = _appSettings.AutoAllowWhitelistedPublishers;
             bool checkOsTrust = _appSettings.AutoAllowSystemSignedApps;
 
-            if (!checkWhitelist && !checkOsTrust) return false;
+            if (!checkWhitelist && !checkOsTrust)
+            {
+                return false;
+            }
 
             return await Task.Run(() =>
             {
@@ -351,7 +402,9 @@ namespace MinimalFirewall
                 }
 
                 if (!File.Exists(appPath))
+                {
                     return false;
+                }
 
                 string? matchedPublisher = null;
                 string? publisherName = null;
@@ -393,7 +446,7 @@ namespace MinimalFirewall
                 string allowAction = $"Allow ({direction})";
                 var appPayload = new ApplyApplicationRulePayload
                 {
-                    AppPaths = new List<string> { appPath },
+                    AppPaths = [appPath],
                     Action = allowAction,
                     AutoAllowedPublisher = matchedPublisher
                 };
@@ -404,17 +457,29 @@ namespace MinimalFirewall
 
         private bool IsInExcludedFolder(string appPath)
         {
-            if (string.IsNullOrEmpty(appPath)) return false;
+            if (string.IsNullOrEmpty(appPath))
+            {
+                return false;
+            }
 
             var excludedFolders = _appSettings.AutoAllowExclusions;
-            if (excludedFolders == null || excludedFolders.Count == 0) return false;
+            if (excludedFolders == null || excludedFolders.Count == 0)
+            {
+                return false;
+            }
 
             string? dir = Path.GetDirectoryName(appPath);
-            if (dir == null) return false;
+            if (dir == null)
+            {
+                return false;
+            }
 
             foreach (var excludedFolder in excludedFolders)
             {
-                if (string.IsNullOrEmpty(excludedFolder)) continue;
+                if (string.IsNullOrEmpty(excludedFolder))
+                {
+                    continue;
+                }
 
                 try
                 {
@@ -422,7 +487,9 @@ namespace MinimalFirewall
                     string normalizedDir = dir.TrimEnd('\\') + "\\";
 
                     if (normalizedDir.StartsWith(resolved, StringComparison.OrdinalIgnoreCase))
+                    {
                         return true;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -435,16 +502,28 @@ namespace MinimalFirewall
 
         private bool IsNetworkNoise(string remoteIp)
         {
-            if (string.IsNullOrEmpty(remoteIp)) return false;
+            if (string.IsNullOrEmpty(remoteIp))
+            {
+                return false;
+            }
 
             // Filter out Broadcasts 
-            if (remoteIp == "255.255.255.255") return true;
+            if (remoteIp == "255.255.255.255")
+            {
+                return true;
+            }
 
             // Filter out Multicasts
-            if (remoteIp.StartsWith("224.") || remoteIp.StartsWith("239.")) return true;
+            if (remoteIp.StartsWith("224.") || remoteIp.StartsWith("239."))
+            {
+                return true;
+            }
 
             // Filter out IPv6 Multicasts 
-            if (remoteIp.StartsWith("ff", StringComparison.OrdinalIgnoreCase)) return true;
+            if (remoteIp.StartsWith("ff", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
 
             return false;
         }
@@ -495,14 +574,22 @@ namespace MinimalFirewall
 
         public void ClearPendingNotification(string appPath, string direction, string remoteAddress, string remotePort, string protocol)
         {
-            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction))
+            {
+                return;
+            }
+
             string key = $"{appPath}|{direction}|{remoteAddress}|{remotePort}|{protocol}";
             _pendingNotifications.TryRemove(key, out _);
         }
 
         public void ClearPendingNotification(string appPath, string direction)
         {
-            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction)) return;
+            if (string.IsNullOrEmpty(appPath) || string.IsNullOrEmpty(direction))
+            {
+                return;
+            }
+
             string broadKey = $"{appPath}|{direction}";
             _pendingNotifications.TryRemove(broadKey, out _);
 
@@ -529,10 +616,18 @@ namespace MinimalFirewall
 
         private bool ShouldProcessEvent(string appPath)
         {
-            if (string.IsNullOrEmpty(appPath)) return false;
+            if (string.IsNullOrEmpty(appPath))
+            {
+                return false;
+            }
+
             if (_snoozedApps.TryGetValue(appPath, out DateTime snoozeUntil))
             {
-                if (DateTime.UtcNow < snoozeUntil) return false;
+                if (DateTime.UtcNow < snoozeUntil)
+                {
+                    return false;
+                }
+
                 _snoozedApps.TryRemove(appPath, out _);
             }
 
@@ -551,13 +646,20 @@ namespace MinimalFirewall
 
         private static string ParseDirection(string rawDirection)
         {
-            if (string.IsNullOrEmpty(rawDirection)) return "Unknown";
+            if (string.IsNullOrEmpty(rawDirection))
+            {
+                return "Unknown";
+            }
 
             if (rawDirection.Contains("14592") || rawDirection.Equals("Incoming", StringComparison.OrdinalIgnoreCase) || rawDirection.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+            {
                 return DirectionInbound;
+            }
 
             if (rawDirection.Contains("14593") || rawDirection.Equals("Outgoing", StringComparison.OrdinalIgnoreCase) || rawDirection.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+            {
                 return DirectionOutbound;
+            }
 
             return rawDirection; 
         }

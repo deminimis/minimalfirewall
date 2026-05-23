@@ -200,10 +200,7 @@ namespace MinimalFirewall
         {
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
-            if (_appSettings != null)
-            {
-                _appSettings.PropertyChanged -= AppSettings_PropertyChanged;
-            }
+            _appSettings?.PropertyChanged -= AppSettings_PropertyChanged;
 
             _cachedArrowPen?.Dispose();
             base.OnFormClosed(e);
@@ -305,33 +302,34 @@ namespace MinimalFirewall
 
         private void LayoutButtons()
         {
-            if (lockdownButton == null || rescanButton == null) return;
+            if (lockdownButton == null || rescanButton == null)
+            {
+                return;
+            }
 
             lockdownButton.Text = string.Empty;
             rescanButton.Text = string.Empty;
             lockdownButton.AutoSize = false;
             rescanButton.AutoSize = false;
 
-            using (var g = CreateGraphics())
-            {
-                float dpiScale = g.DpiY / 96f;
-                int scaledSize = (int)(44 * dpiScale);
+            using var g = CreateGraphics();
+            float dpiScale = g.DpiY / 96f;
+            int scaledSize = (int)(44 * dpiScale);
 
-                lockdownButton.Size = new Size(scaledSize, scaledSize);
-                rescanButton.Size = new Size(scaledSize, scaledSize);
+            lockdownButton.Size = new Size(scaledSize, scaledSize);
+            rescanButton.Size = new Size(scaledSize, scaledSize);
 
-                // Consistent 8px spacing between buttons
-                int rescanX = (int)(16 * dpiScale);
-                int lockdownX = rescanX + scaledSize + (int)(8 * dpiScale);
+            // Consistent 8px spacing between buttons
+            int rescanX = (int)(16 * dpiScale);
+            int lockdownX = rescanX + scaledSize + (int)(8 * dpiScale);
 
-                rescanButton.Left = rescanX;
-                lockdownButton.Left = lockdownX;
-                
-                // Align bottom with same margin
-                int bottomMargin = (int)(8 * dpiScale);
-                rescanButton.Top = ClientSize.Height - scaledSize - bottomMargin;
-                lockdownButton.Top = rescanButton.Top;
-            }
+            rescanButton.Left = rescanX;
+            lockdownButton.Left = lockdownX;
+
+            // Align bottom with same margin
+            int bottomMargin = (int)(8 * dpiScale);
+            rescanButton.Top = ClientSize.Height - scaledSize - bottomMargin;
+            lockdownButton.Top = rescanButton.Top;
         }
 
         private static Icon CreateRecoloredIcon(Icon originalIcon, Color color)
@@ -362,11 +360,8 @@ namespace MinimalFirewall
                     _defaultTrayIcon = icon;
                     _unlockedTrayIcon = CreateRecoloredIcon(icon, Color.Red);
                     _alertTrayIcon = CreateRecoloredIcon(icon, Color.Orange);
-                    if (notifyIcon != null)
-                    {
-                        notifyIcon.Icon = _mainViewModel.IsLockedDown ?
+                    notifyIcon?.Icon = _mainViewModel.IsLockedDown ?
                                           _defaultTrayIcon : _unlockedTrayIcon;
-                    }
                 }
             }
 
@@ -601,7 +596,11 @@ namespace MinimalFirewall
                     return;
                 }
 
-                if (_isRulePopupVisible || _rulePopupQueue.Count == 0) return;
+                if (_isRulePopupVisible || _rulePopupQueue.Count == 0)
+                {
+                    return;
+                }
+
                 _isRulePopupVisible = true;
 
                 var rule = _rulePopupQueue.Dequeue();
@@ -617,10 +616,17 @@ namespace MinimalFirewall
         {
             try
             {
-                if (sender is not NotifierForm notifier) return;
+                if (sender is not NotifierForm notifier)
+                {
+                    return;
+                }
+
                 notifier.FormClosed -= RuleNotifier_FormClosed;
 
-                if (IsDisposed || Disposing) return;
+                if (IsDisposed || Disposing)
+                {
+                    return;
+                }
 
                 var rule = notifier.RuleChange;
                 var result = notifier.Result;
@@ -652,7 +658,10 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (sender is IDisposable disposable) disposable.Dispose();
+                if (sender is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
         }
 
@@ -687,15 +696,25 @@ namespace MinimalFirewall
         {
             try
             {
-                if (sender is not NotifierForm notifier) return;
+                if (sender is not NotifierForm notifier)
+                {
+                    return;
+                }
+
                 notifier.FormClosed -= Notifier_FormClosed;
 
-                if (IsDisposed || Disposing) return;
+                if (IsDisposed || Disposing)
+                {
+                    return;
+                }
 
                 var pending = notifier.PendingConnection;
                 var result = notifier.Result;
 
-                if (pending == null) return;
+                if (pending == null)
+                {
+                    return;
+                }
 
                 _mainViewModel.PendingConnections.Remove(pending);
                 if (result == NotifierForm.NotifierResult.CreateWildcard)
@@ -828,10 +847,7 @@ namespace MinimalFirewall
 
         private void TrayContextMenu_Opening(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (lockdownTrayMenuItem != null)
-            {
-                lockdownTrayMenuItem.Text = _mainViewModel.IsLockedDown ? "Disable Lockdown" : "Enable Lockdown";
-            }
+            lockdownTrayMenuItem?.Text = _mainViewModel.IsLockedDown ? "Disable Lockdown" : "Enable Lockdown";
         }
 
         private void SetupAutoRefreshTimer()
@@ -933,10 +949,7 @@ namespace MinimalFirewall
             {
                 e.Cancel = true;
                 Hide();
-                if (notifyIcon != null)
-                {
-                    notifyIcon.Visible = true;
-                }
+                notifyIcon?.Visible = true;
                 _ = PrepareForTrayAsync();
             }
             else
@@ -996,9 +1009,16 @@ namespace MinimalFirewall
         #region Tab Loading and Filtering
         private async Task DisplayCurrentTabData()
         {
-            if (mainTabControl is null) return;
+            if (mainTabControl is null)
+            {
+                return;
+            }
+
             var selectedTab = mainTabControl.SelectedTab;
-            if (selectedTab == null) return;
+            if (selectedTab == null)
+            {
+                return;
+            }
 
             SuspendLayout();
             if (selectedTab != liveConnectionsTabPage)
@@ -1041,7 +1061,10 @@ namespace MinimalFirewall
 
         public async Task ForceDataRefreshAsync(bool forceUwpScan = false, bool showStatus = true, StatusForm? statusFormInstance = null)
         {
-            if (_isRefreshingData) return;
+            if (_isRefreshingData)
+            {
+                return;
+            }
 
             var token = ResetScanToken();
 
@@ -1140,7 +1163,11 @@ namespace MinimalFirewall
                     auditControl1.ApplySearchFilter();
                     GC.Collect();
                 }
-                if (_auditStatusForm?.IsDisposed == false) _auditStatusForm?.Close();
+                if (_auditStatusForm?.IsDisposed == false)
+                {
+                    _auditStatusForm?.Close();
+                }
+
                 _auditStatusForm = null;
             }
         }
@@ -1154,7 +1181,10 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (_isRefreshingData) return;
+            if (_isRefreshingData)
+            {
+                return;
+            }
 
             var token = ResetScanToken();
 
@@ -1194,7 +1224,10 @@ namespace MinimalFirewall
         private async void MainTabControl_SelectedIndexChanged(object? sender, EventArgs e)
         {
             var selectedTab = mainTabControl.SelectedTab;
-            if (selectedTab == null) return;
+            if (selectedTab == null)
+            {
+                return;
+            }
 
             if (_tabUnloadTimers.TryGetValue(selectedTab.Name, out var timer))
             {
@@ -1207,7 +1240,11 @@ namespace MinimalFirewall
 
         private void MainTabControl_Deselecting(object sender, TabControlCancelEventArgs e)
         {
-            if (e.TabPage == null) return;
+            if (e.TabPage == null)
+            {
+                return;
+            }
+
             _scanCts?.Cancel();
 
             string[] tabsToUnload = ["rulesTabPage", "systemChangesTabPage", "groupsTabPage", "liveConnectionsTabPage", "wildcardRulesTabPage"];
@@ -1225,7 +1262,11 @@ namespace MinimalFirewall
 
         private void UnloadTabData(object? state)
         {
-            if (state is not string tabName) return;
+            if (state is not string tabName)
+            {
+                return;
+            }
+
             BeginInvoke(new Action(() =>
             {
                 if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
@@ -1242,7 +1283,11 @@ namespace MinimalFirewall
                         wildcardRulesControl1.ClearRules();
                         break;
                     case "systemChangesTabPage":
-                        if (_auditStatusForm?.IsDisposed == false) _auditStatusForm?.Close();
+                        if (_auditStatusForm?.IsDisposed == false)
+                        {
+                            _auditStatusForm?.Close();
+                        }
+
                         _auditStatusForm = null;
                         _mainViewModel.SystemChanges.Clear();
                         auditControl1.ApplySearchFilter();
@@ -1383,7 +1428,11 @@ namespace MinimalFirewall
 
         private void OwnerDrawnButton_Paint(object? sender, PaintEventArgs e)
         {
-            if (sender is not Button button) return;
+            if (sender is not Button button)
+            {
+                return;
+            }
+
             e.Graphics.Clear(BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -1437,7 +1486,10 @@ namespace MinimalFirewall
 
         private void SafeInvoke(Action action)
         {
-            if (Disposing || IsDisposed || !IsHandleCreated) return;
+            if (Disposing || IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
 
             if (InvokeRequired)
             {

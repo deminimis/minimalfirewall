@@ -37,7 +37,10 @@ namespace MinimalFirewall
                 foreach (var cert in store.Certificates)
                 {
                     string thumbprint = cert.Thumbprint ?? "";
-                    if (!seen.Add(thumbprint)) continue;
+                    if (!seen.Add(thumbprint))
+                    {
+                        continue;
+                    }
 
                     string subject = cert.Subject ?? "";
                     string friendlyName = cert.FriendlyName ?? "";
@@ -74,7 +77,10 @@ namespace MinimalFirewall
         {
             const string cnPrefix = "CN=";
             int cnStart = subject.IndexOf(cnPrefix, StringComparison.Ordinal);
-            if (cnStart < 0) return subject;
+            if (cnStart < 0)
+            {
+                return subject;
+            }
 
             cnStart += cnPrefix.Length;
             int cnEnd = subject.IndexOf(',', cnStart);

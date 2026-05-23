@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -230,7 +230,10 @@ namespace MinimalFirewall
 
         public WildcardRule? Match(string path)
         {
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
 
             string normalizedPath = PathResolver.NormalizePath(path);
             string fileName = Path.GetFileName(normalizedPath);
@@ -240,7 +243,10 @@ namespace MinimalFirewall
             {
                 foreach (var rule in _rules)
                 {
-                    if (!_regexCache.TryGetValue(rule, out var regexes)) continue;
+                    if (!_regexCache.TryGetValue(rule, out var regexes))
+                    {
+                        continue;
+                    }
 
                     string expandedFolderPath = PathResolver.NormalizePath(rule.FolderPath);
                     bool isFolderMatch = false;
@@ -278,7 +284,10 @@ namespace MinimalFirewall
                         }
                         else
                         {
-                            if (rule.ExeName == "*" || rule.ExeName == "*.exe") return rule;
+                            if (rule.ExeName == "*" || rule.ExeName == "*.exe")
+                            {
+                                return rule;
+                            }
                         }
                     }
                 }

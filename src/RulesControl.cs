@@ -28,7 +28,7 @@ namespace MinimalFirewall
         // Sorting and Data State
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
-        private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = new();
+        private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = [];
 
         // UI Helpers
         private readonly System.Windows.Forms.Timer _searchDebounceTimer;
@@ -134,7 +134,10 @@ namespace MinimalFirewall
         private void RulesDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
         {
             // Safety check for bounds
-            if (e.RowIndex >= _currentRuleList.Count || e.RowIndex < 0) return;
+            if (e.RowIndex >= _currentRuleList.Count || e.RowIndex < 0)
+            {
+                return;
+            }
 
             var rule = _currentRuleList[e.RowIndex];
             var col = rulesDataGridView.Columns[e.ColumnIndex];
@@ -163,7 +166,10 @@ namespace MinimalFirewall
 
         private Image? GetIconForRule(AggregatedRuleViewModel rule)
         {
-            if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName)) return null;
+            if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName))
+            {
+                return null;
+            }
 
             if (rule.Type == RuleType.UWP ||
                 rule.ApplicationName.StartsWith("@", StringComparison.Ordinal) ||
@@ -181,7 +187,11 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            if (Disposing || IsDisposed) return;
+            if (Disposing || IsDisposed)
+            {
+                return;
+            }
+
             createRuleButton.FlatAppearance.BorderSize = 1;
 
             createRuleButton.FlatAppearance.BorderColor = Theme.Colors.ControlDark;
@@ -216,7 +226,10 @@ namespace MinimalFirewall
 
         private void filterCheckBox_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings == null) return;
+            if (_appSettings == null)
+            {
+                return;
+            }
 
             _appSettings.FilterPrograms = programFilterCheckBox.Checked;
             _appSettings.FilterServices = serviceFilterCheckBox.Checked;
@@ -231,10 +244,25 @@ namespace MinimalFirewall
         {
             var enabledTypes = new HashSet<RuleType>();
 
-            if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
-            if (serviceFilterCheckBox.Checked) enabledTypes.Add(RuleType.Service);
-            if (uwpFilterCheckBox.Checked) enabledTypes.Add(RuleType.UWP);
-            if (wildcardFilterCheckBox.Checked) enabledTypes.Add(RuleType.Wildcard);
+            if (programFilterCheckBox.Checked)
+            {
+                enabledTypes.Add(RuleType.Program);
+            }
+
+            if (serviceFilterCheckBox.Checked)
+            {
+                enabledTypes.Add(RuleType.Service);
+            }
+
+            if (uwpFilterCheckBox.Checked)
+            {
+                enabledTypes.Add(RuleType.UWP);
+            }
+
+            if (wildcardFilterCheckBox.Checked)
+            {
+                enabledTypes.Add(RuleType.Wildcard);
+            }
 
             enabledTypes.Add(RuleType.Advanced);
 
@@ -257,7 +285,10 @@ namespace MinimalFirewall
 
         private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
         {
-            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action) return;
+            if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action)
+            {
+                return;
+            }
 
             foreach (var item in GetSelectedRules())
             {
@@ -272,7 +303,10 @@ namespace MinimalFirewall
                 if (rulesDataGridView.SelectedRows.Count == 1)
                 {
                     var aggRule = GetFirstSelectedRule();
-                    if (aggRule == null) return;
+                    if (aggRule == null)
+                    {
+                        return;
+                    }
 
                     var originalRule = aggRule.UnderlyingRules?.FirstOrDefault();
                     if (originalRule == null)
@@ -286,9 +320,12 @@ namespace MinimalFirewall
                     {
                         if (dialog.RuleVm != null)
                         {
-                            if (originalRule.HasSameSettings(dialog.RuleVm)) return;
+                            if (originalRule.HasSameSettings(dialog.RuleVm))
+                            {
+                                return;
+                            }
 
-                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules?.Select(r => r.Name).ToList() ?? new List<string>() };
+                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules?.Select(r => r.Name).ToList() ?? [] };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
 
                             var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
@@ -315,7 +352,10 @@ namespace MinimalFirewall
             if (items.Count > 0)
             {
                 var result = Messenger.MessageBox($"Are you sure you want to delete the {items.Count} selected rule(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (result == DialogResult.No) return;
+                if (result == DialogResult.No)
+                {
+                    return;
+                }
 
                 _mainViewModel.DeleteRules(items);
                 ApplyRulesFilters();
@@ -443,7 +483,11 @@ namespace MinimalFirewall
 
         private void rulesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0 || e.RowIndex >= _currentRuleList.Count) return;
+            if (e.RowIndex < 0 || e.RowIndex >= _currentRuleList.Count)
+            {
+                return;
+            }
+
             var rule = _currentRuleList[e.RowIndex];
 
             ApplyRuleCellTheme(e, rule);
@@ -488,7 +532,10 @@ namespace MinimalFirewall
 
         private void rulesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
-            if (rulesDataGridView.Rows[e.RowIndex].Selected) return;
+            if (rulesDataGridView.Rows[e.RowIndex].Selected)
+            {
+                return;
+            }
 
             var mouseOverRow = rulesDataGridView.HitTest(rulesDataGridView.PointToClient(MousePosition).X, rulesDataGridView.PointToClient(MousePosition).Y).RowIndex;
             if (e.RowIndex == mouseOverRow)
@@ -516,7 +563,10 @@ namespace MinimalFirewall
 
         private void rulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0 || _appSettings == null) return;
+            if (e.ColumnIndex < 0 || _appSettings == null)
+            {
+                return;
+            }
 
             if (_rulesSortColumn == e.ColumnIndex)
             {
@@ -564,7 +614,9 @@ namespace MinimalFirewall
             {
                 int index = rulesDataGridView.SelectedRows[0].Index;
                 if (index >= 0 && index < _currentRuleList.Count)
+                {
                     return _currentRuleList[index];
+                }
             }
             return null;
         }

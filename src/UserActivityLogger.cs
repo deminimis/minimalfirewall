@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +28,10 @@ namespace MinimalFirewall
 
         public void LogChange(string action, string details)
         {
-            if (!IsEnabled) return;
+            if (!IsEnabled)
+            {
+                return;
+            }
 
             // Ensure only one thread writes to the JSON file at a time
             lock (_changeLock)
@@ -44,16 +47,16 @@ namespace MinimalFirewall
                         // Handle case where file exists but is empty
                         if (string.IsNullOrWhiteSpace(json))
                         {
-                            logEntries = new List<object>();
+                            logEntries = [];
                         }
                         else
                         {
-                            logEntries = JsonSerializer.Deserialize<List<object>>(json) ?? new List<object>();
+                            logEntries = JsonSerializer.Deserialize<List<object>>(json) ?? [];
                         }
                     }
                     else
                     {
-                        logEntries = new List<object>();
+                        logEntries = [];
                     }
 
                     logEntries.Add(newLogEntry);
@@ -71,7 +74,11 @@ namespace MinimalFirewall
 
         public void LogDebug(string message)
         {
-            if (!IsEnabled) return;
+            if (!IsEnabled)
+            {
+                return;
+            }
+
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string logEntry = $"[{timestamp}] {message}{Environment.NewLine}";
 
@@ -80,7 +87,10 @@ namespace MinimalFirewall
 
         public void LogException(string context, Exception ex)
         {
-            if (!IsEnabled) return;
+            if (!IsEnabled)
+            {
+                return;
+            }
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string hex = $"0x{ex.HResult:X8}";

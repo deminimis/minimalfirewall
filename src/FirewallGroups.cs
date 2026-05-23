@@ -100,7 +100,7 @@ namespace MinimalFirewall.Groups
                     {
                         if (!groupsData.TryGetValue(grouping, out var ruleList))
                         {
-                            ruleList = new List<INetFwRule2>();
+                            ruleList = [];
                             groupsData[grouping] = ruleList;
                         }
                         ruleList.Add(rule);
@@ -121,8 +121,15 @@ namespace MinimalFirewall.Groups
             }
             finally
             {
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (policy != null) Marshal.ReleaseComObject(policy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (policy != null)
+                {
+                    Marshal.ReleaseComObject(policy);
+                }
             }
         }
     }

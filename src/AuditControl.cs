@@ -79,7 +79,7 @@ namespace MinimalFirewall
                 col.SortMode = DataGridViewColumnSortMode.Programmatic;
             }
 
-            _bindingSource = new BindingSource();
+            _bindingSource = [];
             systemChangesDataGridView.DataSource = _bindingSource;
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
             _viewModel.StatusTextChanged += OnStatusTextChanged;
@@ -133,7 +133,11 @@ namespace MinimalFirewall
 
         public async void ApplySearchFilter()
         {
-            if (systemChangesDataGridView is null || _viewModel?.SystemChanges is null) return;
+            if (systemChangesDataGridView is null || _viewModel?.SystemChanges is null)
+            {
+                return;
+            }
+
             string searchText = auditSearchTextBox.Text;
 
             try
@@ -144,15 +148,18 @@ namespace MinimalFirewall
 
                 var filteredChanges = await Task.Run(() =>
                 {
-                    return string.IsNullOrWhiteSpace(searchText) ? changesCopy : changesCopy.Where(c =>
+                    return string.IsNullOrWhiteSpace(searchText) ? changesCopy : [.. changesCopy.Where(c =>
                           (c.Name != null && c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.Description != null && c.Description.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.ApplicationName != null && c.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
                           (c.Intervention != null && c.Intervention.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
-                          (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase))).ToList();
+                          (c.Publisher != null && c.Publisher.Contains(searchText, StringComparison.OrdinalIgnoreCase)))];
                 });
 
-                if (IsDisposed) return;
+                if (IsDisposed)
+                {
+                    return;
+                }
 
                 SortableBindingList<FirewallRuleChange> bindableList = [.. filteredChanges];
 
@@ -184,11 +191,8 @@ namespace MinimalFirewall
                     col.HeaderCell.SortGlyphDirection = SortOrder.None;
                 }
 
-                if (sortColumn != null)
-                {
-                    sortColumn.HeaderCell.SortGlyphDirection = sortDirection == ListSortDirection.Ascending ?
+                sortColumn?.HeaderCell.SortGlyphDirection = sortDirection == ListSortDirection.Ascending ?
                         SortOrder.Ascending : SortOrder.Descending;
-                }
             }
             catch (Exception ex)
             {
@@ -215,7 +219,10 @@ namespace MinimalFirewall
 
         private void SystemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0) return;
+            if (e.ColumnIndex < 0)
+            {
+                return;
+            }
 
             int currentDirection = _appSettings.AuditSortOrder;
             int newDirection = 0;
@@ -258,11 +265,20 @@ namespace MinimalFirewall
             {
                 if (row.DataBoundItem is FirewallRuleChange change && change.Rule != null)
                 {
-                    if (change.Rule.IsEnabled) hasEnabledItems = true;
-                    else hasDisabledItems = true;
+                    if (change.Rule.IsEnabled)
+                    {
+                        hasEnabledItems = true;
+                    }
+                    else
+                    {
+                        hasDisabledItems = true;
+                    }
 
                     // Stop iterating if we already know we have both types
-                    if (hasEnabledItems && hasDisabledItems) break;
+                    if (hasEnabledItems && hasDisabledItems)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -285,7 +301,11 @@ namespace MinimalFirewall
 
         private void ProcessSelectedChanges(Action<FirewallRuleChange, int> action)
         {
-            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
+            if (systemChangesDataGridView.SelectedRows.Count == 0)
+            {
+                return;
+            }
+
             foreach (DataGridViewRow row in systemChangesDataGridView.SelectedRows)
             {
                 if (row.DataBoundItem is FirewallRuleChange change)
@@ -370,7 +390,10 @@ namespace MinimalFirewall
 
         private void DeleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (systemChangesDataGridView.SelectedRows.Count == 0) return;
+            if (systemChangesDataGridView.SelectedRows.Count == 0)
+            {
+                return;
+            }
 
             var result = Messenger.MessageBox(
                 $"Are you sure you want to permanently delete {systemChangesDataGridView.SelectedRows.Count} rule(s)?",
@@ -385,10 +408,20 @@ namespace MinimalFirewall
 
         private void SystemChangesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0) return;
-            if (sender is not DataGridView grid) return;
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
 
-            if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change) return;
+            if (sender is not DataGridView grid)
+            {
+                return;
+            }
+
+            if (grid.Rows[e.RowIndex].DataBoundItem is not FirewallRuleChange change)
+            {
+                return;
+            }
 
             bool isDarkMode = DarkModeCS.IsSystemDarkMode();
 
@@ -420,7 +453,9 @@ namespace MinimalFirewall
                 grid.Columns[e.ColumnIndex].Name == "advStatusColumn")
             {
                 if (_cachedBoldFont != null)
+                {
                     e.CellStyle!.Font = _cachedBoldFont;
+                }
             }
 
             // format timestamp
@@ -450,10 +485,17 @@ namespace MinimalFirewall
 
         private void SystemChangesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
-            if (sender is not DataGridView grid) return;
+            if (sender is not DataGridView grid)
+            {
+                return;
+            }
+
             var row = grid.Rows[e.RowIndex];
 
-            if (row.Selected) return;
+            if (row.Selected)
+            {
+                return;
+            }
 
             var cursor = grid.PointToClient(MousePosition);
             var mouseOverRow = grid.HitTest(cursor.X, cursor.Y).RowIndex;
@@ -469,7 +511,11 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                if (sender is not DataGridView grid) return;
+                if (sender is not DataGridView grid)
+                {
+                    return;
+                }
+
                 grid.InvalidateRow(e.RowIndex);
             }
         }
@@ -478,7 +524,11 @@ namespace MinimalFirewall
         {
             if (e.RowIndex >= 0)
             {
-                if (sender is not DataGridView grid) return;
+                if (sender is not DataGridView grid)
+                {
+                    return;
+                }
+
                 grid.InvalidateRow(e.RowIndex);
             }
         }
@@ -487,7 +537,11 @@ namespace MinimalFirewall
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
-                if (sender is not DataGridView grid) return;
+                if (sender is not DataGridView grid)
+                {
+                    return;
+                }
+
                 var clickedRow = grid.Rows[e.RowIndex];
 
                 if (!clickedRow.Selected)
@@ -587,7 +641,11 @@ namespace MinimalFirewall
 
         private static string GetRuleSummary(AdvancedRuleViewModel rule)
         {
-            if (rule == null) return "Error: Rule is null";
+            if (rule == null)
+            {
+                return "Error: Rule is null";
+            }
+
             return $"Name: {rule.Name}\nProgram: {rule.ApplicationName}\nAction: {rule.Status}\nDirection: {rule.Direction}\nRemote Ports: {rule.RemotePorts}\nStatus: {(rule.IsEnabled ? "Enabled" : "Disabled")}";
         }
 

@@ -106,20 +106,29 @@ namespace MinimalFirewall
             }
 
             // Safety check 
-            if (IsDisposed || GetSelectedPendingConnection() != pending) return;
-
+            if (IsDisposed || GetSelectedPendingConnection() != pending)
+            {
+                return;
+            }
 
             RenderConnectionDetails(pending, pubName);
         }
 
         private void RenderConnectionDetails(PendingConnectionViewModel pending, string? pubName)
         {
-            if (detailsRichTextBox == null) return;
+            if (detailsRichTextBox == null)
+            {
+                return;
+            }
+
             detailsRichTextBox.Clear();
 
             void AppendDetail(string label, string? value)
             {
-                if (string.IsNullOrEmpty(value)) return;
+                if (string.IsNullOrEmpty(value))
+                {
+                    return;
+                }
 
                 detailsRichTextBox.SelectionStart = detailsRichTextBox.TextLength;
                 detailsRichTextBox.SelectionLength = 0;
@@ -156,13 +165,16 @@ namespace MinimalFirewall
 
         public void SetIconColumnVisibility(bool visible)
         {
-            if (dashIconColumn != null) dashIconColumn.Visible = visible;
+            dashIconColumn?.Visible = visible;
         }
 
         private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             // Don't try to update if the window is closing
-            if (Disposing || IsDisposed || !IsHandleCreated) return;
+            if (Disposing || IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
 
             if (InvokeRequired)
             {
@@ -188,8 +200,15 @@ namespace MinimalFirewall
 
         private void DashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex < 0) return;
-            if (sender is not DataGridView grid) return;
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
+
+            if (sender is not DataGridView grid)
+            {
+                return;
+            }
 
             if (grid.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
             {
@@ -210,7 +229,10 @@ namespace MinimalFirewall
 
         private void DashboardDataGridView_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0) return;
+            if (e.RowIndex < 0)
+            {
+                return;
+            }
 
             // Icon Column Logic
             if (dashIconColumn != null && e.ColumnIndex == dashIconColumn.Index)
@@ -276,8 +298,15 @@ namespace MinimalFirewall
 
         private void DashboardDataGridView_RowPostPaint(object? sender, DataGridViewRowPostPaintEventArgs e)
         {
-            if (sender is not DataGridView grid) return;
-            if (grid.Rows[e.RowIndex].Selected) return;
+            if (sender is not DataGridView grid)
+            {
+                return;
+            }
+
+            if (grid.Rows[e.RowIndex].Selected)
+            {
+                return;
+            }
 
             var clientPoint = grid.PointToClient(MousePosition);
             var hitTest = grid.HitTest(clientPoint.X, clientPoint.Y);
@@ -425,7 +454,10 @@ namespace MinimalFirewall
                 details.AppendLine($"Path: {pending.AppPath}");
                 details.AppendLine($"PID: {pending.ProcessId}");
                 if (!string.IsNullOrEmpty(pending.ProcessOwner))
+                {
                     details.AppendLine($"Owner: {pending.ProcessOwner}");
+                }
+
                 if (!string.IsNullOrEmpty(pending.ParentProcessId))
                 {
                     string parentDisplay = string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId : $"{pending.ParentProcessName} (PID: {pending.ParentProcessId})";
@@ -434,7 +466,10 @@ namespace MinimalFirewall
                 details.AppendLine($"Service: {pending.ServiceName}");
                 details.AppendLine($"Direction: {pending.Direction}");
                 if (!string.IsNullOrEmpty(pending.CommandLine))
+                {
                     details.AppendLine($"CMD: {pending.CommandLine}");
+                }
+
                 Clipboard.SetText(details.ToString());
             }
         }

@@ -125,7 +125,10 @@ namespace MinimalFirewall
 
         public void LoadSettingsToUI()
         {
-            if (_appSettings == null) return;
+            if (_appSettings == null)
+            {
+                return;
+            }
 
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
@@ -145,7 +148,10 @@ namespace MinimalFirewall
 
         public void SaveSettingsFromUI()
         {
-            if (_appSettings == null) return;
+            if (_appSettings == null)
+            {
+                return;
+            }
 
             _appSettings.CloseToTray = closeToTraySwitch.Checked;
             _appSettings.StartOnSystemStartup = startOnStartupSwitch.Checked;
@@ -236,10 +242,7 @@ namespace MinimalFirewall
 
         private void PopupsSwitch_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings != null)
-            {
-                _appSettings.IsPopupsEnabled = popupsSwitch.Checked;
-            }
+            _appSettings?.IsPopupsEnabled = popupsSwitch.Checked;
         }
 
         private void loggingSwitch_CheckedChanged(object? sender, EventArgs e)
@@ -271,40 +274,31 @@ namespace MinimalFirewall
 
         private void closeToTraySwitch_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings != null)
-            {
-                _appSettings.CloseToTray = closeToTraySwitch.Checked;
-            }
+            _appSettings?.CloseToTray = closeToTraySwitch.Checked;
         }
 
         private void autoAllowWhitelistedPublishersCheck_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings != null)
-            {
-                _appSettings.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
-            }
+            _appSettings?.AutoAllowWhitelistedPublishers = autoAllowWhitelistedPublishersCheck.Checked;
         }
 
         private void autoAllowSystemSignedAppsCheck_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings != null)
-            {
-                _appSettings.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
-            }
+            _appSettings?.AutoAllowSystemSignedApps = autoAllowSystemSignedAppsCheck.Checked;
         }
 
 
         private void auditAlertsSwitch_CheckedChanged(object? sender, EventArgs e)
         {
-            if (_appSettings != null)
-            {
-                _appSettings.AlertOnForeignRules = auditAlertsSwitch.Checked;
-            }
+            _appSettings?.AlertOnForeignRules = auditAlertsSwitch.Checked;
         }
 
         private void autoRefreshTextBox_Leave(object? sender, EventArgs e)
         {
-            if (_appSettings == null) return;
+            if (_appSettings == null)
+            {
+                return;
+            }
 
             if (int.TryParse(autoRefreshTextBox.Text, out int val) && val >= 1)
             {
@@ -348,7 +342,11 @@ namespace MinimalFirewall
         private void openAppDataButton_Click(object? sender, EventArgs e)
         {
             string standardAppDataPath = ConfigPathManager.GetStandardAppDataDirectory();
-            if (!Directory.Exists(standardAppDataPath)) Directory.CreateDirectory(standardAppDataPath);
+            if (!Directory.Exists(standardAppDataPath))
+            {
+                Directory.CreateDirectory(standardAppDataPath);
+            }
+
             OpenLink(standardAppDataPath, "%AppData% folder");
         }
 
@@ -359,7 +357,11 @@ namespace MinimalFirewall
 
         private void LinkLabel_LinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
         {
-            if (sender is not LinkLabel { Tag: string url }) return;
+            if (sender is not LinkLabel { Tag: string url })
+            {
+                return;
+            }
+
             OpenLink(url);
         }
 
@@ -567,7 +569,10 @@ namespace MinimalFirewall
 
                 try
                 {
-                    if (File.Exists(zipPath)) File.Delete(zipPath);
+                    if (File.Exists(zipPath))
+                    {
+                        File.Delete(zipPath);
+                    }
 
                     using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
                     {

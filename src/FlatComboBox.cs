@@ -26,9 +26,12 @@ namespace DarkModeForms
 
                 var clientRect = ClientRectangle;
                     var dropDownButtonWidth = SystemInformation.HorizontalScrollBarArrowWidth;
-                    if (dropDownButtonWidth < UIHelpers.Scale(12, g)) dropDownButtonWidth = UIHelpers.Scale(16, g);
+                    if (dropDownButtonWidth < UIHelpers.Scale(12, g))
+                {
+                    dropDownButtonWidth = UIHelpers.Scale(16, g);
+                }
 
-                    var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
+                var dropDownRect = new Rectangle(clientRect.Width - dropDownButtonWidth, 0, dropDownButtonWidth, clientRect.Height);
                     var textPadding = UIHelpers.Scale(4, g);
                     var textBackRect = new Rectangle(clientRect.Left, clientRect.Top, Math.Max(0, clientRect.Width - dropDownButtonWidth), clientRect.Height);
                     var textRect = new Rectangle(clientRect.Left + textPadding, clientRect.Top, Math.Max(0, clientRect.Width - dropDownButtonWidth - (textPadding * 2)), clientRect.Height);

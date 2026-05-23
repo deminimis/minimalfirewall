@@ -21,7 +21,7 @@ namespace MinimalFirewall
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private FirewallActionsService _actionsService = null!;
 
-        private SortableBindingList<TcpConnectionViewModel> _sortableList = new();
+        private SortableBindingList<TcpConnectionViewModel> _sortableList = [];
 
         // Behavioral State Handlers
         private int _hoveredRowIndex = -1;
@@ -67,10 +67,7 @@ namespace MinimalFirewall
 
         private void UnsubscribeEvents()
         {
-            if (_viewModel != null)
-            {
-                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            }
+            _viewModel?.PropertyChanged -= ViewModel_PropertyChanged;
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
@@ -82,7 +79,7 @@ namespace MinimalFirewall
         public void OnTabDeselected()
         {
             UnsubscribeEvents();
-            if (_viewModel != null) _viewModel.StopMonitoring();
+            _viewModel?.StopMonitoring();
             UpdateEnabledState();
         }
 
@@ -103,7 +100,11 @@ namespace MinimalFirewall
 
         public void UpdateEnabledState()
         {
-            if (_appSettings == null) return;
+            if (_appSettings == null)
+            {
+                return;
+            }
+
             bool isEnabled = _appSettings.IsTrafficMonitorEnabled;
             liveConnectionsDataGridView.Visible = isEnabled;
             disabledPanel.Visible = !isEnabled;
@@ -111,7 +112,10 @@ namespace MinimalFirewall
 
         public void UpdateLiveConnectionsView()
         {
-            if (_viewModel == null) return;
+            if (_viewModel == null)
+            {
+                return;
+            }
 
             string? selectedIdentifier = null;
             if (TryGetSelectedConnection(out var currentConn) && currentConn != null)
@@ -174,7 +178,11 @@ namespace MinimalFirewall
 
         private void LiveConnectionsDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
         {
-            if (e.RowIndex >= _sortableList.Count || e.RowIndex < 0) return;
+            if (e.RowIndex >= _sortableList.Count || e.RowIndex < 0)
+            {
+                return;
+            }
+
             var conn = _sortableList[e.RowIndex];
 
             switch (liveConnectionsDataGridView.Columns[e.ColumnIndex].Name)
@@ -210,7 +218,11 @@ namespace MinimalFirewall
 
         private void liveConnectionsDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0 || e.RowIndex >= _sortableList.Count) return;
+            if (e.RowIndex < 0 || e.RowIndex >= _sortableList.Count)
+            {
+                return;
+            }
+
             var conn = _sortableList[e.RowIndex];
 
             // Dynamic theme assignment based on active state criteria
@@ -277,10 +289,8 @@ namespace MinimalFirewall
         {
             if (!liveConnectionsDataGridView.Rows[e.RowIndex].Selected && e.RowIndex == _hoveredRowIndex)
             {
-                using (var brush = new SolidBrush(Theme.Colors.HighlightOverlay))
-                {
-                    e.Graphics.FillRectangle(brush, e.RowBounds);
-                }
+                using var brush = new SolidBrush(Theme.Colors.HighlightOverlay);
+                e.Graphics.FillRectangle(brush, e.RowBounds);
             }
         }
 
@@ -320,7 +330,10 @@ namespace MinimalFirewall
         private bool TryGetSelectedConnection(out TcpConnectionViewModel? connection)
         {
             connection = null;
-            if (liveConnectionsDataGridView.SelectedRows.Count == 0) return false;
+            if (liveConnectionsDataGridView.SelectedRows.Count == 0)
+            {
+                return false;
+            }
 
             int index = liveConnectionsDataGridView.SelectedRows[0].Index;
             if (index >= 0 && index < _sortableList.Count)

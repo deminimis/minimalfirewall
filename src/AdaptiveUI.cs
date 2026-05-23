@@ -42,7 +42,11 @@ namespace MinimalFirewall
             get => _selectedProtocol;
             set
             {
-                if (_selectedProtocol.Equals(value)) return;
+                if (_selectedProtocol.Equals(value))
+                {
+                    return;
+                }
+
                 _selectedProtocol = value;
 
                 OnPropertyChanged();

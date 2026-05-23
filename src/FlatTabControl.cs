@@ -39,7 +39,11 @@ namespace DarkModeForms
 
         internal void DrawControl(Graphics g)
         {
-            if (!Visible) return;
+            if (!Visible)
+            {
+                return;
+            }
+
             using (Brush bBackColor = new SolidBrush(Theme.Colors.Background))
             {
                 g.FillRectangle(bBackColor, ClientRectangle);
@@ -117,10 +121,8 @@ namespace DarkModeForms
 
                 if (isSelected)
                 {
-                    using (var p = new Pen(Theme.Colors.Accent, UIHelpers.Scale(3, g)))
-                    {
-                        g.DrawLine(p, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Top, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Bottom - UIHelpers.Scale(1, g));
-                    }
+                    using var p = new Pen(Theme.Colors.Accent, UIHelpers.Scale(3, g));
+                    g.DrawLine(p, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Top, tabRect.Right - UIHelpers.Scale(1, g), tabRect.Bottom - UIHelpers.Scale(1, g));
                 }
 
                 TextRenderer.DrawText(g, customTabPage.Text, Font, textRect, textColor, textFlags);
@@ -169,12 +171,10 @@ namespace DarkModeForms
                     [0, 0, 0, 1, 0],
                     [r, g_, b, 0, 1]
                 ]);
-                using (var attributes = new ImageAttributes())
-                {
-                    attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-                    g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
-                        0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
-                }
+                using var attributes = new ImageAttributes();
+                attributes.SetColorMatrix(colorMatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+                g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                    0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
             }
             return newBitmap;
         }
@@ -183,7 +183,11 @@ namespace DarkModeForms
         {
             if (disposing)
             {
-                foreach (var img in _iconCache.Values) img.Dispose();
+                foreach (var img in _iconCache.Values)
+                {
+                    img.Dispose();
+                }
+
                 _iconCache.Clear();
             }
             base.Dispose(disposing);

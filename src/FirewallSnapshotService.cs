@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -41,7 +41,10 @@ namespace MinimalFirewall
 
         public void SaveSnapshot(IEnumerable<string> ruleNames)
         {
-            if (ruleNames == null) return;
+            if (ruleNames == null)
+            {
+                return;
+            }
 
             lock (_fileLock)
             {

@@ -43,8 +43,8 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
-        private List<string> _autoAllowExclusions = new List<string>
-        {
+        private List<string> _autoAllowExclusions =
+        [
             Path.GetTempPath(),
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Downloads",
             Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
@@ -52,7 +52,7 @@ namespace MinimalFirewall
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Temp",
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Microsoft\Windows\INetCache",
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"),
-        };
+        ];
 
         private Point _windowLocation = new Point(100, 100);
         private Size _windowSize = new Size(1280, 800);
@@ -105,7 +105,11 @@ namespace MinimalFirewall
 
         protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
         {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+            if (EqualityComparer<T>.Default.Equals(field, value))
+            {
+                return false;
+            }
+
             field = value;
             OnPropertyChanged(propertyName!);
 
@@ -123,7 +127,11 @@ namespace MinimalFirewall
 
             Task.Delay(500, token).ContinueWith(t =>
             {
-                if (t.IsCanceled) return;
+                if (t.IsCanceled)
+                {
+                    return;
+                }
+
                 Save();
             }, TaskScheduler.Default);
         }

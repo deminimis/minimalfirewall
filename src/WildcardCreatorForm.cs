@@ -95,12 +95,10 @@ namespace MinimalFirewall
 
         private void browseButton_Click(object sender, EventArgs e)
         {
-            using (var dialog = new FolderBrowserDialog())
+            using var dialog = new FolderBrowserDialog();
+            if (dialog.ShowDialog() == DialogResult.OK)
             {
-                if (dialog.ShowDialog() == DialogResult.OK)
-                {
-                    folderPathTextBox.Text = dialog.SelectedPath;
-                }
+                folderPathTextBox.Text = dialog.SelectedPath;
             }
         }
 
@@ -190,9 +188,13 @@ namespace MinimalFirewall
             if (sender is TextBox textBox)
             {
                 if (!ValidationUtility.ValidatePortString(textBox.Text, out string errorMessage))
+                {
                     errorProvider1.SetError(textBox, errorMessage);
+                }
                 else
+                {
                     errorProvider1.SetError(textBox, string.Empty);
+                }
             }
         }
 
@@ -201,9 +203,13 @@ namespace MinimalFirewall
             if (sender is TextBox textBox)
             {
                 if (!ValidationUtility.ValidateAddressString(textBox.Text, out string errorMessage))
+                {
                     errorProvider1.SetError(textBox, errorMessage);
+                }
                 else
+                {
                     errorProvider1.SetError(textBox, string.Empty);
+                }
             }
         }
     }

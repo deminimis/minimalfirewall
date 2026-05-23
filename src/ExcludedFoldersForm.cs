@@ -26,7 +26,7 @@ namespace MinimalFirewall
             try
             {
                 foldersListBox.Items.Clear();
-                var folders = _appSettings.AutoAllowExclusions ?? new List<string>();
+                var folders = _appSettings.AutoAllowExclusions ?? [];
                 foreach (var folder in folders.OrderBy(f => f))
                 {
                     foldersListBox.Items.Add(folder);
@@ -66,7 +66,7 @@ namespace MinimalFirewall
                 var folders = _appSettings.AutoAllowExclusions;
                 if (folders == null)
                 {
-                    folders = new List<string>();
+                    folders = [];
                     _appSettings.AutoAllowExclusions = folders;
                 }
 

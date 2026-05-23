@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -91,11 +91,17 @@ namespace MinimalFirewall
 
         private static string? NormalizePublisherName(string? subject)
         {
-            if (string.IsNullOrEmpty(subject)) return null;
+            if (string.IsNullOrEmpty(subject))
+            {
+                return null;
+            }
 
             const string cnPrefix = "CN=";
             int cnStart = subject.IndexOf(cnPrefix, StringComparison.Ordinal);
-            if (cnStart < 0) return subject;
+            if (cnStart < 0)
+            {
+                return subject;
+            }
 
             cnStart += cnPrefix.Length;
             int cnEnd = subject.IndexOf(',', cnStart);
@@ -163,10 +169,25 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (pFilePath != IntPtr.Zero) Marshal.FreeHGlobal(pFilePath);
-                if (pFileInfo != IntPtr.Zero) Marshal.FreeHGlobal(pFileInfo);
-                if (pTrustData != IntPtr.Zero) Marshal.FreeHGlobal(pTrustData);
-                if (pActionId != IntPtr.Zero) Marshal.FreeHGlobal(pActionId);
+                if (pFilePath != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pFilePath);
+                }
+
+                if (pFileInfo != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pFileInfo);
+                }
+
+                if (pTrustData != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pTrustData);
+                }
+
+                if (pActionId != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pActionId);
+                }
             }
         }
 

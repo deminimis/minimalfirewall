@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
@@ -28,7 +28,7 @@ namespace MinimalFirewall
                     {
                         string json = File.ReadAllText(_storagePath);
                         var rules = JsonSerializer.Deserialize(json, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                        return new ConcurrentDictionary<string, DateTime>(rules ?? new Dictionary<string, DateTime>(), StringComparer.OrdinalIgnoreCase);
+                        return new ConcurrentDictionary<string, DateTime>(rules ?? [], StringComparer.OrdinalIgnoreCase);
                     }
                 }
             }

@@ -135,13 +135,25 @@ namespace MinimalFirewall
                 using var errorWaitHandle = new AutoResetEvent(false);
                 process.OutputDataReceived += (sender, e) =>
                 {
-                    if (e.Data == null) outputWaitHandle.Set();
-                    else outputBuilder.AppendLine(e.Data);
+                    if (e.Data == null)
+                    {
+                        outputWaitHandle.Set();
+                    }
+                    else
+                    {
+                        outputBuilder.AppendLine(e.Data);
+                    }
                 };
                 process.ErrorDataReceived += (sender, e) =>
                 {
-                    if (e.Data == null) errorWaitHandle.Set();
-                    else errorBuilder.AppendLine(e.Data);
+                    if (e.Data == null)
+                    {
+                        errorWaitHandle.Set();
+                    }
+                    else
+                    {
+                        errorBuilder.AppendLine(e.Data);
+                    }
                 };
 
                 process.Start();
@@ -155,14 +167,19 @@ namespace MinimalFirewall
 
                     Debug.WriteLine($"[AdminTask] Exit Code: {process.ExitCode}");
                     if (!string.IsNullOrWhiteSpace(errors))
+                    {
                         Messenger.MessageBox($"An error occurred during an administrative task:\n\n{errors}", "Admin Task Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                 }
                 else
                 {
                     Debug.WriteLine("[AdminTask ERROR] Process timed out or streams did not close.");
                     try
                     {
-                        if (!process.HasExited) process.Kill();
+                        if (!process.HasExited)
+                        {
+                            process.Kill();
+                        }
                     }
                     catch { /* Ignore errors if process already died */ }
 
@@ -200,7 +217,10 @@ namespace MinimalFirewall
 
         public void SetStartup(bool isEnabled)
         {
-            if (string.IsNullOrEmpty(_appName) || string.IsNullOrEmpty(_appPath)) return;
+            if (string.IsNullOrEmpty(_appName) || string.IsNullOrEmpty(_appPath))
+            {
+                return;
+            }
 
             try
             {
@@ -229,7 +249,11 @@ namespace MinimalFirewall
 
         public void VerifyAndCorrectStartupTaskPath()
         {
-            if (string.IsNullOrEmpty(_taskName) || string.IsNullOrEmpty(_appPath)) return;
+            if (string.IsNullOrEmpty(_taskName) || string.IsNullOrEmpty(_appPath))
+            {
+                return;
+            }
+
             string arguments = $"/query /tn \"{_taskName}\" /v /fo CSV /nh";
             Execute("schtasks.exe", arguments, out string? output, out string? error);
 
@@ -275,7 +299,10 @@ namespace MinimalFirewall
         private void Execute(string fileName, string arguments, out string output, out string error)
         {
             ProcessHelper.RunHiddenCommand(fileName, arguments, out output, out error);
-            if (!string.IsNullOrEmpty(error)) Debug.WriteLine($"[Startup ERROR]: {error}");
+            if (!string.IsNullOrEmpty(error))
+            {
+                Debug.WriteLine($"[Startup ERROR]: {error}");
+            }
         }
     }
 

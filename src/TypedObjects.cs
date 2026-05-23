@@ -79,8 +79,10 @@ namespace MinimalFirewall.TypedObjects
         public static bool TryParse(string rangeString, [NotNullWhen(true)] out PortRange? range)
         {
             range = null;
-            if (string.IsNullOrWhiteSpace(rangeString)) return false;
-
+            if (string.IsNullOrWhiteSpace(rangeString))
+            {
+                return false;
+            }
 
             if (Enum.TryParse<SpecificLocalPort>(rangeString, true, out var sp))
             {
@@ -114,8 +116,16 @@ namespace MinimalFirewall.TypedObjects
 
         public bool Equals(PortRange? other)
         {
-            if (other is null) return false;
-            if (_specificLocalPort.HasValue) return _specificLocalPort.Value == other._specificLocalPort;
+            if (other is null)
+            {
+                return false;
+            }
+
+            if (_specificLocalPort.HasValue)
+            {
+                return _specificLocalPort.Value == other._specificLocalPort;
+            }
+
             return Begin == other.Begin && End == other.End;
         }
 
@@ -123,8 +133,16 @@ namespace MinimalFirewall.TypedObjects
 
         public override string ToString()
         {
-            if (_specificLocalPort.HasValue) return _specificLocalPort.Value.ToString().Replace("_", "-");
-            if (_isSinglePort) return Begin.ToString();
+            if (_specificLocalPort.HasValue)
+            {
+                return _specificLocalPort.Value.ToString().Replace("_", "-");
+            }
+
+            if (_isSinglePort)
+            {
+                return Begin.ToString();
+            }
+
             return $"{Begin}-{End}";
         }
     }
@@ -160,19 +178,29 @@ namespace MinimalFirewall.TypedObjects
 
         public IPAddressRange(IPAddress singleAddress)
         {
-            if (singleAddress == null) throw new ArgumentNullException(nameof(singleAddress));
+            if (singleAddress == null)
+            {
+                throw new ArgumentNullException(nameof(singleAddress));
+            }
+
             _begin = _end = singleAddress;
             _beginBytes = _endBytes = singleAddress.GetAddressBytes();
         }
 
         public IPAddressRange(IPAddress begin, IPAddress end)
         {
-            if (begin.AddressFamily != end.AddressFamily) throw new ArgumentException("Addresses must be of the same family.");
+            if (begin.AddressFamily != end.AddressFamily)
+            {
+                throw new ArgumentException("Addresses must be of the same family.");
+            }
 
             var bBytes = begin.GetAddressBytes();
             var eBytes = end.GetAddressBytes();
 
-            if (!Internal.Bits.GtECore(eBytes, bBytes)) throw new ArgumentException("Begin address must be smaller than End address.");
+            if (!Internal.Bits.GtECore(eBytes, bBytes))
+            {
+                throw new ArgumentException("Begin address must be smaller than End address.");
+            }
 
             _begin = begin;
             _end = end;
@@ -192,14 +220,22 @@ namespace MinimalFirewall.TypedObjects
         public static bool TryParse(string ipRangeString, [NotNullWhen(true)] out IPAddressRange? range)
         {
             range = null;
-            if (string.IsNullOrWhiteSpace(ipRangeString)) return false;
+            if (string.IsNullOrWhiteSpace(ipRangeString))
+            {
+                return false;
+            }
+
             ipRangeString = ipRangeString.Trim();
 
             var cidrParts = ipRangeString.Split('/');
             if (cidrParts.Length == 2 && IPAddress.TryParse(cidrParts[0], out var baseAddress) && int.TryParse(cidrParts[1], out var maskLen))
             {
                 var baseAdrBytes = baseAddress.GetAddressBytes();
-                if (baseAdrBytes.Length * 8 < maskLen) return false;
+                if (baseAdrBytes.Length * 8 < maskLen)
+                {
+                    return false;
+                }
+
                 var maskBytes = Internal.Bits.GetBitMask(baseAdrBytes.Length, maskLen);
                 var beginBytes = Internal.Bits.And(baseAdrBytes, maskBytes);
                 var endBytes = Internal.Bits.Or(beginBytes, Internal.Bits.Not(maskBytes));
@@ -225,14 +261,22 @@ namespace MinimalFirewall.TypedObjects
 
         public bool Contains(IPAddress ipaddress)
         {
-            if (ipaddress.AddressFamily != Begin.AddressFamily) return false;
+            if (ipaddress.AddressFamily != Begin.AddressFamily)
+            {
+                return false;
+            }
+
             var adrBytes = ipaddress.GetAddressBytes();
             return Internal.Bits.LtECore(_beginBytes, adrBytes) && Internal.Bits.GtECore(_endBytes, adrBytes);
         }
 
         public bool Equals(IPAddressRange? other)
         {
-            if (other is null) return false;
+            if (other is null)
+            {
+                return false;
+            }
+
             return Begin.Equals(other.Begin) && End.Equals(other.End);
         }
 
@@ -247,7 +291,9 @@ namespace MinimalFirewall.TypedObjects
             var first = Begin.GetAddressBytes();
             var last = End.GetAddressBytes();
             for (var ip = first; Internal.Bits.LtECore(ip, last); ip = Internal.Bits.Increment(ip))
+            {
                 yield return new IPAddress(ip);
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -338,7 +384,10 @@ namespace MinimalFirewall.TypedObjects.Internal
             int length = Math.Min(A.Length, B.Length);
             for (var i = offset; i < length; i++)
             {
-                if (A[i] != B[i]) return A[i] >= B[i];
+                if (A[i] != B[i])
+                {
+                    return A[i] >= B[i];
+                }
             }
             return true;
         }
@@ -348,7 +397,10 @@ namespace MinimalFirewall.TypedObjects.Internal
             int length = Math.Min(A.Length, B.Length);
             for (var i = offset; i < length; i++)
             {
-                if (A[i] != B[i]) return A[i] <= B[i];
+                if (A[i] != B[i])
+                {
+                    return A[i] <= B[i];
+                }
             }
             return true;
         }

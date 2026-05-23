@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -39,13 +39,19 @@ namespace MinimalFirewall
         public static bool ValidatePortString(string portString, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(portString) || portString == "*") return true;
+            if (string.IsNullOrWhiteSpace(portString) || portString == "*")
+            {
+                return true;
+            }
 
             var parts = portString.Split(',');
             foreach (var part in parts)
             {
                 var trimmedPart = part.Trim();
-                if (string.IsNullOrEmpty(trimmedPart)) continue;
+                if (string.IsNullOrEmpty(trimmedPart))
+                {
+                    continue;
+                }
 
                 if (trimmedPart.Contains('-'))
                 {
@@ -71,13 +77,19 @@ namespace MinimalFirewall
         public static bool ValidateAddressString(string addressString, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(addressString) || addressString == "*") return true;
+            if (string.IsNullOrWhiteSpace(addressString) || addressString == "*")
+            {
+                return true;
+            }
 
             var parts = addressString.Split(',');
             foreach (var part in parts)
             {
                 var trimmedPart = part.Trim();
-                if (string.IsNullOrEmpty(trimmedPart)) continue;
+                if (string.IsNullOrEmpty(trimmedPart))
+                {
+                    continue;
+                }
 
                 if (_reservedKeywords.Contains(trimmedPart))
                 {
@@ -96,12 +108,19 @@ namespace MinimalFirewall
         public static bool ValidateIcmpString(string icmpString, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (string.IsNullOrWhiteSpace(icmpString) || icmpString == "*") return true;
+            if (string.IsNullOrWhiteSpace(icmpString) || icmpString == "*")
+            {
+                return true;
+            }
+
             var parts = icmpString.Split(',');
             foreach (var part in parts)
             {
                 var trimmedPart = part.Trim();
-                if (string.IsNullOrEmpty(trimmedPart)) continue;
+                if (string.IsNullOrEmpty(trimmedPart))
+                {
+                    continue;
+                }
 
                 var icmpParts = trimmedPart.Split(':');
                 if (icmpParts.Length > 2)
@@ -192,7 +211,11 @@ namespace MinimalFirewall
 
         public static string ConvertToEnvironmentPath(string absolutePath)
         {
-            if (string.IsNullOrEmpty(absolutePath)) return absolutePath;
+            if (string.IsNullOrEmpty(absolutePath))
+            {
+                return absolutePath;
+            }
+
             foreach (var kvp in _envVarMap.OrderByDescending(x => x.Key.Length))
             {
                 if (absolutePath.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))
@@ -206,7 +229,11 @@ namespace MinimalFirewall
 
         public static string ConvertFromEnvironmentPath(string environmentPath)
         {
-            if (string.IsNullOrEmpty(environmentPath)) return environmentPath;
+            if (string.IsNullOrEmpty(environmentPath))
+            {
+                return environmentPath;
+            }
+
             try
             {
                 return Environment.ExpandEnvironmentVariables(environmentPath);
@@ -220,7 +247,11 @@ namespace MinimalFirewall
 
         public static string NormalizePath(string path)
         {
-            if (string.IsNullOrEmpty(path)) return string.Empty;
+            if (string.IsNullOrEmpty(path))
+            {
+                return string.Empty;
+            }
+
             string expandedPath;
             try
             {
@@ -272,9 +303,16 @@ namespace MinimalFirewall
 
         public static string ConvertDevicePathToDrivePath(string devicePath)
         {
-            if (string.IsNullOrEmpty(devicePath)) return devicePath;
-            if (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0]))
+            if (string.IsNullOrEmpty(devicePath))
+            {
                 return devicePath;
+            }
+
+            if (devicePath.Length > 1 && devicePath[1] == ':' && char.IsLetter(devicePath[0]))
+            {
+                return devicePath;
+            }
+
             var matchingDevice = _deviceMap.Keys.FirstOrDefault(d => devicePath.StartsWith(d, StringComparison.OrdinalIgnoreCase));
 
             if (matchingDevice != null)

@@ -104,7 +104,10 @@ namespace MinimalFirewall
         {
             // Optimize: Read COM property once
             string grouping = rule.Grouping;
-            if (string.IsNullOrEmpty(grouping)) return false;
+            if (string.IsNullOrEmpty(grouping))
+            {
+                return false;
+            }
 
             // Optimize: Use safe casing comparison
             return grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.OrdinalIgnoreCase) ||
@@ -121,17 +124,37 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
-                    if (rule == null) continue;
+                    if (rule == null)
+                    {
+                        continue;
+                    }
 
                     // assign to local variables to avoid reading COM
-                    if (rule.Protocol != 256) continue;
-                    if (rule.Action != NET_FW_ACTION_.NET_FW_ACTION_BLOCK) continue;
+                    if (rule.Protocol != 256)
+                    {
+                        continue;
+                    }
+
+                    if (rule.Action != NET_FW_ACTION_.NET_FW_ACTION_BLOCK)
+                    {
+                        continue;
+                    }
 
                     // Do this ONLY if the primitive types match.
-                    if (!IsMfwRule(rule)) continue;
+                    if (!IsMfwRule(rule))
+                    {
+                        continue;
+                    }
 
-                    if (rule.LocalPorts != "*") continue;
-                    if (rule.RemotePorts != "*") continue;
+                    if (rule.LocalPorts != "*")
+                    {
+                        continue;
+                    }
+
+                    if (rule.RemotePorts != "*")
+                    {
+                        continue;
+                    }
 
                     string appName = rule.ApplicationName;
                     if (string.Equals(PathResolver.NormalizePath(appName), normalizedAppPath, StringComparison.OrdinalIgnoreCase))
@@ -144,7 +167,10 @@ namespace MinimalFirewall
             {
                 foreach (var rule in allRules)
                 {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
+                    if (rule != null)
+                    {
+                        Marshal.ReleaseComObject(rule);
+                    }
                 }
             }
 
@@ -155,7 +181,9 @@ namespace MinimalFirewall
                 {
                     firewallService.DeleteRulesByName(rulesToDelete);
                     foreach (var name in rulesToDelete)
+                    {
                         activityLogger.LogChange("Rule Auto-Deleted", name);
+                    }
                 }
                 catch (COMException ex)
                 {
@@ -244,7 +272,10 @@ namespace MinimalFirewall
 
         public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
         {
-            if (string.IsNullOrEmpty(serviceName)) return;
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                return;
+            }
 
             if (!ParseActionString(action, out Actions parsedAction, out Directions parsedDirection))
             {
@@ -293,7 +324,11 @@ namespace MinimalFirewall
                 }
             }
 
-            if (validApps.Count == 0) return;
+            if (validApps.Count == 0)
+            {
+                return;
+            }
+
             var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
             var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
             foreach (var app in validApps)
@@ -311,11 +346,18 @@ namespace MinimalFirewall
 
         private void ExecuteRuleDeletion(List<string> items, Action<List<string>> deleteAction, string logPrefix)
         {
-            if (items.Count == 0) return;
+            if (items.Count == 0)
+            {
+                return;
+            }
+
             try
             {
                 deleteAction(items);
-                foreach (var item in items) activityLogger.LogChange($"{logPrefix} Deleted", item);
+                foreach (var item in items)
+                {
+                    activityLogger.LogChange($"{logPrefix} Deleted", item);
+                }
             }
             catch (COMException ex)
             {
@@ -334,7 +376,11 @@ namespace MinimalFirewall
 
         public void DeleteRulesForWildcard(WildcardRule wildcard)
         {
-            if (wildcard == null) return;
+            if (wildcard == null)
+            {
+                return;
+            }
+
             try
             {
                 string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
@@ -360,7 +406,11 @@ namespace MinimalFirewall
                 {
                     if (rule == null)
                     {
-                        if (FwRuleType == null) throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
+                        if (FwRuleType == null)
+                        {
+                            throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
+                        }
+
                         var newRule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
 
                         newRule.Name = ruleName;
@@ -401,7 +451,7 @@ namespace MinimalFirewall
                 {
                     if (rule != null)
                     {
-                        firewallService.DeleteRulesByName(new List<string> { ruleName });
+                        firewallService.DeleteRulesByName([ruleName]);
                         activityLogger.LogDebug($"Disabled/Deleted system rule: {ruleName}");
                     }
                 }
@@ -412,7 +462,10 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (rule != null) Marshal.ReleaseComObject(rule);
+                if (rule != null)
+                {
+                    Marshal.ReleaseComObject(rule);
+                }
             }
         }
 
@@ -687,7 +740,11 @@ namespace MinimalFirewall
 
         private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)
         {
-            if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection)) return;
+            if (!ParseActionString($"Allow ({direction})", out Actions parsedAction, out Directions parsedDirection))
+            {
+                return;
+            }
+
             string baseName = !string.IsNullOrEmpty(serviceName) ? serviceName.Split(',')[0].Trim() : Path.GetFileNameWithoutExtension(appPath);
             string guid = Guid.NewGuid().ToString();
             string description = "Temporarily allowed by Minimal Firewall.";
@@ -720,8 +777,14 @@ namespace MinimalFirewall
         {
             if (change.Rule is { Name: string ruleName })
             {
-                if (enable) firewallService.EnableRuleByName(ruleName);
-                else firewallService.DisableRuleByName(ruleName);
+                if (enable)
+                {
+                    firewallService.EnableRuleByName(ruleName);
+                }
+                else
+                {
+                    firewallService.DisableRuleByName(ruleName);
+                }
 
                 activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
                 activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}'");
@@ -752,9 +815,16 @@ namespace MinimalFirewall
             INetFwPolicy2? firewallPolicy = null;
             try
             {
-                if (FwPolicyType == null) return;
+                if (FwPolicyType == null)
+                {
+                    return;
+                }
+
                 firewallPolicy = (INetFwPolicy2)Activator.CreateInstance(FwPolicyType)!;
-                if (firewallPolicy == null) return;
+                if (firewallPolicy == null)
+                {
+                    return;
+                }
 
                 comRules = firewallPolicy.Rules;
                 foreach (INetFwRule2 r in comRules)
@@ -765,7 +835,10 @@ namespace MinimalFirewall
                     }
                     else
                     {
-                        if (r != null) Marshal.ReleaseComObject(r);
+                        if (r != null)
+                        {
+                            Marshal.ReleaseComObject(r);
+                        }
                     }
                 }
 
@@ -793,16 +866,30 @@ namespace MinimalFirewall
             {
                 foreach (var rule in rulesInGroup)
                 {
-                    if (rule != null) Marshal.ReleaseComObject(rule);
+                    if (rule != null)
+                    {
+                        Marshal.ReleaseComObject(rule);
+                    }
                 }
-                if (comRules != null) Marshal.ReleaseComObject(comRules);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                if (comRules != null)
+                {
+                    Marshal.ReleaseComObject(comRules);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
         public void AcceptAllForeignRules(List<FirewallRuleChange> changes)
         {
-            if (changes == null || changes.Count == 0) return;
+            if (changes == null || changes.Count == 0)
+            {
+                return;
+            }
+
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
             if (ruleNames.Any())
             {
@@ -813,7 +900,10 @@ namespace MinimalFirewall
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
-            if (vm == null) return;
+            if (vm == null)
+            {
+                return;
+            }
 
             // MFW prefix to protect custom rules
             if (!string.IsNullOrWhiteSpace(vm.Name) && !vm.Name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase))
@@ -838,8 +928,15 @@ namespace MinimalFirewall
 
             // API: rule must have exactly one direction, must create two rules if user selects "both" 
             var directionsToCreate = new List<Directions>();
-            if (vm.Direction.HasFlag(Directions.Incoming)) directionsToCreate.Add(Directions.Incoming);
-            if (vm.Direction.HasFlag(Directions.Outgoing)) directionsToCreate.Add(Directions.Outgoing);
+            if (vm.Direction.HasFlag(Directions.Incoming))
+            {
+                directionsToCreate.Add(Directions.Incoming);
+            }
+
+            if (vm.Direction.HasFlag(Directions.Outgoing))
+            {
+                directionsToCreate.Add(Directions.Outgoing);
+            }
 
             var protocolsToCreate = new List<int> { vm.Protocol };
 
@@ -904,7 +1001,10 @@ namespace MinimalFirewall
             if (errors.Count > 0)
             {
                 string msg = $"Created {successCount} rules successfully.\n\nFailed to create {errors.Count} rules:\n" + string.Join("\n", errors.Take(5));
-                if (errors.Count > 5) msg += $"\n...and {errors.Count - 5} more.";
+                if (errors.Count > 5)
+                {
+                    msg += $"\n...and {errors.Count - 5} more.";
+                }
 
                 SafeShowMessageBox(msg, "Batch Creation Errors", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -966,11 +1066,26 @@ namespace MinimalFirewall
                 }
 
                 NET_FW_PROFILE_TYPE2_ profiles = 0;
-                if (vm.Profiles.Contains("Domain")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
-                if (vm.Profiles.Contains("Private")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
-                if (vm.Profiles.Contains("Public")) profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
+                if (vm.Profiles.Contains("Domain"))
+                {
+                    profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
+                }
 
-                if (profiles == 0 || vm.Profiles == "All") profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+                if (vm.Profiles.Contains("Private"))
+                {
+                    profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
+                }
+
+                if (vm.Profiles.Contains("Public"))
+                {
+                    profiles |= NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
+                }
+
+                if (profiles == 0 || vm.Profiles == "All")
+                {
+                    profiles = NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_ALL;
+                }
+
                 firewallRule.Profiles = (int)profiles;
 
                 string interfaces = string.IsNullOrWhiteSpace(interfaceTypes) ? "All" : interfaceTypes;
@@ -996,7 +1111,10 @@ namespace MinimalFirewall
             }
             finally
             {
-                if (!ownershipTransferred && firewallRule != null) Marshal.ReleaseComObject(firewallRule);
+                if (!ownershipTransferred && firewallRule != null)
+                {
+                    Marshal.ReleaseComObject(firewallRule);
+                }
             }
         }
 
@@ -1004,7 +1122,10 @@ namespace MinimalFirewall
         {
             parsedAction = Actions.Allow;
             parsedDirection = 0;
-            if (string.IsNullOrEmpty(action)) return false;
+            if (string.IsNullOrEmpty(action))
+            {
+                return false;
+            }
 
             parsedAction = action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase) ? Actions.Allow : Actions.Block;
             if (action.Contains("(All)"))
@@ -1273,7 +1394,10 @@ namespace MinimalFirewall
                     catch { /* Ignore localized COM property read failures */ }
                     finally
                     {
-                        if (rule != null) Marshal.ReleaseComObject(rule);
+                        if (rule != null)
+                        {
+                            Marshal.ReleaseComObject(rule);
+                        }
                     }
                 }
             }
@@ -1320,7 +1444,7 @@ namespace MinimalFirewall
 
             if (token.IsCancellationRequested)
             {
-                return new List<string>();
+                return [];
             }
 
             if (orphanedRuleNames.Any())

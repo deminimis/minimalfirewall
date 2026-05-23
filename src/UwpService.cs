@@ -37,10 +37,16 @@ namespace MinimalFirewall
                 var uwpApps = new Dictionary<string, UwpApp>(StringComparer.OrdinalIgnoreCase);
 
                 var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-                if (policyType == null) return new List<UwpApp>();
+                if (policyType == null)
+                {
+                    return [];
+                }
 
                 var firewallPolicy = (INetFwPolicy2?)Activator.CreateInstance(policyType);
-                if (firewallPolicy?.Rules == null) return new List<UwpApp>();
+                if (firewallPolicy?.Rules == null)
+                {
+                    return [];
+                }
 
                 var comRules = firewallPolicy.Rules;
 
@@ -50,7 +56,10 @@ namespace MinimalFirewall
                     {
                         try
                         {
-                            if (token.IsCancellationRequested) break;
+                            if (token.IsCancellationRequested)
+                            {
+                                break;
+                            }
 
                             string name = rule.Name ?? string.Empty;
 
@@ -76,11 +85,17 @@ namespace MinimalFirewall
                         }
                         finally
                         {
-                            if (rule != null) Marshal.ReleaseComObject(rule);
+                            if (rule != null)
+                            {
+                                Marshal.ReleaseComObject(rule);
+                            }
                         }
                     }
 
-                    if (token.IsCancellationRequested) return new List<UwpApp>();
+                    if (token.IsCancellationRequested)
+                    {
+                        return [];
+                    }
 
                     var sortedApps = uwpApps.Values.OrderBy(app => app.Name).ToList();
 
@@ -90,8 +105,15 @@ namespace MinimalFirewall
                 }
                 finally
                 {
-                    if (comRules != null) Marshal.ReleaseComObject(comRules);
-                    if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+                    if (comRules != null)
+                    {
+                        Marshal.ReleaseComObject(comRules);
+                    }
+
+                    if (firewallPolicy != null)
+                    {
+                        Marshal.ReleaseComObject(firewallPolicy);
+                    }
                 }
             }, token).ConfigureAwait(false);
         }
@@ -105,7 +127,7 @@ namespace MinimalFirewall
                 {
                     string json = File.ReadAllText(_cachePath);
                     var apps = JsonSerializer.Deserialize(json, UwpAppJsonContext.Default.ListUwpApp);
-                    return apps ?? new List<UwpApp>();
+                    return apps ?? [];
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -116,7 +138,7 @@ namespace MinimalFirewall
             {
                 _cacheLock.Release();
             }
-            return new List<UwpApp>();
+            return [];
         }
 
         private void SaveUwpAppsToCache(List<UwpApp> apps)

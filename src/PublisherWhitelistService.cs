@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -26,7 +26,10 @@ namespace MinimalFirewall
                     if (File.Exists(_configPath))
                     {
                         string json = File.ReadAllText(_configPath);
-                        if (string.IsNullOrWhiteSpace(json)) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        if (string.IsNullOrWhiteSpace(json))
+                        {
+                            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        }
 
                         var loaded = JsonSerializer.Deserialize(json, WhitelistJsonContext.Default.HashSetString);
 
@@ -38,7 +41,11 @@ namespace MinimalFirewall
                             foreach (var entry in loaded)
                             {
                                 string norm = NormalizePublisherName(entry);
-                                if (norm != entry) changed = true;
+                                if (norm != entry)
+                                {
+                                    changed = true;
+                                }
+
                                 normalized.Add(norm);
                             }
 
@@ -68,11 +75,17 @@ namespace MinimalFirewall
 
         private static string NormalizePublisherName(string subject)
         {
-            if (string.IsNullOrEmpty(subject)) return subject;
+            if (string.IsNullOrEmpty(subject))
+            {
+                return subject;
+            }
 
             const string cnPrefix = "CN=";
             int cnStart = subject.IndexOf(cnPrefix, StringComparison.Ordinal);
-            if (cnStart < 0) return subject;
+            if (cnStart < 0)
+            {
+                return subject;
+            }
 
             cnStart += cnPrefix.Length;
             int cnEnd = subject.IndexOf(',', cnStart);
@@ -113,7 +126,10 @@ namespace MinimalFirewall
 
         public bool IsTrusted(string publisherName)
         {
-            if (string.IsNullOrEmpty(publisherName)) return false;
+            if (string.IsNullOrEmpty(publisherName))
+            {
+                return false;
+            }
 
             lock (_lock)
             {
@@ -123,7 +139,10 @@ namespace MinimalFirewall
 
         public void Add(string publisherName)
         {
-            if (string.IsNullOrEmpty(publisherName)) return;
+            if (string.IsNullOrEmpty(publisherName))
+            {
+                return;
+            }
 
             lock (_lock)
             {
