@@ -1,4 +1,3 @@
-// File: StatusForm.cs
 using DarkModeForms;
 using System;
 using System.Drawing;
@@ -17,25 +16,32 @@ namespace MinimalFirewall
         public StatusForm(string title, AppSettings appSettings)
         {
             InitializeComponent();
+
             dm = new DarkModeCS(this);
+            _initialLoadTimer = new System.Windows.Forms.Timer { Interval = 50 };
+            ApplyTheme(appSettings);
+            SetupInitialState(title);
+            ConfigureTimers();
+        }
+
+        private void ApplyTheme(AppSettings appSettings)
+        {
             bool isAuto = appSettings.Theme == "Auto";
             bool isDark = isAuto ? DarkModeCS.IsSystemDarkMode() : appSettings.Theme == "Dark";
             dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
+        }
 
+        private void SetupInitialState(string title)
+        {
             Text = title;
             statusLabel.Text = title;
-            progressLabel.Text = "0%";
-            progressBar.Value = 0;
-            progressBar.Style = System.Windows.Forms.ProgressBarStyle.Blocks;
+        }
 
+        private void ConfigureTimers()
+        {
             _fakeProgress = 0;
             _realProgressStarted = false;
-
-            _initialLoadTimer = new System.Windows.Forms.Timer
-            {
-                Interval = 50
-            };
             _initialLoadTimer.Tick += InitialLoadTimer_Tick;
             _initialLoadTimer.Start();
         }

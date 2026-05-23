@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace MinimalFirewall
@@ -106,7 +106,7 @@ namespace MinimalFirewall
             createWildcardButton.TabIndex = 4;
             createWildcardButton.Text = "Create Wildcard Rule...";
             createWildcardButton.UseVisualStyleBackColor = true;
-            createWildcardButton.Click += createWildcardButton_Click;
+            createWildcardButton.Click += CreateWildcardButton_Click;
             // 
             // copyDetailsButton
             // 
@@ -118,7 +118,7 @@ namespace MinimalFirewall
             copyDetailsButton.TabIndex = 5;
             copyDetailsButton.Text = "📋";
             copyDetailsButton.UseVisualStyleBackColor = true;
-            copyDetailsButton.Click += copyDetailsButton_Click;
+            copyDetailsButton.Click += CopyDetailsButton_Click;
             // 
             // allowButton
             // 
@@ -131,7 +131,7 @@ namespace MinimalFirewall
             allowButton.TabIndex = 6;
             allowButton.Text = "Allow";
             allowButton.UseVisualStyleBackColor = true;
-            allowButton.Click += allowButton_Click;
+            allowButton.Click += AllowButton_Click;
             // 
             // tempAllowButton
             // 
@@ -144,7 +144,7 @@ namespace MinimalFirewall
             tempAllowButton.TabIndex = 7;
             tempAllowButton.Text = "Allow Temporarily ▼";
             tempAllowButton.UseVisualStyleBackColor = true;
-            tempAllowButton.Click += tempAllowButton_Click;
+            tempAllowButton.Click += TempAllowButton_Click;
             // 
             // blockButton
             // 
@@ -157,7 +157,7 @@ namespace MinimalFirewall
             blockButton.TabIndex = 8;
             blockButton.Text = "Block";
             blockButton.UseVisualStyleBackColor = true;
-            blockButton.Click += blockButton_Click;
+            blockButton.Click += BlockButton_Click;
             // 
             // ignoreButton
             // 
@@ -170,7 +170,7 @@ namespace MinimalFirewall
             ignoreButton.TabIndex = 9;
             ignoreButton.Text = "Ignore";
             ignoreButton.UseVisualStyleBackColor = true;
-            ignoreButton.Click += ignoreButton_Click;
+            ignoreButton.Click += IgnoreButton_Click;
             // 
             // tempAllowContextMenu
             // 

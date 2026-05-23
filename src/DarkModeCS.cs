@@ -750,12 +750,16 @@ namespace DarkModeForms
 
                 // Semantic Colors (Dark)
                 _ret.Success = Color.FromArgb(60, 100, 60);
+                _ret.SuccessText = Color.LightGreen;
                 _ret.Danger = Color.FromArgb(100, 60, 60);
+                _ret.DangerText = Color.LightCoral;
                 _ret.Warning = Color.FromArgb(100, 100, 60);
                 _ret.InfoText = Color.LightSkyBlue;
                 _ret.Ignore = Color.FromArgb(85, 85, 85);
                 _ret.SelectionInfo = Color.FromArgb(50, 90, 130);
                 _ret.HighlightOverlay = Color.FromArgb(40, Color.White);
+                _ret.LinkText = Color.SkyBlue;
+                _ret.GraphicAccent = Color.White;
 
                 // Dark Mode Palette Extensions
                 _ret.ConnectionEstablished = Color.FromArgb(30, 70, 40);
@@ -771,7 +775,7 @@ namespace DarkModeForms
                 _ret.Surface = Color.FromArgb(250, 248, 245);
                 _ret.SurfaceLight = Color.White;
                 _ret.SurfaceDark = Color.FromArgb(230, 225, 219);
-                _ret.TextActive = Color.FromArgb(40, 38, 37); 
+                _ret.TextActive = Color.FromArgb(40, 38, 37);
                 _ret.TextInactive = Color.FromArgb(115, 110, 106);
                 _ret.TextInAccent = Color.White;
                 _ret.Control = Color.FromArgb(235, 230, 224);
@@ -782,12 +786,16 @@ namespace DarkModeForms
 
                 // Semantic Colors (Light)
                 _ret.Success = Color.FromArgb(204, 255, 204);
+                _ret.SuccessText = Color.DarkGreen;
                 _ret.Danger = Color.FromArgb(255, 204, 204);
+                _ret.DangerText = Color.Maroon;
                 _ret.Warning = Color.FromArgb(255, 255, 204);
                 _ret.InfoText = Color.Blue;
                 _ret.Ignore = Color.FromArgb(200, 200, 200);
                 _ret.SelectionInfo = Color.FromArgb(189, 222, 255);
                 _ret.HighlightOverlay = Color.FromArgb(25, Color.Black);
+                _ret.LinkText = SystemColors.HotTrack;
+                _ret.GraphicAccent = Color.Black;
 
                 // Light Mode Palette Extensions
                 _ret.ConnectionEstablished = Color.FromArgb(204, 255, 204);
@@ -846,7 +854,8 @@ namespace DarkModeForms
                             graph.DrawPath(penBorder, pathBorder);
                         }
                     }
-                };
+                }
+                ;
 
                 _Control.Paint += newHandler;
                 _roundBorderPainters.Add(_Control, newHandler);
@@ -1018,12 +1027,16 @@ namespace DarkModeForms
 
         // Semantic Application Colors
         public Color Success { get; set; }
+        public Color SuccessText { get; set; }
         public Color Danger { get; set; }
+        public Color DangerText { get; set; }
         public Color Warning { get; set; }
         public Color InfoText { get; set; }
         public Color Ignore { get; set; }
         public Color SelectionInfo { get; set; }
         public Color HighlightOverlay { get; set; }
+        public Color LinkText { get; set; }
+        public Color GraphicAccent { get; set; }
     }
 
     public class MyRenderer : ToolStripProfessionalRenderer
@@ -1308,3 +1321,4 @@ namespace DarkModeForms
         public static OSThemeColors Colors { get; set; } = DarkModeCS.GetSystemColors(DarkModeCS.IsSystemDarkMode() ? 0 : 1);
     }
 }
+

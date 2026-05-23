@@ -1,4 +1,4 @@
-﻿// File: StatusForm.Designer.cs
+// File: StatusForm.Designer.cs
 namespace MinimalFirewall
 {
     public partial class StatusForm
@@ -27,70 +27,69 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.statusLabel = new System.Windows.Forms.Label();
-            this.okButton = new System.Windows.Forms.Button();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
-            this.progressLabel = new System.Windows.Forms.Label();
-            this.SuspendLayout();
+            statusLabel = new Label();
+            okButton = new Button();
+            progressBar = new ProgressBar();
+            progressLabel = new Label();
+            SuspendLayout();
             // 
             // statusLabel
             // 
-            this.statusLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.statusLabel.Location = new System.Drawing.Point(6, 20);
-            this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(388, 23);
-            this.statusLabel.TabIndex = 0;
-            this.statusLabel.Text = "Scanning, please wait...";
-            this.statusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            statusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            statusLabel.Location = new Point(7, 21);
+            statusLabel.Name = "statusLabel";
+            statusLabel.Size = new Size(443, 25);
+            statusLabel.TabIndex = 0;
+            statusLabel.Text = "Scanning, please wait...";
+            statusLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // okButton
             // 
-            this.okButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.okButton.Location = new System.Drawing.Point(150, 90);
-            this.okButton.Name = "okButton";
-            this.okButton.Size = new System.Drawing.Size(100, 36);
-            this.okButton.TabIndex = 2;
-            this.okButton.Text = "OK";
-            this.okButton.UseVisualStyleBackColor = true;
-            this.okButton.Visible = false;
-            this.okButton.Click += new System.EventHandler(this.okButton_Click);
+            okButton.Anchor = AnchorStyles.Bottom;
+            okButton.Location = new Point(171, 96);
+            okButton.Name = "okButton";
+            okButton.Size = new Size(114, 38);
+            okButton.TabIndex = 2;
+            okButton.Text = "OK";
+            okButton.UseVisualStyleBackColor = true;
+            okButton.Visible = false;
+            okButton.Click += okButton_Click;
             // 
             // progressBar
             // 
-            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar.Location = new System.Drawing.Point(28, 60);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(280, 23);
-            this.progressBar.TabIndex = 1;
+            progressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            progressBar.Location = new Point(32, 64);
+            progressBar.Name = "progressBar";
+            progressBar.Size = new Size(320, 25);
+            progressBar.TabIndex = 1;
             // 
             // progressLabel
             // 
-            this.progressLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressLabel.Location = new System.Drawing.Point(314, 60);
-            this.progressLabel.Name = "progressLabel";
-            this.progressLabel.Size = new System.Drawing.Size(59, 23);
-            this.progressLabel.TabIndex = 3;
-            this.progressLabel.Text = "0%";
-            this.progressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            progressLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            progressLabel.Location = new Point(359, 64);
+            progressLabel.Name = "progressLabel";
+            progressLabel.Size = new Size(67, 25);
+            progressLabel.TabIndex = 3;
+            progressLabel.Text = "0%";
+            progressLabel.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // StatusForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(400, 150);
-            this.Controls.Add(this.progressLabel);
-            this.Controls.Add(this.okButton);
-            this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.statusLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.Name = "StatusForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Scanning...";
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(8F, 16F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(457, 160);
+            Controls.Add(progressLabel);
+            Controls.Add(okButton);
+            Controls.Add(progressBar);
+            Controls.Add(statusLabel);
+            Font = new Font("Georgia", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "StatusForm";
+            StartPosition = FormStartPosition.CenterParent;
+            Text = "Scanning...";
+            ResumeLayout(false);
 
         }
 

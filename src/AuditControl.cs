@@ -1,15 +1,16 @@
-using MinimalFirewall.TypedObjects;
-using System.ComponentModel;
-using DarkModeForms;
-using System.Diagnostics;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Windows.Forms;
+using DarkModeForms;
+using MinimalFirewall.TypedObjects;
+using static DarkModeForms.OSThemeColors;
 
 namespace MinimalFirewall
 {
@@ -32,20 +33,20 @@ namespace MinimalFirewall
         public AuditControl()
         {
             InitializeComponent();
-
-            DoubleBuffered = true;
-
-            // Enable Double Buffering on the DataGridView
-            typeof(DataGridView).InvokeMember("DoubleBuffered",
-                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,
-                null, systemChangesDataGridView, [true]);
+            SetupAdvancedGridProperties();
 
             _cachedOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
-
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
             _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
 
             Disposed += OnDisposed;
+        }
+
+        private void SetupAdvancedGridProperties()
+        {
+            typeof(DataGridView).InvokeMember("DoubleBuffered",
+                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,
+                null, systemChangesDataGridView, [true]);
         }
 
         private void OnDisposed(object? sender, EventArgs e)
@@ -72,21 +73,21 @@ namespace MinimalFirewall
             _appSettings = appSettings;
             _dm = dm;
 
-            systemChangesDataGridView.AutoGenerateColumns = false;
-
-            foreach (DataGridViewColumn col in systemChangesDataGridView.Columns)
-            {
-                col.SortMode = DataGridViewColumnSortMode.Programmatic;
-            }
-
             _bindingSource = [];
             systemChangesDataGridView.DataSource = _bindingSource;
+
+            RegisterEventHandlers();
+
+            auditSearchTextBox.Text = _appSettings.AuditSearchText;
+            _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font ?? Control.DefaultFont, FontStyle.Bold);
+
+            ApplySearchFilter();
+        }
+
+        private void RegisterEventHandlers()
+        {
             _viewModel.SystemChangesUpdated += OnSystemChangesUpdated;
             _viewModel.StatusTextChanged += OnStatusTextChanged;
-            auditSearchTextBox.Text = _appSettings.AuditSearchText;
-            // Initialize cached font based on grid default, falling back to Control.
-            _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font ?? Control.DefaultFont, FontStyle.Bold);
-            ApplySearchFilter();
         }
 
         private void OnSystemChangesUpdated()
@@ -103,8 +104,7 @@ namespace MinimalFirewall
         {
             if (InvokeRequired)
             {
-                // BeginInvoke (not Invoke) so worker thread never blocks on UI thread;
-                // prevents shutdown deadlock when UI is in BackgroundTaskService.Dispose's _worker.Wait.
+                // Prevent shutdown deadlock 
                 if (!IsDisposed && IsHandleCreated)
                 {
                     try { BeginInvoke(() => OnStatusTextChanged(text)); }
@@ -426,8 +426,8 @@ namespace MinimalFirewall
             bool isDarkMode = DarkModeCS.IsSystemDarkMode();
 
             // Default fallback colors
-            Color rowBackColor = isDarkMode ? grid.DefaultCellStyle.BackColor : SystemColors.Window;
-            Color foreColor = isDarkMode ? grid.DefaultCellStyle.ForeColor : SystemColors.ControlText;
+            Color rowBackColor = Theme.Colors.Surface;
+            Color foreColor = Theme.Colors.TextActive;
 
             string intervention = change.Intervention ?? string.Empty;
             bool isEnabled = change.Rule?.IsEnabled ?? false;
@@ -441,12 +441,12 @@ namespace MinimalFirewall
             else if (intervention.Contains("Blocked", StringComparison.OrdinalIgnoreCase) || intervention.Contains("OS Block", StringComparison.OrdinalIgnoreCase) || !isEnabled)
             {
                 rowBackColor = Theme.Colors.Danger;
-                foreColor = isDarkMode ? Color.LightCoral : Color.Maroon;
+                foreColor = Theme.Colors.DangerText;
             }
             else if (intervention.Contains("Allowed", StringComparison.OrdinalIgnoreCase) || isEnabled)
             {
                 rowBackColor = Theme.Colors.ConnectionEstablished;
-                foreColor = isDarkMode ? Color.LightGreen : Color.DarkGreen;
+                foreColor = Theme.Colors.SuccessText;
             }
 
             if (grid.Columns[e.ColumnIndex].Name == "advInterventionColumn" ||
@@ -573,15 +573,14 @@ namespace MinimalFirewall
 
             bool isDark = DarkModeCS.IsSystemDarkMode();
 
-            diffRichTextBox.BackColor = isDark ? _dm!.OScolors.Surface : Color.White;
-            diffRichTextBox.ForeColor = isDark ? _dm!.OScolors.TextActive : Color.Black;
-
+            diffRichTextBox.BackColor = Theme.Colors.Surface;
+            diffRichTextBox.ForeColor = Theme.Colors.TextActive;
             Font boldFont = new(diffRichTextBox.Font ?? Control.DefaultFont, FontStyle.Bold);
             Font regFont = diffRichTextBox.Font ?? Control.DefaultFont;
 
-            Color oldColor = isDark ? Color.FromArgb(255, 100, 100) : Color.Red;
-            Color newColor = isDark ? Color.LightGreen : Color.Green;
-            Color labelColor = isDark ? Color.White : Color.Black;
+            Color oldColor = Theme.Colors.DangerText;
+            Color newColor = Theme.Colors.SuccessText;
+            Color labelColor = Theme.Colors.TextActive;
 
             if (change.Type == ChangeType.New && change.Rule != null)
             {

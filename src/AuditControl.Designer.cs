@@ -18,21 +18,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.Label diffLabel;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advPublisherColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advNameColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advInterventionColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advStatusColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProtocolColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advLocalPortsColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advRemotePortsColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advLocalAddressColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advRemoteAddressColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProgramColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advServiceColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advProfilesColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advGroupingColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advDescColumn;
-        private System.Windows.Forms.DataGridViewTextBoxColumn advTimestampColumn;
         private System.Windows.Forms.ToolTip toolTip1;
 
         protected override void Dispose(bool disposing)
@@ -46,389 +31,402 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.auditSearchTextBox = new System.Windows.Forms.TextBox();
-            this.auditContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.enableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.disableSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.copyDetailsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.openFileLocationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.topPanel = new System.Windows.Forms.Panel();
-            this.splitContainer = new System.Windows.Forms.SplitContainer();
-            this.systemChangesDataGridView = new System.Windows.Forms.DataGridView();
-            this.diffLabel = new System.Windows.Forms.Label();
-            this.diffRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.advPublisherColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advNameColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advInterventionColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advStatusColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProtocolColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advLocalPortsColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advRemotePortsColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advLocalAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advRemoteAddressColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProgramColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advServiceColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advProfilesColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advGroupingColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advDescColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.advTimestampColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.auditContextMenu.SuspendLayout();
-            this.topPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).BeginInit();
-            this.splitContainer.Panel1.SuspendLayout();
-            this.splitContainer.Panel2.SuspendLayout();
-            this.splitContainer.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).BeginInit();
-            this.statusStrip1.SuspendLayout();
-            this.SuspendLayout();
+            components = new System.ComponentModel.Container();
+            var dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            auditSearchTextBox = new TextBox();
+            auditContextMenu = new ContextMenuStrip(components);
+            enableSelectedToolStripMenuItem = new ToolStripMenuItem();
+            disableSelectedToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            deleteToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            copyDetailsToolStripMenuItem = new ToolStripMenuItem();
+            openFileLocationToolStripMenuItem = new ToolStripMenuItem();
+            topPanel = new Panel();
+            splitContainer = new SplitContainer();
+            systemChangesDataGridView = new DataGridView();
+            diffRichTextBox = new RichTextBox();
+            diffLabel = new Label();
+            statusStrip1 = new StatusStrip();
+            statusLabel = new ToolStripStatusLabel();
+            toolTip1 = new ToolTip(components);
+            advTimestampColumn = new DataGridViewTextBoxColumn();
+            advNameColumn = new DataGridViewTextBoxColumn();
+            advInterventionColumn = new DataGridViewTextBoxColumn();
+            advStatusColumn = new DataGridViewTextBoxColumn();
+            advProtocolColumn = new DataGridViewTextBoxColumn();
+            advLocalPortsColumn = new DataGridViewTextBoxColumn();
+            advRemotePortsColumn = new DataGridViewTextBoxColumn();
+            advLocalAddressColumn = new DataGridViewTextBoxColumn();
+            advRemoteAddressColumn = new DataGridViewTextBoxColumn();
+            advProgramColumn = new DataGridViewTextBoxColumn();
+            advServiceColumn = new DataGridViewTextBoxColumn();
+            advProfilesColumn = new DataGridViewTextBoxColumn();
+            advGroupingColumn = new DataGridViewTextBoxColumn();
+            advDescColumn = new DataGridViewTextBoxColumn();
+            advPublisherColumn = new DataGridViewTextBoxColumn();
+            auditContextMenu.SuspendLayout();
+            topPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
+            splitContainer.Panel1.SuspendLayout();
+            splitContainer.Panel2.SuspendLayout();
+            splitContainer.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)systemChangesDataGridView).BeginInit();
+            statusStrip1.SuspendLayout();
+            SuspendLayout();
             // 
             // auditSearchTextBox
             // 
-            this.auditSearchTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.auditSearchTextBox.Location = new System.Drawing.Point(707, 27);
-            this.auditSearchTextBox.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.auditSearchTextBox.Name = "auditSearchTextBox";
-            this.auditSearchTextBox.PlaceholderText = "Search history...";
-            this.auditSearchTextBox.Size = new System.Drawing.Size(285, 27);
-            this.auditSearchTextBox.TabIndex = 3;
-            this.auditSearchTextBox.TextChanged += new System.EventHandler(AuditSearchTextBox_TextChanged);
+            auditSearchTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            auditSearchTextBox.Location = new Point(619, 20);
+            auditSearchTextBox.Name = "auditSearchTextBox";
+            auditSearchTextBox.PlaceholderText = "Search history...";
+            auditSearchTextBox.Size = new Size(250, 23);
+            auditSearchTextBox.TabIndex = 3;
+            auditSearchTextBox.TextChanged += AuditSearchTextBox_TextChanged;
             // 
             // auditContextMenu
             // 
-            this.auditContextMenu.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.auditContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.enableSelectedToolStripMenuItem,
-            this.disableSelectedToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.deleteToolStripMenuItem,
-            this.toolStripSeparator2,
-            this.copyDetailsToolStripMenuItem,
-            this.openFileLocationToolStripMenuItem});
-            this.auditContextMenu.Name = "auditContextMenu";
-            this.auditContextMenu.Size = new System.Drawing.Size(211, 208);
-            this.auditContextMenu.Opening += new System.ComponentModel.CancelEventHandler(AuditContextMenu_Opening);
+            auditContextMenu.ImageScalingSize = new Size(20, 20);
+            auditContextMenu.Items.AddRange(new ToolStripItem[] { enableSelectedToolStripMenuItem, disableSelectedToolStripMenuItem, toolStripSeparator1, deleteToolStripMenuItem, toolStripSeparator2, copyDetailsToolStripMenuItem, openFileLocationToolStripMenuItem });
+            auditContextMenu.Name = "auditContextMenu";
+            auditContextMenu.Size = new Size(174, 126);
+            auditContextMenu.Opening += AuditContextMenu_Opening;
             // 
             // enableSelectedToolStripMenuItem
             // 
-            this.enableSelectedToolStripMenuItem.Name = "enableSelectedToolStripMenuItem";
-            this.enableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.enableSelectedToolStripMenuItem.Text = "Enable Selected";
-            this.enableSelectedToolStripMenuItem.Click += new System.EventHandler(EnableSelectedToolStripMenuItem_Click);
+            enableSelectedToolStripMenuItem.Name = "enableSelectedToolStripMenuItem";
+            enableSelectedToolStripMenuItem.Size = new Size(173, 22);
+            enableSelectedToolStripMenuItem.Text = "Enable Selected";
+            enableSelectedToolStripMenuItem.Click += EnableSelectedToolStripMenuItem_Click;
             // 
             // disableSelectedToolStripMenuItem
             // 
-            this.disableSelectedToolStripMenuItem.Name = "disableSelectedToolStripMenuItem";
-            this.disableSelectedToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.disableSelectedToolStripMenuItem.Text = "Disable Selected";
-            this.disableSelectedToolStripMenuItem.Click += new System.EventHandler(DisableSelectedToolStripMenuItem_Click);
+            disableSelectedToolStripMenuItem.Name = "disableSelectedToolStripMenuItem";
+            disableSelectedToolStripMenuItem.Size = new Size(173, 22);
+            disableSelectedToolStripMenuItem.Text = "Disable Selected";
+            disableSelectedToolStripMenuItem.Click += DisableSelectedToolStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(207, 6);
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(170, 6);
             // 
             // deleteToolStripMenuItem
             // 
-            this.deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
-            this.deleteToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.deleteToolStripMenuItem.Text = "Delete Rule";
-            this.deleteToolStripMenuItem.Click += new System.EventHandler(DeleteToolStripMenuItem_Click);
+            deleteToolStripMenuItem.Name = "deleteToolStripMenuItem";
+            deleteToolStripMenuItem.Size = new Size(173, 22);
+            deleteToolStripMenuItem.Text = "Delete Rule";
+            deleteToolStripMenuItem.Click += DeleteToolStripMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(207, 6);
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(170, 6);
             // 
             // copyDetailsToolStripMenuItem
             // 
-            this.copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
-            this.copyDetailsToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.copyDetailsToolStripMenuItem.Text = "Copy Details";
-            this.copyDetailsToolStripMenuItem.Click += new System.EventHandler(CopyDetailsToolStripMenuItem_Click);
+            copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
+            copyDetailsToolStripMenuItem.Size = new Size(173, 22);
+            copyDetailsToolStripMenuItem.Text = "Copy Details";
+            copyDetailsToolStripMenuItem.Click += CopyDetailsToolStripMenuItem_Click;
             // 
             // openFileLocationToolStripMenuItem
             // 
-            this.openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
-            this.openFileLocationToolStripMenuItem.Size = new System.Drawing.Size(210, 24);
-            this.openFileLocationToolStripMenuItem.Text = "Open File Location";
-            this.openFileLocationToolStripMenuItem.Click += new System.EventHandler(OpenFileLocationToolStripMenuItem_Click);
+            openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
+            openFileLocationToolStripMenuItem.Size = new Size(173, 22);
+            openFileLocationToolStripMenuItem.Text = "Open File Location";
+            openFileLocationToolStripMenuItem.Click += OpenFileLocationToolStripMenuItem_Click;
             // 
             // topPanel
             // 
-            this.topPanel.Controls.Add(this.auditSearchTextBox);
-            this.topPanel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.topPanel.Location = new System.Drawing.Point(0, 0);
-            this.topPanel.Name = "topPanel";
-            this.topPanel.Size = new System.Drawing.Size(1000, 77);
-            this.topPanel.TabIndex = 4;
+            topPanel.Controls.Add(auditSearchTextBox);
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Location = new Point(0, 0);
+            topPanel.Margin = new Padding(3, 2, 3, 2);
+            topPanel.Name = "topPanel";
+            topPanel.Size = new Size(875, 58);
+            topPanel.TabIndex = 4;
             // 
             // splitContainer
             // 
-            this.splitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
-            this.splitContainer.Location = new System.Drawing.Point(0, 77);
-            this.splitContainer.Name = "splitContainer";
-            this.splitContainer.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            splitContainer.Dock = DockStyle.Fill;
+            splitContainer.FixedPanel = FixedPanel.Panel2;
+            splitContainer.Location = new Point(0, 58);
+            splitContainer.Margin = new Padding(3, 2, 3, 2);
+            splitContainer.Name = "splitContainer";
+            splitContainer.Orientation = Orientation.Horizontal;
             // 
             // splitContainer.Panel1
             // 
-            this.splitContainer.Panel1.Controls.Add(this.systemChangesDataGridView);
+            splitContainer.Panel1.Controls.Add(systemChangesDataGridView);
             // 
             // splitContainer.Panel2
             // 
-            this.splitContainer.Panel2.Controls.Add(this.diffRichTextBox);
-            this.splitContainer.Panel2.Controls.Add(this.diffLabel);
-            this.splitContainer.Panel2MinSize = 100;
-            this.splitContainer.Size = new System.Drawing.Size(1000, 843);
-            this.splitContainer.SplitterDistance = 643;
-            this.splitContainer.TabIndex = 5;
+            splitContainer.Panel2.Controls.Add(diffRichTextBox);
+            splitContainer.Panel2.Controls.Add(diffLabel);
+            splitContainer.Panel2MinSize = 100;
+            splitContainer.Size = new Size(875, 632);
+            splitContainer.SplitterDistance = 483;
+            splitContainer.SplitterWidth = 3;
+            splitContainer.TabIndex = 5;
             // 
             // systemChangesDataGridView
             // 
-            this.systemChangesDataGridView.AllowUserToAddRows = false;
-            this.systemChangesDataGridView.AllowUserToDeleteRows = false;
-            this.systemChangesDataGridView.AllowUserToResizeRows = false;
-            this.systemChangesDataGridView.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.systemChangesDataGridView.BackgroundColor = System.Drawing.SystemColors.Control;
-            this.systemChangesDataGridView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.systemChangesDataGridView.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.None;
-            this.systemChangesDataGridView.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.systemChangesDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.systemChangesDataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.systemChangesDataGridView.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.advTimestampColumn,
-            this.advNameColumn,
-            this.advInterventionColumn,
-            this.advStatusColumn,
-            this.advProtocolColumn,
-            this.advLocalPortsColumn,
-            this.advRemotePortsColumn,
-            this.advLocalAddressColumn,
-            this.advRemoteAddressColumn,
-            this.advProgramColumn,
-            this.advServiceColumn,
-            this.advProfilesColumn,
-            this.advGroupingColumn,
-            this.advDescColumn,
-            this.advPublisherColumn});
-            this.systemChangesDataGridView.ContextMenuStrip = this.auditContextMenu;
-            this.systemChangesDataGridView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.systemChangesDataGridView.EnableHeadersVisualStyles = false;
-            this.systemChangesDataGridView.GridColor = System.Drawing.SystemColors.Control;
-            this.systemChangesDataGridView.Location = new System.Drawing.Point(0, 0);
-            this.systemChangesDataGridView.MultiSelect = true;
-            this.systemChangesDataGridView.Name = "systemChangesDataGridView";
-            this.systemChangesDataGridView.ReadOnly = true;
-            this.systemChangesDataGridView.RowHeadersVisible = false;
-            this.systemChangesDataGridView.RowTemplate.Height = 28;
-            this.systemChangesDataGridView.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.systemChangesDataGridView.ShowCellToolTips = true;
-            this.systemChangesDataGridView.Size = new System.Drawing.Size(1000, 643);
-            this.systemChangesDataGridView.TabIndex = 0;
-            this.systemChangesDataGridView.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(SystemChangesDataGridView_CellFormatting);
-            this.systemChangesDataGridView.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(SystemChangesDataGridView_CellMouseDown);
-            this.systemChangesDataGridView.CellMouseEnter += new System.Windows.Forms.DataGridViewCellEventHandler(SystemChangesDataGridView_CellMouseEnter);
-            this.systemChangesDataGridView.CellMouseLeave += new System.Windows.Forms.DataGridViewCellEventHandler(SystemChangesDataGridView_CellMouseLeave);
-            this.systemChangesDataGridView.ColumnHeaderMouseClick += new System.Windows.Forms.DataGridViewCellMouseEventHandler(SystemChangesDataGridView_ColumnHeaderMouseClick);
-            this.systemChangesDataGridView.RowPostPaint += new System.Windows.Forms.DataGridViewRowPostPaintEventHandler(SystemChangesDataGridView_RowPostPaint);
-            this.systemChangesDataGridView.SelectionChanged += new System.EventHandler(SystemChangesDataGridView_SelectionChanged);
-            // 
-            // diffLabel
-            // 
-            this.diffLabel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.diffLabel.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.diffLabel.Location = new System.Drawing.Point(0, 0);
-            this.diffLabel.Name = "diffLabel";
-            this.diffLabel.Padding = new System.Windows.Forms.Padding(5, 5, 0, 0);
-            this.diffLabel.Size = new System.Drawing.Size(1000, 25);
-            this.diffLabel.TabIndex = 1;
-            this.diffLabel.Text = "Change Details:";
+            systemChangesDataGridView.AllowUserToAddRows = false;
+            systemChangesDataGridView.AllowUserToDeleteRows = false;
+            systemChangesDataGridView.AllowUserToResizeRows = false;
+            systemChangesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            systemChangesDataGridView.BackgroundColor = SystemColors.Control;
+            systemChangesDataGridView.BorderStyle = BorderStyle.None;
+            systemChangesDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
+            systemChangesDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = SystemColors.Control;
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            systemChangesDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            systemChangesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            systemChangesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advTimestampColumn, advNameColumn, advInterventionColumn, advStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, advPublisherColumn });
+            systemChangesDataGridView.ContextMenuStrip = auditContextMenu;
+            systemChangesDataGridView.Dock = DockStyle.Fill;
+            systemChangesDataGridView.EnableHeadersVisualStyles = false;
+            systemChangesDataGridView.GridColor = SystemColors.Control;
+            systemChangesDataGridView.Location = new Point(0, 0);
+            systemChangesDataGridView.Margin = new Padding(3, 2, 3, 2);
+            systemChangesDataGridView.Name = "systemChangesDataGridView";
+            systemChangesDataGridView.ReadOnly = true;
+            systemChangesDataGridView.RowHeadersVisible = false;
+            systemChangesDataGridView.RowTemplate.Height = 28;
+            systemChangesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            systemChangesDataGridView.Size = new Size(875, 483);
+            systemChangesDataGridView.TabIndex = 0;
+            systemChangesDataGridView.CellFormatting += SystemChangesDataGridView_CellFormatting;
+            systemChangesDataGridView.CellMouseDown += SystemChangesDataGridView_CellMouseDown;
+            systemChangesDataGridView.CellMouseEnter += SystemChangesDataGridView_CellMouseEnter;
+            systemChangesDataGridView.CellMouseLeave += SystemChangesDataGridView_CellMouseLeave;
+            systemChangesDataGridView.ColumnHeaderMouseClick += SystemChangesDataGridView_ColumnHeaderMouseClick;
+            systemChangesDataGridView.RowPostPaint += SystemChangesDataGridView_RowPostPaint;
+            systemChangesDataGridView.SelectionChanged += SystemChangesDataGridView_SelectionChanged;
             // 
             // diffRichTextBox
             // 
-            this.diffRichTextBox.BackColor = System.Drawing.Color.White;
-            this.diffRichTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.diffRichTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.diffRichTextBox.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.diffRichTextBox.Location = new System.Drawing.Point(0, 25);
-            this.diffRichTextBox.Name = "diffRichTextBox";
-            this.diffRichTextBox.ReadOnly = true;
-            this.diffRichTextBox.Size = new System.Drawing.Size(1000, 171);
-            this.diffRichTextBox.TabIndex = 2;
-            this.diffRichTextBox.Text = "";
+            diffRichTextBox.BackColor = Color.White;
+            diffRichTextBox.BorderStyle = BorderStyle.None;
+            diffRichTextBox.Dock = DockStyle.Fill;
+            diffRichTextBox.Font = new Font("Consolas", 9.75F);
+            diffRichTextBox.Location = new Point(0, 19);
+            diffRichTextBox.Margin = new Padding(3, 2, 3, 2);
+            diffRichTextBox.Name = "diffRichTextBox";
+            diffRichTextBox.ReadOnly = true;
+            diffRichTextBox.Size = new Size(875, 127);
+            diffRichTextBox.TabIndex = 2;
+            diffRichTextBox.Text = "";
+            // 
+            // diffLabel
+            // 
+            diffLabel.Dock = DockStyle.Top;
+            diffLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            diffLabel.Location = new Point(0, 0);
+            diffLabel.Name = "diffLabel";
+            diffLabel.Padding = new Padding(4, 4, 0, 0);
+            diffLabel.Size = new Size(875, 19);
+            diffLabel.TabIndex = 1;
+            diffLabel.Text = "Change Details:";
             // 
             // statusStrip1
             // 
-            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.statusLabel});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 898);
-            this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1000, 22);
-            this.statusStrip1.TabIndex = 6;
-            this.statusStrip1.Text = "statusStrip1";
+            statusStrip1.Items.AddRange(new ToolStripItem[] { statusLabel });
+            statusStrip1.Location = new Point(0, 668);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Padding = new Padding(1, 0, 12, 0);
+            statusStrip1.Size = new Size(875, 22);
+            statusStrip1.TabIndex = 6;
+            statusStrip1.Text = "statusStrip1";
             // 
             // statusLabel
             // 
-            this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(39, 17);
-            this.statusLabel.Text = "Ready";
-            // 
-            // advPublisherColumn
-            // 
-            this.advPublisherColumn.DataPropertyName = "Publisher";
-            this.advPublisherColumn.FillWeight = 25F;
-            this.advPublisherColumn.HeaderText = "Verified Signer";
-            this.advPublisherColumn.Name = "advPublisherColumn";
-            this.advPublisherColumn.ReadOnly = true;
+            statusLabel.Name = "statusLabel";
+            statusLabel.Size = new Size(39, 17);
+            statusLabel.Text = "Ready";
             // 
             // advTimestampColumn
             // 
-            this.advTimestampColumn.DataPropertyName = "Timestamp";
-            this.advTimestampColumn.HeaderText = "Detected";
-            this.advTimestampColumn.Name = "advTimestampColumn";
-            this.advTimestampColumn.ReadOnly = true;
-            this.advTimestampColumn.FillWeight = 15F;
+            advTimestampColumn.DataPropertyName = "Timestamp";
+            advTimestampColumn.FillWeight = 15F;
+            advTimestampColumn.HeaderText = "Detected";
+            advTimestampColumn.Name = "advTimestampColumn";
+            advTimestampColumn.ReadOnly = true;
+            advTimestampColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advNameColumn
             // 
-            this.advNameColumn.DataPropertyName = "Name";
-            this.advNameColumn.FillWeight = 20F;
-            this.advNameColumn.HeaderText = "Name";
-            this.advNameColumn.Name = "advNameColumn";
-            this.advNameColumn.ReadOnly = true;
+            advNameColumn.DataPropertyName = "Name";
+            advNameColumn.FillWeight = 20F;
+            advNameColumn.HeaderText = "Name";
+            advNameColumn.Name = "advNameColumn";
+            advNameColumn.ReadOnly = true;
+            advNameColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advInterventionColumn
             // 
-            this.advInterventionColumn.DataPropertyName = "Intervention";
-            this.advInterventionColumn.FillWeight = 25F;
-            this.advInterventionColumn.HeaderText = "Intervention";
-            this.advInterventionColumn.Name = "advInterventionColumn";
-            this.advInterventionColumn.ReadOnly = true;
+            advInterventionColumn.DataPropertyName = "Intervention";
+            advInterventionColumn.FillWeight = 25F;
+            advInterventionColumn.HeaderText = "Intervention";
+            advInterventionColumn.Name = "advInterventionColumn";
+            advInterventionColumn.ReadOnly = true;
+            advInterventionColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advStatusColumn
             // 
-            this.advStatusColumn.DataPropertyName = "Status";
-            this.advStatusColumn.FillWeight = 15F;
-            this.advStatusColumn.HeaderText = "Action";
-            this.advStatusColumn.Name = "advStatusColumn";
-            this.advStatusColumn.ReadOnly = true;
+            advStatusColumn.DataPropertyName = "Status";
+            advStatusColumn.FillWeight = 15F;
+            advStatusColumn.HeaderText = "Action";
+            advStatusColumn.Name = "advStatusColumn";
+            advStatusColumn.ReadOnly = true;
+            advStatusColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advProtocolColumn
             // 
-            this.advProtocolColumn.DataPropertyName = "ProtocolName";
-            this.advProtocolColumn.FillWeight = 8F;
-            this.advProtocolColumn.HeaderText = "Protocol";
-            this.advProtocolColumn.Name = "advProtocolColumn";
-            this.advProtocolColumn.ReadOnly = true;
+            advProtocolColumn.DataPropertyName = "ProtocolName";
+            advProtocolColumn.FillWeight = 8F;
+            advProtocolColumn.HeaderText = "Protocol";
+            advProtocolColumn.Name = "advProtocolColumn";
+            advProtocolColumn.ReadOnly = true;
+            advProtocolColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advLocalPortsColumn
             // 
-            this.advLocalPortsColumn.DataPropertyName = "LocalPorts";
-            this.advLocalPortsColumn.FillWeight = 12F;
-            this.advLocalPortsColumn.HeaderText = "Local Ports";
-            this.advLocalPortsColumn.Name = "advLocalPortsColumn";
-            this.advLocalPortsColumn.ReadOnly = true;
+            advLocalPortsColumn.DataPropertyName = "LocalPorts";
+            advLocalPortsColumn.FillWeight = 12F;
+            advLocalPortsColumn.HeaderText = "Local Ports";
+            advLocalPortsColumn.Name = "advLocalPortsColumn";
+            advLocalPortsColumn.ReadOnly = true;
+            advLocalPortsColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advRemotePortsColumn
             // 
-            this.advRemotePortsColumn.DataPropertyName = "RemotePorts";
-            this.advRemotePortsColumn.FillWeight = 12F;
-            this.advRemotePortsColumn.HeaderText = "Remote Ports";
-            this.advRemotePortsColumn.Name = "advRemotePortsColumn";
-            this.advRemotePortsColumn.ReadOnly = true;
+            advRemotePortsColumn.DataPropertyName = "RemotePorts";
+            advRemotePortsColumn.FillWeight = 12F;
+            advRemotePortsColumn.HeaderText = "Remote Ports";
+            advRemotePortsColumn.Name = "advRemotePortsColumn";
+            advRemotePortsColumn.ReadOnly = true;
+            advRemotePortsColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advLocalAddressColumn
             // 
-            this.advLocalAddressColumn.DataPropertyName = "LocalAddresses";
-            this.advLocalAddressColumn.FillWeight = 15F;
-            this.advLocalAddressColumn.HeaderText = "Local Address";
-            this.advLocalAddressColumn.Name = "advLocalAddressColumn";
-            this.advLocalAddressColumn.ReadOnly = true;
+            advLocalAddressColumn.DataPropertyName = "LocalAddresses";
+            advLocalAddressColumn.FillWeight = 15F;
+            advLocalAddressColumn.HeaderText = "Local Address";
+            advLocalAddressColumn.Name = "advLocalAddressColumn";
+            advLocalAddressColumn.ReadOnly = true;
+            advLocalAddressColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advRemoteAddressColumn
             // 
-            this.advRemoteAddressColumn.DataPropertyName = "RemoteAddresses";
-            this.advRemoteAddressColumn.FillWeight = 15F;
-            this.advRemoteAddressColumn.HeaderText = "Remote Address";
-            this.advRemoteAddressColumn.Name = "advRemoteAddressColumn";
-            this.advRemoteAddressColumn.ReadOnly = true;
+            advRemoteAddressColumn.DataPropertyName = "RemoteAddresses";
+            advRemoteAddressColumn.FillWeight = 15F;
+            advRemoteAddressColumn.HeaderText = "Remote Address";
+            advRemoteAddressColumn.Name = "advRemoteAddressColumn";
+            advRemoteAddressColumn.ReadOnly = true;
+            advRemoteAddressColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advProgramColumn
             // 
-            this.advProgramColumn.DataPropertyName = "ApplicationName";
-            this.advProgramColumn.FillWeight = 25F;
-            this.advProgramColumn.HeaderText = "Application";
-            this.advProgramColumn.Name = "advProgramColumn";
-            this.advProgramColumn.ReadOnly = true;
+            advProgramColumn.DataPropertyName = "ApplicationName";
+            advProgramColumn.FillWeight = 25F;
+            advProgramColumn.HeaderText = "Application";
+            advProgramColumn.Name = "advProgramColumn";
+            advProgramColumn.ReadOnly = true;
+            advProgramColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advServiceColumn
             // 
-            this.advServiceColumn.DataPropertyName = "ServiceName";
-            this.advServiceColumn.FillWeight = 15F;
-            this.advServiceColumn.HeaderText = "Service";
-            this.advServiceColumn.Name = "advServiceColumn";
-            this.advServiceColumn.ReadOnly = true;
+            advServiceColumn.DataPropertyName = "ServiceName";
+            advServiceColumn.FillWeight = 15F;
+            advServiceColumn.HeaderText = "Service";
+            advServiceColumn.Name = "advServiceColumn";
+            advServiceColumn.ReadOnly = true;
+            advServiceColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advProfilesColumn
             // 
-            this.advProfilesColumn.DataPropertyName = "Profiles";
-            this.advProfilesColumn.FillWeight = 10F;
-            this.advProfilesColumn.HeaderText = "Profiles";
-            this.advProfilesColumn.Name = "advProfilesColumn";
-            this.advProfilesColumn.ReadOnly = true;
+            advProfilesColumn.DataPropertyName = "Profiles";
+            advProfilesColumn.FillWeight = 10F;
+            advProfilesColumn.HeaderText = "Profiles";
+            advProfilesColumn.Name = "advProfilesColumn";
+            advProfilesColumn.ReadOnly = true;
+            advProfilesColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advGroupingColumn
             // 
-            this.advGroupingColumn.DataPropertyName = "Grouping";
-            this.advGroupingColumn.FillWeight = 15F;
-            this.advGroupingColumn.HeaderText = "Group";
-            this.advGroupingColumn.Name = "advGroupingColumn";
-            this.advGroupingColumn.ReadOnly = true;
+            advGroupingColumn.DataPropertyName = "Grouping";
+            advGroupingColumn.FillWeight = 15F;
+            advGroupingColumn.HeaderText = "Group";
+            advGroupingColumn.Name = "advGroupingColumn";
+            advGroupingColumn.ReadOnly = true;
+            advGroupingColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // advDescColumn
             // 
-            this.advDescColumn.DataPropertyName = "Description";
-            this.advDescColumn.FillWeight = 30F;
-            this.advDescColumn.HeaderText = "Description";
-            this.advDescColumn.Name = "advDescColumn";
-            this.advDescColumn.ReadOnly = true;
+            advDescColumn.DataPropertyName = "Description";
+            advDescColumn.FillWeight = 30F;
+            advDescColumn.HeaderText = "Description";
+            advDescColumn.Name = "advDescColumn";
+            advDescColumn.ReadOnly = true;
+            advDescColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
+            // advPublisherColumn
+            // 
+            advPublisherColumn.DataPropertyName = "Publisher";
+            advPublisherColumn.FillWeight = 25F;
+            advPublisherColumn.HeaderText = "Verified Signer";
+            advPublisherColumn.Name = "advPublisherColumn";
+            advPublisherColumn.ReadOnly = true;
+            advPublisherColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
             // AuditControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.statusStrip1);
-            this.Controls.Add(this.splitContainer);
-            this.Controls.Add(this.topPanel);
-            this.Name = "AuditControl";
-            this.Size = new System.Drawing.Size(1000, 920);
-            this.auditContextMenu.ResumeLayout(false);
-            this.topPanel.ResumeLayout(false);
-            this.topPanel.PerformLayout();
-            this.splitContainer.Panel1.ResumeLayout(false);
-            this.splitContainer.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
-            this.splitContainer.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.systemChangesDataGridView)).EndInit();
-            this.statusStrip1.ResumeLayout(false);
-            this.statusStrip1.PerformLayout();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(statusStrip1);
+            Controls.Add(splitContainer);
+            Controls.Add(topPanel);
+            DoubleBuffered = true;
+            Margin = new Padding(3, 2, 3, 2);
+            Name = "AuditControl";
+            Size = new Size(875, 690);
+            auditContextMenu.ResumeLayout(false);
+            topPanel.ResumeLayout(false);
+            topPanel.PerformLayout();
+            splitContainer.Panel1.ResumeLayout(false);
+            splitContainer.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)splitContainer).EndInit();
+            splitContainer.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)systemChangesDataGridView).EndInit();
+            statusStrip1.ResumeLayout(false);
+            statusStrip1.PerformLayout();
+            ResumeLayout(false);
+            PerformLayout();
         }
+
+        private DataGridViewTextBoxColumn advTimestampColumn;
+        private DataGridViewTextBoxColumn advNameColumn;
+        private DataGridViewTextBoxColumn advInterventionColumn;
+        private DataGridViewTextBoxColumn advStatusColumn;
+        private DataGridViewTextBoxColumn advProtocolColumn;
+        private DataGridViewTextBoxColumn advLocalPortsColumn;
+        private DataGridViewTextBoxColumn advRemotePortsColumn;
+        private DataGridViewTextBoxColumn advLocalAddressColumn;
+        private DataGridViewTextBoxColumn advRemoteAddressColumn;
+        private DataGridViewTextBoxColumn advProgramColumn;
+        private DataGridViewTextBoxColumn advServiceColumn;
+        private DataGridViewTextBoxColumn advProfilesColumn;
+        private DataGridViewTextBoxColumn advGroupingColumn;
+        private DataGridViewTextBoxColumn advDescColumn;
+        private DataGridViewTextBoxColumn advPublisherColumn;
     }
 }

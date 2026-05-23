@@ -1,23 +1,24 @@
-using DarkModeForms;
-using NetFwTypeLib;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using MinimalFirewall.Groups;
-using Firewall.Traffic.ViewModels;
-using MinimalFirewall.TypedObjects;
-using System.Windows.Forms;
-using System.ComponentModel;
-using MinimalFirewall;
-using System.Collections.Concurrent;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using DarkModeForms;
+using Firewall.Traffic.ViewModels;
+using MinimalFirewall;
+using MinimalFirewall.Groups;
+using MinimalFirewall.TypedObjects;
+using NetFwTypeLib;
+using static DarkModeForms.OSThemeColors;
 
 namespace MinimalFirewall
 {
@@ -371,7 +372,7 @@ namespace MinimalFirewall
             Image? lockedIcon = appImageList.Images["locked.png"];
             if (lockedIcon != null)
             {
-                _lockedGreenIcon = DarkModeCS.RecolorImage(lockedIcon, Color.FromArgb(0, 200, 83));
+                _lockedGreenIcon = DarkModeCS.RecolorImage(lockedIcon, Theme.Colors.Success);
             }
 
             Image? unlockedIcon = appImageList.Images["unlocked.png"];
@@ -411,8 +412,7 @@ namespace MinimalFirewall
             dm.ApplyTheme(isDark);
 
             _cachedArrowPen?.Dispose();
-            Color arrowColor = isDark ? Color.White : Color.Black;
-            _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
+            _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
 
             rulesControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
@@ -1383,8 +1383,7 @@ namespace MinimalFirewall
             if (_cachedArrowPen == null)
             {
                 bool isDark = IsDarkModeEnabled;
-                Color arrowColor = isDark ? Color.White : Color.Black;
-                _cachedArrowPen = new Pen(arrowColor, 2.5f) { EndCap = LineCap.ArrowAnchor };
+                _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
             }
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;

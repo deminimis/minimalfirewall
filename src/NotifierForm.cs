@@ -1,13 +1,14 @@
-using DarkModeForms;
 using System;
-using System.Drawing;
-using System.Windows.Forms;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using DarkModeForms;
+using static DarkModeForms.OSThemeColors;
 
 namespace MinimalFirewall
 {
@@ -36,8 +37,8 @@ namespace MinimalFirewall
 
             allowButton.BackColor = Theme.Colors.Success;
             blockButton.BackColor = Theme.Colors.Danger;
-            allowButton.ForeColor = isDarkMode ? Theme.Colors.TextActive : Color.Black;
-            blockButton.ForeColor = isDarkMode ? Theme.Colors.TextActive : Color.Black;
+            allowButton.ForeColor = Theme.Colors.TextActive;
+            blockButton.ForeColor = Theme.Colors.TextActive;
 
             allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Success, 0.1f);
             blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Danger, 0.1f);
@@ -163,7 +164,7 @@ namespace MinimalFirewall
                 {
                     if (publisherName.Length > 30)
                     {
-                        publisherName = publisherName.Substring(0, 30) + "...";
+                        publisherName = string.Concat(publisherName.AsSpan(0, 30), "...");
                     }
                     trustPublisherCheckBox.Text = $"Trust: {publisherName}";
                     trustPublisherCheckBox.Visible = true;
@@ -225,7 +226,7 @@ namespace MinimalFirewall
             Close();
         }
 
-        private void allowButton_Click(object sender, EventArgs e)
+        private void AllowButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Allow;
             TrustPublisher = trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
@@ -233,33 +234,33 @@ namespace MinimalFirewall
             Close();
         }
 
-        private void blockButton_Click(object sender, EventArgs e)
+        private void BlockButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Block;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private void ignoreButton_Click(object sender, EventArgs e)
+        private void IgnoreButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.Ignore;
             DialogResult = DialogResult.Cancel;
             Close();
         }
 
-        private void tempAllowButton_Click(object sender, EventArgs e)
+        private void TempAllowButton_Click(object sender, EventArgs e)
         {
             tempAllowContextMenu.Show(tempAllowButton, new Point(0, tempAllowButton.Height));
         }
 
-        private void createWildcardButton_Click(object sender, EventArgs e)
+        private void CreateWildcardButton_Click(object sender, EventArgs e)
         {
             Result = NotifierResult.CreateWildcard;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        private async void copyDetailsButton_Click(object sender, EventArgs e)
+        private async void CopyDetailsButton_Click(object sender, EventArgs e)
         {
             try
             {
