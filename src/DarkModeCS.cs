@@ -517,6 +517,10 @@ namespace DarkModeForms
             {
                 flowLayout.BackColor = flowLayout.Parent.BackColor;
             }
+            else if (control is ProgressBar pBar)
+            {
+                ApplyThemeToHandle(pBar.Handle, "Explorer");
+            }
 
             if (control.ContextMenuStrip != null)
             {

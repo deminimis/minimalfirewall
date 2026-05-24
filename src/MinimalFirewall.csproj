@@ -31,6 +31,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 	  <Compile Remove="FlatComboBox.cs" />
+	  <Compile Remove="FlatProgressBar.cs" />
 	</ItemGroup>
 	<ItemGroup>
 	  <EmbeddedResource Remove="FlatComboBox.resx" />
