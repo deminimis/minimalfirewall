@@ -143,7 +143,7 @@ namespace DarkModeForms
 
         private void Draw3DBorder(Graphics g)
         {
-            int penWidth = UIHelpers.Scale(1, g);
+            int penWidth = (int)(1 * (g.DpiX / 96f));
             if (penWidth < 1)
             {
                 penWidth = 1;

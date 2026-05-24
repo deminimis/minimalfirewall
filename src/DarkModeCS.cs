@@ -379,11 +379,6 @@ namespace DarkModeForms
             }
             else if (control is ComboBox comboBox)
             {
-                if (control is FlatComboBox flatCombo)
-                {
-                    flatCombo.Invalidate();
-                }
-
                 if (comboBox.DropDownStyle != ComboBoxStyle.DropDownList)
                 {
                     comboBox.SelectionStart = comboBox.Text.Length;

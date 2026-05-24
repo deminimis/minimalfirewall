@@ -7,8 +7,8 @@ namespace MinimalFirewall
         private System.Windows.Forms.Label programListLabel;
         private System.Windows.Forms.RadioButton allowRadio;
         private System.Windows.Forms.RadioButton blockRadio;
-        private DarkModeForms.FlatComboBox allowDirectionCombo;
-        private DarkModeForms.FlatComboBox blockDirectionCombo;
+        private System.Windows.Forms.ComboBox allowDirectionCombo;
+        private System.Windows.Forms.ComboBox blockDirectionCombo;
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.Button cancelButton;
         private GroupBox actionGroupBox;
@@ -28,8 +28,8 @@ namespace MinimalFirewall
         {
             programListLabel = new Label();
             actionGroupBox = new GroupBox();
-            blockDirectionCombo = new DarkModeForms.FlatComboBox();
-            allowDirectionCombo = new DarkModeForms.FlatComboBox();
+            blockDirectionCombo = new System.Windows.Forms.ComboBox();
+            allowDirectionCombo = new System.Windows.Forms.ComboBox();
             blockRadio = new RadioButton();
             allowRadio = new RadioButton();
             okButton = new Button();

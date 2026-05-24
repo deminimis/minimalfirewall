@@ -29,6 +29,12 @@
 		<SelfContained>false</SelfContained>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="FlatComboBox.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Remove="FlatComboBox.resx" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Include="logo.ico" />

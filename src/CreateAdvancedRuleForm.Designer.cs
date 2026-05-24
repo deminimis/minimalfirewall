@@ -22,7 +22,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.TextBox serviceNameTextBox;
         private System.Windows.Forms.Label labelService;
         private System.Windows.Forms.GroupBox protocolGroupBox;
-        private DarkModeForms.FlatComboBox protocolComboBox;
+        private System.Windows.Forms.ComboBox protocolComboBox;
         private System.Windows.Forms.GroupBox portsGroupBox;
         private System.Windows.Forms.TextBox remotePortsTextBox;
         private System.Windows.Forms.Label labelRemotePorts;
@@ -48,7 +48,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox wirelessCheckBox;
         private System.Windows.Forms.CheckBox remoteAccessCheckBox;
         private System.Windows.Forms.Label labelGroup;
-        private DarkModeForms.FlatComboBox groupComboBox;
+        private System.Windows.Forms.ComboBox groupComboBox;
         private System.Windows.Forms.Button addGroupButton;
         private System.Windows.Forms.Panel mainPanel;
         private System.Windows.Forms.Panel bottomPanel;
@@ -93,7 +93,7 @@ namespace MinimalFirewall
             programPathTextBox = new TextBox();
             labelProgram = new Label();
             protocolGroupBox = new GroupBox();
-            protocolComboBox = new DarkModeForms.FlatComboBox();
+            protocolComboBox = new System.Windows.Forms.ComboBox();
             portsGroupBox = new GroupBox();
             remotePortsTextBox = new TextBox();
             labelRemotePorts = new Label();
@@ -119,7 +119,7 @@ namespace MinimalFirewall
             wirelessCheckBox = new CheckBox();
             remoteAccessCheckBox = new CheckBox();
             labelGroup = new Label();
-            groupComboBox = new DarkModeForms.FlatComboBox();
+            groupComboBox = new System.Windows.Forms.ComboBox();
             addGroupButton = new Button();
             mainPanel = new Panel();
             bottomPanel = new Panel();

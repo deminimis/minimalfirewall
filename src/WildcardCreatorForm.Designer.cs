@@ -9,7 +9,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.TextBox exeNameTextBox;
         private System.Windows.Forms.RadioButton allowRadio;
         private System.Windows.Forms.RadioButton blockRadio;
-        private DarkModeForms.FlatComboBox directionCombo;
+        private System.Windows.Forms.ComboBox directionCombo;
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.GroupBox actionGroupBox;
@@ -18,7 +18,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ErrorProvider errorProvider1;
         private System.Windows.Forms.Button advancedButton;
         private System.Windows.Forms.GroupBox advancedGroupBox;
-        private DarkModeForms.FlatComboBox protocolComboBox;
+        private System.Windows.Forms.ComboBox protocolComboBox;
         private System.Windows.Forms.Label labelProtocol;
         private System.Windows.Forms.TextBox remotePortsTextBox;
         private System.Windows.Forms.Label labelRemotePorts;
@@ -46,7 +46,7 @@ namespace MinimalFirewall
             folderPathTextBox = new TextBox();
             exeNameTextBox = new TextBox();
             actionGroupBox = new GroupBox();
-            directionCombo = new DarkModeForms.FlatComboBox();
+            directionCombo = new System.Windows.Forms.ComboBox();
             blockRadio = new RadioButton();
             allowRadio = new RadioButton();
             okButton = new Button();
@@ -62,7 +62,7 @@ namespace MinimalFirewall
             labelRemotePorts = new Label();
             localPortsTextBox = new TextBox();
             labelLocalPorts = new Label();
-            protocolComboBox = new DarkModeForms.FlatComboBox();
+            protocolComboBox = new System.Windows.Forms.ComboBox();
             labelProtocol = new Label();
             actionGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider1).BeginInit();
