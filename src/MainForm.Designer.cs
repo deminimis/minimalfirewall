@@ -5,7 +5,7 @@ namespace MinimalFirewall
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.NotifyIcon notifyIcon;
-        private DarkModeForms.FlatTabControl mainTabControl;
+        private System.Windows.Forms.TabControl mainTabControl;
         private System.Windows.Forms.TabPage dashboardTabPage;
         private System.Windows.Forms.TabPage rulesTabPage;
         private System.Windows.Forms.TabPage systemChangesTabPage;
@@ -60,7 +60,7 @@ namespace MinimalFirewall
         {
             components = new System.ComponentModel.Container();
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            mainTabControl = new DarkModeForms.FlatTabControl();
+            mainTabControl = new System.Windows.Forms.TabControl();
             dashboardTabPage = new TabPage();
             logoPictureBox = new PictureBox();
             arrowPictureBox = new PictureBox();

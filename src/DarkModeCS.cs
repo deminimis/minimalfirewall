@@ -426,10 +426,7 @@ namespace DarkModeForms
                 tablePanel.BackColor = tablePanel.Parent.BackColor;
                 tablePanel.ForeColor = OScolors.TextInactive;
             }
-            else if (control is FlatTabControl flatTab)
-            {
-                flatTab.Invalidate();
-            }
+            
             else if (control is TabControl tab && tab.Parent != null)
             {
                 tab.Appearance = TabAppearance.Normal;
