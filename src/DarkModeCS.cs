@@ -17,7 +17,6 @@ namespace DarkModeForms
     public partial class DarkModeCS : IDisposable
     {
         private static readonly ConditionalWeakTable<Control, NotificationInfo> _notificationInfo = [];
-        private static readonly ConditionalWeakTable<Control, PaintEventHandler> _roundBorderPainters = [];
 
         private class NotificationInfo
         {
@@ -161,25 +160,35 @@ namespace DarkModeForms
         }
 
         public DisplayMode ColorMode
-        { get; set; } = DisplayMode.SystemDefault;
+        {
+            get;
+            set;
+        } = DisplayMode.SystemDefault;
         public bool IsDarkMode => _IsDarkMode;
         public bool ColorizeIcons { get; set; } = true;
-        public bool RoundedPanels { get; set; } = false;
         public Form OwnerForm
-        { get; set; }
-        public ComponentCollection? Components
-        { get; set; }
+        {
+            get;
+            set;
+        }
+        public ComponentCollection?
+            Components
+        {
+            get; set;
+        }
         public OSThemeColors OScolors
-        { get; set; }
+        {
+            get;
+            set;
+        }
 
-        public DarkModeCS(Form _Form, bool _ColorizeIcons = true, bool _RoundedPanels = false)
+        public DarkModeCS(Form _Form, bool _ColorizeIcons = true)
         {
             OwnerForm = _Form;
             typeof(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.SetValue(OwnerForm, true, null);
             Components = null;
             ColorizeIcons = _ColorizeIcons;
-            RoundedPanels = _RoundedPanels;
             OScolors = GetSystemColors(IsSystemDarkMode() ? 0 : 1);
             OwnerForm.HandleCreated += (sender, e) => ApplyTitleBarTheme();
         }
@@ -339,8 +348,6 @@ namespace DarkModeForms
             {
                 control.BackColor = control.Parent.BackColor;
                 control.GetType().GetProperty("BorderStyle")?.SetValue(control, BorderStyle.None);
-                lbl.Paint -= Label_Paint;
-                lbl.Paint += Label_Paint;
             }
             else if (control is LinkLabel linkLabel && linkLabel.Parent != null)
             {
@@ -406,21 +413,13 @@ namespace DarkModeForms
             else if (control is Panel panel && panel.Parent != null)
             {
                 panel.BackColor = panel.Parent.BackColor;
-                panel.BorderStyle = BorderStyle.None;
-                if (panel.Parent is not TabControl && panel.Parent is not TableLayoutPanel)
-                {
-                    if (RoundedPanels)
-                    {
-                        SetRoundBorders(panel, 6, OScolors.SurfaceDark, 1);
-                    }
-                }
+                panel.BorderStyle = BorderStyle.FixedSingle; // flat panel borders
             }
             else if (control is GroupBox groupBox && groupBox.Parent != null)
             {
                 groupBox.BackColor = groupBox.Parent.BackColor;
                 groupBox.ForeColor = OScolors.TextActive;
-                groupBox.Paint -= GroupBox_Paint;
-                groupBox.Paint += GroupBox_Paint;
+                groupBox.FlatStyle = FlatStyle.Flat;
             }
             else if (control is TableLayoutPanel tablePanel && tablePanel.Parent != null)
             {
@@ -451,8 +450,9 @@ namespace DarkModeForms
             {
                 btnBase.BackColor = btnBase.Parent.BackColor;
                 btnBase.ForeColor = control.Enabled ? OScolors.TextActive : OScolors.TextInactive;
-                btnBase.Paint -= CheckBoxAndRadio_Paint;
-                btnBase.Paint += CheckBoxAndRadio_Paint;
+                btnBase.FlatStyle = FlatStyle.Flat;
+                btnBase.FlatAppearance.BorderColor = OScolors.ControlDark;
+                btnBase.FlatAppearance.CheckedBackColor = OScolors.Accent;
             }
             else if (control is ToolStrip toolStrip)
             {
@@ -503,10 +503,7 @@ namespace DarkModeForms
                 grid.EnableHeadersVisualStyles = false;
                 grid.BorderStyle = BorderStyle.FixedSingle;
                 grid.BackgroundColor = OScolors.Control;
-                grid.GridColor = OScolors.Control;
-
-                grid.Paint -= DataGridView_Paint;
-                grid.Paint += DataGridView_Paint;
+                grid.GridColor = OScolors.ControlDark;
 
                 grid.DefaultCellStyle.BackColor = OScolors.Surface;
                 grid.DefaultCellStyle.ForeColor = OScolors.TextActive;
@@ -539,34 +536,6 @@ namespace DarkModeForms
                 ThemeControl(childControl);
             }
             control.ResumeLayout(false);
-        }
-
-        private void Label_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is not Label lbl || lbl.Enabled || !IsDarkMode || lbl.Parent == null)
-            {
-                return;
-            }
-
-            e.Graphics.Clear(lbl.Parent.BackColor);
-            e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-            using Brush B = new SolidBrush(lbl.ForeColor);
-            MethodInfo? mi = lbl.GetType().GetMethod("CreateStringFormat", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (mi?.Invoke(lbl, []) is StringFormat sf)
-            {
-                e.Graphics.DrawString(lbl.Text ?? "", lbl.Font, B, new PointF(1, 0), sf);
-            }
-        }
-
-        private void GroupBox_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is not GroupBox gBox || gBox.Enabled || !IsDarkMode)
-            {
-                return;
-            }
-
-            using var B = new SolidBrush(gBox.ForeColor);
-            e.Graphics.DrawString(gBox.Text, gBox.Font, B, new PointF(6, 0));
         }
 
         private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
@@ -647,34 +616,9 @@ namespace DarkModeForms
             }
         }
 
-        private void CheckBoxAndRadio_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is not ButtonBase btn || btn.Enabled || !IsDarkMode)
-            {
-                return;
-            }
+        
 
-            using var B = new SolidBrush(btn.ForeColor);
-            e.Graphics.DrawString(btn.Text, btn.Font, B, new PointF(16, 0));
-        }
-
-        private void DataGridView_Paint(object? sender, PaintEventArgs e)
-        {
-            if (sender is not DataGridView dgv)
-            {
-                return;
-            }
-
-            PropertyInfo? hsp = typeof(DataGridView).GetProperty("HorizontalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
-            PropertyInfo? vsp = typeof(DataGridView).GetProperty("VerticalScrollBar", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (hsp?.GetValue(dgv) is HScrollBar hs && hs.Visible && vsp?.GetValue(dgv) is VScrollBar vs && vs.Visible)
-            {
-                using Brush brush = new SolidBrush(OScolors.SurfaceDark);
-                var w = vs.Size.Width;
-                var h = hs.Size.Height;
-                e.Graphics.FillRectangle(brush, dgv.ClientRectangle.X + dgv.ClientRectangle.Width - w - 1, dgv.ClientRectangle.Y + dgv.ClientRectangle.Height - h - 1, w, h);
-            }
-        }
+        
 
         public static void ExcludeFromProcessing(Control control)
         {
@@ -806,61 +750,7 @@ namespace DarkModeForms
             return _ret;
         }
 
-        public static void SetRoundBorders(Control _Control, int Radius = 10, Color? borderColor = null, int borderSize = 2, bool underlinedStyle = false)
-        {
-            borderColor ??= Color.MediumSlateBlue;
-            if (_Control?.Parent != null)
-            {
-                _Control.GetType().GetProperty("BorderStyle")?.SetValue(_Control, BorderStyle.None);
-                _Control.Region = Region.FromHrgn(CreateRoundRectRgn(0, 0, _Control.Width, _Control.Height, Radius, Radius));
-
-                if (_roundBorderPainters.TryGetValue(_Control, out PaintEventHandler? existingHandler))
-                {
-                    _Control.Paint -= existingHandler;
-                    _roundBorderPainters.Remove(_Control);
-                }
-
-                void newHandler(object? sender, PaintEventArgs e)
-                {
-                    Graphics graph = e.Graphics;
-                    if (Radius > 1 && _Control.Parent != null)
-                    {
-                        var rectBorderSmooth = _Control.ClientRectangle;
-                        var rectBorder = Rectangle.Inflate(rectBorderSmooth, -borderSize, -borderSize);
-                        int smoothSize = borderSize > 0 ? borderSize : 1;
-                        using GraphicsPath pathBorderSmooth = GetFigurePath(rectBorderSmooth, Radius);
-                        using GraphicsPath pathBorder = GetFigurePath(rectBorder, Radius - borderSize);
-                        using Pen penBorderSmooth = new(_Control.Parent.BackColor, smoothSize);
-                        using Pen penBorder = new((Color)borderColor, borderSize);
-
-                        _Control.Region = new Region(pathBorderSmooth);
-                        if (Radius > 15)
-                        {
-                            using GraphicsPath pathTxt = GetFigurePath(_Control.ClientRectangle, borderSize * 2);
-                            _Control.Region = new Region(pathTxt);
-                        }
-                        graph.SmoothingMode = SmoothingMode.AntiAlias;
-                        penBorder.Alignment = PenAlignment.Center;
-
-                        if (underlinedStyle)
-                        {
-                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
-                            graph.SmoothingMode = SmoothingMode.None;
-                            graph.DrawLine(penBorder, 0, _Control.Height - 1, _Control.Width, _Control.Height - 1);
-                        }
-                        else
-                        {
-                            graph.DrawPath(penBorderSmooth, pathBorderSmooth);
-                            graph.DrawPath(penBorder, pathBorder);
-                        }
-                    }
-                }
-                ;
-
-                _Control.Paint += newHandler;
-                _roundBorderPainters.Add(_Control, newHandler);
-            }
-        }
+        
 
         public static Image RecolorImage(Image sourceImage, Color newColor)
         {
