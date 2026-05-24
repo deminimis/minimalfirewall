@@ -21,94 +21,35 @@ namespace DarkModeForms
         private class NotificationInfo
         {
             public int Count { get; set; }
+            public string OriginalText { get; set; } = string.Empty;
         }
 
         public static void SetNotificationCount(Control control, int count)
         {
+            if (control is not TabPage tabPage) return;
+
             if (count > 0)
             {
-                if (_notificationInfo.TryGetValue(control, out var info))
+                if (_notificationInfo.TryGetValue(tabPage, out var info))
                 {
                     info.Count = count;
+                    tabPage.Text = $"{info.OriginalText} ({count})";
                 }
                 else
                 {
-                    _notificationInfo.Add(control, new NotificationInfo { Count = count });
+                    _notificationInfo.Add(tabPage, new NotificationInfo { Count = count, OriginalText = tabPage.Text });
+                    tabPage.Text = $"{tabPage.Text} ({count})";
                 }
             }
             else
             {
-                if (_notificationInfo.TryGetValue(control, out _))
+                if (_notificationInfo.TryGetValue(tabPage, out var info))
                 {
-                    _notificationInfo.Remove(control);
+                    tabPage.Text = info.OriginalText;
+                    _notificationInfo.Remove(tabPage);
                 }
             }
-
-            if (control is TabPage tabPage && tabPage.Parent is TabControl parentTab)
-            {
-                parentTab.Invalidate();
-            }
         }
-
-        private static void DrawNotificationBubble(Graphics g, Rectangle tabRect, string text, TabAlignment alignment)
-        {
-            using Font notifFont = new("Segoe UI", 7F, FontStyle.Bold);
-            var textSize = g.MeasureString(text, notifFont);
-            int diameter = (int)Math.Max(textSize.Width, textSize.Height) + 4;
-            int x, y;
-            switch (alignment)
-            {
-                case TabAlignment.Left:
-                case TabAlignment.Right:
-                    x = tabRect.Left + 5;
-                    y = tabRect.Bottom - diameter - 5;
-                    break;
-                default:
-                    x = tabRect.Right - diameter - 3;
-                    y = tabRect.Top + 3;
-                    break;
-            }
-
-            var bubbleRect = new Rectangle(x, y, diameter, diameter);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            using (var path = new GraphicsPath())
-            {
-                path.AddEllipse(bubbleRect);
-                PointF point1, point2, point3;
-                switch (alignment)
-                {
-                    case TabAlignment.Left:
-                        point1 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.2f);
-                        point2 = new PointF(bubbleRect.Right - 2, bubbleRect.Top + diameter * 0.4f);
-                        point3 = new PointF(bubbleRect.Right + 6, bubbleRect.Top - 4);
-                        break;
-                    case TabAlignment.Right:
-                        point1 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.2f);
-                        point2 = new PointF(bubbleRect.Left + 2, bubbleRect.Top + diameter * 0.4f);
-                        point3 = new PointF(bubbleRect.Left - 6, bubbleRect.Top - 4);
-                        break;
-                    default:
-                        point1 = new PointF(bubbleRect.Left + diameter * 0.2f, bubbleRect.Bottom - 2);
-                        point2 = new PointF(bubbleRect.Left + diameter * 0.4f, bubbleRect.Bottom - 2);
-                        point3 = new PointF(bubbleRect.Left - 4, bubbleRect.Bottom + 6);
-                        break;
-                }
-
-                path.AddPolygon([point1, point2, point3]);
-                using var redBrush = new SolidBrush(Color.Red);
-                g.FillPath(redBrush, path);
-            }
-
-            using var whiteBrush = new SolidBrush(Color.White);
-            using var sf = new StringFormat
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center
-            };
-            g.DrawString(text, notifFont, whiteBrush, bubbleRect, sf);
-        }
-
 
         public struct DWMCOLORIZATIONcolors
         {
@@ -605,10 +546,7 @@ namespace DarkModeForms
                     textBounds = tabRect;
                 }
                 TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
-                if (_notificationInfo.TryGetValue(tabPage, out var info) && info.Count > 0)
-                {
-                    DrawNotificationBubble(e.Graphics, tabRect, info.Count.ToString(), tab.Alignment);
-                }
+                
             }
         }
 
