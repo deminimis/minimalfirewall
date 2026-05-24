@@ -1,4 +1,4 @@
-using DarkModeForms;
+
 using MinimalFirewall.Groups;
 using System.Windows.Forms;
 using System.Threading.Tasks;
@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System;
 using System.Drawing;
 using System.Reflection;
+using DarkModeForms;
 
 namespace MinimalFirewall
 {
@@ -15,7 +16,7 @@ namespace MinimalFirewall
     {
         private FirewallGroupManager? _groupManager;
         private BackgroundFirewallTaskService? _backgroundTaskService;
-        private DarkModeCS? _dm;
+
 
         private BindingSource _bindingSource;
 
@@ -32,11 +33,10 @@ namespace MinimalFirewall
             EnableDoubleBuffering(groupsDataGridView);
         }
 
-        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, DarkModeCS dm)
+        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService)
         {
             _groupManager = groupManager;
             _backgroundTaskService = backgroundTaskService;
-            _dm = dm;
 
             groupsDataGridView.AutoGenerateColumns = false;
             groupsDataGridView.DataSource = _bindingSource;
@@ -151,10 +151,7 @@ namespace MinimalFirewall
 
         private void DrawToggleSwitch(Graphics g, Rectangle bounds, bool isChecked)
         {
-            if (_dm == null)
-            {
-                return;
-            }
+            
 
             // DPI Scaling calculation
             float scaleFactor = g.DpiY / 96f;

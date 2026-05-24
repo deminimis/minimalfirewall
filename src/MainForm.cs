@@ -46,7 +46,6 @@ namespace MinimalFirewall
 
         private readonly Queue<FirewallRuleChange> _rulePopupQueue = new();
         private volatile bool _isRulePopupVisible = false;
-        private readonly DarkModeCS dm;
         private System.Threading.Timer? _autoRefreshTimer;
         private readonly Dictionary<string, System.Threading.Timer> _tabUnloadTimers = [];
         private Image? _lockedGreenIcon;
@@ -102,11 +101,7 @@ namespace MinimalFirewall
             ConfigPathManager.EnsureStorageDirectoryExists();
             _appSettings = AppSettings.Load();
             _appSettings.PropertyChanged += AppSettings_PropertyChanged;
-            dm = new DarkModeCS(this);
-            if (components != null)
-            {
-                dm.Components = components.Components;
-            }
+            
 
             InitializeServices();
 
@@ -165,14 +160,14 @@ namespace MinimalFirewall
             _mainViewModel = new MainViewModel(_firewallRuleService, _wildcardRuleService, _backgroundTaskService, _dataService, _firewallSentryService, trafficMonitorViewModel, _eventListenerService, _appSettings, _activityLogger, _actionsService);
 
             // Initialize UI Controls with Services
-            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, dm, _wildcardRuleService, _actionsService, _backgroundTaskService);
-            rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList, dm);
+            dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, _wildcardRuleService, _actionsService, _backgroundTaskService);
+            rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
-            auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings, dm);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService, dm);
+            auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
+            groupsControl1.Initialize(_groupManager, _backgroundTaskService);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
-            settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3), dm);
+            settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
         }
 
         private void OnQueueCountChanged(int count)
@@ -219,9 +214,7 @@ namespace MinimalFirewall
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            DarkModeCS.ExcludeFromProcessing(rescanButton);
             rescanButton.BackColor = Color.Transparent;
-            DarkModeCS.ExcludeFromProcessing(lockdownButton);
             lockdownButton.BackColor = Color.Transparent;
             lockdownButton.Paint += OwnerDrawnButton_Paint;
             rescanButton.Paint += OwnerDrawnButton_Paint;
@@ -372,18 +365,18 @@ namespace MinimalFirewall
             Image? lockedIcon = appImageList.Images["locked.png"];
             if (lockedIcon != null)
             {
-                _lockedGreenIcon = DarkModeCS.RecolorImage(lockedIcon, Theme.Colors.Success);
+                _lockedGreenIcon = RecolorImage(lockedIcon, Theme.Colors.Success);
             }
 
             Image? unlockedIcon = appImageList.Images["unlocked.png"];
             if (unlockedIcon != null)
             {
-                _unlockedWhiteIcon = DarkModeCS.RecolorImage(unlockedIcon, Color.White);
+                _unlockedWhiteIcon = RecolorImage(unlockedIcon, Color.White);
             }
             Image? refreshIcon = appImageList.Images["refresh.png"];
             if (refreshIcon != null)
             {
-                _refreshWhiteIcon = DarkModeCS.RecolorImage(refreshIcon, Color.White);
+                _refreshWhiteIcon = RecolorImage(refreshIcon, Color.White);
             }
 
             LayoutButtons();
@@ -408,15 +401,20 @@ namespace MinimalFirewall
             bool isAuto = _appSettings.Theme == "Auto";
             bool isDark = IsDarkModeEnabled;
 
-            dm.ColorMode = isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
-            dm.ApplyTheme(isDark);
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode));
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
 
             _cachedArrowPen?.Dispose();
             _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
 
             rulesControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
-            settingsControl1.ApplyTheme(isDark, dm);
+            settingsControl1.ApplyTheme(isDark);
             settingsControl1.ApplyThemeFixes();
 
             rescanButton.Invalidate();
@@ -525,13 +523,11 @@ namespace MinimalFirewall
             {
                 if (_appSettings.AlertOnForeignRules && _mainViewModel.UnseenSystemChangesCount > 0)
                 {
-                    systemChangesTabPage.Text = "Audit";
-                    DarkModeCS.SetNotificationCount(systemChangesTabPage, _mainViewModel.UnseenSystemChangesCount);
+                    systemChangesTabPage.Text = $"Audit ({_mainViewModel.UnseenSystemChangesCount})";
                 }
                 else
                 {
                     systemChangesTabPage.Text = "Audit";
-                    DarkModeCS.SetNotificationCount(systemChangesTabPage, 0);
                 }
                 UpdateTrayStatus();
             });

@@ -17,7 +17,7 @@ namespace MinimalFirewall
         private MainViewModel _viewModel = null!;
         private AppSettings _appSettings = null!;
         private IconService _iconService = null!;
-        private DarkModeCS _dm = null!;
+
         private WildcardRuleService _wildcardRuleService = null!;
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
@@ -37,11 +37,10 @@ namespace MinimalFirewall
             }
         }
 
-        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, DarkModeCS dm, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, BackgroundFirewallTaskService backgroundTaskService)
+        public void Initialize(MainViewModel viewModel, AppSettings appSettings, IconService iconService, WildcardRuleService wildcardRuleService, FirewallActionsService actionsService, BackgroundFirewallTaskService backgroundTaskService)
         {
             _viewModel = viewModel;
             _appSettings = appSettings;
-            _dm = dm;
             _iconService = iconService;
             _wildcardRuleService = wildcardRuleService;
             _actionsService = actionsService;
@@ -260,17 +259,17 @@ namespace MinimalFirewall
             if (allowButtonColumn != null && e.ColumnIndex == allowButtonColumn.Index)
             {
                 e.CellStyle.BackColor = Theme.Colors.Success;
-                e.CellStyle.ForeColor = Theme.Colors.TextActive;
+                e.CellStyle.ForeColor = Color.Black; 
             }
             else if (blockButtonColumn != null && e.ColumnIndex == blockButtonColumn.Index)
             {
                 e.CellStyle.BackColor = Theme.Colors.Danger;
-                e.CellStyle.ForeColor = Theme.Colors.TextActive;
+                e.CellStyle.ForeColor = Color.Black; 
             }
             else if (ignoreButtonColumn != null && e.ColumnIndex == ignoreButtonColumn.Index)
             {
                 e.CellStyle.BackColor = Theme.Colors.Ignore;
-                e.CellStyle.ForeColor = Theme.Colors.TextActive;
+                e.CellStyle.ForeColor = Color.Black; 
             }
 
             // Selection Logic
@@ -286,7 +285,7 @@ namespace MinimalFirewall
                 else
                 {
                     e.CellStyle.SelectionBackColor = Theme.Colors.SelectionInfo;
-                    e.CellStyle.SelectionForeColor = Theme.Colors.TextActive;
+                    e.CellStyle.SelectionForeColor = Color.Black; 
                 }
             }
             else

@@ -18,7 +18,7 @@ namespace MinimalFirewall
         private const int ProtocolIcmpV4 = 1;
         private const int ProtocolIcmpV6 = 58;
 
-        private readonly DarkModeCS dm;
+        
         private readonly FirewallActionsService _actionsService;
         private readonly FirewallRuleViewModel _viewModel;
         private readonly FirewallGroupManager _groupManager;
@@ -37,7 +37,7 @@ namespace MinimalFirewall
 
             InitializeState();
 
-            dm = new DarkModeCS(this);
+            
             ApplyDynamicTheme();
 
             BindDynamicUI();
@@ -85,8 +85,13 @@ namespace MinimalFirewall
         private void ApplyDynamicTheme()
         {
             bool isDark = _appSettings.Theme == "Dark";
-            dm.ColorMode = isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
-            dm.ApplyTheme(isDark);
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
         }
 
         private void BindDynamicUI()

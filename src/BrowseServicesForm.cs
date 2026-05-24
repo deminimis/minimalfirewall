@@ -5,7 +5,7 @@ namespace MinimalFirewall
 {
     public partial class BrowseServicesForm : Form
     {
-        private readonly DarkModeCS dm;
+        
         private readonly List<ServiceViewModel> _allServices;
         public ServiceViewModel? SelectedService { get; private set; }
 
@@ -16,9 +16,14 @@ namespace MinimalFirewall
             // prevents crashes if null list is passed
             _allServices = services ?? [];
 
-            dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
-            dm.ApplyTheme(appSettings.Theme == "Dark");
+            bool isDark = appSettings.Theme == "Dark";
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
 
             LoadServices();
         }

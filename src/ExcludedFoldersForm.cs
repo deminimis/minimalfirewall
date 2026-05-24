@@ -5,7 +5,6 @@ namespace MinimalFirewall
     public partial class ExcludedFoldersForm : Form
     {
         private readonly AppSettings _appSettings;
-        private readonly DarkModeCS dm;
 
         public ExcludedFoldersForm(AppSettings appSettings)
         {
@@ -13,9 +12,14 @@ namespace MinimalFirewall
 
             _appSettings = appSettings;
 
-            dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
-            dm.ApplyTheme(appSettings.Theme == "Dark");
+            bool isDark = appSettings.Theme == "Dark" || (appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
 
             LoadFolders();
         }

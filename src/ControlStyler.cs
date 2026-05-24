@@ -182,6 +182,14 @@ namespace DarkModeForms
         {
             tc.Appearance = TabAppearance.Normal;
             tc.DrawMode = TabDrawMode.OwnerDrawFixed;
+
+            // DoubleBuffer
+            typeof(Control).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic,
+                null, tc, new object[] { true });
+
             tc.DrawItem -= Tab_DrawItem;
             tc.DrawItem += Tab_DrawItem;
         }
@@ -204,9 +212,9 @@ namespace DarkModeForms
 
         private void StyleToolStrip(ToolStrip ts)
         {
-            ts.RenderMode = ToolStripRenderMode.Professional;
-            ts.Renderer = new MyRenderer(new CustomColorTable(_colors), true) { MyColors = _colors };
-
+            ts.RenderMode = ToolStripRenderMode.System;
+            ts.BackColor = _colors.Background;
+            ts.ForeColor = _colors.TextActive;
             if (ts is ToolStripDropDown dropDown)
             {
                 dropDown.Opening -= Tsdd_Opening;
@@ -237,14 +245,8 @@ namespace DarkModeForms
 
         private void StyleListView(ListView lv)
         {
-            lv.OwnerDraw = true;
-            lv.DrawColumnHeader -= ListView_DrawColumnHeader;
-            lv.DrawColumnHeader += ListView_DrawColumnHeader;
-
-            if (!lv.OwnerDraw)
-            {
-                ApplyThemeToHandle(lv.Handle, "Explorer");
-            }
+            lv.OwnerDraw = false;
+            ApplyThemeToHandle(lv.Handle, "Explorer");
         }
 
         private void StyleTreeView(TreeView tv)
@@ -291,96 +293,120 @@ namespace DarkModeForms
 
         private void Tab_DrawItem(object? sender, DrawItemEventArgs e)
         {
-            if (sender is not TabControl tab || tab.Parent == null) return;
+            if (sender is not TabControl tab || tab.Parent == null || e.Index < 0) return;
 
-            using var headerBrush = new SolidBrush(tab.Parent.BackColor);
-            e.Graphics.FillRectangle(headerBrush, new Rectangle(0, 0, tab.Width, tab.Height));
-
-            for (int i = 0; i < tab.TabPages.Count; i++)
+            TabPage tabPage = tab.TabPages[e.Index];
+            if (tabPage.Tag == null)
             {
-                TabPage tabPage = tab.TabPages[i];
-                if (tabPage.Tag == null)
-                {
-                    tabPage.BorderStyle = BorderStyle.FixedSingle;
-                    tabPage.Tag = "themed";
-                }
-                Rectangle tabRect = tab.GetTabRect(i);
-                bool isSelected = tab.SelectedIndex == i;
-                if (isSelected)
-                {
-                    using var tabBackColor = new SolidBrush(_colors.Surface);
-                    e.Graphics.FillRectangle(tabBackColor, tabRect);
-                }
+                tabPage.BorderStyle = BorderStyle.FixedSingle;
+                tabPage.Tag = "themed";
+            }
 
-                Image? icon = null;
-                if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
-                {
-                    icon = tab.ImageList.Images[tabPage.ImageIndex];
-                }
+            Rectangle tabRect = tab.GetTabRect(e.Index);
+            bool isSelected = tab.SelectedIndex == e.Index;
 
-                Rectangle textBounds;
-                TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
-                Color textColor = isSelected ? _colors.TextActive : _colors.TextInactive;
+            // 1. Draw the background for this specific tab ONLY
+            using (var tabBackColor = new SolidBrush(isSelected ? _colors.Surface : tab.Parent.BackColor))
+            {
+                // Inflate the rectangle by 1 pixel to prevent default gray borders from bleeding through
+                Rectangle fillRect = tabRect;
+                fillRect.Inflate(1, 1);
+                e.Graphics.FillRectangle(tabBackColor, fillRect);
+            }
 
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-
+            // 2. SMART FILL: Paint the empty void ONLY after the very last tab.
+            // This guarantees we never paint over your other tabs, fixing the disappearing bug.
+            if (e.Index == tab.TabPages.Count - 1)
+            {
+                using var bgBrush = new SolidBrush(tab.Parent.BackColor);
                 if (tab.Alignment == TabAlignment.Left || tab.Alignment == TabAlignment.Right)
                 {
-                    if (icon != null)
-                    {
-                        int iconWidth = tab.ImageList.ImageSize.Width;
-                        int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
-                        int iconY = tabRect.Y + 15;
-                        Image imageToDraw = icon;
+                    // Calculate the empty area from the bottom of the last tab to the bottom of the control
+                    Rectangle emptySpace = new Rectangle(0, tabRect.Bottom, tabRect.Right + 4, tab.Height - tabRect.Bottom);
+                    e.Graphics.FillRectangle(bgBrush, emptySpace);
+                }
+                else
+                {
+                    // Calculate the empty area from the right of the last tab to the right of the control
+                    Rectangle emptySpace = new Rectangle(tabRect.Right, 0, tab.Width - tabRect.Right, tabRect.Bottom + 4);
+                    e.Graphics.FillRectangle(bgBrush, emptySpace);
+                }
+            }
 
-                        bool shouldDispose = false;
-                        if (_isDarkMode && tabPage.ImageKey != "locked.png")
-                        {
-                            imageToDraw = DarkModeCS.RecolorImage(icon, Color.White);
-                            shouldDispose = true;
-                        }
-                        int iconHeight = tab.ImageList.ImageSize.Height;
-                        e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
-                        if (shouldDispose)
-                        {
-                            imageToDraw.Dispose();
-                        }
-                        textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
-                        textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
-                    }
-                    else
+            // 3. Setup Icon & Text
+            Image? icon = null;
+            if (tab.ImageList != null && tabPage.ImageIndex >= 0 && tabPage.ImageIndex < tab.ImageList.Images.Count)
+            {
+                icon = tab.ImageList.Images[tabPage.ImageIndex];
+            }
+
+            Rectangle textBounds;
+            TextFormatFlags textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak;
+            Color textColor = isSelected ? _colors.TextActive : _colors.TextInactive;
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            // 4. Draw Icon & Text based on Alignment
+            if (tab.Alignment == TabAlignment.Left || tab.Alignment == TabAlignment.Right)
+            {
+                if (icon != null)
+                {
+                    int iconWidth = tab.ImageList.ImageSize.Width;
+                    int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
+                    int iconY = tabRect.Y + 15;
+                    Image imageToDraw = icon;
+                    bool shouldDispose = false;
+
+                    if (_isDarkMode && tabPage.ImageKey != "locked.png")
                     {
-                        textBounds = tabRect;
+                        imageToDraw = RecolorImage(icon, Color.White);
+                        shouldDispose = true;
                     }
+
+                    int iconHeight = tab.ImageList.ImageSize.Height;
+                    e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
+
+                    if (shouldDispose) imageToDraw.Dispose();
+
+                    textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
+                    textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
                 }
                 else
                 {
                     textBounds = tabRect;
                 }
-                TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
-            }
-        }
-
-        private void ListView_DrawColumnHeader(object? sender, DrawListViewColumnHeaderEventArgs e)
-        {
-            if (sender is not ListView) return;
-
-            if (_isDarkMode)
-            {
-                using (var backBrush = new SolidBrush(_colors.Surface))
-                {
-                    e.Graphics.FillRectangle(backBrush, e.Bounds);
-                }
-                if (e.Header != null)
-                {
-                    TextRenderer.DrawText(e.Graphics, e.Header.Text, e.Font, e.Bounds, _colors.TextActive, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-                }
             }
             else
             {
-                e.DrawDefault = true;
+                textBounds = tabRect;
             }
+
+            TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
+        }
+
+        private Image RecolorImage(Image sourceImage, Color newColor)
+        {
+            var newBitmap = new Bitmap(sourceImage.Width, sourceImage.Height);
+            using (var g = Graphics.FromImage(newBitmap))
+            {
+                float r = newColor.R / 255f;
+                float cg = newColor.G / 255f;
+                float b = newColor.B / 255f;
+                var colorMatrix = new System.Drawing.Imaging.ColorMatrix(
+                [
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0],
+                    [r, cg, b, 0, 1]
+                ]);
+                using var attributes = new System.Drawing.Imaging.ImageAttributes();
+                attributes.SetColorMatrix(colorMatrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
+                g.DrawImage(sourceImage, new Rectangle(0, 0, sourceImage.Width, sourceImage.Height),
+                            0, 0, sourceImage.Width, sourceImage.Height, GraphicsUnit.Pixel, attributes);
+            }
+            return newBitmap;
         }
 
         private void Tsdd_Opening(object? sender, System.ComponentModel.CancelEventArgs e)

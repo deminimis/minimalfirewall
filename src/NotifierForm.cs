@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using DarkModeForms;
-using static DarkModeForms.OSThemeColors;
+
 
 namespace MinimalFirewall
 {
@@ -23,22 +23,27 @@ namespace MinimalFirewall
         public FirewallRuleChange? RuleChange { get; private set; }
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
-        private readonly DarkModeCS dm;
+
 
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
-            dm.ApplyTheme(isDarkMode);
+            Theme.Colors = Theme.GetSystemColors(isDarkMode ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
 
+            var styler = new ControlStyler(Theme.Colors, isDarkMode);
+            styler.ApplyStyle(this);
             pathLabel.BackColor = Theme.Colors.PathLabelBackground;
             pathLabel.ForeColor = Theme.Colors.TextActive;
 
             allowButton.BackColor = Theme.Colors.Success;
             blockButton.BackColor = Theme.Colors.Danger;
-            allowButton.ForeColor = Theme.Colors.TextActive;
-            blockButton.ForeColor = Theme.Colors.TextActive;
+            allowButton.ForeColor = Color.Black;
+            blockButton.ForeColor = Color.Black;
 
             allowButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Success, 0.1f);
             blockButton.FlatAppearance.MouseOverBackColor = ControlPaint.Dark(Theme.Colors.Danger, 0.1f);
@@ -51,10 +56,7 @@ namespace MinimalFirewall
             InitializeComponent();
             RuleChange = rule;
 
-            dm = new DarkModeCS(this)
-            {
-                ColorMode = isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
-            };
+            
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
@@ -76,10 +78,6 @@ namespace MinimalFirewall
             InitializeComponent();
             PendingConnection = pending;
 
-            dm = new DarkModeCS(this)
-            {
-                ColorMode = isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
-            };
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
@@ -94,12 +92,12 @@ namespace MinimalFirewall
             SetupTempAllowMenu();
         }
 
-        // Window Load: Restore position and ensure visibility
+        // Restore window position
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-            // Ensure the notification is seen over other apps
+            // Set notification above other apps
             TopMost = true;
             Activate();
 

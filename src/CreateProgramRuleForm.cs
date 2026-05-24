@@ -6,12 +6,21 @@ namespace MinimalFirewall
     {
         private readonly string[] _filePaths;
         private readonly FirewallActionsService _actionsService;
-        private readonly DarkModeCS dm;
+
 
         public CreateProgramRuleForm(string[] filePaths, FirewallActionsService actionsService)
         {
             InitializeComponent();
-            dm = new DarkModeCS(this);
+
+            bool isDark = Theme.IsSystemDarkMode();
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
+
             _filePaths = filePaths;
             _actionsService = actionsService;
 

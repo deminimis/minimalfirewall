@@ -11,9 +11,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using DarkModeForms;
+
 using Firewall.Traffic.ViewModels;
 using MinimalFirewall.TypedObjects;
+using DarkModeForms;
 using static DarkModeForms.OSThemeColors;
 
 namespace MinimalFirewall
@@ -27,7 +28,7 @@ namespace MinimalFirewall
         private UserActivityLogger _activityLogger = null!;
         private MainViewModel _mainViewModel = null!;
         private ImageList _appImageList = null!;
-        private DarkModeCS _dm = null!;
+
 
         public event Action? ThemeChanged;
         public event Action? IconVisibilityChanged;
@@ -39,8 +40,7 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
-            DarkModeCS.ExcludeFromProcessing(dividerPanel1);
-            DarkModeCS.ExcludeFromProcessing(dividerPanel2);
+            
         }
 
         public void Initialize(
@@ -51,8 +51,7 @@ namespace MinimalFirewall
             UserActivityLogger activityLogger,
             MainViewModel mainViewModel,
             ImageList appImageList,
-            string version,
-            DarkModeCS dm)
+            string version)
         {
             _appSettings = appSettings;
             _startupService = startupService;
@@ -61,7 +60,6 @@ namespace MinimalFirewall
             _activityLogger = activityLogger;
             _mainViewModel = mainViewModel;
             _appImageList = appImageList;
-            _dm = dm;
 
             versionLabel.Text = version;
             loggingSwitch.CheckedChanged += new System.EventHandler(LoggingSwitch_CheckedChanged);
@@ -167,7 +165,7 @@ namespace MinimalFirewall
             _appSettings.Save();
         }
 
-        public void ApplyTheme(bool isDark, DarkModeCS dm)
+        public void ApplyTheme(bool isDark)
         {
             foreach (var link in new[] { helpLink, reportProblemLink, forumLink, coffeeLinkLabel })
             {
@@ -181,7 +179,7 @@ namespace MinimalFirewall
                 if (coffeeImage != null)
                 {
                     Image? oldImage = coffeePictureBox.Image;
-                    coffeePictureBox.Image = DarkModeCS.RecolorImage(coffeeImage, Theme.Colors.GraphicAccent);
+                    coffeePictureBox.Image = RecolorImage(coffeeImage, Theme.Colors.GraphicAccent);
 
                     // Only dispose if it's not the original resource from ImageList
                     if (oldImage != null && oldImage != coffeeImage)
@@ -190,6 +188,24 @@ namespace MinimalFirewall
                     }
                 }
             }
+        }
+
+        private Image RecolorImage(Image image, Color color)
+        {
+            var bmp = new Bitmap(image.Width, image.Height);
+            using var g = Graphics.FromImage(bmp);
+            float r = color.R / 255f, cg = color.G / 255f, b = color.B / 255f;
+            var matrix = new System.Drawing.Imaging.ColorMatrix([
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0],
+                [r, cg, b, 0, 1]
+            ]);
+            using var attr = new System.Drawing.Imaging.ImageAttributes();
+            attr.SetColorMatrix(matrix);
+            g.DrawImage(image, new Rectangle(0, 0, image.Width, image.Height), 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, attr);
+            return bmp;
         }
 
         private void AutoThemeSwitch_CheckedChanged(object? sender, EventArgs e)

@@ -22,7 +22,7 @@ namespace MinimalFirewall
         private MainViewModel _viewModel = null!;
         private AppSettings _appSettings = null!;
         private FirewallSentryService _firewallSentryService = null!;
-        private DarkModeCS _dm = null!;
+        
         private BindingSource _bindingSource = null!;
 
         // Cached GDI resources
@@ -65,13 +65,11 @@ namespace MinimalFirewall
         public void Initialize(
             MainViewModel viewModel,
             FirewallSentryService firewallSentryService,
-            AppSettings appSettings,
-            DarkModeCS dm)
+            AppSettings appSettings)
         {
             _viewModel = viewModel;
             _firewallSentryService = firewallSentryService;
             _appSettings = appSettings;
-            _dm = dm;
 
             _bindingSource = [];
             systemChangesDataGridView.DataSource = _bindingSource;

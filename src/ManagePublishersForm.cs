@@ -1,43 +1,43 @@
-// File: ManagePublishersForm.cs
-using DarkModeForms;
+
 using System.Data; // Required for LINQ extensions if not globally imported
+using DarkModeForms;
 
 namespace MinimalFirewall
 {
-    // Form for viewing and removing trusted software publishers
+    // Visual form to manage publishers
     public partial class ManagePublishersForm : Form
     {
         private readonly PublisherWhitelistService _whitelistService;
-        private readonly DarkModeCS dm;
 
         public ManagePublishersForm(PublisherWhitelistService whitelistService, AppSettings appSettings)
         {
             InitializeComponent();
 
-            // Initialize Dark Mode integration based on app settings
-            dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
-            dm.ApplyTheme(appSettings.Theme == "Dark");
+            bool isDark = appSettings.Theme == "Dark" || (appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
 
             _whitelistService = whitelistService;
 
-            // Ensure we track selection changes to update button states
             publishersListBox.SelectedIndexChanged += new System.EventHandler(publishersListBox_SelectedIndexChanged);
 
             LoadPublishers();
         }
 
-        // Refreshes the list of publishers from the whitelist service
+        // Refresh publishers from whitelist 
         private void LoadPublishers()
         {
-            // BeginUpdate/EndUpdate prevents visual flickering during bulk updates
             publishersListBox.BeginUpdate();
             try
             {
                 publishersListBox.Items.Clear();
                 var publishers = _whitelistService.GetTrustedPublishers();
 
-                // AddRange is more efficient than iterating and adding one by one
                 publishersListBox.Items.AddRange(publishers.ToArray());
             }
             finally
@@ -48,7 +48,7 @@ namespace MinimalFirewall
             UpdateUIState();
         }
 
-        // Toggles button availability based on current selection
+        // Toggles button based on selection
         private void UpdateUIState()
         {
             removeButton.Enabled = publishersListBox.SelectedItems.Count > 0;

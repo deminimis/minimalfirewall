@@ -102,11 +102,13 @@ namespace DarkModeForms
                 form.Owner = owner;
             }
 
-            var DMode = new DarkModeCS(form)
-            {
-                ColorMode = pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
-            };
-            DMode.ApplyTheme(pIsDarkMode);
+            Theme.Colors = Theme.GetSystemColors(pIsDarkMode ? 0 : 1);
+            Theme.ApplyTitleBarTheme(form.Handle, pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            form.BackColor = Theme.Colors.Background;
+            form.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, pIsDarkMode);
+            styler.ApplyStyle(form);
 
             Font systemFont = SystemFonts.DefaultFont;
             int fontHeight = systemFont.Height;
@@ -117,8 +119,8 @@ namespace DarkModeForms
             {
                 Dock = DockStyle.Bottom,
                 Height = 48,
-                BackColor = DMode.OScolors.Surface,
-                ForeColor = DMode.OScolors.TextActive
+                BackColor = Theme.Colors.Surface,
+                ForeColor = Theme.Colors.TextActive
             };
             form.Controls.Add(bottomPanel);
 
@@ -136,7 +138,7 @@ namespace DarkModeForms
                 for (int c = CmdButtons.Count - 1; c >= 0; c--)
                 {
                     Button _button = CmdButtons[c];
-                    _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? DMode.OScolors.Accent : DMode.OScolors.Control;
+                    _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
 
                     bottomPanel.Controls.Add(_button);
                     _button.TabIndex = c;
@@ -156,7 +158,7 @@ namespace DarkModeForms
                 {
                     CmdButtons[b].Select();
                     CmdButtons[b].FlatStyle = FlatStyle.Flat;
-                    CmdButtons[b].FlatAppearance.BorderColor = DMode.OScolors.AccentLight;
+                    CmdButtons[b].FlatAppearance.BorderColor = Theme.Colors.AccentLight;
                 }
             }
 
@@ -184,7 +186,7 @@ namespace DarkModeForms
             {
                 Text = Message,
                 AutoSize = true,
-                ForeColor = DMode.OScolors.TextActive,
+                ForeColor = Theme.Colors.TextActive,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Location = new Point(picBox.X + picBox.Width + 4, picBox.Y),
                 MaximumSize = new Size(form.ClientSize.Width - (picBox.X + picBox.Width) + 8, 0),
@@ -232,8 +234,13 @@ namespace DarkModeForms
                 Width = 340,
                 Height = 170
             };
-            var DMode = new DarkModeCS(form) { ColorMode = pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode };
-            DMode.ApplyTheme(pIsDarkMode);
+            Theme.Colors = Theme.GetSystemColors(pIsDarkMode ? 0 : 1);
+            Theme.ApplyTitleBarTheme(form.Handle, pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            form.BackColor = Theme.Colors.Background;
+            form.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, pIsDarkMode);
+            styler.ApplyStyle(form);
             var Err = new ErrorProvider();
 
             #region Bottom Panel
@@ -242,8 +249,8 @@ namespace DarkModeForms
             {
                 Dock = DockStyle.Bottom,
                 Height = 48,
-                BackColor = DMode.OScolors.Surface,
-                ForeColor = DMode.OScolors.TextActive
+                BackColor = Theme.Colors.Surface,
+                ForeColor = Theme.Colors.TextActive
             };
             form.Controls.Add(bottomPanel);
 
@@ -273,7 +280,7 @@ namespace DarkModeForms
 
             foreach (var _button in CmdButtons)
             {
-                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? DMode.OScolors.Accent : DMode.OScolors.Control;
+                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
                 bottomPanel.Controls.Add(_button);
                 _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
                 LastPos = _button.Left;
@@ -308,7 +315,7 @@ namespace DarkModeForms
             {
                 Size = new Size(form.ClientSize.Width - 20, 50),
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                BackColor = DMode.OScolors.Background,
+                BackColor = Theme.Colors.Background,
                 AutoSize = true,
                 ColumnCount = 2,
                 Location = new Point(10, lblPrompt.Location.Y + lblPrompt.Height + 4)
@@ -399,10 +406,10 @@ namespace DarkModeForms
                             };
                             if (isDate)
                             {
-                                dt.CalendarForeColor = DMode.OScolors.TextActive;
-                                dt.CalendarMonthBackground = DMode.OScolors.Control;
-                                dt.CalendarTitleBackColor = DMode.OScolors.Surface;
-                                dt.CalendarTitleForeColor = DMode.OScolors.TextActive;
+                                dt.CalendarForeColor = Theme.Colors.TextActive;
+                                dt.CalendarMonthBackground = Theme.Colors.Control;
+                                dt.CalendarTitleBackColor = Theme.Colors.Surface;
+                                dt.CalendarTitleForeColor = Theme.Colors.TextActive;
                             }
                             dt.ValueChanged += (sender, args) =>
                             {
@@ -428,7 +435,7 @@ namespace DarkModeForms
                         break;
                     case ValueTypes.Dynamic:
                         {
-                            var combo = new ComboBox { DataSource = field.DataSet, ValueMember = "Value", DisplayMember = "Key", Dock = DockStyle.Fill, BackColor = DMode.OScolors.Control, ForeColor = DMode.OScolors.TextActive, SelectedValue = field.Value, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = (DMode.IsDarkMode ? FlatStyle.Flat : FlatStyle.Standard) };
+                            var combo = new ComboBox { DataSource = field.DataSet, ValueMember = "Value", DisplayMember = "Key", Dock = DockStyle.Fill, BackColor = Theme.Colors.Control, ForeColor = Theme.Colors.TextActive, SelectedValue = field.Value, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = (pIsDarkMode ? FlatStyle.Flat : FlatStyle.Standard) };
                             combo.SelectedValueChanged += (sender, args) =>
                             {
                                 field.Value = combo.SelectedValue.ToString()!;

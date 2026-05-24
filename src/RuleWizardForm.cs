@@ -1,10 +1,11 @@
+
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Net;
 using DarkModeForms;
 using MinimalFirewall.TypedObjects;
-using System.IO;
 using NetFwTypeLib;
-using System.Net;
-using System.Data;
-using System.Linq;
 
 namespace MinimalFirewall
 {
@@ -27,7 +28,6 @@ namespace MinimalFirewall
         private readonly FirewallActionsService _actionsService;
         private readonly WildcardRuleService _wildcardRuleService;
         private readonly BackgroundFirewallTaskService _backgroundTaskService;
-        private readonly DarkModeCS dm;
         private readonly AppSettings _appSettings;
 
         // Wizard temporary state data
@@ -44,9 +44,14 @@ namespace MinimalFirewall
         public RuleWizardForm(FirewallActionsService actionsService, WildcardRuleService wildcardRuleService, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
         {
             InitializeComponent();
-            // Initialize Dark Mode theme
-            dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
+            bool isDark = appSettings.Theme == "Dark" || (appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
 
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;
@@ -60,7 +65,7 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            dm.ApplyTheme(_appSettings.Theme == "Dark");
+            
             GoToStep(WizardStep.Selection);
         }
 

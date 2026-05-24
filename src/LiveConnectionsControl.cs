@@ -231,19 +231,21 @@ namespace MinimalFirewall
                 if (conn.State.Equals("Established", StringComparison.OrdinalIgnoreCase))
                 {
                     e.CellStyle.BackColor = Theme.Colors.ConnectionEstablished;
-                    e.CellStyle.ForeColor = Theme.Colors.TextActive;
+                    // Black text on light backgrounds
+                    e.CellStyle.ForeColor = Color.Black;
                 }
                 else if (conn.State.Equals("Listen", StringComparison.OrdinalIgnoreCase))
                 {
                     e.CellStyle.BackColor = Theme.Colors.ConnectionListening;
-                    e.CellStyle.ForeColor = Theme.Colors.TextActive;
+                    // Black text on light background
+                    e.CellStyle.ForeColor = Color.Black;
                 }
             }
 
             if (liveConnectionsDataGridView.Rows[e.RowIndex].Selected)
             {
-                e.CellStyle.SelectionBackColor = SystemColors.Highlight;
-                e.CellStyle.SelectionForeColor = SystemColors.HighlightText;
+                e.CellStyle.SelectionBackColor = Theme.Colors.SelectionInfo;
+                e.CellStyle.SelectionForeColor = Color.Black;
             }
             else
             {

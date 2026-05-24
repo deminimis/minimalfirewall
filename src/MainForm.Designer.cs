@@ -48,7 +48,6 @@ namespace MinimalFirewall
                 _defaultTrayIcon?.Dispose();
                 _unlockedTrayIcon?.Dispose();
                 _alertTrayIcon?.Dispose();
-                dm?.Dispose();
                 components?.Dispose();
             }
             base.Dispose(disposing);

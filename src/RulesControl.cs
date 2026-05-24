@@ -1,8 +1,9 @@
 using NetFwTypeLib;
 using MinimalFirewall.TypedObjects;
+using DarkModeForms;
 using System.Data;
 using System.ComponentModel;
-using DarkModeForms;
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace MinimalFirewall
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private IconService _iconService = null!;
         private AppSettings _appSettings = null!;
-        private DarkModeCS _dm = null!;
+
 
         // Sorting and Data State
         private int _rulesSortColumn = -1;
@@ -60,8 +61,7 @@ namespace MinimalFirewall
             BackgroundFirewallTaskService backgroundTaskService,
             IconService iconService,
             AppSettings appSettings,
-            ImageList appIconList,
-            DarkModeCS dm)
+            ImageList appIconList)
         {
             _mainViewModel = mainViewModel;
             _actionsService = actionsService;
@@ -69,7 +69,6 @@ namespace MinimalFirewall
             _backgroundTaskService = backgroundTaskService;
             _iconService = iconService;
             _appSettings = appSettings;
-            _dm = dm;
 
             // Load initial filter states
             programFilterCheckBox.Checked = _appSettings.FilterPrograms;
@@ -508,12 +507,14 @@ namespace MinimalFirewall
             else if (hasAllow) e.CellStyle.BackColor = Theme.Colors.Success;
             else if (hasBlock) e.CellStyle.BackColor = Theme.Colors.Danger;
 
-            if (hasAllow || hasBlock) e.CellStyle.ForeColor = Theme.Colors.TextActive;
+            // black text on highlight
+            if (hasAllow || hasBlock) e.CellStyle.ForeColor = Color.Black;
 
             if (rulesDataGridView.Rows[e.RowIndex].Selected)
             {
                 e.CellStyle.SelectionBackColor = Theme.Colors.SelectionInfo;
-                e.CellStyle.SelectionForeColor = Theme.Colors.TextActive;
+                // black text on blue
+                e.CellStyle.SelectionForeColor = Color.Black;
             }
             else
             {

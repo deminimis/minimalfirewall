@@ -7,7 +7,7 @@ namespace MinimalFirewall
 {
     public partial class StatusForm : Form
     {
-        private readonly DarkModeCS dm;
+        
         protected System.Windows.Forms.Timer _initialLoadTimer;
 
         private double _fakeProgress;
@@ -16,8 +16,6 @@ namespace MinimalFirewall
         public StatusForm(string title, AppSettings appSettings)
         {
             InitializeComponent();
-
-            dm = new DarkModeCS(this);
             _initialLoadTimer = new System.Windows.Forms.Timer { Interval = 50 };
             ApplyTheme(appSettings);
             SetupInitialState(title);
@@ -28,8 +26,14 @@ namespace MinimalFirewall
         {
             bool isAuto = appSettings.Theme == "Auto";
             bool isDark = isAuto ? Theme.IsSystemDarkMode() : appSettings.Theme == "Dark";
-            dm.ColorMode = isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
-            dm.ApplyTheme(isDark);
+
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            this.BackColor = Theme.Colors.Background;
+            this.ForeColor = Theme.Colors.TextInactive;
+
+            var styler = new ControlStyler(Theme.Colors, isDark);
+            styler.ApplyStyle(this);
         }
 
         private void SetupInitialState(string title)
