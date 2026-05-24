@@ -408,7 +408,7 @@ namespace MinimalFirewall
             bool isAuto = _appSettings.Theme == "Auto";
             bool isDark = IsDarkModeEnabled;
 
-            dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
+            dm.ColorMode = isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
 
             _cachedArrowPen?.Dispose();
@@ -1481,7 +1481,7 @@ namespace MinimalFirewall
             return _scanCts.Token;
         }
 
-        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? DarkModeCS.IsSystemDarkMode() : _appSettings.Theme == "Dark";
+        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? Theme.IsSystemDarkMode() : _appSettings.Theme == "Dark";
 
         private void SafeInvoke(Action action)
         {

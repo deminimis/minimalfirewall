@@ -27,8 +27,8 @@ namespace MinimalFirewall
         private void ApplyTheme(AppSettings appSettings)
         {
             bool isAuto = appSettings.Theme == "Auto";
-            bool isDark = isAuto ? DarkModeCS.IsSystemDarkMode() : appSettings.Theme == "Dark";
-            dm.ColorMode = isAuto ? DarkModeCS.DisplayMode.SystemDefault : (isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode);
+            bool isDark = isAuto ? Theme.IsSystemDarkMode() : appSettings.Theme == "Dark";
+            dm.ColorMode = isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             dm.ApplyTheme(isDark);
         }
 

@@ -46,7 +46,7 @@ namespace MinimalFirewall
             InitializeComponent();
             // Initialize Dark Mode theme
             dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
 
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;

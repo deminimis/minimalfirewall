@@ -119,7 +119,7 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            if (DarkModeCS.IsSystemDarkMode())
+            if (Theme.IsSystemDarkMode())
             {
                 statusStrip1.BackColor = Theme.Colors.Surface;
                 statusLabel.ForeColor = Theme.Colors.TextActive;
@@ -423,7 +423,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            bool isDarkMode = DarkModeCS.IsSystemDarkMode();
+            bool isDarkMode = Theme.IsSystemDarkMode();
 
             // Default fallback colors
             Color rowBackColor = Theme.Colors.Surface;
@@ -571,7 +571,7 @@ namespace MinimalFirewall
         {
             diffRichTextBox.Clear();
 
-            bool isDark = DarkModeCS.IsSystemDarkMode();
+            bool isDark = Theme.IsSystemDarkMode();
 
             diffRichTextBox.BackColor = Theme.Colors.Surface;
             diffRichTextBox.ForeColor = Theme.Colors.TextActive;

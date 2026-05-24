@@ -104,7 +104,7 @@ namespace DarkModeForms
 
             var DMode = new DarkModeCS(form)
             {
-                ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+                ColorMode = pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
             };
             DMode.ApplyTheme(pIsDarkMode);
 
@@ -232,7 +232,7 @@ namespace DarkModeForms
                 Width = 340,
                 Height = 170
             };
-            var DMode = new DarkModeCS(form) { ColorMode = pIsDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode };
+            var DMode = new DarkModeCS(form) { ColorMode = pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode };
             DMode.ApplyTheme(pIsDarkMode);
             var Err = new ErrorProvider();
 

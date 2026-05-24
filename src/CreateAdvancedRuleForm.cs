@@ -85,7 +85,7 @@ namespace MinimalFirewall
         private void ApplyDynamicTheme()
         {
             bool isDark = _appSettings.Theme == "Dark";
-            dm.ColorMode = isDark ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ColorMode = isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
             dm.ApplyTheme(isDark);
         }
 

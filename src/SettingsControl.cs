@@ -116,7 +116,7 @@ namespace MinimalFirewall
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
             autoThemeSwitch.Checked = _appSettings.Theme == "Auto";
-            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && DarkModeCS.IsSystemDarkMode());
+            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
             darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;

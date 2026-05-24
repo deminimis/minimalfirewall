@@ -17,7 +17,7 @@ namespace MinimalFirewall
             _allServices = services ?? [];
 
             dm = new DarkModeCS(this);
-            dm.ColorMode = appSettings.Theme == "Dark" ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode;
+            dm.ColorMode = appSettings.Theme == "Dark" ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode;
             dm.ApplyTheme(appSettings.Theme == "Dark");
 
             LoadServices();

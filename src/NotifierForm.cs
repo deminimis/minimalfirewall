@@ -53,7 +53,7 @@ namespace MinimalFirewall
 
             dm = new DarkModeCS(this)
             {
-                ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+                ColorMode = isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
             };
             ApplyThemeStyles(isDarkMode);
 
@@ -78,7 +78,7 @@ namespace MinimalFirewall
 
             dm = new DarkModeCS(this)
             {
-                ColorMode = isDarkMode ? DarkModeCS.DisplayMode.DarkMode : DarkModeCS.DisplayMode.ClearMode
+                ColorMode = isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode
             };
             ApplyThemeStyles(isDarkMode);
 
