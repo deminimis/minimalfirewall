@@ -51,10 +51,7 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.AllowUserToDeleteRows = false;
             liveConnectionsDataGridView.AllowUserToResizeRows = false;
             liveConnectionsDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            liveConnectionsDataGridView.BackgroundColor = SystemColors.Control;
-            liveConnectionsDataGridView.BorderStyle = BorderStyle.None;
-            liveConnectionsDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
-            liveConnectionsDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            // Borders and background color inherited from ThemedDataGridView
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
             dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F);

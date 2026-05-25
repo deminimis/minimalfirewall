@@ -34,7 +34,8 @@ namespace DarkModeForms
 
             // Reference the global theme palette
             var colors = Theme.Colors;
-            bool isDarkMode = Theme.IsSystemDarkMode();
+            // Check the active palette rather than the system setting
+            bool isDarkMode = colors.Surface.R < 128;
 
             // Draw the background for this specific tab ONLY
             using (var tabBackColor = new SolidBrush(isSelected ? colors.Surface : (Parent?.BackColor ?? colors.Background)))

@@ -93,7 +93,7 @@ namespace MinimalFirewall
             wildcardDataGridView.AllowUserToDeleteRows = false;
             wildcardDataGridView.AllowUserToResizeRows = false;
             wildcardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            wildcardDataGridView.BorderStyle = BorderStyle.None;
+            
             wildcardDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             wildcardDataGridView.Columns.AddRange(new DataGridViewColumn[] { colFolderPath, colExeName, colAction, colProtocol, colLocalPorts, colRemotePorts, colRemoteAddresses });
             wildcardDataGridView.ContextMenuStrip = wildcardContextMenu;

@@ -176,10 +176,7 @@ namespace MinimalFirewall
             systemChangesDataGridView.AllowUserToDeleteRows = false;
             systemChangesDataGridView.AllowUserToResizeRows = false;
             systemChangesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            systemChangesDataGridView.BackgroundColor = SystemColors.Control;
-            systemChangesDataGridView.BorderStyle = BorderStyle.None;
-            systemChangesDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
-            systemChangesDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            // Borders and background color inherited from ThemedDataGridView
             systemChangesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             systemChangesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advTimestampColumn, advNameColumn, advInterventionColumn, advStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, advPublisherColumn });
             systemChangesDataGridView.ContextMenuStrip = auditContextMenu;

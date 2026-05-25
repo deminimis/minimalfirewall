@@ -16,9 +16,11 @@ namespace DarkModeForms
         {
             if (Theme.Colors == null) return;
 
-            bool isDarkMode = Theme.IsSystemDarkMode();
+            // Check the active palette rather than the system setting
+            bool isDarkMode = Theme.Colors.Surface.R < 128;
 
-            FlatStyle = isDarkMode ? FlatStyle.Flat : FlatStyle.Standard;
+            FlatStyle = isDarkMode ?
+                FlatStyle.Flat : FlatStyle.Standard;
             FlatAppearance.CheckedBackColor = Theme.Colors.Accent;
 
             if (BackColor != Color.Transparent)

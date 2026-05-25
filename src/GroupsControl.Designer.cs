@@ -53,10 +53,8 @@ namespace MinimalFirewall
             groupsDataGridView.AllowUserToAddRows = false;
             groupsDataGridView.AllowUserToDeleteRows = false;
             groupsDataGridView.AllowUserToResizeRows = false;
+            // Borders and background color inherited from ThemedDataGridView
             groupsDataGridView.BackgroundColor = SystemColors.Control;
-            groupsDataGridView.BorderStyle = BorderStyle.None;
-            groupsDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
-            groupsDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
             dataGridViewCellStyle1.Font = new Font("Segoe UI", 12F);
