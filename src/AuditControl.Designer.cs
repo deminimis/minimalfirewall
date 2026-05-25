@@ -11,11 +11,11 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.Panel topPanel;
-        private System.Windows.Forms.DataGridView systemChangesDataGridView;
+        private DarkModeForms.ThemedPanel topPanel;
+        private DarkModeForms.ThemedDataGridView systemChangesDataGridView;
         private System.Windows.Forms.SplitContainer splitContainer;
         private System.Windows.Forms.RichTextBox diffRichTextBox;
-        private System.Windows.Forms.Label diffLabel;
+        private DarkModeForms.ThemedLabel diffLabel;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
         private System.Windows.Forms.ToolTip toolTip1;
@@ -41,9 +41,9 @@ namespace MinimalFirewall
             toolStripSeparator2 = new ToolStripSeparator();
             copyDetailsToolStripMenuItem = new ToolStripMenuItem();
             openFileLocationToolStripMenuItem = new ToolStripMenuItem();
-            topPanel = new Panel();
+            topPanel = new DarkModeForms.ThemedPanel();
             splitContainer = new SplitContainer();
-            systemChangesDataGridView = new DataGridView();
+            systemChangesDataGridView = new DarkModeForms.ThemedDataGridView();
             advTimestampColumn = new DataGridViewTextBoxColumn();
             advNameColumn = new DataGridViewTextBoxColumn();
             advInterventionColumn = new DataGridViewTextBoxColumn();
@@ -60,7 +60,7 @@ namespace MinimalFirewall
             advDescColumn = new DataGridViewTextBoxColumn();
             advPublisherColumn = new DataGridViewTextBoxColumn();
             diffRichTextBox = new RichTextBox();
-            diffLabel = new Label();
+            diffLabel = new DarkModeForms.ThemedLabel();
             statusStrip1 = new StatusStrip();
             statusLabel = new ToolStripStatusLabel();
             toolTip1 = new ToolTip(components);
@@ -184,7 +184,6 @@ namespace MinimalFirewall
             systemChangesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advTimestampColumn, advNameColumn, advInterventionColumn, advStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, advPublisherColumn });
             systemChangesDataGridView.ContextMenuStrip = auditContextMenu;
             systemChangesDataGridView.Dock = DockStyle.Fill;
-            systemChangesDataGridView.EnableHeadersVisualStyles = false;
             systemChangesDataGridView.GridColor = SystemColors.Control;
             systemChangesDataGridView.Location = new Point(0, 0);
             systemChangesDataGridView.Margin = new Padding(3, 2, 3, 2);

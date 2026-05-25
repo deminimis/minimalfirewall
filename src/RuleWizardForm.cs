@@ -50,8 +50,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
 
             _actionsService = actionsService;
             _wildcardRuleService = wildcardRuleService;

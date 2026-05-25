@@ -18,8 +18,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
 
             LoadFolders();
         }
@@ -49,12 +47,12 @@ namespace MinimalFirewall
             removeButton.Enabled = foldersListBox.SelectedItems.Count > 0;
         }
 
-        private void foldersListBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void FoldersListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateUIState();
         }
 
-        private void addButton_Click(object sender, EventArgs e)
+        private void AddButton_Click(object sender, EventArgs e)
         {
             using var dialog = new FolderBrowserDialog
             {
@@ -83,7 +81,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void removeButton_Click(object sender, EventArgs e)
+        private void RemoveButton_Click(object sender, EventArgs e)
         {
             if (foldersListBox.SelectedItems.Count > 0)
             {
@@ -110,7 +108,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void closeButton_Click(object sender, EventArgs e)
+        private void CloseButton_Click(object sender, EventArgs e)
         {
             Close();
         }

@@ -5,20 +5,20 @@ namespace MinimalFirewall
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.NotifyIcon notifyIcon;
-        private System.Windows.Forms.TabControl mainTabControl;
+        private DarkModeForms.ThemedTabControl mainTabControl;
         private System.Windows.Forms.TabPage dashboardTabPage;
         private System.Windows.Forms.TabPage rulesTabPage;
         private System.Windows.Forms.TabPage systemChangesTabPage;
         private System.Windows.Forms.TabPage settingsTabPage;
         private System.Windows.Forms.TabPage groupsTabPage;
         private System.Windows.Forms.TabPage liveConnectionsTabPage;
-        private System.Windows.Forms.Button lockdownButton;
-        private System.Windows.Forms.Button rescanButton;
+        private DarkModeForms.ThemedButton lockdownButton;
+        private DarkModeForms.ThemedButton rescanButton;
         private System.Windows.Forms.ToolTip mainToolTip;
         private System.Windows.Forms.ImageList appImageList;
         private System.Windows.Forms.PictureBox logoPictureBox;
         private System.Windows.Forms.PictureBox arrowPictureBox;
-        private System.Windows.Forms.Label instructionLabel;
+        private DarkModeForms.ThemedLabel instructionLabel;
         private System.Windows.Forms.ImageList appIconList;
         private DashboardControl dashboardControl1;
         private RulesControl rulesControl1;
@@ -59,11 +59,11 @@ namespace MinimalFirewall
         {
             components = new System.ComponentModel.Container();
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            mainTabControl = new System.Windows.Forms.TabControl();
+            mainTabControl = new DarkModeForms.ThemedTabControl();
             dashboardTabPage = new TabPage();
             logoPictureBox = new PictureBox();
             arrowPictureBox = new PictureBox();
-            instructionLabel = new Label();
+            instructionLabel = new DarkModeForms.ThemedLabel();
             dashboardControl1 = new DashboardControl();
             rulesTabPage = new TabPage();
             rulesControl1 = new RulesControl();
@@ -78,8 +78,8 @@ namespace MinimalFirewall
             settingsTabPage = new TabPage();
             settingsControl1 = new SettingsControl();
             appImageList = new ImageList(components);
-            lockdownButton = new Button();
-            rescanButton = new Button();
+            lockdownButton = new DarkModeForms.ThemedButton();
+            rescanButton = new DarkModeForms.ThemedButton();
             mainToolTip = new ToolTip(components);
             appIconList = new ImageList(components);
             mainTabControl.SuspendLayout();

@@ -18,8 +18,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
 
             _filePaths = filePaths;
             _actionsService = actionsService;

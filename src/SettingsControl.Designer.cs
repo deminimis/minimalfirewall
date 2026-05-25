@@ -17,25 +17,25 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            deleteAllRulesButton = new Button();
-            revertFirewallButton = new Button();
+            deleteAllRulesButton = new DarkModeForms.ThemedButton();
+            revertFirewallButton = new DarkModeForms.ThemedButton();
             auditAlertsSwitch = new CheckBox();
-            managePublishersButton = new Button();
+            managePublishersButton = new DarkModeForms.ThemedButton();
             autoAllowWhitelistedPublishersCheck = new CheckBox();
             autoAllowSystemSignedAppsCheck = new CheckBox();
-            viewTrustedCertsButton = new Button();
-            excludedFoldersButton = new Button();
+            viewTrustedCertsButton = new DarkModeForms.ThemedButton();
+            excludedFoldersButton = new DarkModeForms.ThemedButton();
             showAppIconsSwitch = new CheckBox();
             trafficMonitorSwitch = new CheckBox();
-            autoRefreshLabel1 = new Label();
-            autoRefreshLabel2 = new Label();
-            coffeePanel = new Panel();
+            autoRefreshLabel1 = new DarkModeForms.ThemedLabel();
+            autoRefreshLabel2 = new DarkModeForms.ThemedLabel();
+            coffeePanel = new DarkModeForms.ThemedPanel();
             coffeePictureBox = new PictureBox();
             coffeeLinkLabel = new LinkLabel();
-            versionLabel = new Label();
-            checkForUpdatesButton = new Button();
-            openFirewallButton = new Button();
-            openAppDataButton = new Button();
+            versionLabel = new DarkModeForms.ThemedLabel();
+            checkForUpdatesButton = new DarkModeForms.ThemedButton();
+            openFirewallButton = new DarkModeForms.ThemedButton();
+            openAppDataButton = new DarkModeForms.ThemedButton();
             forumLink = new LinkLabel();
             reportProblemLink = new LinkLabel();
             helpLink = new LinkLabel();
@@ -46,14 +46,14 @@ namespace MinimalFirewall
             autoThemeSwitch = new CheckBox();
             startOnStartupSwitch = new CheckBox();
             closeToTraySwitch = new CheckBox();
-            mainSettingsPanel = new Panel();
-            exportDiagnosticButton = new Button();
-            importReplaceButton = new Button();
-            importMergeButton = new Button();
-            exportRulesButton = new Button();
-            cleanUpOrphanedRulesButton = new Button();
-            dividerPanel1 = new Panel();
-            dividerPanel2 = new Panel();
+            mainSettingsPanel = new DarkModeForms.ThemedPanel();
+            exportDiagnosticButton = new DarkModeForms.ThemedButton();
+            importReplaceButton = new DarkModeForms.ThemedButton();
+            importMergeButton = new DarkModeForms.ThemedButton();
+            exportRulesButton = new DarkModeForms.ThemedButton();
+            cleanUpOrphanedRulesButton = new DarkModeForms.ThemedButton();
+            dividerPanel1 = new DarkModeForms.ThemedPanel();
+            dividerPanel2 = new DarkModeForms.ThemedPanel();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
             mainSettingsPanel.SuspendLayout();
@@ -558,25 +558,25 @@ namespace MinimalFirewall
         }
 
         #endregion
-        private System.Windows.Forms.Button deleteAllRulesButton;
-        private System.Windows.Forms.Button revertFirewallButton;
+        private DarkModeForms.ThemedButton deleteAllRulesButton;
+        private DarkModeForms.ThemedButton revertFirewallButton;
         private System.Windows.Forms.CheckBox auditAlertsSwitch;
-        private System.Windows.Forms.Button managePublishersButton;
+        private DarkModeForms.ThemedButton managePublishersButton;
         private System.Windows.Forms.CheckBox autoAllowWhitelistedPublishersCheck;
         private System.Windows.Forms.CheckBox autoAllowSystemSignedAppsCheck;
-        private System.Windows.Forms.Button viewTrustedCertsButton;
-        private System.Windows.Forms.Button excludedFoldersButton;
+        private DarkModeForms.ThemedButton viewTrustedCertsButton;
+        private DarkModeForms.ThemedButton excludedFoldersButton;
         private System.Windows.Forms.CheckBox showAppIconsSwitch;
         private System.Windows.Forms.CheckBox trafficMonitorSwitch;
-        private System.Windows.Forms.Label autoRefreshLabel1;
-        private System.Windows.Forms.Label autoRefreshLabel2;
-        private System.Windows.Forms.Panel coffeePanel;
+        private DarkModeForms.ThemedLabel autoRefreshLabel1;
+        private DarkModeForms.ThemedLabel autoRefreshLabel2;
+        private DarkModeForms.ThemedPanel coffeePanel;
         private System.Windows.Forms.LinkLabel coffeeLinkLabel;
         private System.Windows.Forms.PictureBox coffeePictureBox;
-        private System.Windows.Forms.Label versionLabel;
-        private System.Windows.Forms.Button checkForUpdatesButton;
-        private System.Windows.Forms.Button openFirewallButton;
-        private System.Windows.Forms.Button openAppDataButton;
+        private DarkModeForms.ThemedLabel versionLabel;
+        private DarkModeForms.ThemedButton checkForUpdatesButton;
+        private DarkModeForms.ThemedButton openFirewallButton;
+        private DarkModeForms.ThemedButton openAppDataButton;
         private System.Windows.Forms.LinkLabel forumLink;
         private System.Windows.Forms.LinkLabel reportProblemLink;
         private System.Windows.Forms.LinkLabel helpLink;
@@ -587,13 +587,13 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox autoThemeSwitch;
         private System.Windows.Forms.CheckBox startOnStartupSwitch;
         private System.Windows.Forms.CheckBox closeToTraySwitch;
-        private System.Windows.Forms.Panel mainSettingsPanel;
-        private System.Windows.Forms.Button cleanUpOrphanedRulesButton;
-        private Button importReplaceButton;
-        private Button importMergeButton;
-        private Button exportRulesButton;
-        private Button exportDiagnosticButton;
-        private Panel dividerPanel1;
-        private Panel dividerPanel2;
+        private DarkModeForms.ThemedPanel mainSettingsPanel;
+        private DarkModeForms.ThemedButton cleanUpOrphanedRulesButton;
+        private DarkModeForms.ThemedButton importReplaceButton;
+        private DarkModeForms.ThemedButton importMergeButton;
+        private DarkModeForms.ThemedButton exportRulesButton;
+        private DarkModeForms.ThemedButton exportDiagnosticButton;
+        private DarkModeForms.ThemedPanel dividerPanel1;
+        private DarkModeForms.ThemedPanel dividerPanel2;
     }
 }

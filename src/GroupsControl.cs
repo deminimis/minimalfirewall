@@ -17,8 +17,7 @@ namespace MinimalFirewall
         private FirewallGroupManager? _groupManager;
         private BackgroundFirewallTaskService? _backgroundTaskService;
 
-
-        private BindingSource _bindingSource;
+        private readonly BindingSource _bindingSource;
 
         private const int SwitchWidthBase = 50;
         private const int SwitchHeightBase = 25;
@@ -27,10 +26,8 @@ namespace MinimalFirewall
         public GroupsControl()
         {
             InitializeComponent();
+            _bindingSource = components != null ? new BindingSource(components) : new BindingSource();
 
-            _bindingSource = new BindingSource(components);
-
-            EnableDoubleBuffering(groupsDataGridView);
         }
 
         public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService)
@@ -42,12 +39,7 @@ namespace MinimalFirewall
             groupsDataGridView.DataSource = _bindingSource;
         }
 
-        private void EnableDoubleBuffering(Control control)
-        {
-            typeof(Control).InvokeMember("DoubleBuffered",
-                BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
-                null, control, new object[] { true });
-        }
+        
 
         public void ClearGroups()
         {
@@ -86,7 +78,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void deleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
+        private void DeleteGroupToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (groupsDataGridView.SelectedRows.Count > 0 && _backgroundTaskService != null)
             {
@@ -119,9 +111,9 @@ namespace MinimalFirewall
             }
         }
 
-        private void groupsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void GroupsDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
+            if (e.RowIndex >= 0 && groupsDataGridView.Columns["groupEnabledColumn"] != null && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
             {
                 if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group && _backgroundTaskService != null)
                 {
@@ -136,9 +128,9 @@ namespace MinimalFirewall
             }
         }
 
-        private void groupsDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        private void GroupsDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.RowIndex >= 0 && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
+            if (e.RowIndex >= 0 && groupsDataGridView.Columns["groupEnabledColumn"] != null && e.ColumnIndex == groupsDataGridView.Columns["groupEnabledColumn"].Index)
             {
                 e.PaintBackground(e.CellBounds, true);
                 if (groupsDataGridView.Rows[e.RowIndex].DataBoundItem is FirewallGroup group && e.Graphics != null)
@@ -194,7 +186,7 @@ namespace MinimalFirewall
             g.FillEllipse(thumbBrush, thumbRect);
         }
 
-        private void groupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        private void GroupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.ColumnIndex < 0)
             {
@@ -210,7 +202,7 @@ namespace MinimalFirewall
             }
 
             var direction = ListSortDirection.Ascending;
-            if (column.HeaderCell.SortGlyphDirection == SortOrder.Ascending)
+            if (column.HeaderCell?.SortGlyphDirection == SortOrder.Ascending)
             {
                 direction = ListSortDirection.Descending;
             }
@@ -222,16 +214,20 @@ namespace MinimalFirewall
 
             foreach (DataGridViewColumn col in groupsDataGridView.Columns)
             {
-                if (col != column)
+                if (col != column && col.HeaderCell != null)
                 {
                     col.HeaderCell.SortGlyphDirection = SortOrder.None;
                 }
             }
 
-            column.HeaderCell.SortGlyphDirection = direction == ListSortDirection.Ascending ? SortOrder.Ascending : SortOrder.Descending;
+            if (column.HeaderCell != null)
+            {
+                column.HeaderCell.SortGlyphDirection = direction == ListSortDirection.Ascending ?
+                    SortOrder.Ascending : SortOrder.Descending;
+            }
         }
 
-        private void groupsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        private void GroupsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {

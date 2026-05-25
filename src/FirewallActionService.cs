@@ -81,7 +81,7 @@ namespace MinimalFirewall
         public void CleanupTemporaryRulesOnStartup()
         {
             var expiredRules = _temporaryRuleManager.GetExpiredRules();
-            if (expiredRules.Any())
+            if (expiredRules.Count != 0)
             {
                 var ruleNamesToRemove = expiredRules.Keys.ToList();
                 try
@@ -174,7 +174,7 @@ namespace MinimalFirewall
                 }
             }
 
-            if (rulesToDelete.Any())
+            if (rulesToDelete.Count != 0)
             {
                 activityLogger.LogDebug($"Auto-deleting general block rule(s) for {appPath} to apply new Allow rule: {string.Join(", ", rulesToDelete)}");
                 try
@@ -224,7 +224,7 @@ namespace MinimalFirewall
                     }
                 }
 
-                if (rulesToRemove.Any())
+                if (rulesToRemove.Count != 0)
                 {
                     firewallService.DeleteRulesByName(rulesToRemove);
                 }
@@ -254,18 +254,18 @@ namespace MinimalFirewall
             }
         }
 
-        private void ProcessTcpAndUdpRules(Directions parsedDirection, Action<Directions, int, string> ruleCreationAction)
+        private static void ProcessTcpAndUdpRules(Directions parsedDirection, Action<Directions, int, string> ruleCreationAction)
         {
-            var protocols = new[] { (Code: 6, Suffix: " - TCP"), (Code: 17, Suffix: " - UDP") };
-            foreach (var protocol in protocols)
+            (int Code, string Suffix)[] protocols = [(6, " - TCP"), (17, " - UDP")];
+            foreach (var (Code, Suffix) in protocols)
             {
                 if (parsedDirection.HasFlag(Directions.Incoming))
                 {
-                    ruleCreationAction(Directions.Incoming, protocol.Code, protocol.Suffix);
+                    ruleCreationAction(Directions.Incoming, Code, Suffix);
                 }
                 if (parsedDirection.HasFlag(Directions.Outgoing))
                 {
-                    ruleCreationAction(Directions.Outgoing, protocol.Code, protocol.Suffix);
+                    ruleCreationAction(Directions.Outgoing, Code, Suffix);
                 }
             }
         }
@@ -292,7 +292,7 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
-            if (rulesToRemove.Any())
+            if (rulesToRemove.Count != 0)
             {
                 firewallService.DeleteRulesByName(rulesToRemove);
             }
@@ -338,7 +338,7 @@ namespace MinimalFirewall
                 activityLogger.LogChange("UWP Rule Changed", action + " for " + app.Name);
             }
 
-            if (rulesToRemove.Any())
+            if (rulesToRemove.Count != 0)
             {
                 firewallService.DeleteRulesByName(rulesToRemove);
             }
@@ -498,7 +498,7 @@ namespace MinimalFirewall
         }
 
         // Thread-safe wrapper for MessageBox
-        private void SafeShowMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+        private static void SafeShowMessageBox(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
         {
             if (Application.OpenForms.Count > 0)
             {
@@ -891,7 +891,7 @@ namespace MinimalFirewall
             }
 
             var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
-            if (ruleNames.Any())
+            if (ruleNames.Count != 0)
             {
                 activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
                 activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
@@ -1418,22 +1418,22 @@ namespace MinimalFirewall
             // Execute safe, COM-free validation on the background thread
             await Task.Run(() =>
             {
-                foreach (var ruleData in mfwRulesData)
+                foreach (var (Name, ApplicationName) in mfwRulesData)
                 {
                     if (token.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    string appPath = ruleData.ApplicationName;
+                    string appPath = ApplicationName;
 
-                    if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith("@"))
+                    if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith('@'))
                     {
                         string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
                         if (!File.Exists(expandedPath))
                         {
-                            orphanedRuleNames.Add(ruleData.Name);
-                            activityLogger.LogDebug($"Found orphaned rule '{ruleData.Name}' for path: {expandedPath}");
+                            orphanedRuleNames.Add(Name);
+                            activityLogger.LogDebug($"Found orphaned rule '{Name}' for path: {expandedPath}");
                         }
                     }
 
@@ -1447,7 +1447,7 @@ namespace MinimalFirewall
                 return [];
             }
 
-            if (orphanedRuleNames.Any())
+            if (orphanedRuleNames.Count != 0)
             {
                 activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
                 try
@@ -1467,7 +1467,7 @@ namespace MinimalFirewall
         public async Task<string> ExportAllMfwRulesAsync()
         {
             var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
-            var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules)
+            var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules ?? [])
                 .Select(r =>
                 {
                     r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
@@ -1510,14 +1510,14 @@ namespace MinimalFirewall
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
                 }
 
-                foreach (var ruleVm in container.AdvancedRules)
+                foreach (var ruleVm in container.AdvancedRules ?? [])
                 {
                     ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
                     var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
                 }
 
-                foreach (var wildcardRule in container.WildcardRules)
+                foreach (var wildcardRule in container.WildcardRules ?? [])
                 {
                     wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));

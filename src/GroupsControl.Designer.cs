@@ -6,7 +6,7 @@ namespace MinimalFirewall
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.ContextMenuStrip groupsContextMenu;
         private System.Windows.Forms.ToolStripMenuItem deleteGroupToolStripMenuItem;
-        private System.Windows.Forms.DataGridView groupsDataGridView;
+        private DarkModeForms.ThemedDataGridView groupsDataGridView;
         private System.Windows.Forms.DataGridViewTextBoxColumn groupNameColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn groupEnabledColumn;
         protected override void Dispose(bool disposing)
@@ -25,7 +25,7 @@ namespace MinimalFirewall
             var dataGridViewCellStyle1 = new DataGridViewCellStyle();
             groupsContextMenu = new ContextMenuStrip(components);
             deleteGroupToolStripMenuItem = new ToolStripMenuItem();
-            groupsDataGridView = new DataGridView();
+            groupsDataGridView = new DarkModeForms.ThemedDataGridView();
             groupNameColumn = new DataGridViewTextBoxColumn();
             groupEnabledColumn = new DataGridViewTextBoxColumn();
             groupsContextMenu.SuspendLayout();
@@ -46,7 +46,7 @@ namespace MinimalFirewall
             deleteGroupToolStripMenuItem.Name = "deleteGroupToolStripMenuItem";
             deleteGroupToolStripMenuItem.Size = new Size(179, 22);
             deleteGroupToolStripMenuItem.Text = "Delete Group...";
-            deleteGroupToolStripMenuItem.Click += deleteGroupToolStripMenuItem_Click;
+            deleteGroupToolStripMenuItem.Click += DeleteGroupToolStripMenuItem_Click;
             // 
             // groupsDataGridView
             // 
@@ -69,7 +69,6 @@ namespace MinimalFirewall
             groupsDataGridView.Columns.AddRange(new DataGridViewColumn[] { groupNameColumn, groupEnabledColumn });
             groupsDataGridView.ContextMenuStrip = groupsContextMenu;
             groupsDataGridView.Dock = DockStyle.Fill;
-            groupsDataGridView.EnableHeadersVisualStyles = false;
             groupsDataGridView.GridColor = SystemColors.Control;
             groupsDataGridView.Location = new Point(0, 0);
             groupsDataGridView.Margin = new Padding(3, 2, 3, 2);
@@ -80,10 +79,10 @@ namespace MinimalFirewall
             groupsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             groupsDataGridView.Size = new Size(700, 480);
             groupsDataGridView.TabIndex = 1;
-            groupsDataGridView.CellClick += groupsDataGridView_CellClick;
-            groupsDataGridView.CellMouseDown += groupsDataGridView_CellMouseDown;
-            groupsDataGridView.CellPainting += groupsDataGridView_CellPainting;
-            groupsDataGridView.ColumnHeaderMouseClick += groupsDataGridView_ColumnHeaderMouseClick;
+            groupsDataGridView.CellClick += GroupsDataGridView_CellClick;
+            groupsDataGridView.CellMouseDown += GroupsDataGridView_CellMouseDown;
+            groupsDataGridView.CellPainting += GroupsDataGridView_CellPainting;
+            groupsDataGridView.ColumnHeaderMouseClick += GroupsDataGridView_ColumnHeaderMouseClick;
             // 
             // groupNameColumn
             // 

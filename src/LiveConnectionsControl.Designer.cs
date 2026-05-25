@@ -3,8 +3,8 @@ namespace MinimalFirewall
     partial class LiveConnectionsControl
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Panel disabledPanel;
-        private System.Windows.Forms.Label disabledLabel;
+        private DarkModeForms.ThemedPanel disabledPanel;
+        private DarkModeForms.ThemedLabel disabledLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -21,7 +21,7 @@ namespace MinimalFirewall
         {
             components = new System.ComponentModel.Container();
             var dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            liveConnectionsDataGridView = new DataGridView();
+            liveConnectionsDataGridView = new DarkModeForms.ThemedDataGridView();
             connIconColumn = new DataGridViewImageColumn();
             connNameColumn = new DataGridViewTextBoxColumn();
             connStateColumn = new DataGridViewTextBoxColumn();
@@ -38,8 +38,8 @@ namespace MinimalFirewall
             toolStripSeparator2 = new ToolStripSeparator();
             openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem = new ToolStripMenuItem();
-            disabledPanel = new Panel();
-            disabledLabel = new Label();
+            disabledPanel = new DarkModeForms.ThemedPanel();
+            disabledLabel = new DarkModeForms.ThemedLabel();
             ((System.ComponentModel.ISupportInitialize)liveConnectionsDataGridView).BeginInit();
             liveConnectionsContextMenu.SuspendLayout();
             disabledPanel.SuspendLayout();
@@ -67,7 +67,6 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.Columns.AddRange(new DataGridViewColumn[] { connIconColumn, connNameColumn, connStateColumn, connLocalAddrColumn, connLocalPortColumn, connRemoteAddrColumn, connRemotePortColumn, connPathColumn });
             liveConnectionsDataGridView.ContextMenuStrip = liveConnectionsContextMenu;
             liveConnectionsDataGridView.Dock = DockStyle.Fill;
-            liveConnectionsDataGridView.EnableHeadersVisualStyles = false;
             liveConnectionsDataGridView.GridColor = SystemColors.Control;
             liveConnectionsDataGridView.Location = new Point(0, 0);
             liveConnectionsDataGridView.Margin = new Padding(3, 2, 3, 2);
@@ -79,11 +78,11 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             liveConnectionsDataGridView.Size = new Size(700, 480);
             liveConnectionsDataGridView.TabIndex = 0;
-            liveConnectionsDataGridView.CellFormatting += liveConnectionsDataGridView_CellFormatting;
-            liveConnectionsDataGridView.CellMouseDown += liveConnectionsDataGridView_CellMouseDown;
-            liveConnectionsDataGridView.CellMouseEnter += liveConnectionsDataGridView_CellMouseEnter;
-            liveConnectionsDataGridView.CellMouseLeave += liveConnectionsDataGridView_CellMouseLeave;
-            liveConnectionsDataGridView.RowPostPaint += liveConnectionsDataGridView_RowPostPaint;
+            liveConnectionsDataGridView.CellFormatting += LiveConnectionsDataGridView_CellFormatting;
+            liveConnectionsDataGridView.CellMouseDown += LiveConnectionsDataGridView_CellMouseDown;
+            liveConnectionsDataGridView.CellMouseEnter += LiveConnectionsDataGridView_CellMouseEnter;
+            liveConnectionsDataGridView.CellMouseLeave += LiveConnectionsDataGridView_CellMouseLeave;
+            liveConnectionsDataGridView.RowPostPaint += LiveConnectionsDataGridView_RowPostPaint;
             // 
             // connIconColumn
             // 
@@ -160,21 +159,21 @@ namespace MinimalFirewall
             liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, blockRemoteIPToolStripMenuItem, toolStripSeparator1, createAdvancedRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem });
             liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
             liveConnectionsContextMenu.Size = new Size(200, 126);
-            liveConnectionsContextMenu.Opening += liveConnectionsContextMenu_Opening;
+            liveConnectionsContextMenu.Opening += LiveConnectionsContextMenu_Opening;
             // 
             // killProcessToolStripMenuItem
             // 
             killProcessToolStripMenuItem.Name = "killProcessToolStripMenuItem";
             killProcessToolStripMenuItem.Size = new Size(199, 22);
             killProcessToolStripMenuItem.Text = "Kill Process";
-            killProcessToolStripMenuItem.Click += killProcessToolStripMenuItem_Click;
+            killProcessToolStripMenuItem.Click += KillProcessToolStripMenuItem_Click;
             // 
             // blockRemoteIPToolStripMenuItem
             // 
             blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
             blockRemoteIPToolStripMenuItem.Size = new Size(199, 22);
             blockRemoteIPToolStripMenuItem.Text = "Block Remote IP";
-            blockRemoteIPToolStripMenuItem.Click += blockRemoteIPToolStripMenuItem_Click;
+            blockRemoteIPToolStripMenuItem.Click += BlockRemoteIPToolStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
@@ -186,7 +185,7 @@ namespace MinimalFirewall
             createAdvancedRuleToolStripMenuItem.Name = "createAdvancedRuleToolStripMenuItem";
             createAdvancedRuleToolStripMenuItem.Size = new Size(199, 22);
             createAdvancedRuleToolStripMenuItem.Text = "Create Advanced Rule...";
-            createAdvancedRuleToolStripMenuItem.Click += createAdvancedRuleToolStripMenuItem_Click;
+            createAdvancedRuleToolStripMenuItem.Click += CreateAdvancedRuleToolStripMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
@@ -198,14 +197,14 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
             openFileLocationToolStripMenuItem.Size = new Size(199, 22);
             openFileLocationToolStripMenuItem.Text = "Open File Location";
-            openFileLocationToolStripMenuItem.Click += openFileLocationToolStripMenuItem_Click;
+            openFileLocationToolStripMenuItem.Click += OpenFileLocationToolStripMenuItem_Click;
             // 
             // copyDetailsToolStripMenuItem
             // 
             copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             copyDetailsToolStripMenuItem.Size = new Size(199, 22);
             copyDetailsToolStripMenuItem.Text = "Copy Details";
-            copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
+            copyDetailsToolStripMenuItem.Click += CopyDetailsToolStripMenuItem_Click;
             // 
             // disabledPanel
             // 
@@ -247,7 +246,7 @@ namespace MinimalFirewall
 
         #endregion
 
-        private System.Windows.Forms.DataGridView liveConnectionsDataGridView;
+        private DarkModeForms.ThemedDataGridView liveConnectionsDataGridView;
         private System.Windows.Forms.ContextMenuStrip liveConnectionsContextMenu;
         private System.Windows.Forms.ToolStripMenuItem killProcessToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem blockRemoteIPToolStripMenuItem;

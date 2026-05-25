@@ -90,8 +90,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
         }
 
         private void BindDynamicUI()
@@ -377,7 +375,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void browseServiceButton_Click(object sender, EventArgs e)
+        private async void BrowseServiceButton_Click(object sender, EventArgs e)
         {
             try
             {
@@ -447,11 +445,11 @@ namespace MinimalFirewall
         }
 
         private void ValidatePortTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidatePortString);
-        private void localAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
-        private void remoteAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
-        private void icmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateIcmpString);
+        private void LocalAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
+        private void RemoteAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
+        private void IcmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateIcmpString);
 
-        private void programGroupBox_Enter(object sender, EventArgs e)
+        private void ProgramGroupBox_Enter(object sender, EventArgs e)
         {
 
         }

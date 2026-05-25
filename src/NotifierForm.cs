@@ -35,8 +35,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDarkMode);
-            styler.ApplyStyle(this);
             pathLabel.BackColor = Theme.Colors.PathLabelBackground;
             pathLabel.ForeColor = Theme.Colors.TextActive;
 

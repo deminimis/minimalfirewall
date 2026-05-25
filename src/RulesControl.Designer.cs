@@ -4,7 +4,7 @@ namespace MinimalFirewall
     partial class RulesControl
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Button createRuleButton;
+        private DarkModeForms.ThemedButton createRuleButton;
         private System.Windows.Forms.TextBox rulesSearchTextBox;
         private System.Windows.Forms.ContextMenuStrip rulesContextMenu;
         private System.Windows.Forms.ToolStripMenuItem allowToolStripMenuItem;
@@ -21,7 +21,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
-        private System.Windows.Forms.DataGridView rulesDataGridView;
+        private DarkModeForms.ThemedDataGridView rulesDataGridView;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
         private System.Windows.Forms.CheckBox programFilterCheckBox;
         private System.Windows.Forms.CheckBox serviceFilterCheckBox;
@@ -54,7 +54,7 @@ namespace MinimalFirewall
             components = new System.ComponentModel.Container();
             var dataGridViewCellStyle1 = new DataGridViewCellStyle();
             rulesSearchTextBox = new TextBox();
-            createRuleButton = new Button();
+            createRuleButton = new DarkModeForms.ThemedButton();
             rulesContextMenu = new ContextMenuStrip(components);
             allowToolStripMenuItem = new ToolStripMenuItem();
             allowOutboundToolStripMenuItem = new ToolStripMenuItem();
@@ -71,7 +71,6 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator3 = new ToolStripSeparator();
             copyDetailsToolStripMenuItem = new ToolStripMenuItem();
-            rulesDataGridView = new DataGridView();
             filterPanel = new FlowLayoutPanel();
             programFilterCheckBox = new CheckBox();
             serviceFilterCheckBox = new CheckBox();
@@ -96,7 +95,6 @@ namespace MinimalFirewall
             dateAddedColumn = new DataGridViewTextBoxColumn();
             autoAllowedColumn = new DataGridViewTextBoxColumn();
             rulesContextMenu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).BeginInit();
             filterPanel.SuspendLayout();
             topPanel.SuspendLayout();
             SuspendLayout();
@@ -115,13 +113,19 @@ namespace MinimalFirewall
             // createRuleButton
             // 
             createRuleButton.Anchor = AnchorStyles.Left;
+            createRuleButton.BackColor = Color.FromArgb(55, 55, 55);
+            createRuleButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
+            createRuleButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            createRuleButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
+            createRuleButton.FlatStyle = FlatStyle.Flat;
+            createRuleButton.ForeColor = Color.White;
             createRuleButton.Location = new Point(12, 8);
             createRuleButton.Margin = new Padding(12, 8, 8, 8);
             createRuleButton.Name = "createRuleButton";
             createRuleButton.Size = new Size(160, 44);
             createRuleButton.TabIndex = 9;
             createRuleButton.Text = "Create New Rule...";
-            createRuleButton.UseVisualStyleBackColor = true;
+            createRuleButton.UseVisualStyleBackColor = false;
             createRuleButton.Click += CreateRuleButton_Click;
             // 
             // rulesContextMenu
@@ -130,7 +134,7 @@ namespace MinimalFirewall
             rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, editRuleToolStripMenuItem, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, toolStripSeparator3, copyDetailsToolStripMenuItem });
             rulesContextMenu.Name = "rulesContextMenu";
             rulesContextMenu.Size = new Size(174, 154);
-            rulesContextMenu.Opening += rulesContextMenu_Opening;
+            rulesContextMenu.Opening += RulesContextMenu_Opening;
             // 
             // allowToolStripMenuItem
             // 
@@ -204,7 +208,7 @@ namespace MinimalFirewall
             editRuleToolStripMenuItem.Name = "editRuleToolStripMenuItem";
             editRuleToolStripMenuItem.Size = new Size(173, 22);
             editRuleToolStripMenuItem.Text = "Edit Rule...";
-            editRuleToolStripMenuItem.Click += editRuleToolStripMenuItem_Click;
+            editRuleToolStripMenuItem.Click += EditRuleToolStripMenuItem_Click;
             // 
             // deleteRuleToolStripMenuItem
             // 
@@ -223,7 +227,7 @@ namespace MinimalFirewall
             openFileLocationToolStripMenuItem.Name = "openFileLocationToolStripMenuItem";
             openFileLocationToolStripMenuItem.Size = new Size(173, 22);
             openFileLocationToolStripMenuItem.Text = "Open File Location";
-            openFileLocationToolStripMenuItem.Click += openFileLocationToolStripMenuItem_Click;
+            openFileLocationToolStripMenuItem.Click += OpenFileLocationToolStripMenuItem_Click;
             // 
             // toolStripSeparator3
             // 
@@ -235,40 +239,7 @@ namespace MinimalFirewall
             copyDetailsToolStripMenuItem.Name = "copyDetailsToolStripMenuItem";
             copyDetailsToolStripMenuItem.Size = new Size(173, 22);
             copyDetailsToolStripMenuItem.Text = "Copy Details";
-            copyDetailsToolStripMenuItem.Click += copyDetailsToolStripMenuItem_Click;
-            // 
-            // rulesDataGridView
-            // 
-            rulesDataGridView.AllowUserToAddRows = false;
-            rulesDataGridView.AllowUserToDeleteRows = false;
-            rulesDataGridView.AllowUserToResizeRows = false;
-            rulesDataGridView.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            rulesDataGridView.BackgroundColor = SystemColors.Control;
-            rulesDataGridView.BorderStyle = BorderStyle.None;
-            rulesDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.None;
-            rulesDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
-            rulesDataGridView.ContextMenuStrip = rulesContextMenu;
-            rulesDataGridView.EnableHeadersVisualStyles = false;
-            rulesDataGridView.GridColor = SystemColors.Control;
-            rulesDataGridView.Location = new Point(3, 66);
-            rulesDataGridView.Margin = new Padding(3, 6, 3, 3);
-            rulesDataGridView.Name = "rulesDataGridView";
-            rulesDataGridView.ReadOnly = true;
-            rulesDataGridView.RowHeadersVisible = false;
-            rulesDataGridView.RowTemplate.Height = 28;
-            rulesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            rulesDataGridView.Size = new Size(996, 839);
-            rulesDataGridView.TabIndex = 18;
-            rulesDataGridView.VirtualMode = true;
-            rulesDataGridView.CellFormatting += rulesDataGridView_CellFormatting;
-            rulesDataGridView.CellMouseDown += rulesDataGridView_CellMouseDown;
-            rulesDataGridView.CellMouseEnter += rulesDataGridView_CellMouseEnter;
-            rulesDataGridView.CellMouseLeave += rulesDataGridView_CellMouseLeave;
-            rulesDataGridView.ColumnHeaderMouseClick += rulesDataGridView_ColumnHeaderMouseClick;
-            rulesDataGridView.RowPostPaint += rulesDataGridView_RowPostPaint;
+            copyDetailsToolStripMenuItem.Click += CopyDetailsToolStripMenuItem_Click;
             // 
             // filterPanel
             // 
@@ -343,7 +314,7 @@ namespace MinimalFirewall
             systemFilterCheckBox.TabIndex = 5;
             systemFilterCheckBox.Text = "System";
             systemFilterCheckBox.UseVisualStyleBackColor = true;
-            systemFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+            systemFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             // 
             // topPanel
             // 
@@ -511,16 +482,51 @@ namespace MinimalFirewall
             autoAllowedColumn.Name = "autoAllowedColumn";
             autoAllowedColumn.ReadOnly = true;
             autoAllowedColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+
+            // rulesDataGridView
+            // Instantiate and configure the grid so it exists before runtime Initialize is called
+            rulesDataGridView = new DarkModeForms.ThemedDataGridView();
+            rulesDataGridView.AllowUserToAddRows = false;
+            rulesDataGridView.AllowUserToDeleteRows = false;
+            rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            rulesDataGridView.Dock = DockStyle.Fill;
+            rulesDataGridView.Location = new Point(0, 60);
+            rulesDataGridView.Name = "rulesDataGridView";
+            rulesDataGridView.MultiSelect = true;
+            rulesDataGridView.ReadOnly = true;
+            rulesDataGridView.RowHeadersVisible = false;
+            rulesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            // required for owner-provided cell values
+            rulesDataGridView.VirtualMode = true;
+            rulesDataGridView.ContextMenuStrip = rulesContextMenu;
+
+            // Add the previously declared columns to the grid
+            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] {
+                advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn,
+                advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn,
+                advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn,
+                advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn
+            });
+
+            // Designer-level event hookups used by the control implementation
+            rulesDataGridView.CellMouseDown += RulesDataGridView_CellMouseDown;
+            rulesDataGridView.CellFormatting += RulesDataGridView_CellFormatting;
+            rulesDataGridView.RowPostPaint += RulesDataGridView_RowPostPaint;
+            rulesDataGridView.CellMouseEnter += RulesDataGridView_CellMouseEnter;
+            rulesDataGridView.CellMouseLeave += RulesDataGridView_CellMouseLeave;
+
+            // Add grid and top panel (topPanel is Dock.Top so grid will fill remaining area)
+            Controls.Add(rulesDataGridView);
             // 
             // RulesControl
             // 
             Controls.Add(topPanel);
-            Controls.Add(rulesDataGridView);
             Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Name = "RulesControl";
             Size = new Size(1002, 911);
+            Load += RulesControl_Load;
             rulesContextMenu.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).EndInit();
             filterPanel.ResumeLayout(false);
             filterPanel.PerformLayout();
             topPanel.ResumeLayout(false);

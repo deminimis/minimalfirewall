@@ -28,7 +28,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator9;
         private System.Windows.Forms.ToolStripMenuItem copyHashToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem checkVirusTotalToolStripMenuItem;
-        private System.Windows.Forms.DataGridView dashboardDataGridView;
+        private DarkModeForms.ThemedDataGridView dashboardDataGridView;
         private System.Windows.Forms.DataGridViewImageColumn dashIconColumn;
         private System.Windows.Forms.DataGridViewButtonColumn allowButtonColumn;
         private System.Windows.Forms.DataGridViewButtonColumn blockButtonColumn;
@@ -42,7 +42,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator8;
         private System.Windows.Forms.SplitContainer splitContainer;
         private System.Windows.Forms.RichTextBox detailsRichTextBox;
-        private System.Windows.Forms.Label detailsLabel;
+        private DarkModeForms.ThemedLabel detailsLabel;
 
 
         protected override void Dispose(bool disposing)
@@ -95,7 +95,7 @@ namespace MinimalFirewall
             toolStripSeparator9 = new ToolStripSeparator();
             copyHashToolStripMenuItem = new ToolStripMenuItem();
             checkVirusTotalToolStripMenuItem = new ToolStripMenuItem();
-            dashboardDataGridView = new DataGridView();
+            dashboardDataGridView = new DarkModeForms.ThemedDataGridView();
             dashIconColumn = new DataGridViewImageColumn();
             dashAppColumn = new DataGridViewTextBoxColumn();
             dashServiceColumn = new DataGridViewTextBoxColumn();
@@ -107,7 +107,7 @@ namespace MinimalFirewall
             ignoreButtonColumn = new DataGridViewButtonColumn();
             splitContainer = new SplitContainer();
             detailsRichTextBox = new RichTextBox();
-            detailsLabel = new Label();
+            detailsLabel = new DarkModeForms.ThemedLabel();
             dashboardContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dashboardDataGridView).BeginInit();
             ((System.ComponentModel.ISupportInitialize)splitContainer).BeginInit();
@@ -314,7 +314,6 @@ namespace MinimalFirewall
             dashboardDataGridView.Columns.AddRange(new DataGridViewColumn[] { dashIconColumn, dashAppColumn, dashServiceColumn, dashDirectionColumn, dashProtocolColumn, dashPathColumn, allowButtonColumn, blockButtonColumn, ignoreButtonColumn });
             dashboardDataGridView.ContextMenuStrip = dashboardContextMenu;
             dashboardDataGridView.Dock = DockStyle.Fill;
-            dashboardDataGridView.EnableHeadersVisualStyles = false;
             dashboardDataGridView.GridColor = SystemColors.Control;
             dashboardDataGridView.Location = new Point(0, 0);
             dashboardDataGridView.Margin = new Padding(3, 2, 3, 2);

@@ -9,19 +9,22 @@ using System;
 
 namespace MinimalFirewall
 {
-    public static class AdminTaskService
+    public static partial class AdminTaskService
     {
         public static void ResetFirewall()
         {
-            INetFwMgr fwMgr = null;
+            INetFwMgr? fwMgr = null;
             try
             {
                 var fwMgrType = Type.GetTypeFromProgID("HNetCfg.FwMgr");
                 if (fwMgrType != null)
                 {
-                    fwMgr = (INetFwMgr)Activator.CreateInstance(fwMgrType);
-                    fwMgr.RestoreDefaults();
-                    Debug.WriteLine("[AdminTask] Firewall reset to defaults using COM interface.");
+                    fwMgr = (INetFwMgr?)Activator.CreateInstance(fwMgrType);
+                    if (fwMgr != null)
+                    {
+                        fwMgr.RestoreDefaults();
+                        Debug.WriteLine("[AdminTask] Firewall reset to defaults using COM interface.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -41,10 +44,10 @@ namespace MinimalFirewall
         public static void SetAuditPolicy(bool enable)
         {
             string[] guids =
-            {
+            [
                 "{0CCE9225-69AE-11D9-BED3-505054503030}",
                 "{0CCE9226-69AE-11D9-BED3-505054503030}"
-            };
+            ];
             foreach (var guid in guids)
             {
                 string arguments = $"/set /subcategory:{guid} /failure:{(enable ? "enable" : "disable")}";
@@ -68,16 +71,18 @@ namespace MinimalFirewall
 
         private const uint AUDIT_FAILURE = 0x00000002;
 
-        [DllImport("advapi32.dll", SetLastError = true)]
-        private static extern bool AuditQuerySystemPolicy(
-            [In] ref Guid pSubCategoryGuids,
-            [In] uint PolicyCount,
-            [Out] out IntPtr ppPolicy
+        [LibraryImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool AuditQuerySystemPolicy(
+            ref Guid pSubCategoryGuids,
+            uint PolicyCount,
+            out IntPtr ppPolicy
         );
 
-        [DllImport("advapi32.dll", SetLastError = true)]
-        private static extern bool AuditFree(
-            [In] IntPtr pBuffer
+        [LibraryImport("advapi32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool AuditFree(
+            IntPtr pBuffer
         );
 
         [StructLayout(LayoutKind.Sequential)]
@@ -296,7 +301,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void Execute(string fileName, string arguments, out string output, out string error)
+        private static void Execute(string fileName, string arguments, out string output, out string error)
         {
             ProcessHelper.RunHiddenCommand(fileName, arguments, out output, out error);
             if (!string.IsNullOrEmpty(error))

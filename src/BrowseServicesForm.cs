@@ -22,8 +22,6 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
 
             LoadServices();
         }
@@ -52,12 +50,12 @@ namespace MinimalFirewall
             servicesListBox.EndUpdate();
         }
 
-        private void searchTextBox_TextChanged(object sender, EventArgs e)
+        private void SearchTextBox_TextChanged(object sender, EventArgs e)
         {
             LoadServices(searchTextBox.Text);
         }
 
-        private void okButton_Click(object sender, EventArgs e)
+        private void OkButton_Click(object sender, EventArgs e)
         {
             //  Retrieve object directly. No string parsing needed.
             if (servicesListBox.SelectedItem is ServiceListItem selectedItem)
@@ -71,17 +69,17 @@ namespace MinimalFirewall
             }
         }
 
-        private void cancelButton_Click(object sender, EventArgs e)
+        private void CancelButton_Click(object sender, EventArgs e)
         {
             DialogResult = DialogResult.Cancel;
             Close();
         }
 
-        private void servicesListBox_DoubleClick(object sender, EventArgs e)
+        private void ServicesListBox_DoubleClick(object sender, EventArgs e)
         {
             if (servicesListBox.SelectedItem != null)
             {
-                okButton_Click(sender, e);
+                OkButton_Click(sender, e);
             }
         }
 

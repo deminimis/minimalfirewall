@@ -5,9 +5,9 @@ namespace MinimalFirewall
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.ListBox publishersListBox;
-        private System.Windows.Forms.Button removeButton;
-        private System.Windows.Forms.Button closeButton;
-        private System.Windows.Forms.Label infoLabel;
+        private DarkModeForms.ThemedButton removeButton;
+        private DarkModeForms.ThemedButton closeButton;
+        private DarkModeForms.ThemedLabel infoLabel;
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,9 +22,9 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             publishersListBox = new ListBox();
-            removeButton = new Button();
-            closeButton = new Button();
-            infoLabel = new Label();
+            removeButton = new DarkModeForms.ThemedButton();
+            closeButton = new DarkModeForms.ThemedButton();
+            infoLabel = new DarkModeForms.ThemedLabel();
             SuspendLayout();
             // 
             // publishersListBox
@@ -43,7 +43,7 @@ namespace MinimalFirewall
             removeButton.TabIndex = 1;
             removeButton.Text = "Remove Selected";
             removeButton.UseVisualStyleBackColor = true;
-            removeButton.Click += removeButton_Click;
+            removeButton.Click += RemoveButton_Click;
             // 
             // closeButton
             // 
@@ -53,7 +53,7 @@ namespace MinimalFirewall
             closeButton.TabIndex = 2;
             closeButton.Text = "Close";
             closeButton.UseVisualStyleBackColor = true;
-            closeButton.Click += closeButton_Click;
+            closeButton.Click += CloseButton_Click;
             // 
             // infoLabel
             // 

@@ -107,15 +107,12 @@ namespace DarkModeForms
             form.BackColor = Theme.Colors.Background;
             form.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, pIsDarkMode);
-            styler.ApplyStyle(form);
-
             Font systemFont = SystemFonts.DefaultFont;
             int fontHeight = systemFont.Height;
 
             #region Bottom Panel & Buttons
 
-            var bottomPanel = new Panel
+            var bottomPanel = new ThemedPanel
             {
                 Dock = DockStyle.Bottom,
                 Height = 48,
@@ -126,7 +123,7 @@ namespace DarkModeForms
 
             string CurrentLanguage = GetCurrentLanguage();
             var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-            List<Button> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, fontHeight);
+            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, fontHeight);
 
             int Padding = 4;
             int LastPos = form.ClientSize.Width;
@@ -137,7 +134,7 @@ namespace DarkModeForms
             {
                 for (int c = CmdButtons.Count - 1; c >= 0; c--)
                 {
-                    Button _button = CmdButtons[c];
+                    ThemedButton _button = CmdButtons[c];
                     _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
 
                     bottomPanel.Controls.Add(_button);
@@ -182,7 +179,7 @@ namespace DarkModeForms
 
             #region Prompt Text
 
-            var lblPrompt = new Label
+            var lblPrompt = new ThemedLabel
             {
                 Text = Message,
                 AutoSize = true,
@@ -239,13 +236,11 @@ namespace DarkModeForms
             form.BackColor = Theme.Colors.Background;
             form.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, pIsDarkMode);
-            styler.ApplyStyle(form);
             var Err = new ErrorProvider();
 
             #region Bottom Panel
 
-            var bottomPanel = new Panel
+            var bottomPanel = new ThemedPanel
             {
                 Dock = DockStyle.Bottom,
                 Height = 48,
@@ -273,11 +268,10 @@ namespace DarkModeForms
 
             string CurrentLanguage = GetCurrentLanguage();
             var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-            List<Button> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, SystemFonts.DefaultFont.Height);
+            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, SystemFonts.DefaultFont.Height);
 
             int Padding = 4;
             int LastPos = form.ClientSize.Width;
-
             foreach (var _button in CmdButtons)
             {
                 _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
@@ -290,7 +284,7 @@ namespace DarkModeForms
 
             #region Prompt Text
 
-            var lblPrompt = new Label();
+            var lblPrompt = new ThemedLabel();
             if (!string.IsNullOrWhiteSpace(promptText))
             {
                 lblPrompt.Dock = DockStyle.Top;
@@ -331,7 +325,7 @@ namespace DarkModeForms
             int currentRow = 0;
             foreach (KeyValue field in Fields)
             {
-                var field_label = new Label
+                var field_label = new ThemedLabel
                 {
                     Text = field.Key,
                     AutoSize = false,
@@ -550,13 +544,12 @@ namespace DarkModeForms
             timers.Add(control, (timer, disposedHandler));
         }
 
-        private static List<Button> GenerateDialogButtons(Form form, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
+        private static List<ThemedButton> GenerateDialogButtons(Form form, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
         {
-            var CmdButtons = new List<Button>();
-
-            Button CreateBtn(DialogResult result, string textKey, bool isFlat = true)
+            var CmdButtons = new List<ThemedButton>();
+            ThemedButton CreateBtn(DialogResult result, string textKey, bool isFlat = true)
             {
-                return new Button
+                return new ThemedButton
                 {
                     Anchor = AnchorStyles.Top | AnchorStyles.Right,
                     DialogResult = result,

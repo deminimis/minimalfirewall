@@ -45,12 +45,7 @@ namespace MinimalFirewall
             _backgroundTaskService = backgroundTaskService;
             _actionsService = actionsService;
 
-            typeof(DataGridView).InvokeMember(
-               "DoubleBuffered",
-               System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
-               null,
-               liveConnectionsDataGridView,
-               new object[] { true });
+            
 
             liveConnectionsDataGridView.VirtualMode = true;
             liveConnectionsDataGridView.AutoGenerateColumns = false;
@@ -216,7 +211,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void liveConnectionsDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        private void LiveConnectionsDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= _sortableList.Count)
             {
@@ -256,7 +251,7 @@ namespace MinimalFirewall
 
         // --- Mouse & Selection Handling ---
 
-        private void liveConnectionsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        private void LiveConnectionsDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
@@ -269,7 +264,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void liveConnectionsDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        private void LiveConnectionsDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -278,7 +273,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void liveConnectionsDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        private void LiveConnectionsDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
             {
@@ -287,7 +282,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void liveConnectionsDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        private void LiveConnectionsDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             if (!liveConnectionsDataGridView.Rows[e.RowIndex].Selected && e.RowIndex == _hoveredRowIndex)
             {
@@ -346,7 +341,7 @@ namespace MinimalFirewall
             return false;
         }
 
-        private void liveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
+        private void LiveConnectionsContextMenu_Opening(object sender, CancelEventArgs e)
         {
             if (!TryGetSelectedConnection(out var connection) || connection == null)
             {
@@ -361,7 +356,7 @@ namespace MinimalFirewall
             createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
         }
 
-        private void killProcessToolStripMenuItem_Click(object sender, EventArgs e)
+        private void KillProcessToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedConnection(out var connection) && connection != null && connection.KillProcessCommand.CanExecute(null))
             {
@@ -369,7 +364,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void blockRemoteIPToolStripMenuItem_Click(object sender, EventArgs e)
+        private void BlockRemoteIPToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedConnection(out var connection) && connection != null && connection.BlockRemoteIpCommand.CanExecute(null))
             {
@@ -377,7 +372,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void createAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CreateAdvancedRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedConnection(out var connection) && connection != null && !string.IsNullOrEmpty(connection.ProcessPath))
             {
@@ -393,7 +388,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        private void OpenFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedConnection(out var connection) && connection != null && !string.IsNullOrEmpty(connection.ProcessPath))
             {
@@ -418,7 +413,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CopyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (TryGetSelectedConnection(out var connection) && connection != null)
             {

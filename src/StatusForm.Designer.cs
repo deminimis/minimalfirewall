@@ -4,10 +4,10 @@ namespace MinimalFirewall
     public partial class StatusForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Label statusLabel;
+        private DarkModeForms.ThemedLabel statusLabel;
         private System.Windows.Forms.ProgressBar progressBar;
-        private System.Windows.Forms.Label progressLabel;
-        private System.Windows.Forms.Button okButton;
+        private DarkModeForms.ThemedLabel progressLabel;
+        private DarkModeForms.ThemedButton okButton;
 
         protected override void Dispose(bool disposing)
         {
@@ -27,10 +27,10 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            statusLabel = new Label();
-            okButton = new Button();
+            statusLabel = new DarkModeForms.ThemedLabel();
+            okButton = new DarkModeForms.ThemedButton();
             progressBar = new ProgressBar();
-            progressLabel = new Label();
+            progressLabel = new DarkModeForms.ThemedLabel();
             SuspendLayout();
             // 
             // statusLabel

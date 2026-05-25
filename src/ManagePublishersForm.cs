@@ -15,16 +15,14 @@ namespace MinimalFirewall
 
             bool isDark = appSettings.Theme == "Dark" || (appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
-            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
-            this.BackColor = Theme.Colors.Background;
-            this.ForeColor = Theme.Colors.TextInactive;
+            Theme.ApplyTitleBarTheme(Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            BackColor = Theme.Colors.Background;
+            ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
 
             _whitelistService = whitelistService;
 
-            publishersListBox.SelectedIndexChanged += new System.EventHandler(publishersListBox_SelectedIndexChanged);
+            publishersListBox.SelectedIndexChanged += new System.EventHandler(PublishersListBox_SelectedIndexChanged);
 
             LoadPublishers();
         }
@@ -38,7 +36,7 @@ namespace MinimalFirewall
                 publishersListBox.Items.Clear();
                 var publishers = _whitelistService.GetTrustedPublishers();
 
-                publishersListBox.Items.AddRange(publishers.ToArray());
+                publishersListBox.Items.AddRange([.. publishers]);
             }
             finally
             {
@@ -54,12 +52,12 @@ namespace MinimalFirewall
             removeButton.Enabled = publishersListBox.SelectedItems.Count > 0;
         }
 
-        private void publishersListBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void PublishersListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
             UpdateUIState();
         }
 
-        private void removeButton_Click(object sender, EventArgs e)
+        private void RemoveButton_Click(object sender, EventArgs e)
         {
             // Support removing single or multiple items
             if (publishersListBox.SelectedItems.Count > 0)
@@ -85,7 +83,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void closeButton_Click(object sender, EventArgs e)
+        private void CloseButton_Click(object sender, EventArgs e)
         {
             Close();
         }

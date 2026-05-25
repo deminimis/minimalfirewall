@@ -85,23 +85,17 @@ namespace MinimalFirewall
             rulesDataGridView.AutoGenerateColumns = false;
             rulesDataGridView.DataSource = null;
 
-            // Advanced double buffering 
-            typeof(DataGridView).InvokeMember(
-               "DoubleBuffered",
-               System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
-               null,
-               rulesDataGridView,
-               new object[] { true });
+
 
             rulesDataGridView.CellValueNeeded += RulesDataGridView_CellValueNeeded;
             rulesDataGridView.MouseDown += RulesDataGridView_MouseDown;
 
             _mainViewModel.RulesListUpdated += OnRulesListUpdated;
 
-            programFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
-            serviceFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
-            uwpFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
-            wildcardFilterCheckBox.CheckedChanged += filterCheckBox_CheckedChanged;
+            programFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
+            serviceFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
+            uwpFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
+            wildcardFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
         }
         #endregion
 
@@ -163,10 +157,9 @@ namespace MinimalFirewall
 
         private List<AggregatedRuleViewModel> GetSelectedRules()
         {
-            return rulesDataGridView.SelectedRows.Cast<DataGridViewRow>()
+            return [.. rulesDataGridView.SelectedRows.Cast<DataGridViewRow>()
                 .Where(r => r.Index >= 0 && r.Index < _currentRuleList.Count)
-                .Select(r => _currentRuleList[r.Index])
-                .ToList();
+                .Select(r => _currentRuleList[r.Index])];
         }
 
         private AggregatedRuleViewModel? GetFirstSelectedRule()
@@ -184,7 +177,7 @@ namespace MinimalFirewall
         #endregion
 
         #region UI Behavior (Events & Interaction)
-        private void filterCheckBox_CheckedChanged(object? sender, EventArgs e)
+        private void FilterCheckBox_CheckedChanged(object? _1, EventArgs _2)
         {
             if (_appSettings == null) return;
 
@@ -197,13 +190,13 @@ namespace MinimalFirewall
             ApplyRulesFilters();
         }
 
-        private void SearchTextBox_TextChanged(object sender, EventArgs e)
+        private void SearchTextBox_TextChanged(object? _1, EventArgs _2)
         {
             _searchDebounceTimer.Stop();
             _searchDebounceTimer.Start();
         }
 
-        private async void CreateRuleButton_Click(object sender, EventArgs e)
+        private async void CreateRuleButton_Click(object _, EventArgs _1)
         {
             try
             {
@@ -223,7 +216,7 @@ namespace MinimalFirewall
             }
         }
 
-        private async void editRuleToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void EditRuleToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
@@ -246,7 +239,7 @@ namespace MinimalFirewall
                         {
                             if (originalRule.HasSameSettings(dialog.RuleVm)) return;
 
-                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = aggRule.UnderlyingRules?.Select(r => r.Name).ToList() ?? [] };
+                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = [.. aggRule.UnderlyingRules?.Select(r => r.Name) ?? []] };
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
 
                             var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
@@ -267,7 +260,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void DeleteRuleMenuItem_Click(object sender, EventArgs e)
+        private void DeleteRuleMenuItem_Click(object _, EventArgs _1)
         {
             var items = GetSelectedRules();
             if (items.Count > 0)
@@ -290,7 +283,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void rulesContextMenu_Opening(object sender, CancelEventArgs e)
+        private void RulesContextMenu_Opening(object sender, CancelEventArgs e)
         {
             var rule = GetFirstSelectedRule();
             if (rule == null)
@@ -311,7 +304,7 @@ namespace MinimalFirewall
             editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
         }
 
-        private void openFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
+        private void OpenFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try
             {
@@ -322,7 +315,7 @@ namespace MinimalFirewall
 
                     if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
                     {
-                        string safePath = appPath.Replace("\"", "");
+                        string safePath = appPath.Trim('\"');
                         Process.Start("explorer.exe", $"/select, \"{safePath}\"");
                     }
                     else
@@ -337,7 +330,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void copyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void CopyDetailsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var selectedRules = GetSelectedRules();
             if (selectedRules.Count > 0)
@@ -374,7 +367,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void rulesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        private void RulesDataGridView_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right && e.RowIndex >= 0)
             {
@@ -396,7 +389,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void rulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        private void RulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.ColumnIndex < 0 || _appSettings == null) return;
 
@@ -447,7 +440,7 @@ namespace MinimalFirewall
             if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName)) return null;
 
             if (rule.Type == RuleType.UWP ||
-                rule.ApplicationName.StartsWith("@", StringComparison.Ordinal) ||
+                rule.ApplicationName.StartsWith('@') ||
                 rule.ApplicationName == "*" ||
                 rule.ApplicationName.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
@@ -488,7 +481,7 @@ namespace MinimalFirewall
             };
         }
 
-        private void rulesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        private void RulesDataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= _currentRuleList.Count) return;
 
@@ -523,7 +516,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void rulesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
+        private void RulesDataGridView_RowPostPaint(object sender, DataGridViewRowPostPaintEventArgs e)
         {
             if (rulesDataGridView.Rows[e.RowIndex].Selected) return;
 
@@ -535,15 +528,20 @@ namespace MinimalFirewall
             }
         }
 
-        private void rulesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
+        private void RulesDataGridView_CellMouseEnter(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0) rulesDataGridView.InvalidateRow(e.RowIndex);
         }
 
-        private void rulesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        private void RulesDataGridView_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0) rulesDataGridView.InvalidateRow(e.RowIndex);
         }
         #endregion
+
+        private void RulesControl_Load(object? _1, EventArgs _2)
+        {
+
+        }
     }
 }

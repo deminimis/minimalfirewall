@@ -406,11 +406,11 @@ namespace MinimalFirewall
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
 
-            var styler = new ControlStyler(Theme.Colors, isDark);
-            styler.ApplyStyle(this);
-
             _cachedArrowPen?.Dispose();
             _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
+
+            // Force update themed controls
+            RefreshAllThemedControls(this);
 
             rulesControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
@@ -425,6 +425,41 @@ namespace MinimalFirewall
             rescanButton.FlatAppearance.BorderColor = BackColor;
             lockdownButton.BringToFront();
             rescanButton.BringToFront();
+        }
+
+        private void RefreshAllThemedControls(Control parent)
+        {
+            foreach (Control control in parent.Controls)
+            {
+                if (control is ThemedButton btn) btn.ApplyTheme();
+                else if (control is ThemedLabel lbl) lbl.ApplyTheme();
+                else if (control is ThemedPanel pnl) pnl.ApplyTheme();
+                else if (control is ThemedDataGridView dgv) dgv.ApplyTheme();
+                else if (control is ThemedTabControl tab) tab.Invalidate();
+                // Fallback for native controls 
+                else if (control is TextBox or RichTextBox or ComboBox or NumericUpDown)
+                {
+                    control.BackColor = Theme.Colors.Surface;
+                    control.ForeColor = Theme.Colors.TextActive;
+                    if (control is TextBox tb) tb.BorderStyle = BorderStyle.FixedSingle;
+                    if (control is RichTextBox rtb) rtb.BorderStyle = BorderStyle.None;
+                }
+                else if (control is CheckBox or RadioButton)
+                {
+                    control.ForeColor = Theme.Colors.TextActive;
+                }
+                else if (control is UserControl or TabPage or SplitContainer or SplitterPanel or Panel or FlowLayoutPanel or TableLayoutPanel)
+                {
+                    control.BackColor = Theme.Colors.Background;
+                    control.ForeColor = Theme.Colors.TextInactive;
+                }
+
+                // Recursively check children
+                if (control.HasChildren)
+                {
+                    RefreshAllThemedControls(control);
+                }
+            }
         }
 
         private void UpdateIconColumnVisibility()

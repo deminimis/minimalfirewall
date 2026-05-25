@@ -4,10 +4,10 @@ namespace MinimalFirewall
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.ListBox foldersListBox;
-        private System.Windows.Forms.Button addButton;
-        private System.Windows.Forms.Button removeButton;
-        private System.Windows.Forms.Button closeButton;
-        private System.Windows.Forms.Label infoLabel;
+        private DarkModeForms.ThemedButton addButton;
+        private DarkModeForms.ThemedButton removeButton;
+        private DarkModeForms.ThemedButton closeButton;
+        private DarkModeForms.ThemedLabel infoLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -23,10 +23,10 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             foldersListBox = new ListBox();
-            addButton = new Button();
-            removeButton = new Button();
-            closeButton = new Button();
-            infoLabel = new Label();
+            addButton = new DarkModeForms.ThemedButton();
+            removeButton = new DarkModeForms.ThemedButton();
+            closeButton = new DarkModeForms.ThemedButton();
+            infoLabel = new DarkModeForms.ThemedLabel();
             SuspendLayout();
             // 
             // foldersListBox
@@ -36,7 +36,7 @@ namespace MinimalFirewall
             foldersListBox.Name = "foldersListBox";
             foldersListBox.Size = new Size(460, 212);
             foldersListBox.TabIndex = 1;
-            foldersListBox.SelectedIndexChanged += foldersListBox_SelectedIndexChanged;
+            foldersListBox.SelectedIndexChanged += FoldersListBox_SelectedIndexChanged;
             // 
             // addButton
             // 
@@ -46,7 +46,7 @@ namespace MinimalFirewall
             addButton.TabIndex = 2;
             addButton.Text = "Add Folder...";
             addButton.UseVisualStyleBackColor = true;
-            addButton.Click += addButton_Click;
+            addButton.Click += AddButton_Click;
             // 
             // removeButton
             // 
@@ -56,7 +56,7 @@ namespace MinimalFirewall
             removeButton.TabIndex = 3;
             removeButton.Text = "Remove Selected";
             removeButton.UseVisualStyleBackColor = true;
-            removeButton.Click += removeButton_Click;
+            removeButton.Click += RemoveButton_Click;
             // 
             // closeButton
             // 
@@ -67,7 +67,7 @@ namespace MinimalFirewall
             closeButton.TabIndex = 4;
             closeButton.Text = "Close";
             closeButton.UseVisualStyleBackColor = true;
-            closeButton.Click += closeButton_Click;
+            closeButton.Click += CloseButton_Click;
             // 
             // infoLabel
             // 

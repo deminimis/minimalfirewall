@@ -6,16 +6,16 @@ namespace MinimalFirewall
     partial class NotifierForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Label infoLabel;
-        private System.Windows.Forms.Label appNameLabel;
+        private DarkModeForms.ThemedLabel infoLabel;
+        private DarkModeForms.ThemedLabel appNameLabel;
         private System.Windows.Forms.TextBox pathLabel;
         private System.Windows.Forms.CheckBox trustPublisherCheckBox;
-        private System.Windows.Forms.Button createWildcardButton;
-        private System.Windows.Forms.Button copyDetailsButton;
-        private System.Windows.Forms.Button allowButton;
-        private System.Windows.Forms.Button tempAllowButton;
-        private System.Windows.Forms.Button blockButton;
-        private System.Windows.Forms.Button ignoreButton;
+        private DarkModeForms.ThemedButton createWildcardButton;
+        private DarkModeForms.ThemedButton copyDetailsButton;
+        private DarkModeForms.ThemedButton allowButton;
+        private DarkModeForms.ThemedButton tempAllowButton;
+        private DarkModeForms.ThemedButton blockButton;
+        private DarkModeForms.ThemedButton ignoreButton;
         private System.Windows.Forms.ContextMenuStrip tempAllowContextMenu;
 
         protected override void Dispose(bool disposing)
@@ -32,16 +32,16 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            infoLabel = new Label();
-            appNameLabel = new Label();
+            infoLabel = new DarkModeForms.ThemedLabel();
+            appNameLabel = new DarkModeForms.ThemedLabel();
             pathLabel = new TextBox();
             trustPublisherCheckBox = new CheckBox();
-            createWildcardButton = new Button();
-            copyDetailsButton = new Button();
-            allowButton = new Button();
-            tempAllowButton = new Button();
-            blockButton = new Button();
-            ignoreButton = new Button();
+            createWildcardButton = new DarkModeForms.ThemedButton();
+            copyDetailsButton = new DarkModeForms.ThemedButton();
+            allowButton = new DarkModeForms.ThemedButton();
+            tempAllowButton = new DarkModeForms.ThemedButton();
+            blockButton = new DarkModeForms.ThemedButton();
+            ignoreButton = new DarkModeForms.ThemedButton();
             tempAllowContextMenu = new ContextMenuStrip(components);
             toolTip1 = new ToolTip(components);
             SuspendLayout();

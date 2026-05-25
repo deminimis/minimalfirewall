@@ -18,14 +18,16 @@ namespace MinimalFirewall
         private int _systemIconIndex = -1;
 
         #region Native Methods
-        [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+#pragma warning disable SYSLIB1054 // Suppress LibraryImport suggestion for complex string structs
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr SHGetFileInfo(string pszPath, uint dwFileAttributes, ref SHFILEINFO psfi, uint cbFileInfo, uint uFlags);
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool DestroyIcon(IntPtr hIcon);
+#pragma warning restore SYSLIB1054
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct SHFILEINFO
         {
             public IntPtr hIcon;
@@ -100,9 +102,16 @@ namespace MinimalFirewall
             {
                 if (_imageList.Images.ContainsKey("advanced.png"))
                 {
-                    Image systemImage = _imageList.Images["advanced.png"];
-                    _imageList.Images.Add("system_icon", systemImage);
-                    _systemIconIndex = _imageList.Images.Count - 1;
+                    Image? systemImage = _imageList.Images["advanced.png"];
+                    if (systemImage != null)
+                    {
+                        _imageList.Images.Add("system_icon", systemImage);
+                        _systemIconIndex = _imageList.Images.Count - 1;
+                    }
+                    else
+                    {
+                        _systemIconIndex = _defaultIconIndex;
+                    }
                 }
                 else
                 {

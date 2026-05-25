@@ -3,9 +3,9 @@ namespace MinimalFirewall
     partial class CreateAdvancedRuleForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Label labelName;
+        private DarkModeForms.ThemedLabel labelName;
         private System.Windows.Forms.TextBox ruleNameTextBox;
-        private System.Windows.Forms.Label labelDescription;
+        private DarkModeForms.ThemedLabel labelDescription;
         private System.Windows.Forms.TextBox descriptionTextBox;
         private System.Windows.Forms.CheckBox enabledCheckBox;
         private System.Windows.Forms.GroupBox actionGroupBox;
@@ -16,46 +16,46 @@ namespace MinimalFirewall
         private System.Windows.Forms.RadioButton outboundRadioButton;
         private System.Windows.Forms.RadioButton inboundRadioButton;
         private System.Windows.Forms.GroupBox programGroupBox;
-        private System.Windows.Forms.Button browseButton;
+        private DarkModeForms.ThemedButton browseButton;
         private System.Windows.Forms.TextBox programPathTextBox;
-        private System.Windows.Forms.Label labelProgram;
+        private DarkModeForms.ThemedLabel labelProgram;
         private System.Windows.Forms.TextBox serviceNameTextBox;
-        private System.Windows.Forms.Label labelService;
+        private DarkModeForms.ThemedLabel labelService;
         private System.Windows.Forms.GroupBox protocolGroupBox;
         private System.Windows.Forms.ComboBox protocolComboBox;
         private System.Windows.Forms.GroupBox portsGroupBox;
         private System.Windows.Forms.TextBox remotePortsTextBox;
-        private System.Windows.Forms.Label labelRemotePorts;
+        private DarkModeForms.ThemedLabel labelRemotePorts;
         private System.Windows.Forms.TextBox localPortsTextBox;
-        private System.Windows.Forms.Label labelLocalPorts;
+        private DarkModeForms.ThemedLabel labelLocalPorts;
         private System.Windows.Forms.GroupBox icmpGroupBox;
         private System.Windows.Forms.TextBox icmpTypesAndCodesTextBox;
-        private System.Windows.Forms.Label labelIcmpInfo;
+        private DarkModeForms.ThemedLabel labelIcmpInfo;
         private System.Windows.Forms.GroupBox scopeGroupBox;
         private System.Windows.Forms.TextBox remoteAddressTextBox;
-        private System.Windows.Forms.Label labelRemoteAddress;
+        private DarkModeForms.ThemedLabel labelRemoteAddress;
         private System.Windows.Forms.TextBox localAddressTextBox;
-        private System.Windows.Forms.Label labelLocalAddress;
-        private System.Windows.Forms.Label labelScopeExample;
+        private DarkModeForms.ThemedLabel labelLocalAddress;
+        private DarkModeForms.ThemedLabel labelScopeExample;
         private System.Windows.Forms.GroupBox profilesGroupBox;
         private System.Windows.Forms.CheckBox publicCheckBox;
         private System.Windows.Forms.CheckBox privateCheckBox;
         private System.Windows.Forms.CheckBox domainCheckBox;
-        private System.Windows.Forms.Button okButton;
-        private System.Windows.Forms.Button cancelButton;
+        private DarkModeForms.ThemedButton okButton;
+        private DarkModeForms.ThemedButton cancelButton;
         private System.Windows.Forms.GroupBox interfaceTypesGroupBox;
         private System.Windows.Forms.CheckBox lanCheckBox;
         private System.Windows.Forms.CheckBox wirelessCheckBox;
         private System.Windows.Forms.CheckBox remoteAccessCheckBox;
-        private System.Windows.Forms.Label labelGroup;
+        private DarkModeForms.ThemedLabel labelGroup;
         private System.Windows.Forms.ComboBox groupComboBox;
-        private System.Windows.Forms.Button addGroupButton;
-        private System.Windows.Forms.Panel mainPanel;
-        private System.Windows.Forms.Panel bottomPanel;
-        private System.Windows.Forms.Label programPathNoteLabel;
-        private System.Windows.Forms.Button browseServiceButton;
+        private DarkModeForms.ThemedButton addGroupButton;
+        private DarkModeForms.ThemedPanel mainPanel;
+        private DarkModeForms.ThemedPanel bottomPanel;
+        private DarkModeForms.ThemedLabel programPathNoteLabel;
+        private DarkModeForms.ThemedButton browseServiceButton;
         private System.Windows.Forms.ErrorProvider errorProvider1;
-        private System.Windows.Forms.Label labelIcmpExample;
+        private DarkModeForms.ThemedLabel labelIcmpExample;
 
         protected override void Dispose(bool disposing)
         {
@@ -71,10 +71,10 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            labelName = new Label();
-            labelIcmpExample = new Label();
+            labelName = new DarkModeForms.ThemedLabel();
+            labelIcmpExample = new DarkModeForms.ThemedLabel();
             ruleNameTextBox = new TextBox();
-            labelDescription = new Label();
+            labelDescription = new DarkModeForms.ThemedLabel();
             descriptionTextBox = new TextBox();
             enabledCheckBox = new CheckBox();
             actionGroupBox = new GroupBox();
@@ -85,44 +85,44 @@ namespace MinimalFirewall
             outboundRadioButton = new RadioButton();
             inboundRadioButton = new RadioButton();
             programGroupBox = new GroupBox();
-            browseServiceButton = new Button();
-            programPathNoteLabel = new Label();
+            browseServiceButton = new DarkModeForms.ThemedButton();
+            programPathNoteLabel = new DarkModeForms.ThemedLabel();
             serviceNameTextBox = new TextBox();
-            labelService = new Label();
-            browseButton = new Button();
+            labelService = new DarkModeForms.ThemedLabel();
+            browseButton = new DarkModeForms.ThemedButton();
             programPathTextBox = new TextBox();
-            labelProgram = new Label();
+            labelProgram = new DarkModeForms.ThemedLabel();
             protocolGroupBox = new GroupBox();
             protocolComboBox = new System.Windows.Forms.ComboBox();
             portsGroupBox = new GroupBox();
             remotePortsTextBox = new TextBox();
-            labelRemotePorts = new Label();
+            labelRemotePorts = new DarkModeForms.ThemedLabel();
             localPortsTextBox = new TextBox();
-            labelLocalPorts = new Label();
+            labelLocalPorts = new DarkModeForms.ThemedLabel();
             icmpGroupBox = new GroupBox();
-            labelIcmpInfo = new Label();
+            labelIcmpInfo = new DarkModeForms.ThemedLabel();
             icmpTypesAndCodesTextBox = new TextBox();
             scopeGroupBox = new GroupBox();
-            labelScopeExample = new Label();
+            labelScopeExample = new DarkModeForms.ThemedLabel();
             remoteAddressTextBox = new TextBox();
-            labelRemoteAddress = new Label();
+            labelRemoteAddress = new DarkModeForms.ThemedLabel();
             localAddressTextBox = new TextBox();
-            labelLocalAddress = new Label();
+            labelLocalAddress = new DarkModeForms.ThemedLabel();
             profilesGroupBox = new GroupBox();
             publicCheckBox = new CheckBox();
             privateCheckBox = new CheckBox();
             domainCheckBox = new CheckBox();
-            okButton = new Button();
-            cancelButton = new Button();
+            okButton = new DarkModeForms.ThemedButton();
+            cancelButton = new DarkModeForms.ThemedButton();
             interfaceTypesGroupBox = new GroupBox();
             lanCheckBox = new CheckBox();
             wirelessCheckBox = new CheckBox();
             remoteAccessCheckBox = new CheckBox();
-            labelGroup = new Label();
+            labelGroup = new DarkModeForms.ThemedLabel();
             groupComboBox = new System.Windows.Forms.ComboBox();
-            addGroupButton = new Button();
-            mainPanel = new Panel();
-            bottomPanel = new Panel();
+            addGroupButton = new DarkModeForms.ThemedButton();
+            mainPanel = new DarkModeForms.ThemedPanel();
+            bottomPanel = new DarkModeForms.ThemedPanel();
             errorProvider1 = new ErrorProvider(components);
             toolTip1 = new ToolTip(components);
             actionGroupBox.SuspendLayout();
@@ -302,7 +302,7 @@ namespace MinimalFirewall
             programGroupBox.TabIndex = 7;
             programGroupBox.TabStop = false;
             programGroupBox.Text = "Program and Service";
-            programGroupBox.Enter += programGroupBox_Enter;
+            programGroupBox.Enter += ProgramGroupBox_Enter;
             // 
             // browseServiceButton
             // 
@@ -314,7 +314,7 @@ namespace MinimalFirewall
             browseServiceButton.TabIndex = 7;
             browseServiceButton.Text = "Browse...";
             browseServiceButton.UseVisualStyleBackColor = true;
-            browseServiceButton.Click += browseServiceButton_Click;
+            browseServiceButton.Click += BrowseServiceButton_Click;
             // 
             // programPathNoteLabel
             // 
@@ -490,7 +490,7 @@ namespace MinimalFirewall
             icmpTypesAndCodesTextBox.Size = new Size(562, 23);
             icmpTypesAndCodesTextBox.TabIndex = 1;
             icmpTypesAndCodesTextBox.Text = "*";
-            icmpTypesAndCodesTextBox.Validating += icmpTypesAndCodesTextBox_Validating;
+            icmpTypesAndCodesTextBox.Validating += IcmpTypesAndCodesTextBox_Validating;
             // 
             // scopeGroupBox
             // 
@@ -529,7 +529,7 @@ namespace MinimalFirewall
             remoteAddressTextBox.TabIndex = 3;
             remoteAddressTextBox.Text = "*";
             toolTip1.SetToolTip(remoteAddressTextBox, "Supports IPs, Subnets, Ranges, and keywords: \\nLocalSubnet\\nDNS\\nDHCP\\nWINS\\nDefaultGateway");
-            remoteAddressTextBox.Validating += remoteAddressTextBox_Validating;
+            remoteAddressTextBox.Validating += RemoteAddressTextBox_Validating;
             // 
             // labelRemoteAddress
             // 
@@ -550,7 +550,7 @@ namespace MinimalFirewall
             localAddressTextBox.TabIndex = 1;
             localAddressTextBox.Text = "*";
             toolTip1.SetToolTip(localAddressTextBox, "Supports IPs, Subnets, Ranges, and keywords: \\nLocalSubnet\\nDNS\\nDHCP\\nWINS\\nDefaultGateway");
-            localAddressTextBox.Validating += localAddressTextBox_Validating;
+            localAddressTextBox.Validating += LocalAddressTextBox_Validating;
             // 
             // labelLocalAddress
             // 

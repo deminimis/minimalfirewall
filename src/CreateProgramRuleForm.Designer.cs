@@ -4,13 +4,13 @@ namespace MinimalFirewall
     public partial class CreateProgramRuleForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Label programListLabel;
+        private DarkModeForms.ThemedLabel programListLabel;
         private System.Windows.Forms.RadioButton allowRadio;
         private System.Windows.Forms.RadioButton blockRadio;
         private System.Windows.Forms.ComboBox allowDirectionCombo;
         private System.Windows.Forms.ComboBox blockDirectionCombo;
-        private System.Windows.Forms.Button okButton;
-        private System.Windows.Forms.Button cancelButton;
+        private DarkModeForms.ThemedButton okButton;
+        private DarkModeForms.ThemedButton cancelButton;
         private GroupBox actionGroupBox;
 
         protected override void Dispose(bool disposing)
@@ -26,14 +26,14 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            programListLabel = new Label();
+            programListLabel = new DarkModeForms.ThemedLabel();
             actionGroupBox = new GroupBox();
             blockDirectionCombo = new System.Windows.Forms.ComboBox();
             allowDirectionCombo = new System.Windows.Forms.ComboBox();
             blockRadio = new RadioButton();
             allowRadio = new RadioButton();
-            okButton = new Button();
-            cancelButton = new Button();
+            okButton = new DarkModeForms.ThemedButton();
+            cancelButton = new DarkModeForms.ThemedButton();
             actionGroupBox.SuspendLayout();
             SuspendLayout();
             // 

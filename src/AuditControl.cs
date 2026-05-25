@@ -33,7 +33,7 @@ namespace MinimalFirewall
         public AuditControl()
         {
             InitializeComponent();
-            SetupAdvancedGridProperties();
+            
 
             _cachedOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
             _searchDebounceTimer = new System.Windows.Forms.Timer { Interval = 300 };
@@ -42,12 +42,7 @@ namespace MinimalFirewall
             Disposed += OnDisposed;
         }
 
-        private void SetupAdvancedGridProperties()
-        {
-            typeof(DataGridView).InvokeMember("DoubleBuffered",
-                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.SetProperty,
-                null, systemChangesDataGridView, [true]);
-        }
+        
 
         private void OnDisposed(object? sender, EventArgs e)
         {

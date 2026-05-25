@@ -31,7 +31,6 @@ namespace MinimalFirewall
 
             if (dashboardDataGridView != null)
             {
-                typeof(Control).InvokeMember("DoubleBuffered", BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic, null, dashboardDataGridView, [true]);
                 dashboardDataGridView.CellMouseDown += DashboardDataGridView_CellMouseDown;
                 dashboardDataGridView.SelectionChanged += DashboardDataGridView_SelectionChanged;
             }

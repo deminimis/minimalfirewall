@@ -5,9 +5,9 @@ namespace MinimalFirewall
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.TextBox searchTextBox;
         private System.Windows.Forms.ListBox servicesListBox;
-        private System.Windows.Forms.Button okButton;
-        private System.Windows.Forms.Button cancelButton;
-        private System.Windows.Forms.Panel bottomPanel;
+        private DarkModeForms.ThemedButton okButton;
+        private DarkModeForms.ThemedButton cancelButton;
+        private DarkModeForms.ThemedPanel bottomPanel;
 
         protected override void Dispose(bool disposing)
         {
@@ -24,9 +24,9 @@ namespace MinimalFirewall
         {
             searchTextBox = new TextBox();
             servicesListBox = new ListBox();
-            okButton = new Button();
-            cancelButton = new Button();
-            bottomPanel = new Panel();
+            okButton = new DarkModeForms.ThemedButton();
+            cancelButton = new DarkModeForms.ThemedButton();
+            bottomPanel = new DarkModeForms.ThemedPanel();
             bottomPanel.SuspendLayout();
             SuspendLayout();
             // 
@@ -38,7 +38,7 @@ namespace MinimalFirewall
             searchTextBox.PlaceholderText = "Search services...";
             searchTextBox.Size = new Size(464, 23);
             searchTextBox.TabIndex = 0;
-            searchTextBox.TextChanged += searchTextBox_TextChanged;
+            searchTextBox.TextChanged += SearchTextBox_TextChanged;
             // 
             // servicesListBox
             // 
@@ -49,7 +49,7 @@ namespace MinimalFirewall
             servicesListBox.Name = "servicesListBox";
             servicesListBox.Size = new Size(464, 383);
             servicesListBox.TabIndex = 1;
-            servicesListBox.DoubleClick += servicesListBox_DoubleClick;
+            servicesListBox.DoubleClick += ServicesListBox_DoubleClick;
             // 
             // okButton
             // 
@@ -60,7 +60,7 @@ namespace MinimalFirewall
             okButton.TabIndex = 0;
             okButton.Text = "OK";
             okButton.UseVisualStyleBackColor = true;
-            okButton.Click += okButton_Click;
+            okButton.Click += OkButton_Click;
             // 
             // cancelButton
             // 
@@ -72,7 +72,7 @@ namespace MinimalFirewall
             cancelButton.TabIndex = 1;
             cancelButton.Text = "Cancel";
             cancelButton.UseVisualStyleBackColor = true;
-            cancelButton.Click += cancelButton_Click;
+            cancelButton.Click += CancelButton_Click;
             // 
             // bottomPanel
             // 

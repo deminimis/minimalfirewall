@@ -4,28 +4,28 @@ namespace MinimalFirewall
     public partial class WildcardCreatorForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Button browseButton;
+        private DarkModeForms.ThemedButton browseButton;
         private System.Windows.Forms.TextBox folderPathTextBox;
         private System.Windows.Forms.TextBox exeNameTextBox;
         private System.Windows.Forms.RadioButton allowRadio;
         private System.Windows.Forms.RadioButton blockRadio;
         private System.Windows.Forms.ComboBox directionCombo;
-        private System.Windows.Forms.Button okButton;
-        private System.Windows.Forms.Button cancelButton;
+        private DarkModeForms.ThemedButton okButton;
+        private DarkModeForms.ThemedButton cancelButton;
         private System.Windows.Forms.GroupBox actionGroupBox;
-        private System.Windows.Forms.Label instructionLabel;
-        private System.Windows.Forms.Label exeNameNoteLabel;
+        private DarkModeForms.ThemedLabel instructionLabel;
+        private DarkModeForms.ThemedLabel exeNameNoteLabel;
         private System.Windows.Forms.ErrorProvider errorProvider1;
-        private System.Windows.Forms.Button advancedButton;
+        private DarkModeForms.ThemedButton advancedButton;
         private System.Windows.Forms.GroupBox advancedGroupBox;
         private System.Windows.Forms.ComboBox protocolComboBox;
-        private System.Windows.Forms.Label labelProtocol;
+        private DarkModeForms.ThemedLabel labelProtocol;
         private System.Windows.Forms.TextBox remotePortsTextBox;
-        private System.Windows.Forms.Label labelRemotePorts;
+        private DarkModeForms.ThemedLabel labelRemotePorts;
         private System.Windows.Forms.TextBox localPortsTextBox;
-        private System.Windows.Forms.Label labelLocalPorts;
+        private DarkModeForms.ThemedLabel labelLocalPorts;
         private System.Windows.Forms.TextBox remoteAddressTextBox;
-        private System.Windows.Forms.Label labelRemoteAddress;
+        private DarkModeForms.ThemedLabel labelRemoteAddress;
 
         protected override void Dispose(bool disposing)
         {
@@ -42,28 +42,28 @@ namespace MinimalFirewall
         {
             components = new System.ComponentModel.Container();
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(WildcardCreatorForm));
-            browseButton = new Button();
+            browseButton = new DarkModeForms.ThemedButton();
             folderPathTextBox = new TextBox();
             exeNameTextBox = new TextBox();
             actionGroupBox = new GroupBox();
             directionCombo = new System.Windows.Forms.ComboBox();
             blockRadio = new RadioButton();
             allowRadio = new RadioButton();
-            okButton = new Button();
-            cancelButton = new Button();
-            instructionLabel = new Label();
-            exeNameNoteLabel = new Label();
+            okButton = new DarkModeForms.ThemedButton();
+            cancelButton = new DarkModeForms.ThemedButton();
+            instructionLabel = new DarkModeForms.ThemedLabel();
+            exeNameNoteLabel = new DarkModeForms.ThemedLabel();
             errorProvider1 = new ErrorProvider(components);
-            advancedButton = new Button();
+            advancedButton = new DarkModeForms.ThemedButton();
             advancedGroupBox = new GroupBox();
             remoteAddressTextBox = new TextBox();
-            labelRemoteAddress = new Label();
+            labelRemoteAddress = new DarkModeForms.ThemedLabel();
             remotePortsTextBox = new TextBox();
-            labelRemotePorts = new Label();
+            labelRemotePorts = new DarkModeForms.ThemedLabel();
             localPortsTextBox = new TextBox();
-            labelLocalPorts = new Label();
+            labelLocalPorts = new DarkModeForms.ThemedLabel();
             protocolComboBox = new System.Windows.Forms.ComboBox();
-            labelProtocol = new Label();
+            labelProtocol = new DarkModeForms.ThemedLabel();
             actionGroupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider1).BeginInit();
             advancedGroupBox.SuspendLayout();

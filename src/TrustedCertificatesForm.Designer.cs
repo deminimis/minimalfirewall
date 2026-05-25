@@ -3,10 +3,10 @@ namespace MinimalFirewall
     partial class TrustedCertificatesForm
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.DataGridView certGrid;
-        private System.Windows.Forms.Button closeButton;
-        private System.Windows.Forms.Label infoLabel;
-        private System.Windows.Forms.Label countLabel;
+        private DarkModeForms.ThemedDataGridView certGrid;
+        private DarkModeForms.ThemedButton closeButton;
+        private DarkModeForms.ThemedLabel infoLabel;
+        private DarkModeForms.ThemedLabel countLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -21,10 +21,10 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            certGrid = new DataGridView();
-            closeButton = new Button();
-            infoLabel = new Label();
-            countLabel = new Label();
+            certGrid = new DarkModeForms.ThemedDataGridView();
+            closeButton = new DarkModeForms.ThemedButton();
+            infoLabel = new DarkModeForms.ThemedLabel();
+            countLabel = new DarkModeForms.ThemedLabel();
             ((System.ComponentModel.ISupportInitialize)certGrid).BeginInit();
             SuspendLayout();
             // 

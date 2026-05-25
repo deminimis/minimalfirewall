@@ -19,11 +19,11 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            topPanel = new Panel();
-            deleteRuleButton = new Button();
-            editRuleButton = new Button();
-            addRuleButton = new Button();
-            wildcardDataGridView = new DataGridView();
+            topPanel = new DarkModeForms.ThemedPanel();
+            deleteRuleButton = new DarkModeForms.ThemedButton();
+            editRuleButton = new DarkModeForms.ThemedButton();
+            addRuleButton = new DarkModeForms.ThemedButton();
+            wildcardDataGridView = new DarkModeForms.ThemedDataGridView();
             colFolderPath = new DataGridViewTextBoxColumn();
             colExeName = new DataGridViewTextBoxColumn();
             colAction = new DataGridViewTextBoxColumn();
@@ -222,10 +222,10 @@ namespace MinimalFirewall
 
         #endregion
 
-        private Panel topPanel;
-        private Button deleteRuleButton;
-        private Button editRuleButton;
-        private Button addRuleButton;
+        private DarkModeForms.ThemedPanel topPanel;
+        private DarkModeForms.ThemedButton deleteRuleButton;
+        private DarkModeForms.ThemedButton editRuleButton;
+        private DarkModeForms.ThemedButton addRuleButton;
         private DataGridView wildcardDataGridView;
         private ContextMenuStrip wildcardContextMenu;
         private ToolStripMenuItem editToolStripMenuItem;
