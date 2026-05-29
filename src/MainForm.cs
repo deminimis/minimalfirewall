@@ -62,6 +62,8 @@ namespace MinimalFirewall
         private CancellationTokenSource? _scanCts = null;
         private System.Windows.Forms.Timer? _trayBlinkTimer;
         private bool _trayBlinkState = false;
+        private const int BaseMainTabItemWidth = 85;
+        private const int BaseMainTabItemHeight = 120;
         #endregion
 
         #region Native Methods
@@ -86,16 +88,7 @@ namespace MinimalFirewall
             DoubleBuffered = true;
             Text = "Minimal Firewall";
 
-            using (Graphics g = CreateGraphics())
-            {
-                float dpiScale = g.DpiY / 96f;
-                if (dpiScale > 1f)
-                {
-                    int newTabWidth = (int)(mainTabControl.ItemSize.Width * dpiScale);
-                    int newTabHeight = (int)(mainTabControl.ItemSize.Height * dpiScale);
-                    mainTabControl.ItemSize = new Size(newTabWidth, newTabHeight);
-                }
-            }
+            ApplyMainTabDpiLayout();
 
             // Configuration & Theme
             ConfigPathManager.EnsureStorageDirectoryExists();
@@ -291,7 +284,22 @@ namespace MinimalFirewall
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
             base.OnDpiChanged(e);
+            ApplyMainTabDpiLayout(e.DeviceDpiNew / 96f);
             LayoutButtons();
+        }
+
+        private void ApplyMainTabDpiLayout()
+        {
+            using var g = CreateGraphics();
+            ApplyMainTabDpiLayout(g.DpiY / 96f);
+        }
+
+        private void ApplyMainTabDpiLayout(float dpiScale)
+        {
+            mainTabControl.ItemSize = new Size(
+                (int)Math.Round(BaseMainTabItemWidth * dpiScale),
+                (int)Math.Round(BaseMainTabItemHeight * dpiScale));
+            mainTabControl.Invalidate();
         }
 
         private void LayoutButtons()
