@@ -81,9 +81,9 @@ namespace DarkModeForms
             {
                 if (icon != null && ImageList != null)
                 {
+                    float dpiScale = e.Graphics.DpiY / 96f;
                     int iconWidth = ImageList.ImageSize.Width;
                     int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
-                    int iconY = tabRect.Y + 15;
                     Image imageToDraw = icon;
 
                     // Skip recoloring for items explicitly tagged or specific icons
@@ -104,12 +104,24 @@ namespace DarkModeForms
                     }
 
                     int iconHeight = ImageList.ImageSize.Height;
+
+                    // Vertically center icon and text as a group within the tab
+                    int gap = (int)Math.Round(4 * dpiScale);
+                    Size textSize = TextRenderer.MeasureText(
+                        e.Graphics, tabPage.Text, tabPage.Font,
+                        new Size(tabRect.Width, int.MaxValue),
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.WordBreak);
+                    int totalContentHeight = iconHeight + gap + textSize.Height;
+                    int iconY = tabRect.Y + Math.Max(0, (tabRect.Height - totalContentHeight) / 2);
+
                     if (imageToDraw != null)
                     {
                         e.Graphics.DrawImage(imageToDraw, new Rectangle(iconX, iconY, iconWidth, iconHeight));
                     }
 
-                    textBounds = new Rectangle(tabRect.X, iconY + iconHeight, tabRect.Width, tabRect.Height - iconHeight - 20);
+                    textBounds = new Rectangle(
+                        tabRect.X, iconY + iconHeight + gap, tabRect.Width,
+                        tabRect.Bottom - (iconY + iconHeight + gap));
                     textFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak;
                 }
                 else
