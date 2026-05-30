@@ -84,8 +84,7 @@ namespace MinimalFirewall
             // Keep here, not in designer properties
             rulesDataGridView.AutoGenerateColumns = false;
             rulesDataGridView.DataSource = null;
-
-
+            rulesDataGridView.VirtualMode = true;
 
             rulesDataGridView.CellValueNeeded += RulesDataGridView_CellValueNeeded;
             rulesDataGridView.MouseDown += RulesDataGridView_MouseDown;

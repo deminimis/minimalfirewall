@@ -53,6 +53,7 @@ namespace MinimalFirewall
         {
             components = new System.ComponentModel.Container();
             var dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            rulesDataGridView = new DarkModeForms.ThemedDataGridView();
             rulesSearchTextBox = new TextBox();
             createRuleButton = new DarkModeForms.ThemedButton();
             rulesContextMenu = new ContextMenuStrip(components);
@@ -97,6 +98,7 @@ namespace MinimalFirewall
             rulesContextMenu.SuspendLayout();
             filterPanel.SuspendLayout();
             topPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).BeginInit();
             SuspendLayout();
             // 
             // rulesSearchTextBox
@@ -482,45 +484,34 @@ namespace MinimalFirewall
             autoAllowedColumn.Name = "autoAllowedColumn";
             autoAllowedColumn.ReadOnly = true;
             autoAllowedColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
-
+            // 
             // rulesDataGridView
-            // Instantiate and configure the grid so it exists before runtime Initialize is called
-            rulesDataGridView = new DarkModeForms.ThemedDataGridView();
+            // 
             rulesDataGridView.AllowUserToAddRows = false;
             rulesDataGridView.AllowUserToDeleteRows = false;
+            rulesDataGridView.AllowUserToResizeRows = false;
             rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
+            rulesDataGridView.ContextMenuStrip = rulesContextMenu;
             rulesDataGridView.Dock = DockStyle.Fill;
             rulesDataGridView.Location = new Point(0, 60);
             rulesDataGridView.Name = "rulesDataGridView";
-            rulesDataGridView.MultiSelect = true;
             rulesDataGridView.ReadOnly = true;
             rulesDataGridView.RowHeadersVisible = false;
             rulesDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            // required for owner-provided cell values
-            rulesDataGridView.VirtualMode = true;
-            rulesDataGridView.ContextMenuStrip = rulesContextMenu;
-
-            // Add the previously declared columns to the grid
-            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] {
-                advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn,
-                advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn,
-                advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn,
-                advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn
-            });
-
-            // Designer-level event hookups used by the control implementation
-            rulesDataGridView.CellMouseDown += RulesDataGridView_CellMouseDown;
+            rulesDataGridView.Size = new Size(1002, 851);
+            rulesDataGridView.TabIndex = 21;
             rulesDataGridView.CellFormatting += RulesDataGridView_CellFormatting;
-            rulesDataGridView.RowPostPaint += RulesDataGridView_RowPostPaint;
             rulesDataGridView.CellMouseEnter += RulesDataGridView_CellMouseEnter;
             rulesDataGridView.CellMouseLeave += RulesDataGridView_CellMouseLeave;
-
-            // Add grid and top panel (topPanel is Dock.Top so grid will fill remaining area)
-            Controls.Add(rulesDataGridView);
+            rulesDataGridView.CellMouseDown += RulesDataGridView_CellMouseDown;
+            rulesDataGridView.ColumnHeaderMouseClick += RulesDataGridView_ColumnHeaderMouseClick;
+            rulesDataGridView.RowPostPaint += RulesDataGridView_RowPostPaint;
             // 
             // RulesControl
             // 
+            Controls.Add(rulesDataGridView);
             Controls.Add(topPanel);
             Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Name = "RulesControl";
@@ -531,6 +522,7 @@ namespace MinimalFirewall
             filterPanel.PerformLayout();
             topPanel.ResumeLayout(false);
             topPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)rulesDataGridView).EndInit();
             ResumeLayout(false);
         }
 

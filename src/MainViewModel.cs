@@ -226,9 +226,10 @@ namespace MinimalFirewall
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
         {
             IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
+
             if (!showSystemRules)
             {
-                filteredRules = filteredRules.Where(r => r.Grouping.EndsWith(" - MFW"));
+                filteredRules = filteredRules.Where(r => r.Grouping.EndsWith(" - MFW") || r.Type == RuleType.UWP);
             }
 
             if (enabledTypes.Count > 0 && enabledTypes.Count < 5)
