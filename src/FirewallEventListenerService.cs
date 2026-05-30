@@ -156,9 +156,9 @@ namespace MinimalFirewall
             try
             {
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-                string layerId = GetValueFromXml(xmlContent, "LayerId");
+                string layerId = GetValueFromXml(xmlContent, "LayerRTID");
 
-                // Reliable Direction extraction using LayerId (bypasses OS language localization issues)
+                // Direction extraction using LayerId (bypasses OS language localization issues)
                 if (layerId == "48" || layerId == "50")
                 {
                     direction = DirectionOutbound;
@@ -176,10 +176,15 @@ namespace MinimalFirewall
                     direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
                 }
 
-                string remoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
-                string remotePort = GetValueFromXml(xmlContent, "RemotePort");
+                string sourceAddress = GetValueFromXml(xmlContent, "SourceAddress");
+                string sourcePort = GetValueFromXml(xmlContent, "SourcePort");
+                string destAddress = GetValueFromXml(xmlContent, "DestAddress");
+                string destPort = GetValueFromXml(xmlContent, "DestPort");
+
+                string remoteAddress = direction == DirectionInbound ? sourceAddress : destAddress;
+                string remotePort = direction == DirectionInbound ? sourcePort : destPort;
                 string protocol = GetValueFromXml(xmlContent, "Protocol");
-                string filterId = GetValueFromXml(xmlContent, "FilterId");
+                string filterId = GetValueFromXml(xmlContent, "FilterRTID");
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
 
