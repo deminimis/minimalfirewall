@@ -315,6 +315,11 @@ namespace MinimalFirewall
 
         private string ResolveAppPath(string rawPath)
         {
+            if (string.IsNullOrWhiteSpace(rawPath) || !rawPath.Contains('\\'))
+            {
+                return rawPath;
+            }
+
             string finalPath = rawPath;
             try
             {
@@ -337,7 +342,8 @@ namespace MinimalFirewall
                 return false;
             }
 
-            if (path.Equals("Unsolicited Traffic (No Process)", StringComparison.OrdinalIgnoreCase))
+            // Strucural filtering
+            if (!path.Contains('\\') && !path.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
