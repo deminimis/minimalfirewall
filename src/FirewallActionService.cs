@@ -1332,7 +1332,7 @@ namespace MinimalFirewall
             List<string?> servicesToCreateRulesFor;
             if (serviceNames.Length > 0)
             {
-                servicesToCreateRulesFor = new List<string?>(serviceNames);
+                servicesToCreateRulesFor = [.. serviceNames];
             }
             else if (isSvcHost)
             {
@@ -1462,9 +1462,9 @@ namespace MinimalFirewall
             var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules ?? [])
                 .Select(r =>
                 {
-                    r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
+                    if (r != null) r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
                     return r;
-                }).ToList();
+                }).Where(r => r != null).ToList();
             var wildcardRules = _wildcardRuleService.GetRules()
                 .Select(r =>
                 {
@@ -1504,6 +1504,7 @@ namespace MinimalFirewall
 
                 foreach (var ruleVm in container.AdvancedRules ?? [])
                 {
+                    if (ruleVm == null) continue;
                     ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
                     var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));

@@ -167,7 +167,7 @@ namespace MinimalFirewall
             _appSettings.DnsRefreshIntervalMinutes = (int)dnsRefreshNumericUpDown.Value;
         }
 
-        public void ApplyTheme(bool isDark)
+        public void ApplyTheme(bool _isDark)
         {
             foreach (var link in new[] { helpLink, reportProblemLink, forumLink, coffeeLinkLabel })
             {
@@ -192,7 +192,7 @@ namespace MinimalFirewall
             }
         }
 
-        private static Image RecolorImage(Image image, Color color)
+        private static Bitmap RecolorImage(Image image, Color color)
         {
             var bmp = new Bitmap(image.Width, image.Height);
             using var g = Graphics.FromImage(bmp);

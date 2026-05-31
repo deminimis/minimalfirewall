@@ -6,10 +6,10 @@ namespace MinimalFirewall
 {
     public class ManageDomainsForm : Form
     {
-        private TextBox domainsTextBox;
-        private Button okButton;
-        private Button cancelButton;
-        private Label instructionsLabel;
+        private TextBox domainsTextBox = null!;
+        private Button okButton = null!;
+        private Button cancelButton = null!;
+        private Label instructionsLabel = null!;
 
         public string Domains => domainsTextBox.Text.Trim();
 

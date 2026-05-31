@@ -367,7 +367,7 @@ namespace DarkModeForms
                                 ScrollBars = isMulti ? ScrollBars.Vertical : ScrollBars.None,
                                 UseSystemPasswordChar = field.ValueType == ValueTypes.Password
                             };
-                            txtBox.TextChanged += (sender, args) =>
+                            txtBox.TextChanged += (sender, _) =>
                             {
                                 AddTextChangedDelay(txtBox, ChangeDelayMS, text =>
                                 {
@@ -393,7 +393,7 @@ namespace DarkModeForms
                                 Dock = DockStyle.Fill,
                                 DecimalPlaces = isDec ? 2 : 0
                             };
-                            num.ValueChanged += (sender, args) =>
+                            num.ValueChanged += (_, _) =>
                             {
                                 AddTextChangedDelay(num, ChangeDelayMS, text =>
                                 {
@@ -422,7 +422,7 @@ namespace DarkModeForms
                                 dt.CalendarTitleBackColor = Theme.Colors.Surface;
                                 dt.CalendarTitleForeColor = Theme.Colors.TextActive;
                             }
-                            dt.ValueChanged += (sender, args) =>
+                            dt.ValueChanged += (_, _) =>
                             {
                                 field.Value = dt.Value.ToString("o");
                                 dt.Value = Convert.ToDateTime(field.Value, CultureInfo.InvariantCulture);
@@ -435,7 +435,7 @@ namespace DarkModeForms
                     case ValueTypes.Boolean:
                         {
                             var chk = new CheckBox { Checked = Convert.ToBoolean(field.Value), Dock = DockStyle.Fill, Text = field.Key };
-                            chk.CheckedChanged += (sender, args) =>
+                            chk.CheckedChanged += (_, _) =>
                             {
                                 field.Value = chk.Checked.ToString();
                                 chk.Checked = Convert.ToBoolean(field.Value);
@@ -447,7 +447,7 @@ namespace DarkModeForms
                     case ValueTypes.Dynamic:
                         {
                             var combo = new ComboBox { DataSource = field.DataSet, ValueMember = "Value", DisplayMember = "Key", Dock = DockStyle.Fill, BackColor = Theme.Colors.Control, ForeColor = Theme.Colors.TextActive, SelectedValue = field.Value, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = (pIsDarkMode ? FlatStyle.Flat : FlatStyle.Standard) };
-                            combo.SelectedValueChanged += (sender, args) =>
+                            combo.SelectedValueChanged += (_, _) =>
                             {
                                 field.Value = combo.SelectedValue.ToString()!;
                                 combo.SelectedValue = Convert.ToString(field.Value)!;
@@ -495,7 +495,7 @@ namespace DarkModeForms
 
             form.ClientSize = new Size(340, bottomPanel.Height + lblPrompt.Height + Contenedor.Height + 20);
 
-            form.FormClosing += (sender, e) =>
+            form.FormClosing += (_, e) =>
             {
                 if (form.ActiveControl == form.AcceptButton)
                 {
@@ -531,7 +531,7 @@ namespace DarkModeForms
             var timer = new Timer { Interval = milliseconds };
             EventHandler? disposedHandler = null;
 
-            timer.Tick += (sender, e) =>
+            timer.Tick += (_, _) =>
             {
                 timer.Stop();
                 if (timers.ContainsKey(control))
@@ -546,7 +546,7 @@ namespace DarkModeForms
                 timer.Dispose();
             };
 
-            disposedHandler = (sender, e) =>
+            disposedHandler = (_, _) =>
             {
                 if (timers.TryGetValue(control, out var entryToDispose))
                 {

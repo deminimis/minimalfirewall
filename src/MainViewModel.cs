@@ -24,7 +24,7 @@ namespace MinimalFirewall
         private readonly FirewallDataService _dataService;
         private readonly FirewallSentryService _firewallSentryService;
         private readonly FirewallEventListenerService _eventListenerService;
-        private readonly AppSettings _appSettings;
+        private readonly AppSettings _appSettings = null!;
         private readonly UserActivityLogger _activityLogger;
         private readonly FirewallActionsService _actionsService;
         private readonly FirewallSnapshotService _snapshotService;
@@ -264,7 +264,7 @@ namespace MinimalFirewall
                 {
                     // Extract domain string. Example: "... [MFW-Domain: example.com, test.com]"
                     int startIndex = rule.Description.IndexOf("[MFW-Domain:") + 12;
-                    int endIndex = rule.Description.IndexOf("]", startIndex);
+                    int endIndex = rule.Description.IndexOf(']', startIndex);
 
                     if (startIndex >= 12 && endIndex > startIndex)
                     {
@@ -516,8 +516,8 @@ namespace MinimalFirewall
                 bool isFresh = change.Name != null && !knownState.Contains(change.Name);
 
                 // Helper to identify Microsoft/OS rules 
-                bool isWindowsRule = (change.Grouping?.StartsWith("@") == true) ||
-                                     (change.Name?.StartsWith("@") == true) ||
+                bool isWindowsRule = (change.Grouping?.StartsWith('@') == true) ||
+                                     (change.Name?.StartsWith('@') == true) ||
                                      (change.Name?.StartsWith("ms-resource:", StringComparison.OrdinalIgnoreCase) == true) ||
                                      string.Equals(change.ApplicationName, "System", StringComparison.OrdinalIgnoreCase) ||
                                      (change.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true) ||
@@ -581,7 +581,7 @@ namespace MinimalFirewall
                         change.Intervention = change.Rule.IsEnabled ? "User Allowed" : "User Blocked";
                     }
                 }
-            } // <--- THIS WAS THE MISSING BRACKET! It closes the FIRST foreach loop safely.
+            }
 
             // Update ui list
             foreach (var change in incrementalChanges)
