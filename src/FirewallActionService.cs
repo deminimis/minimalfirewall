@@ -15,16 +15,22 @@ using System.Text.Json;
 
 namespace MinimalFirewall
 {
-    public partial class FirewallActionsService : IDisposable
+    public partial class FirewallActionsService(
+        FirewallRuleService firewallService,
+        UserActivityLogger activityLogger,
+        FirewallEventListenerService eventListenerService,
+        FirewallSentryService sentryService,
+        PublisherWhitelistService whitelistService,
+        WildcardRuleService wildcardRuleService,
+        FirewallDataService dataService) : IDisposable
     {
-        private readonly FirewallRuleService firewallService;
-        private readonly UserActivityLogger activityLogger;
-        private readonly FirewallEventListenerService eventListenerService;
-        private readonly FirewallSentryService sentryService;
-        private readonly PublisherWhitelistService _whitelistService;
-        private readonly TemporaryRuleManager _temporaryRuleManager;
-        private readonly WildcardRuleService _wildcardRuleService;
-        private readonly FirewallDataService _dataService;
+        public FirewallSentryService SentryService => sentryService;
+
+        private readonly PublisherWhitelistService _whitelistService = whitelistService;
+        private readonly TemporaryRuleManager _temporaryRuleManager = new();
+        private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
+        private readonly FirewallDataService _dataService = dataService;
+
         // Timer cleanup management
         private readonly ConcurrentDictionary<string, System.Threading.Timer> _temporaryRuleTimers = new();
         private bool _disposed;
@@ -36,25 +42,6 @@ namespace MinimalFirewall
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
-
-        public FirewallActionsService(
-            FirewallRuleService firewallService,
-            UserActivityLogger activityLogger,
-            FirewallEventListenerService eventListenerService,
-            FirewallSentryService sentryService,
-            PublisherWhitelistService whitelistService,
-            WildcardRuleService wildcardRuleService,
-            FirewallDataService dataService)
-        {
-            this.firewallService = firewallService;
-            this.activityLogger = activityLogger;
-            this.eventListenerService = eventListenerService;
-            this.sentryService = sentryService;
-            _whitelistService = whitelistService;
-            _wildcardRuleService = wildcardRuleService;
-            _temporaryRuleManager = new TemporaryRuleManager();
-            _dataService = dataService;
-        }
 
         public void Dispose()
         {
@@ -194,6 +181,8 @@ namespace MinimalFirewall
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null, string? autoAllowedPublisher = null)
         {
+            if (appPaths == null) return;
+
             var normalizedAppPaths = appPaths.Select(PathResolver.NormalizePath).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             if (action.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
             {
@@ -634,6 +623,7 @@ namespace MinimalFirewall
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
+            if (pending == null) return;
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             var shortSnoozeDuration = TimeSpan.FromSeconds(10);
             var longSnoozeDuration = TimeSpan.FromMinutes(2);
@@ -755,7 +745,8 @@ namespace MinimalFirewall
                 ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
                 {
                     string dirStr = dir == Directions.Incoming ? "In" : "Out";
-                    string ruleName = $"Temp Allow - {baseName} - {dirStr} - {guid}{suffix}";
+                    // Added "MFW - " prefix so the timer and rule manager track the exact firewall rule name
+                    string ruleName = $"MFW - Temp Allow - {baseName} - {dirStr} - {guid}{suffix}";
                     CreateServiceRule(ruleName, serviceName, dir, parsedAction, proto, appPath);
                     _temporaryRuleManager.Add(ruleName, expiry);
                     SetupRuleTimer(ruleName, duration);
@@ -764,7 +755,8 @@ namespace MinimalFirewall
             }
             else
             {
-                string ruleName = $"Temp Allow - {baseName} - {direction} - {guid}";
+                // Added "MFW - " prefix 
+                string ruleName = $"MFW - Temp Allow - {baseName} - {direction} - {guid}";
                 CreateApplicationRule(ruleName, appPath, parsedDirection, parsedAction, ProtocolTypes.Any.Value, description);
 
                 _temporaryRuleManager.Add(ruleName, expiry);
@@ -938,7 +930,7 @@ namespace MinimalFirewall
                 directionsToCreate.Add(Directions.Outgoing);
             }
 
-            var protocolsToCreate = new List<int> { vm.Protocol };
+            List<int> protocolsToCreate = [vm.Protocol];
 
             var errors = new List<string>();
             int successCount = 0;
@@ -1523,11 +1515,10 @@ namespace MinimalFirewall
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
                 }
 
-                // Wait for the queue to drain so callers (e.g. SettingsControl) display
-                // "Import Complete" only after the firewall actually has the imported rules.
+                // Wait for the queue to drain
                 await BackgroundTaskService.WhenIdleAsync();
 
-                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules.Count} advanced rules and {container.WildcardRules.Count} wildcard rules. Replace: {replace}");
+                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules?.Count ?? 0} advanced rules and {container.WildcardRules?.Count ?? 0} wildcard rules. Replace: {replace}");
             }
             catch (JsonException ex)
             {
