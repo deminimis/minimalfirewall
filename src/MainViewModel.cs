@@ -32,6 +32,7 @@ namespace MinimalFirewall
         private readonly ConcurrentDictionary<uint, (string Name, string Path, string ServiceName)> _processCache = new();
 
         private readonly System.Threading.Timer? _sentryRefreshDebounceTimer;
+        private readonly System.Threading.Timer _dnsRefreshTimer;
         private readonly System.Threading.SynchronizationContext? _uiContext;
 
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
@@ -81,6 +82,9 @@ namespace MinimalFirewall
             _backgroundTaskService.StatusChanged += OnBackgroundStatusChanged;
 
             DebouncedSentryRefresh(null);
+
+            // Start 1 minute after launch, repeat every 15 minutes
+            _dnsRefreshTimer = new System.Threading.Timer(async _ => await RunDnsRefreshAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(15));
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
@@ -220,6 +224,80 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[WARN] ResolveProcessInfo failed for PID {pid}: {ex.Message}");
                 return ("Unknown", string.Empty, string.Empty);
+            }
+        }
+
+        private async Task RunDnsRefreshAsync()
+        {
+            try
+            {
+                _activityLogger.LogDebug("DNS Refresh: Starting background check for domain rules.");
+                var mfwRules = await _dataService.GetMfwRulesAsync(CancellationToken.None);
+
+                // Find all rules containing our hidden domain tag
+                var domainRules = mfwRules.Where(r => r.Description != null && r.Description.Contains("[MFW-Domain:")).ToList();
+
+                if (domainRules.Count == 0) return;
+
+                bool rulesUpdated = false;
+
+                foreach (var rule in domainRules)
+                {
+                    // Extract domain string. Example: "... [MFW-Domain: example.com, test.com]"
+                    int startIndex = rule.Description.IndexOf("[MFW-Domain:") + 12;
+                    int endIndex = rule.Description.IndexOf("]", startIndex);
+
+                    if (startIndex >= 12 && endIndex > startIndex)
+                    {
+                        string domainsRaw = rule.Description.Substring(startIndex, endIndex - startIndex).Trim();
+                        var domains = domainsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                        var newIps = new List<string>();
+                        foreach (var domain in domains)
+                        {
+                            try
+                            {
+                                var ips = await System.Net.Dns.GetHostAddressesAsync(domain);
+                                newIps.AddRange(ips.Select(ip => ip.ToString()));
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"[WARN] DNS Refresh: Failed to resolve '{domain}'. Keeping old IPs. {ex.Message}");
+                            }
+                        }
+
+                        if (newIps.Count > 0)
+                        {
+                            string newRemoteAddresses = string.Join(",", newIps.Distinct());
+
+                            // Check if IPs have actually shifted
+                            if (!string.Equals(rule.RemoteAddresses, newRemoteAddresses, StringComparison.OrdinalIgnoreCase))
+                            {
+                                _activityLogger.LogDebug($"DNS Refresh: IPs changed for '{rule.Name}'. Updating Windows Firewall.");
+                                _firewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
+                                rule.RemoteAddresses = newRemoteAddresses; // Update local cache
+                                rulesUpdated = true;
+                            }
+                        }
+                    }
+                }
+
+                if (rulesUpdated)
+                {
+                    // Force a UI refresh so the new IPs appear in the grid
+                    if (_uiContext != null)
+                    {
+                        _uiContext.Post(_ => RulesListUpdated?.Invoke(), null);
+                    }
+                    else
+                    {
+                        RulesListUpdated?.Invoke();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("Error during DNS background refresh", ex);
             }
         }
 
@@ -886,13 +964,12 @@ namespace MinimalFirewall
 
         public void Dispose()
         {
-            // Unsubscribe before disposing the timer; residual in-flight
-            // callbacks are caught in OnRuleSetChanged and EnqueueTask.
-            // StatusChanged unsub avoids worker -> UI Invoke deadlock during shutdown.
+            // Unsubscribe before disposing the timer
             _firewallSentryService.RuleSetChanged -= OnRuleSetChanged;
             _eventListenerService.PendingConnectionDetected -= OnPendingConnectionDetected;
             _backgroundTaskService.StatusChanged -= OnBackgroundStatusChanged;
             _sentryRefreshDebounceTimer?.Dispose();
+            _dnsRefreshTimer?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

@@ -545,6 +545,34 @@ namespace MinimalFirewall
             }
         }
 
+        public void UpdateRuleRemoteAddresses(string ruleName, string newRemoteAddresses)
+        {
+            if (string.IsNullOrEmpty(ruleName) || string.IsNullOrEmpty(newRemoteAddresses)) return;
+
+            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
+            if (firewallPolicy?.Rules == null) return;
+
+            INetFwRules? rulesCollection = null;
+            try
+            {
+                rulesCollection = firewallPolicy.Rules;
+                if (rulesCollection.Item(ruleName) is INetFwRule2 rule)
+                {
+                    rule.RemoteAddresses = newRemoteAddresses;
+                    Marshal.ReleaseComObject(rule);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ERROR] UpdateRuleRemoteAddresses ('{ruleName}'): Failed. {ex.Message}");
+            }
+            finally
+            {
+                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
+                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
+            }
+        }
+
         public List<string> DeleteRulesByDescription(string description)
         {
             if (string.IsNullOrEmpty(description))

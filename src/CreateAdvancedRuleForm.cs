@@ -228,7 +228,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void OkButton_Click(object sender, EventArgs e)
+        private async void OkButton_Click(object sender, EventArgs e)
         {
             if (!ValidateChildren())
             {
@@ -277,10 +277,63 @@ namespace MinimalFirewall
             bool isIcmp = selectedProtocol.Value == ProtocolIcmpV4 || selectedProtocol.Value == ProtocolIcmpV6;
             string finalIcmp = isIcmp ? icmpTypesAndCodesTextBox.Text : "";
 
+            // --- DNS resolution logic ---
+            string rawRemoteAddress = remoteAddressTextBox.Text.Trim();
+            string finalRemoteAddresses = "*";
+            string domainTag = "";
+
+            if (!string.IsNullOrWhiteSpace(rawRemoteAddress) && rawRemoteAddress != "*")
+            {
+                var resolvedIps = new List<string>();
+                var domains = new List<string>();
+                var parts = rawRemoteAddress.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                // Disable UI while resolving
+                okButton.Enabled = false;
+                okButton.Text = "Resolving...";
+
+                foreach (var part in parts)
+                {
+                    bool isKeyword = new[] { "LocalSubnet", "DNS", "DHCP", "WINS", "DefaultGateway" }.Contains(part, StringComparer.OrdinalIgnoreCase);
+                    bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains("/") || part.Contains("-");
+
+                    if (isKeyword || isIpOrSubnet)
+                    {
+                        resolvedIps.Add(part);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var ips = await System.Net.Dns.GetHostAddressesAsync(part);
+                            resolvedIps.AddRange(ips.Select(ip => ip.ToString()));
+                            domains.Add(part);
+                        }
+                        catch (Exception ex)
+                        {
+                            Messenger.MessageBox($"Could not resolve domain '{part}'. Check spelling or internet connection.\n\nError: {ex.Message}", "DNS Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            okButton.Enabled = true;
+                            okButton.Text = "OK";
+                            return; // Stop creation on failure
+                        }
+                    }
+                }
+
+                okButton.Enabled = true;
+                okButton.Text = "OK";
+                finalRemoteAddresses = resolvedIps.Count > 0 ? string.Join(",", resolvedIps.Distinct()) : "*";
+
+                if (domains.Count > 0)
+                {
+                    domainTag = $" [MFW-Domain: {string.Join(",", domains)}]";
+                }
+            }
+            // -----
+
             var rule = new AdvancedRuleViewModel
             {
                 Name = ruleNameTextBox.Text.Trim(),
-                Description = descriptionTextBox.Text.Trim(),
+                Description = (descriptionTextBox.Text.Trim() + domainTag).Trim(),
                 IsEnabled = enabledCheckBox.Checked,
                 Grouping = groupName,
                 Status = allowRadioButton.Checked ? "Allow" : "Block",
@@ -294,7 +347,7 @@ namespace MinimalFirewall
                 RemotePorts = finalRemotePorts.Trim(),
 
                 LocalAddresses = (string.IsNullOrWhiteSpace(localAddressTextBox.Text) ? "*" : localAddressTextBox.Text).Trim(),
-                RemoteAddresses = (string.IsNullOrWhiteSpace(remoteAddressTextBox.Text) ? "*" : remoteAddressTextBox.Text).Trim(),
+                RemoteAddresses = finalRemoteAddresses, // Use the resolved IPs here
                 Profiles = GetProfileString(),
                 Type = RuleType.Advanced,
                 InterfaceTypes = GetInterfaceTypes(),
@@ -446,7 +499,31 @@ namespace MinimalFirewall
 
         private void ValidatePortTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidatePortString);
         private void LocalAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
-        private void RemoteAddressTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateAddressString);
+        private void RemoteAddressTextBox_Validating(object sender, CancelEventArgs e)
+        {
+            string input = remoteAddressTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(input) || input == "*")
+            {
+                errorProvider1.SetError(remoteAddressTextBox, string.Empty);
+                return;
+            }
+
+            var parts = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var part in parts)
+            {
+                bool isKeyword = new[] { "LocalSubnet", "DNS", "DHCP", "WINS", "DefaultGateway" }.Contains(part, StringComparer.OrdinalIgnoreCase);
+                bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains("/") || part.Contains("-");
+                bool isDomain = Uri.CheckHostName(part) == UriHostNameType.Dns;
+
+                if (!isKeyword && !isIpOrSubnet && !isDomain)
+                {
+                    errorProvider1.SetError(remoteAddressTextBox, $"Invalid format (IP, CIDR, Keyword, or Domain expected): {part}");
+                    e.Cancel = true;
+                    return;
+                }
+            }
+            errorProvider1.SetError(remoteAddressTextBox, string.Empty);
+        }
         private void IcmpTypesAndCodesTextBox_Validating(object sender, CancelEventArgs e) => ValidateTextBox(sender, e, ValidationUtility.ValidateIcmpString);
 
         private void ProgramGroupBox_Enter(object sender, EventArgs e)
