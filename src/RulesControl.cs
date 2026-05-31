@@ -301,6 +301,112 @@ namespace MinimalFirewall
                              ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
                               !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
             editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
+            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType;
+        }
+
+        private async void ManageDomainsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (rulesDataGridView.SelectedRows.Count != 1) return;
+            var aggRule = GetFirstSelectedRule();
+            if (aggRule == null) return;
+            var originalRule = aggRule.UnderlyingRules?.FirstOrDefault();
+            if (originalRule == null) return;
+
+            string currentDescription = originalRule.Description ?? "";
+            string currentDomains = "";
+
+            // Extract existing domains from the tag
+            int start = currentDescription.IndexOf("[MFW-Domain:");
+            if (start >= 0)
+            {
+                int end = currentDescription.IndexOf("]", start);
+                if (end > start)
+                {
+                    currentDomains = currentDescription.Substring(start + 12, end - start - 12).Trim();
+                }
+            }
+
+            using var dialog = new ManageDomainsForm(currentDomains, originalRule.Status);
+            if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+            {
+                string newDomains = dialog.Domains;
+                // Strip out old tag so we can append a fresh one
+                string cleanDescription = System.Text.RegularExpressions.Regex.Replace(currentDescription, @"\s*\[MFW-Domain:.*?\]", "").Trim();
+                string newDescription = cleanDescription;
+
+                if (!string.IsNullOrWhiteSpace(newDomains))
+                {
+                    newDescription += $" [MFW-Domain: {newDomains}]";
+                }
+
+                string newRemoteAddresses = originalRule.RemoteAddresses ?? "*";
+
+                // Resolve entered domains immediately for the initial rule state
+                if (!string.IsNullOrWhiteSpace(newDomains))
+                {
+                    var resolvedIps = new List<string>();
+                    var parts = newDomains.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    foreach (var part in parts)
+                    {
+                        try
+                        {
+                            var ips = await System.Net.Dns.GetHostAddressesAsync(part);
+                            resolvedIps.AddRange(ips.Select(ip => ip.ToString()));
+                        }
+                        catch
+                        {
+                            Messenger.MessageBox($"Could not resolve domain '{part}'. Check spelling or internet connection.", "DNS Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return; // Halt if a domain fails to prevent creating a broken rule
+                        }
+                    }
+                    newRemoteAddresses = resolvedIps.Count > 0 ? string.Join(",", resolvedIps.Distinct()) : "*";
+                }
+                else if (currentDomains != "")
+                {
+                    // If domains were removed entirely, revert remote addresses to Any (*)
+                    newRemoteAddresses = "*";
+                }
+
+                // Don't recreate if no change
+                if (originalRule.Description == newDescription && originalRule.RemoteAddresses == newRemoteAddresses)
+                    return;
+
+                // Clone the rule properties 
+                var updatedRule = new AdvancedRuleViewModel
+                {
+                    Name = originalRule.Name,
+                    Description = newDescription,
+                    IsEnabled = originalRule.IsEnabled,
+                    Status = originalRule.Status,
+                    Direction = originalRule.Direction,
+                    Protocol = originalRule.Protocol,
+                    ProtocolName = originalRule.ProtocolName,
+                    ApplicationName = originalRule.ApplicationName,
+                    ServiceName = originalRule.ServiceName,
+                    LocalPorts = originalRule.LocalPorts,
+                    RemotePorts = originalRule.RemotePorts,
+                    LocalAddresses = originalRule.LocalAddresses,
+                    RemoteAddresses = newRemoteAddresses,
+                    Profiles = originalRule.Profiles,
+                    Grouping = originalRule.Grouping,
+                    Type = originalRule.Type,
+                    InterfaceTypes = originalRule.InterfaceTypes,
+                    IcmpTypesAndCodes = originalRule.IcmpTypesAndCodes
+                };
+
+                // Queue the replacement via the background service
+                var deletePayload = new DeleteRulesPayload { RuleIdentifiers = [.. aggRule.UnderlyingRules?.Select(r => r.Name) ?? []] };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
+
+                var createPayload = new CreateAdvancedRulePayload { ViewModel = updatedRule, InterfaceTypes = updatedRule.InterfaceTypes, IcmpTypesAndCodes = updatedRule.IcmpTypesAndCodes };
+                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, createPayload));
+
+                await _backgroundTaskService.WhenIdleAsync();
+                if (DataRefreshRequested != null)
+                {
+                    await DataRefreshRequested.Invoke();
+                }
+            }
         }
 
         private void OpenFileLocationToolStripMenuItem_Click(object sender, EventArgs e)
@@ -452,6 +558,24 @@ namespace MinimalFirewall
                    : null;
         }
 
+        private string GetDomainsFromDescription(string? description)
+        {
+            if (string.IsNullOrEmpty(description)) return "";
+            int start = description.IndexOf("[MFW-Domain:");
+            if (start >= 0)
+            {
+                int end = description.IndexOf("]", start);
+                if (end > start) return description.Substring(start + 12, end - start - 12).Trim();
+            }
+            return "";
+        }
+
+        private string CleanDescription(string? description)
+        {
+            if (string.IsNullOrEmpty(description)) return "";
+            return System.Text.RegularExpressions.Regex.Replace(description, @"\s*\[MFW-Domain:.*?\]", "").Trim();
+        }
+
         private void RulesDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
         {
             if (e.RowIndex >= _currentRuleList.Count || e.RowIndex < 0) return;
@@ -473,7 +597,8 @@ namespace MinimalFirewall
                 _ when col == advServiceColumn => rule.ServiceName,
                 _ when col == advProfilesColumn => rule.Profiles,
                 _ when col == advGroupingColumn => rule.Grouping,
-                _ when col == advDescColumn => rule.Description,
+                _ when col == advDomainsColumn => GetDomainsFromDescription(rule.Description),
+                _ when col == advDescColumn => CleanDescription(rule.Description),
                 _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
                 _ when col == autoAllowedColumn => string.IsNullOrEmpty(rule.AutoAllowedPublisher) ? "" : "Auto",
                 _ => e.Value

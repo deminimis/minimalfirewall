@@ -90,7 +90,9 @@ namespace MinimalFirewall
         public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
-        
+
+        public int DnsRefreshIntervalMinutes { get; set; } = 4;
+
         public List<string> AutoAllowExclusions { get => _autoAllowExclusions; set => SetField(ref _autoAllowExclusions, value); }
 
         public Point WindowLocation { get => _windowLocation; set => SetField(ref _windowLocation, value); }

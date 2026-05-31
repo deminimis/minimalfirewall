@@ -20,6 +20,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem manageDomainsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
         private DarkModeForms.ThemedDataGridView rulesDataGridView;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
@@ -71,6 +72,7 @@ namespace MinimalFirewall
             toolStripSeparator2 = new ToolStripSeparator();
             openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator3 = new ToolStripSeparator();
+            manageDomainsToolStripMenuItem = new ToolStripMenuItem();
             copyDetailsToolStripMenuItem = new ToolStripMenuItem();
             filterPanel = new FlowLayoutPanel();
             programFilterCheckBox = new CheckBox();
@@ -92,6 +94,7 @@ namespace MinimalFirewall
             advServiceColumn = new DataGridViewTextBoxColumn();
             advProfilesColumn = new DataGridViewTextBoxColumn();
             advGroupingColumn = new DataGridViewTextBoxColumn();
+            advDomainsColumn = new DataGridViewTextBoxColumn();
             advDescColumn = new DataGridViewTextBoxColumn();
             dateAddedColumn = new DataGridViewTextBoxColumn();
             autoAllowedColumn = new DataGridViewTextBoxColumn();
@@ -133,7 +136,7 @@ namespace MinimalFirewall
             // rulesContextMenu
             // 
             rulesContextMenu.ImageScalingSize = new Size(20, 20);
-            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, editRuleToolStripMenuItem, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, toolStripSeparator3, copyDetailsToolStripMenuItem });
+            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, editRuleToolStripMenuItem, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, manageDomainsToolStripMenuItem, toolStripSeparator3, copyDetailsToolStripMenuItem });
             rulesContextMenu.Name = "rulesContextMenu";
             rulesContextMenu.Size = new Size(174, 154);
             rulesContextMenu.Opening += RulesContextMenu_Opening;
@@ -235,6 +238,13 @@ namespace MinimalFirewall
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(170, 6);
+            // 
+            // manageDomainsToolStripMenuItem
+            // 
+            manageDomainsToolStripMenuItem.Name = "manageDomainsToolStripMenuItem";
+            manageDomainsToolStripMenuItem.Size = new Size(173, 22);
+            manageDomainsToolStripMenuItem.Text = "Manage Domains...";
+            manageDomainsToolStripMenuItem.Click += ManageDomainsToolStripMenuItem_Click;
             // 
             // copyDetailsToolStripMenuItem
             // 
@@ -456,6 +466,14 @@ namespace MinimalFirewall
             advGroupingColumn.ReadOnly = true;
             advGroupingColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
             // 
+            // advDomainsColumn
+            // 
+            advDomainsColumn.FillWeight = 15F;
+            advDomainsColumn.HeaderText = "Domains";
+            advDomainsColumn.Name = "advDomainsColumn";
+            advDomainsColumn.ReadOnly = true;
+            advDomainsColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            // 
             // advDescColumn
             // 
             advDescColumn.DataPropertyName = "Description";
@@ -492,7 +510,7 @@ namespace MinimalFirewall
             rulesDataGridView.AllowUserToResizeRows = false;
             rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
+            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDomainsColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
             rulesDataGridView.ContextMenuStrip = rulesContextMenu;
             rulesDataGridView.Dock = DockStyle.Fill;
             rulesDataGridView.Location = new Point(0, 60);
@@ -540,6 +558,7 @@ namespace MinimalFirewall
         private DataGridViewTextBoxColumn advProfilesColumn;
         private DataGridViewTextBoxColumn advGroupingColumn;
         private DataGridViewTextBoxColumn advDescColumn;
+        private DataGridViewTextBoxColumn advDomainsColumn;
         private DataGridViewTextBoxColumn dateAddedColumn;
         private DataGridViewTextBoxColumn autoAllowedColumn;
     }

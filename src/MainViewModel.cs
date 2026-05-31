@@ -35,6 +35,8 @@ namespace MinimalFirewall
         private readonly System.Threading.Timer _dnsRefreshTimer;
         private readonly System.Threading.SynchronizationContext? _uiContext;
 
+        private int _isDnsRefreshing = 0;
+
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
@@ -83,8 +85,9 @@ namespace MinimalFirewall
 
             DebouncedSentryRefresh(null);
 
-            // Start 1 minute after launch, repeat every 15 minutes
-            _dnsRefreshTimer = new System.Threading.Timer(async _ => await RunDnsRefreshAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(15));
+            // Start 1 min after launch, then every 4 min or user defined
+            int dnsInterval = _appSettings != null && _appSettings.DnsRefreshIntervalMinutes > 0 ? _appSettings.DnsRefreshIntervalMinutes : 4;
+            _dnsRefreshTimer = new System.Threading.Timer(async _ => await SafeRunDnsRefreshAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(dnsInterval));
         }
 
         public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
@@ -227,6 +230,22 @@ namespace MinimalFirewall
             }
         }
 
+        private async Task SafeRunDnsRefreshAsync()
+        {
+            // Prevent overlapping timer executions
+            if (Interlocked.CompareExchange(ref _isDnsRefreshing, 1, 0) == 1) return;
+
+            try
+            {
+                await RunDnsRefreshAsync();
+            }
+            finally
+            {
+                // Release lock when finished
+                Interlocked.Exchange(ref _isDnsRefreshing, 0);
+            }
+        }
+
         private async Task RunDnsRefreshAsync()
         {
             try
@@ -299,6 +318,13 @@ namespace MinimalFirewall
             {
                 _activityLogger.LogException("Error during DNS background refresh", ex);
             }
+        }
+
+        public void UpdateDnsTimerInterval()
+        {
+            if (_dnsRefreshTimer == null) return;
+            int dnsInterval = _appSettings.DnsRefreshIntervalMinutes > 0 ? _appSettings.DnsRefreshIntervalMinutes : 4;
+            _dnsRefreshTimer.Change(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(dnsInterval));
         }
 
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
