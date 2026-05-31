@@ -44,6 +44,8 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
     
 - **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder. Updates to the wildcard list are now reflected immediately.
 
+- **Domain Name Filtering:** Block or allow specific websites and domains (e.g., `example.com`). Since Windows Firewall only understands IP addresses, Minimal Firewall acts as a translator. It runs a lightweight, configurable background timer that securely asks your OS's DNS server to resolve domains into IP addresses. If a domain changes its IP (like CDNs often do), the application silently updates the underlying Windows Firewall IP rules to ensure your rules never break.
+
 - **Rule Import & Export**: Save your entire rule configuration (including advanced and wildcard rules) to a single JSON file. This is perfect for backups or migrating your setup to a new computer. Paths are made portable using environment variables (%LOCALAPPDATA%, etc.) for easy sharing. You can choose to either add imported rules to your existing set or completely replace them.
 
 - **Trust Publishers/Digital Certificates**: Automatically allow applications signed with a trusted digital certificate. You can also manage your own list of trusted publishers to automatically allow any software they create.
@@ -68,6 +70,7 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 |**Requires Core Isolation Off?**|No|No|No|Yes|
 |**Connection Alerts**|✅|❌|✅|✅|
 |**Advanced Rule Editor**|✅|❌|✅|✅|
+|**Domain Name Blocking**|✅|✅|✅|❌| 
 |**Firewall Change Auditing**|✅|❌|❌|❌|
 |**Wildcards**|✅|❌|❌|✅|
 |**Open Source**|✅|✅|✅|✅|
@@ -128,6 +131,8 @@ Minimal Firewall is a **Windows Forms** application written in **C#** on the **.
 - **Auditing:** It uses a `ManagementEventWatcher` (WMI) to monitor for real-time changes to the `MSFT_NetFirewallRule` class, allowing it to detect when other processes modify the firewall ruleset. It maintains a complete local cache to accurately track rule history and changes.
     
 - **Live Traffic:** The live connection monitor uses the `GetExtendedTcpTable` function from `iphlpapi.dll` to retrieve a list of active TCP connections and their associated Process IDs.
+
+- - **Domain Resolution:** For domain-based rules, the application uses the native Windows `DnsQuery()` API to resolve hostnames to IP addresses. A thread-safe background timer polls for DNS changes at user-defined intervals (to seamlessly handle CDNs and dynamic IPs) and translates these into standard IP-blocking rules within the Windows Firewall engine.
     
 - **Performance:** The UI utilizes double buffering for smooth data grid rendering and optimized polling for live connections to minimize CPU usage.
     
