@@ -164,14 +164,15 @@ namespace DarkModeForms
             var picBox = new Rectangle(2, 10, 0, 0);
             if (icon != MsgIcon.None)
             {
-                var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(64, 64) };
-                picIcon.Image = _sharedIcons.GetIcon(icon);
+                var picIcon = new PictureBox
+                {
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Size = new Size(64, 64),
+                    Image = _sharedIcons.GetIcon(icon)
+                };
 
                 // Fallback to system icons 
-                if (picIcon.Image == null)
-                {
-                    picIcon.Image = GetSafeSystemIcon(icon, 64);
-                }
+                picIcon.Image ??= GetSafeSystemIcon(icon, 64);
 
                 form.Controls.Add(picIcon);
 
@@ -210,7 +211,7 @@ namespace DarkModeForms
             string localMessage = Message;
             string localTitle = title;
 
-            form.KeyDown += (object? sender, KeyEventArgs e) =>
+            form.KeyDown += (sender, e) =>
             {
                 if (e.Control && e.KeyCode == Keys.C)
                 {
@@ -264,14 +265,15 @@ namespace DarkModeForms
 
             if (icon != MsgIcon.None)
             {
-                var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(48, 48) };
-                picIcon.Image = _sharedIcons.GetIcon(icon);
+                var picIcon = new PictureBox
+                {
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Size = new Size(48, 48),
+                    Image = _sharedIcons.GetIcon(icon)
+                };
 
                 // Fallback to system icons 
-                if (picIcon.Image == null)
-                {
-                    picIcon.Image = GetSafeSystemIcon(icon, 48);
-                }
+                picIcon.Image ??= GetSafeSystemIcon(icon, 48);
 
                 bottomPanel.Controls.Add(picIcon);
                 picIcon.SetBounds(0, 2, 48, 48);
@@ -688,7 +690,7 @@ namespace DarkModeForms
 
             if (currentLanguage.Length >= 2)
             {
-                return languages.Contains(currentLanguage.Substring(0, 2));
+                return languages.Contains(currentLanguage[..2]);
             }
 
             return false;

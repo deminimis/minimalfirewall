@@ -61,7 +61,7 @@ namespace MinimalFirewall
             return Task.Run(() =>
             {
                 // process and immediately destroys the COM object.
-                var mfwRules = _firewallRuleService.GetAllRulesMapped(CreateAdvancedRuleViewModel);
+                var mfwRules = FirewallRuleService.GetAllRulesMapped(CreateAdvancedRuleViewModel);
 
                 if (token.IsCancellationRequested)
                 {

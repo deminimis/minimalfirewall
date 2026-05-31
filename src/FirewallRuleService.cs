@@ -24,7 +24,7 @@ namespace MinimalFirewall
             return (INetFwPolicy2)Activator.CreateInstance(_firewallPolicyType.Value)!;
         }
 
-        public List<T> GetAllRulesMapped<T>(Func<INetFwRule2, T> mapper)
+        public static List<T> GetAllRulesMapped<T>(Func<INetFwRule2, T> mapper)
         {
             var mappedList = new List<T>();
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
@@ -73,7 +73,7 @@ namespace MinimalFirewall
             return mappedList;
         }
 
-        public List<INetFwRule2> GetAllRules()
+        public static List<INetFwRule2> GetAllRules()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy?.Rules == null)
@@ -114,7 +114,7 @@ namespace MinimalFirewall
             }
         }
 
-        private List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
+        private static List<string> GetRuleNamesAndRelease(Func<INetFwRule2, bool> predicate)
         {
             var matchedNames = new List<string>();
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
@@ -163,7 +163,7 @@ namespace MinimalFirewall
             return matchedNames;
         }
 
-        public INetFwRule2? GetRuleByName(string name)
+        public static INetFwRule2? GetRuleByName(string name)
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy == null)
@@ -204,7 +204,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void SetDefaultOutboundAction(NET_FW_ACTION_ action)
+        public static void SetDefaultOutboundAction(NET_FW_ACTION_ action)
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy == null)
@@ -238,7 +238,7 @@ namespace MinimalFirewall
             }
         }
 
-        public List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        public static List<string> GetRuleNamesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
         {
             var rules = GetRulesByPathAndDirection(appPath, direction);
             var names = rules.Select(r => r.Name).ToList();
@@ -249,7 +249,7 @@ namespace MinimalFirewall
             return names;
         }
 
-        public List<INetFwRule2> GetRulesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
+        public static List<INetFwRule2> GetRulesByPathAndDirection(string appPath, NET_FW_RULE_DIRECTION_ direction)
         {
             if (string.IsNullOrEmpty(appPath))
             {
@@ -314,7 +314,7 @@ namespace MinimalFirewall
             return matchingRules;
         }
 
-        public NET_FW_ACTION_ GetDefaultOutboundAction()
+        public static NET_FW_ACTION_ GetDefaultOutboundAction()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             if (firewallPolicy == null)
@@ -354,14 +354,14 @@ namespace MinimalFirewall
             }
         }
 
-        private List<string> ExecuteDeleteAndReturnNames(Func<INetFwRule2, bool> predicate)
+        private static List<string> ExecuteDeleteAndReturnNames(Func<INetFwRule2, bool> predicate)
         {
             var rulesToRemove = GetRuleNamesAndRelease(predicate);
             DeleteRulesByName(rulesToRemove);
             return rulesToRemove;
         }
 
-        public List<string> DeleteRulesByPath(List<string> appPaths)
+        public static List<string> DeleteRulesByPath(List<string> appPaths)
         {
             if (appPaths.Count == 0)
             {
@@ -376,7 +376,7 @@ namespace MinimalFirewall
             );
         }
 
-        public List<string> DeleteRulesByServiceName(string serviceName)
+        public static List<string> DeleteRulesByServiceName(string serviceName)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -386,7 +386,7 @@ namespace MinimalFirewall
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.serviceName, serviceName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public List<string> DeleteConflictingServiceRules(string serviceName, NET_FW_ACTION_ newAction, NET_FW_RULE_DIRECTION_ newDirection)
+        public static List<string> DeleteConflictingServiceRules(string serviceName, NET_FW_ACTION_ newAction, NET_FW_RULE_DIRECTION_ newDirection)
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -404,7 +404,7 @@ namespace MinimalFirewall
             );
         }
 
-        public List<string> DeleteUwpRules(List<string> packageFamilyNames)
+        public static List<string> DeleteUwpRules(List<string> packageFamilyNames)
         {
             if (packageFamilyNames.Count == 0)
             {
@@ -424,7 +424,7 @@ namespace MinimalFirewall
             });
         }
 
-        public void DeleteRulesByName(List<string> ruleNames)
+        public static void DeleteRulesByName(List<string> ruleNames)
         {
             if (ruleNames.Count == 0)
             {
@@ -482,7 +482,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void CreateRule(INetFwRule2 rule)
+        public static void CreateRule(INetFwRule2 rule)
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
             INetFwRules? rulesCollection = null;
@@ -545,7 +545,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void UpdateRuleRemoteAddresses(string ruleName, string newRemoteAddresses)
+        public static void UpdateRuleRemoteAddresses(string ruleName, string newRemoteAddresses)
         {
             if (string.IsNullOrEmpty(ruleName) || string.IsNullOrEmpty(newRemoteAddresses)) return;
 
@@ -573,7 +573,7 @@ namespace MinimalFirewall
             }
         }
 
-        public List<string> DeleteRulesByDescription(string description)
+        public static List<string> DeleteRulesByDescription(string description)
         {
             if (string.IsNullOrEmpty(description))
             {
@@ -583,7 +583,7 @@ namespace MinimalFirewall
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Description, description, StringComparison.OrdinalIgnoreCase));
         }
 
-        public List<string> DeleteRulesByGroup(string groupName)
+        public static List<string> DeleteRulesByGroup(string groupName)
         {
             if (string.IsNullOrEmpty(groupName))
             {
@@ -593,7 +593,7 @@ namespace MinimalFirewall
             return ExecuteDeleteAndReturnNames(rule => string.Equals(rule.Grouping, groupName, StringComparison.OrdinalIgnoreCase));
         }
 
-        public void DeleteAllMfwRules()
+        public static void DeleteAllMfwRules()
         {
             var rulesToRemove = GetRuleNamesAndRelease(rule =>
                 !string.IsNullOrEmpty(rule.Grouping) &&
@@ -611,7 +611,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void SetRuleEnabledState(string ruleName, bool isEnabled, string callerName)
+        private static void SetRuleEnabledState(string ruleName, bool isEnabled, string callerName)
         {
             if (string.IsNullOrEmpty(ruleName))
             {

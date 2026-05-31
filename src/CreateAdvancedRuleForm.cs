@@ -86,9 +86,9 @@ namespace MinimalFirewall
         {
             bool isDark = _appSettings.Theme == "Dark";
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
-            Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
-            this.BackColor = Theme.Colors.Background;
-            this.ForeColor = Theme.Colors.TextInactive;
+            Theme.ApplyTitleBarTheme(Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            BackColor = Theme.Colors.Background;
+            ForeColor = Theme.Colors.TextInactive;
 
         }
 
@@ -295,7 +295,7 @@ namespace MinimalFirewall
                 foreach (var part in parts)
                 {
                     bool isKeyword = new[] { "LocalSubnet", "DNS", "DHCP", "WINS", "DefaultGateway" }.Contains(part, StringComparer.OrdinalIgnoreCase);
-                    bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains("/") || part.Contains("-");
+                    bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains('/') || part.Contains('-');
 
                     if (isKeyword || isIpOrSubnet)
                     {
@@ -512,7 +512,7 @@ namespace MinimalFirewall
             foreach (var part in parts)
             {
                 bool isKeyword = new[] { "LocalSubnet", "DNS", "DHCP", "WINS", "DefaultGateway" }.Contains(part, StringComparer.OrdinalIgnoreCase);
-                bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains("/") || part.Contains("-");
+                bool isIpOrSubnet = Uri.CheckHostName(part) == UriHostNameType.IPv4 || Uri.CheckHostName(part) == UriHostNameType.IPv6 || part.Contains('/') || part.Contains('-');
                 bool isDomain = Uri.CheckHostName(part) == UriHostNameType.Dns;
 
                 if (!isKeyword && !isIpOrSubnet && !isDomain)

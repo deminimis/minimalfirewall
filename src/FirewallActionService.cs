@@ -73,7 +73,7 @@ namespace MinimalFirewall
                 var ruleNamesToRemove = expiredRules.Keys.ToList();
                 try
                 {
-                    firewallService.DeleteRulesByName(ruleNamesToRemove);
+                    FirewallRuleService.DeleteRulesByName(ruleNamesToRemove);
                     foreach (var ruleName in ruleNamesToRemove)
                     {
                         _temporaryRuleManager.Remove(ruleName);
@@ -106,7 +106,7 @@ namespace MinimalFirewall
         {
             string normalizedAppPath = PathResolver.NormalizePath(appPath);
             var rulesToDelete = new List<string>();
-            var allRules = firewallService.GetAllRules();
+            var allRules = FirewallRuleService.GetAllRules();
             try
             {
                 foreach (var rule in allRules)
@@ -166,7 +166,7 @@ namespace MinimalFirewall
                 activityLogger.LogDebug($"Auto-deleting general block rule(s) for {appPath} to apply new Allow rule: {string.Join(", ", rulesToDelete)}");
                 try
                 {
-                    firewallService.DeleteRulesByName(rulesToDelete);
+                    FirewallRuleService.DeleteRulesByName(rulesToDelete);
                     foreach (var name in rulesToDelete)
                     {
                         activityLogger.LogChange("Rule Auto-Deleted", name);
@@ -205,17 +205,17 @@ namespace MinimalFirewall
                 {
                     if (action.Contains("Inbound") || action.Contains("(All)"))
                     {
-                        rulesToRemove.AddRange(firewallService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
+                        rulesToRemove.AddRange(FirewallRuleService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
                     }
                     if (action.Contains("Outbound") || action.Contains("(All)"))
                     {
-                        rulesToRemove.AddRange(firewallService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
+                        rulesToRemove.AddRange(FirewallRuleService.GetRuleNamesByPathAndDirection(appPath, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
                     }
                 }
 
                 if (rulesToRemove.Count != 0)
                 {
-                    firewallService.DeleteRulesByName(rulesToRemove);
+                    FirewallRuleService.DeleteRulesByName(rulesToRemove);
                 }
 
                 string appName = Path.GetFileNameWithoutExtension(appPath);
@@ -274,16 +274,16 @@ namespace MinimalFirewall
             var rulesToRemove = new List<string>();
             if (parsedDirection.HasFlag(Directions.Incoming))
             {
-                rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
+                rulesToRemove.AddRange(FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
             }
             if (parsedDirection.HasFlag(Directions.Outgoing))
             {
-                rulesToRemove.AddRange(firewallService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
+                rulesToRemove.AddRange(FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
             if (rulesToRemove.Count != 0)
             {
-                firewallService.DeleteRulesByName(rulesToRemove);
+                FirewallRuleService.DeleteRulesByName(rulesToRemove);
             }
 
             ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
@@ -319,7 +319,7 @@ namespace MinimalFirewall
             }
 
             var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
-            var rulesToRemove = firewallService.DeleteUwpRules(packageFamilyNames);
+            var rulesToRemove = FirewallRuleService.DeleteUwpRules(packageFamilyNames);
             foreach (var app in validApps)
             {
                 void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
@@ -329,7 +329,7 @@ namespace MinimalFirewall
 
             if (rulesToRemove.Count != 0)
             {
-                firewallService.DeleteRulesByName(rulesToRemove);
+                FirewallRuleService.DeleteRulesByName(rulesToRemove);
             }
         }
 
@@ -355,13 +355,13 @@ namespace MinimalFirewall
         }
 
         public void DeleteApplicationRules(List<string> appPaths) =>
-            ExecuteRuleDeletion(appPaths, items => { firewallService.DeleteRulesByPath(items); }, "Rule");
+            ExecuteRuleDeletion(appPaths, items => { FirewallRuleService.DeleteRulesByPath(items); }, "Rule");
 
         public void DeleteUwpRules(List<string> packageFamilyNames) =>
-            ExecuteRuleDeletion(packageFamilyNames, items => { firewallService.DeleteUwpRules(items); }, "UWP Rule");
+            ExecuteRuleDeletion(packageFamilyNames, items => { FirewallRuleService.DeleteUwpRules(items); }, "UWP Rule");
 
         public void DeleteAdvancedRules(List<string> ruleNames) =>
-            ExecuteRuleDeletion(ruleNames, items => { firewallService.DeleteRulesByName(items); }, "Advanced Rule");
+            ExecuteRuleDeletion(ruleNames, items => { FirewallRuleService.DeleteRulesByName(items); }, "Advanced Rule");
 
         public void DeleteRulesForWildcard(WildcardRule wildcard)
         {
@@ -373,7 +373,7 @@ namespace MinimalFirewall
             try
             {
                 string descriptionTag = $"{MFWConstants.WildcardDescriptionPrefix}{wildcard.FolderPath}]";
-                firewallService.DeleteRulesByDescription(descriptionTag);
+                FirewallRuleService.DeleteRulesByDescription(descriptionTag);
                 activityLogger.LogChange("Wildcard Rules Deleted", $"Deleted rules for folder {wildcard.FolderPath}");
             }
             catch (COMException ex)
@@ -390,7 +390,7 @@ namespace MinimalFirewall
             INetFwRule2? rule = null;
             try
             {
-                rule = firewallService.GetRuleByName(ruleName);
+                rule = FirewallRuleService.GetRuleByName(ruleName);
                 if (enable)
                 {
                     if (rule == null)
@@ -427,7 +427,7 @@ namespace MinimalFirewall
                             newRule.serviceName = serviceName;
                         }
 
-                        firewallService.CreateRule(newRule);
+                        FirewallRuleService.CreateRule(newRule);
                         activityLogger.LogDebug($"Created system rule: {ruleName}");
                     }
                     else if (!rule.Enabled)
@@ -440,7 +440,7 @@ namespace MinimalFirewall
                 {
                     if (rule != null)
                     {
-                        firewallService.DeleteRulesByName([ruleName]);
+                        FirewallRuleService.DeleteRulesByName([ruleName]);
                         activityLogger.LogDebug($"Disabled/Deleted system rule: {ruleName}");
                     }
                 }
@@ -503,7 +503,7 @@ namespace MinimalFirewall
 
         public void ToggleLockdown()
         {
-            var isCurrentlyLocked = firewallService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+            var isCurrentlyLocked = FirewallRuleService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
             activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
             try
@@ -533,7 +533,7 @@ namespace MinimalFirewall
                      "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 try
                 {
-                    firewallService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                    FirewallRuleService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
                 }
                 catch (COMException ex)
                 {
@@ -545,7 +545,7 @@ namespace MinimalFirewall
 
             try
             {
-                firewallService.SetDefaultOutboundAction(
+                FirewallRuleService.SetDefaultOutboundAction(
                     newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
             }
             catch (COMException ex)
@@ -671,7 +671,7 @@ namespace MinimalFirewall
 
         public void ReenableMfwRules()
         {
-            var allRules = firewallService.GetAllRules();
+            var allRules = FirewallRuleService.GetAllRules();
             try
             {
                 foreach (var rule in allRules)
@@ -712,7 +712,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    firewallService.DeleteRulesByName([ruleName]);
+                    FirewallRuleService.DeleteRulesByName([ruleName]);
                     _temporaryRuleManager.Remove(ruleName);
                     if (_temporaryRuleTimers.TryRemove(ruleName, out var t))
                     {
@@ -1091,7 +1091,7 @@ namespace MinimalFirewall
                     firewallRule.InterfaceTypes = "All";
                 }
 
-                firewallService.CreateRule(firewallRule);
+                FirewallRuleService.CreateRule(firewallRule);
                 ownershipTransferred = true;
 
                 activityLogger.LogChange("Advanced Rule Created", vm.Name);
@@ -1221,7 +1221,7 @@ namespace MinimalFirewall
                 try
                 {
                     activityLogger.LogDebug($"Deleting all rules in group: {groupName}");
-                    firewallService.DeleteRulesByGroup(groupName);
+                    FirewallRuleService.DeleteRulesByGroup(groupName);
                 }
                 catch (COMException ex)
                 {
@@ -1234,7 +1234,7 @@ namespace MinimalFirewall
         {
             try
             {
-                firewallService.DeleteAllMfwRules();
+                FirewallRuleService.DeleteAllMfwRules();
                 _wildcardRuleService.ClearRules();
                 activityLogger.LogChange("Bulk Delete", "All Minimal Firewall rules deleted by user.");
             }
@@ -1370,7 +1370,7 @@ namespace MinimalFirewall
         {
             var orphanedRuleNames = new List<string>();
             var mfwRulesData = new List<(string Name, string ApplicationName)>();
-            var allRules = firewallService.GetAllRules();
+            var allRules = FirewallRuleService.GetAllRules();
 
             try
             {
@@ -1444,7 +1444,7 @@ namespace MinimalFirewall
                 activityLogger.LogDebug($"Deleting {orphanedRuleNames.Count} orphaned rules.");
                 try
                 {
-                    firewallService.DeleteRulesByName(orphanedRuleNames);
+                    FirewallRuleService.DeleteRulesByName(orphanedRuleNames);
                     activityLogger.LogChange("Orphaned Rules Cleaned", $"{orphanedRuleNames.Count} rules deleted.");
                 }
                 catch (COMException ex)

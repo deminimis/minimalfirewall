@@ -161,7 +161,7 @@ namespace MinimalFirewall
                 NetFwTypeLib.INetFwRule2? comRule = null;
                 try
                 {
-                    comRule = firewallService.GetRuleByName(changeEvent.Name);
+                    comRule = FirewallRuleService.GetRuleByName(changeEvent.Name);
                 }
                 catch (FileNotFoundException)
                 {

@@ -14,7 +14,7 @@ namespace MinimalFirewall
         private static readonly string _configPath = ConfigPathManager.GetSettingsPath();
 
         // Lock object to prevent file corruption during rapid reads/writes
-        private static readonly object _fileLock = new object();
+        private static readonly Lock _fileLock = new();
 
         private CancellationTokenSource? _saveCts;
 
@@ -54,8 +54,8 @@ namespace MinimalFirewall
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"),
         ];
 
-        private Point _windowLocation = new Point(100, 100);
-        private Size _windowSize = new Size(1280, 800);
+        private Point _windowLocation = new(100, 100);
+        private Size _windowSize = new(1280, 800);
         private int _windowState = (int)FormWindowState.Maximized;
 
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
@@ -91,13 +91,27 @@ namespace MinimalFirewall
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
 
-        public int DnsRefreshIntervalMinutes { get; set; } = 4;
+        private int _dnsRefreshIntervalMinutes = 4;
+        
 
         public List<string> AutoAllowExclusions { get => _autoAllowExclusions; set => SetField(ref _autoAllowExclusions, value); }
 
         public Point WindowLocation { get => _windowLocation; set => SetField(ref _windowLocation, value); }
         public Size WindowSize { get => _windowSize; set => SetField(ref _windowSize, value); }
         public int WindowState { get => _windowState; set => SetField(ref _windowState, value); }
+
+        public int DnsRefreshIntervalMinutes
+        {
+            get => _dnsRefreshIntervalMinutes;
+            set
+            {
+                if (_dnsRefreshIntervalMinutes != value)
+                {
+                    _dnsRefreshIntervalMinutes = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DnsRefreshIntervalMinutes)));
+                }
+            }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

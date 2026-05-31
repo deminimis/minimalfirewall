@@ -40,7 +40,7 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
-            
+
         }
 
         public void Initialize(
@@ -79,7 +79,7 @@ namespace MinimalFirewall
 
         public void ApplyThemeFixes()
         {
-            void StyleButton(Button btn)
+            static void StyleButton(Button btn)
             {
                 btn.FlatAppearance.BorderSize = 1;
                 btn.FlatAppearance.BorderColor = Theme.Colors.ControlDark;
@@ -125,6 +125,7 @@ namespace MinimalFirewall
             autoAllowSystemSignedAppsCheck.Checked = _appSettings.AutoAllowSystemSignedApps;
             auditAlertsSwitch.Checked = _appSettings.AlertOnForeignRules;
             managePublishersButton.Enabled = true;
+            dnsRefreshNumericUpDown.Value = _appSettings.DnsRefreshIntervalMinutes > 0 ? _appSettings.DnsRefreshIntervalMinutes : 4;
         }
 
         public void SaveSettingsFromUI()
@@ -138,7 +139,7 @@ namespace MinimalFirewall
             _appSettings.StartOnSystemStartup = startOnStartupSwitch.Checked;
             // Preserve "Auto" theme — the live AutoThemeSwitch_CheckedChanged handler already keeps
             // _appSettings.Theme in sync; this line only runs on form close and must not clobber it.
-			_appSettings.Theme = autoThemeSwitch.Checked ? "Auto" : (darkModeSwitch.Checked ? "Dark" : "Light");
+            _appSettings.Theme = autoThemeSwitch.Checked ? "Auto" : (darkModeSwitch.Checked ? "Dark" : "Light");
             _appSettings.IsPopupsEnabled = popupsSwitch.Checked;
             _appSettings.IsLoggingEnabled = loggingSwitch.Checked;
 
@@ -163,6 +164,7 @@ namespace MinimalFirewall
             IconVisibilityChanged?.Invoke();
             AutoRefreshTimerChanged?.Invoke();
             _appSettings.Save();
+            _appSettings.DnsRefreshIntervalMinutes = (int)dnsRefreshNumericUpDown.Value;
         }
 
         public void ApplyTheme(bool isDark)
@@ -175,7 +177,7 @@ namespace MinimalFirewall
 
             if (_appImageList != null && _appImageList.Images.ContainsKey("coffee.png"))
             {
-                Image? coffeeImage = _appImageList.Images["coffee.png"]; 
+                Image? coffeeImage = _appImageList.Images["coffee.png"];
                 if (coffeeImage != null)
                 {
                     Image? oldImage = coffeePictureBox.Image;
@@ -190,7 +192,7 @@ namespace MinimalFirewall
             }
         }
 
-        private Image RecolorImage(Image image, Color color)
+        private static Image RecolorImage(Image image, Color color)
         {
             var bmp = new Bitmap(image.Width, image.Height);
             using var g = Graphics.FromImage(bmp);
@@ -561,7 +563,7 @@ namespace MinimalFirewall
                 string zipPath = saveDialog.FileName;
                 var statusForm = new StatusForm("Gathering diagnostic data...", _appSettings);
                 statusForm.Show(FindForm());
-                Application.DoEvents(); 
+                Application.DoEvents();
 
                 try
                 {
@@ -641,6 +643,17 @@ namespace MinimalFirewall
                     Messenger.MessageBox($"An error occurred while exporting diagnostics:\n{ex.Message}", "Export Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void DnsRefreshNumericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            SaveSettingsFromUI();
+            _appSettings.QueueSave();
+        }
+
+        private void Label1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

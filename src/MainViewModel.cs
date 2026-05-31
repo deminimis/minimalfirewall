@@ -90,7 +90,7 @@ namespace MinimalFirewall
             _dnsRefreshTimer = new System.Threading.Timer(async _ => await SafeRunDnsRefreshAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(dnsInterval));
         }
 
-        public bool IsLockedDown => _firewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+        public static bool IsLockedDown => FirewallRuleService.GetDefaultOutboundAction() == NetFwTypeLib.NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
 
 
         public void ClearRulesCache()
@@ -181,7 +181,7 @@ namespace MinimalFirewall
             TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>(vms);
         }
 
-        private (string Name, string Path, string ServiceName) ResolveProcessInfo(uint pid)
+        private static (string Name, string Path, string ServiceName) ResolveProcessInfo(uint pid)
         {
             try
             {
@@ -268,7 +268,7 @@ namespace MinimalFirewall
 
                     if (startIndex >= 12 && endIndex > startIndex)
                     {
-                        string domainsRaw = rule.Description.Substring(startIndex, endIndex - startIndex).Trim();
+                        string domainsRaw = rule.Description[startIndex..endIndex].Trim();
                         var domains = domainsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                         var newIps = new List<string>();
@@ -293,7 +293,7 @@ namespace MinimalFirewall
                             if (!string.Equals(rule.RemoteAddresses, newRemoteAddresses, StringComparison.OrdinalIgnoreCase))
                             {
                                 _activityLogger.LogDebug($"DNS Refresh: IPs changed for '{rule.Name}'. Updating Windows Firewall.");
-                                _firewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
+                                FirewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
                                 rule.RemoteAddresses = newRemoteAddresses; // Update local cache
                                 rulesUpdated = true;
                             }
@@ -349,7 +349,7 @@ namespace MinimalFirewall
                     r.ApplicationName.Contains(searchText, StringComparison.OrdinalIgnoreCase));
             }
 
-            VirtualRulesData = new SortableBindingList<AggregatedRuleViewModel>(filteredRules.ToList());
+            VirtualRulesData = new SortableBindingList<AggregatedRuleViewModel>([.. filteredRules]);
             RulesListUpdated?.Invoke();
         }
 
@@ -754,7 +754,7 @@ namespace MinimalFirewall
             AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
         }
 
-        public AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
+        public static AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
         {
             return new AggregatedRuleViewModel
             {
@@ -777,7 +777,7 @@ namespace MinimalFirewall
             };
         }
 
-        private AggregatedRuleViewModel CreateStandardProgramRule(string name, string appPath, Directions direction, Actions action)
+        private static AggregatedRuleViewModel CreateStandardProgramRule(string name, string appPath, Directions direction, Actions action)
         {
             // MFW prefix to prevent Windows from deleting the rule.
             string safeName = name.StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ? name : $"MFW - {name}";
@@ -860,7 +860,7 @@ namespace MinimalFirewall
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
-            Action processDetection = () =>
+            void processDetection()
             {
                 bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
                 if (alreadyPending)
@@ -874,7 +874,7 @@ namespace MinimalFirewall
                 {
                     PopupRequired?.Invoke(pending);
                 }
-            };
+            }
 
             if (_uiContext != null)
             {

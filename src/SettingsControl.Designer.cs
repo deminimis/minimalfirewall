@@ -54,35 +54,49 @@ namespace MinimalFirewall
             cleanUpOrphanedRulesButton = new DarkModeForms.ThemedButton();
             dividerPanel1 = new DarkModeForms.ThemedPanel();
             dividerPanel2 = new DarkModeForms.ThemedPanel();
+            label1 = new Label();
+            dnsRefreshNumericUpDown = new NumericUpDown();
+            themedLabel1 = new DarkModeForms.ThemedLabel();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
             mainSettingsPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dnsRefreshNumericUpDown).BeginInit();
             SuspendLayout();
             // 
             // deleteAllRulesButton
             // 
+            deleteAllRulesButton.BackColor = Color.FromArgb(55, 55, 55);
+            deleteAllRulesButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             deleteAllRulesButton.FlatAppearance.BorderSize = 0;
+            deleteAllRulesButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            deleteAllRulesButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             deleteAllRulesButton.FlatStyle = FlatStyle.Flat;
-            deleteAllRulesButton.Location = new Point(245, 501);
+            deleteAllRulesButton.ForeColor = Color.White;
+            deleteAllRulesButton.Location = new Point(245, 527);
             deleteAllRulesButton.Margin = new Padding(4, 3, 4, 3);
             deleteAllRulesButton.Name = "deleteAllRulesButton";
             deleteAllRulesButton.Size = new Size(210, 30);
             deleteAllRulesButton.TabIndex = 25;
             deleteAllRulesButton.Text = "Delete all Minimal Firewall rules";
-            deleteAllRulesButton.UseVisualStyleBackColor = true;
+            deleteAllRulesButton.UseVisualStyleBackColor = false;
             deleteAllRulesButton.Click += DeleteAllRulesButton_Click;
             // 
             // revertFirewallButton
             // 
+            revertFirewallButton.BackColor = Color.FromArgb(55, 55, 55);
+            revertFirewallButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             revertFirewallButton.FlatAppearance.BorderSize = 0;
+            revertFirewallButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            revertFirewallButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             revertFirewallButton.FlatStyle = FlatStyle.Flat;
-            revertFirewallButton.Location = new Point(465, 501);
+            revertFirewallButton.ForeColor = Color.White;
+            revertFirewallButton.Location = new Point(465, 527);
             revertFirewallButton.Margin = new Padding(4, 3, 4, 3);
             revertFirewallButton.Name = "revertFirewallButton";
             revertFirewallButton.Size = new Size(210, 30);
             revertFirewallButton.TabIndex = 26;
             revertFirewallButton.Text = "Revert Windows Firewall";
-            revertFirewallButton.UseVisualStyleBackColor = true;
+            revertFirewallButton.UseVisualStyleBackColor = false;
             revertFirewallButton.Click += RevertFirewallButton_Click;
             // 
             // auditAlertsSwitch
@@ -98,21 +112,26 @@ namespace MinimalFirewall
             // 
             // managePublishersButton
             // 
+            managePublishersButton.BackColor = Color.FromArgb(55, 55, 55);
+            managePublishersButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             managePublishersButton.FlatAppearance.BorderSize = 0;
+            managePublishersButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            managePublishersButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             managePublishersButton.FlatStyle = FlatStyle.Flat;
-            managePublishersButton.Location = new Point(306, 301);
+            managePublishersButton.ForeColor = Color.White;
+            managePublishersButton.Location = new Point(306, 327);
             managePublishersButton.Margin = new Padding(4, 3, 4, 3);
             managePublishersButton.Name = "managePublishersButton";
             managePublishersButton.Size = new Size(225, 30);
             managePublishersButton.TabIndex = 23;
             managePublishersButton.Text = "Manage Trusted Publishers";
-            managePublishersButton.UseVisualStyleBackColor = true;
+            managePublishersButton.UseVisualStyleBackColor = false;
             managePublishersButton.Click += ManagePublishersButton_Click;
             // 
             // autoAllowWhitelistedPublishersCheck
             // 
             autoAllowWhitelistedPublishersCheck.AutoSize = true;
-            autoAllowWhitelistedPublishersCheck.Location = new Point(24, 304);
+            autoAllowWhitelistedPublishersCheck.Location = new Point(24, 330);
             autoAllowWhitelistedPublishersCheck.Margin = new Padding(4, 3, 4, 3);
             autoAllowWhitelistedPublishersCheck.Name = "autoAllowWhitelistedPublishersCheck";
             autoAllowWhitelistedPublishersCheck.Size = new Size(229, 20);
@@ -123,7 +142,7 @@ namespace MinimalFirewall
             // autoAllowSystemSignedAppsCheck
             // 
             autoAllowSystemSignedAppsCheck.AutoSize = true;
-            autoAllowSystemSignedAppsCheck.Location = new Point(24, 341);
+            autoAllowSystemSignedAppsCheck.Location = new Point(24, 367);
             autoAllowSystemSignedAppsCheck.Margin = new Padding(4, 3, 4, 3);
             autoAllowSystemSignedAppsCheck.Name = "autoAllowSystemSignedAppsCheck";
             autoAllowSystemSignedAppsCheck.Size = new Size(264, 20);
@@ -133,28 +152,38 @@ namespace MinimalFirewall
             // 
             // viewTrustedCertsButton
             // 
+            viewTrustedCertsButton.BackColor = Color.FromArgb(55, 55, 55);
+            viewTrustedCertsButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             viewTrustedCertsButton.FlatAppearance.BorderSize = 0;
+            viewTrustedCertsButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            viewTrustedCertsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             viewTrustedCertsButton.FlatStyle = FlatStyle.Flat;
-            viewTrustedCertsButton.Location = new Point(306, 338);
+            viewTrustedCertsButton.ForeColor = Color.White;
+            viewTrustedCertsButton.Location = new Point(306, 364);
             viewTrustedCertsButton.Margin = new Padding(4, 3, 4, 3);
             viewTrustedCertsButton.Name = "viewTrustedCertsButton";
             viewTrustedCertsButton.Size = new Size(225, 30);
             viewTrustedCertsButton.TabIndex = 34;
             viewTrustedCertsButton.Text = "View Trusted CAs...";
-            viewTrustedCertsButton.UseVisualStyleBackColor = true;
+            viewTrustedCertsButton.UseVisualStyleBackColor = false;
             viewTrustedCertsButton.Click += ViewTrustedCertsButton_Click;
             // 
             // excludedFoldersButton
             // 
+            excludedFoldersButton.BackColor = Color.FromArgb(55, 55, 55);
+            excludedFoldersButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             excludedFoldersButton.FlatAppearance.BorderSize = 0;
+            excludedFoldersButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            excludedFoldersButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             excludedFoldersButton.FlatStyle = FlatStyle.Flat;
-            excludedFoldersButton.Location = new Point(24, 379);
+            excludedFoldersButton.ForeColor = Color.White;
+            excludedFoldersButton.Location = new Point(24, 405);
             excludedFoldersButton.Margin = new Padding(4, 3, 4, 3);
             excludedFoldersButton.Name = "excludedFoldersButton";
             excludedFoldersButton.Size = new Size(225, 30);
             excludedFoldersButton.TabIndex = 35;
             excludedFoldersButton.Text = "Auto-Allow Exclusions";
-            excludedFoldersButton.UseVisualStyleBackColor = true;
+            excludedFoldersButton.UseVisualStyleBackColor = false;
             excludedFoldersButton.Click += ExcludedFoldersButton_Click;
             // 
             // showAppIconsSwitch
@@ -184,6 +213,8 @@ namespace MinimalFirewall
             // autoRefreshLabel1
             // 
             autoRefreshLabel1.AutoSize = true;
+            autoRefreshLabel1.BackColor = Color.Transparent;
+            autoRefreshLabel1.ForeColor = Color.White;
             autoRefreshLabel1.Location = new Point(24, 239);
             autoRefreshLabel1.Margin = new Padding(4, 0, 4, 0);
             autoRefreshLabel1.Name = "autoRefreshLabel1";
@@ -194,6 +225,8 @@ namespace MinimalFirewall
             // autoRefreshLabel2
             // 
             autoRefreshLabel2.AutoSize = true;
+            autoRefreshLabel2.BackColor = Color.Transparent;
+            autoRefreshLabel2.ForeColor = Color.White;
             autoRefreshLabel2.Location = new Point(230, 239);
             autoRefreshLabel2.Margin = new Padding(4, 0, 4, 0);
             autoRefreshLabel2.Name = "autoRefreshLabel2";
@@ -204,9 +237,11 @@ namespace MinimalFirewall
             // coffeePanel
             // 
             coffeePanel.BackColor = Color.Transparent;
+            coffeePanel.BorderStyle = BorderStyle.FixedSingle;
             coffeePanel.Controls.Add(coffeePictureBox);
             coffeePanel.Cursor = Cursors.Hand;
-            coffeePanel.Location = new Point(18, 688);
+            coffeePanel.ForeColor = Color.White;
+            coffeePanel.Location = new Point(24, 700);
             coffeePanel.Margin = new Padding(4, 3, 4, 3);
             coffeePanel.Name = "coffeePanel";
             coffeePanel.Size = new Size(380, 64);
@@ -231,7 +266,7 @@ namespace MinimalFirewall
             // 
             coffeeLinkLabel.ActiveLinkColor = Color.DodgerBlue;
             coffeeLinkLabel.AutoSize = true;
-            coffeeLinkLabel.Location = new Point(85, 709);
+            coffeeLinkLabel.Location = new Point(91, 721);
             coffeeLinkLabel.Margin = new Padding(4, 0, 4, 0);
             coffeeLinkLabel.MaximumSize = new Size(320, 0);
             coffeeLinkLabel.Name = "coffeeLinkLabel";
@@ -245,8 +280,10 @@ namespace MinimalFirewall
             // versionLabel
             // 
             versionLabel.AutoSize = true;
+            versionLabel.BackColor = Color.Transparent;
             versionLabel.Font = new Font("Segoe UI", 9F);
-            versionLabel.Location = new Point(450, 645);
+            versionLabel.ForeColor = Color.White;
+            versionLabel.Location = new Point(450, 671);
             versionLabel.Margin = new Padding(4, 0, 4, 0);
             versionLabel.Name = "versionLabel";
             versionLabel.Size = new Size(45, 15);
@@ -255,45 +292,62 @@ namespace MinimalFirewall
             // 
             // checkForUpdatesButton
             // 
+            checkForUpdatesButton.BackColor = Color.FromArgb(55, 55, 55);
+            checkForUpdatesButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             checkForUpdatesButton.FlatAppearance.BorderSize = 0;
+            checkForUpdatesButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            checkForUpdatesButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             checkForUpdatesButton.FlatStyle = FlatStyle.Flat;
-            checkForUpdatesButton.Location = new Point(245, 597);
+            checkForUpdatesButton.ForeColor = Color.White;
+            checkForUpdatesButton.Location = new Point(245, 623);
             checkForUpdatesButton.Margin = new Padding(4, 3, 4, 3);
             checkForUpdatesButton.Name = "checkForUpdatesButton";
             checkForUpdatesButton.Size = new Size(210, 30);
             checkForUpdatesButton.TabIndex = 11;
             checkForUpdatesButton.Text = "Check for Updates";
+            checkForUpdatesButton.UseVisualStyleBackColor = false;
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
             // 
             // openFirewallButton
             // 
+            openFirewallButton.BackColor = Color.FromArgb(55, 55, 55);
+            openFirewallButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             openFirewallButton.FlatAppearance.BorderSize = 0;
+            openFirewallButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            openFirewallButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             openFirewallButton.FlatStyle = FlatStyle.Flat;
-            openFirewallButton.Location = new Point(24, 453);
+            openFirewallButton.ForeColor = Color.White;
+            openFirewallButton.Location = new Point(24, 479);
             openFirewallButton.Margin = new Padding(4, 3, 4, 3);
             openFirewallButton.Name = "openFirewallButton";
             openFirewallButton.Size = new Size(210, 30);
             openFirewallButton.TabIndex = 10;
             openFirewallButton.Text = "Open Windows Firewall";
+            openFirewallButton.UseVisualStyleBackColor = false;
             openFirewallButton.Click += OpenFirewallButton_Click;
             // 
             // openAppDataButton
             // 
+            openAppDataButton.BackColor = Color.FromArgb(55, 55, 55);
+            openAppDataButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             openAppDataButton.FlatAppearance.BorderSize = 0;
+            openAppDataButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            openAppDataButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             openAppDataButton.FlatStyle = FlatStyle.Flat;
-            openAppDataButton.Location = new Point(245, 453);
+            openAppDataButton.ForeColor = Color.White;
+            openAppDataButton.Location = new Point(245, 479);
             openAppDataButton.Margin = new Padding(4, 3, 4, 3);
             openAppDataButton.Name = "openAppDataButton";
             openAppDataButton.Size = new Size(210, 30);
             openAppDataButton.TabIndex = 32;
             openAppDataButton.Text = "Open %LocalAppData%";
-            openAppDataButton.UseVisualStyleBackColor = true;
+            openAppDataButton.UseVisualStyleBackColor = false;
             openAppDataButton.Click += OpenAppDataButton_Click;
             // 
             // forumLink
             // 
             forumLink.AutoSize = true;
-            forumLink.Location = new Point(24, 645);
+            forumLink.Location = new Point(24, 671);
             forumLink.Margin = new Padding(4, 0, 4, 0);
             forumLink.Name = "forumLink";
             forumLink.Size = new Size(140, 16);
@@ -306,7 +360,7 @@ namespace MinimalFirewall
             // reportProblemLink
             // 
             reportProblemLink.AutoSize = true;
-            reportProblemLink.Location = new Point(160, 645);
+            reportProblemLink.Location = new Point(160, 671);
             reportProblemLink.Margin = new Padding(4, 0, 4, 0);
             reportProblemLink.Name = "reportProblemLink";
             reportProblemLink.Size = new Size(119, 16);
@@ -319,7 +373,7 @@ namespace MinimalFirewall
             // helpLink
             // 
             helpLink.AutoSize = true;
-            helpLink.Location = new Point(290, 645);
+            helpLink.Location = new Point(290, 671);
             helpLink.Margin = new Padding(4, 0, 4, 0);
             helpLink.Name = "helpLink";
             helpLink.Size = new Size(147, 16);
@@ -414,6 +468,11 @@ namespace MinimalFirewall
             // mainSettingsPanel
             // 
             mainSettingsPanel.AutoScroll = true;
+            mainSettingsPanel.BackColor = Color.FromArgb(43, 43, 43);
+            mainSettingsPanel.BorderStyle = BorderStyle.FixedSingle;
+            mainSettingsPanel.Controls.Add(themedLabel1);
+            mainSettingsPanel.Controls.Add(dnsRefreshNumericUpDown);
+            mainSettingsPanel.Controls.Add(label1);
             mainSettingsPanel.Controls.Add(coffeeLinkLabel);
             mainSettingsPanel.Controls.Add(exportDiagnosticButton);
             mainSettingsPanel.Controls.Add(importReplaceButton);
@@ -451,81 +510,109 @@ namespace MinimalFirewall
             mainSettingsPanel.Controls.Add(dividerPanel2);
             mainSettingsPanel.Dock = DockStyle.Fill;
             mainSettingsPanel.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            mainSettingsPanel.ForeColor = Color.White;
             mainSettingsPanel.Location = new Point(0, 0);
             mainSettingsPanel.Margin = new Padding(4, 2, 4, 2);
             mainSettingsPanel.Name = "mainSettingsPanel";
-            mainSettingsPanel.Size = new Size(888, 740);
+            mainSettingsPanel.Size = new Size(888, 765);
             mainSettingsPanel.TabIndex = 27;
             // 
             // exportDiagnosticButton
             // 
+            exportDiagnosticButton.BackColor = Color.FromArgb(55, 55, 55);
+            exportDiagnosticButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             exportDiagnosticButton.FlatAppearance.BorderSize = 0;
+            exportDiagnosticButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            exportDiagnosticButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             exportDiagnosticButton.FlatStyle = FlatStyle.Flat;
-            exportDiagnosticButton.Location = new Point(24, 597);
+            exportDiagnosticButton.ForeColor = Color.White;
+            exportDiagnosticButton.Location = new Point(24, 623);
             exportDiagnosticButton.Margin = new Padding(4, 3, 4, 3);
             exportDiagnosticButton.Name = "exportDiagnosticButton";
             exportDiagnosticButton.Size = new Size(210, 30);
             exportDiagnosticButton.TabIndex = 32;
             exportDiagnosticButton.Text = "Export Diagnostic Package...";
-            exportDiagnosticButton.UseVisualStyleBackColor = true;
+            exportDiagnosticButton.UseVisualStyleBackColor = false;
             exportDiagnosticButton.Click += ExportDiagnosticButton_Click;
             // 
             // importReplaceButton
             // 
+            importReplaceButton.BackColor = Color.FromArgb(55, 55, 55);
+            importReplaceButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             importReplaceButton.FlatAppearance.BorderSize = 0;
+            importReplaceButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            importReplaceButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             importReplaceButton.FlatStyle = FlatStyle.Flat;
-            importReplaceButton.Location = new Point(465, 549);
+            importReplaceButton.ForeColor = Color.White;
+            importReplaceButton.Location = new Point(465, 575);
             importReplaceButton.Margin = new Padding(4, 3, 4, 3);
             importReplaceButton.Name = "importReplaceButton";
             importReplaceButton.Size = new Size(210, 30);
             importReplaceButton.TabIndex = 30;
             importReplaceButton.Text = "Import && Replace Rules...";
-            importReplaceButton.UseVisualStyleBackColor = true;
+            importReplaceButton.UseVisualStyleBackColor = false;
             importReplaceButton.Click += ImportReplaceButton_Click;
             // 
             // importMergeButton
             // 
+            importMergeButton.BackColor = Color.FromArgb(55, 55, 55);
+            importMergeButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             importMergeButton.FlatAppearance.BorderSize = 0;
+            importMergeButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            importMergeButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             importMergeButton.FlatStyle = FlatStyle.Flat;
-            importMergeButton.Location = new Point(245, 549);
+            importMergeButton.ForeColor = Color.White;
+            importMergeButton.Location = new Point(245, 575);
             importMergeButton.Margin = new Padding(4, 3, 4, 3);
             importMergeButton.Name = "importMergeButton";
             importMergeButton.Size = new Size(210, 30);
             importMergeButton.TabIndex = 29;
             importMergeButton.Text = "Import && Add Rules...";
-            importMergeButton.UseVisualStyleBackColor = true;
+            importMergeButton.UseVisualStyleBackColor = false;
             importMergeButton.Click += ImportMergeButton_Click;
             // 
             // exportRulesButton
             // 
+            exportRulesButton.BackColor = Color.FromArgb(55, 55, 55);
+            exportRulesButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             exportRulesButton.FlatAppearance.BorderSize = 0;
+            exportRulesButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            exportRulesButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             exportRulesButton.FlatStyle = FlatStyle.Flat;
-            exportRulesButton.Location = new Point(24, 549);
+            exportRulesButton.ForeColor = Color.White;
+            exportRulesButton.Location = new Point(24, 575);
             exportRulesButton.Margin = new Padding(4, 3, 4, 3);
             exportRulesButton.Name = "exportRulesButton";
             exportRulesButton.Size = new Size(210, 30);
             exportRulesButton.TabIndex = 28;
             exportRulesButton.Text = "Export Rules...";
-            exportRulesButton.UseVisualStyleBackColor = true;
+            exportRulesButton.UseVisualStyleBackColor = false;
             exportRulesButton.Click += ExportRulesButton_Click;
             // 
             // cleanUpOrphanedRulesButton
             // 
+            cleanUpOrphanedRulesButton.BackColor = Color.FromArgb(55, 55, 55);
+            cleanUpOrphanedRulesButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             cleanUpOrphanedRulesButton.FlatAppearance.BorderSize = 0;
+            cleanUpOrphanedRulesButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            cleanUpOrphanedRulesButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             cleanUpOrphanedRulesButton.FlatStyle = FlatStyle.Flat;
-            cleanUpOrphanedRulesButton.Location = new Point(24, 501);
+            cleanUpOrphanedRulesButton.ForeColor = Color.White;
+            cleanUpOrphanedRulesButton.Location = new Point(24, 527);
             cleanUpOrphanedRulesButton.Margin = new Padding(4, 3, 4, 3);
             cleanUpOrphanedRulesButton.Name = "cleanUpOrphanedRulesButton";
             cleanUpOrphanedRulesButton.Size = new Size(210, 30);
             cleanUpOrphanedRulesButton.TabIndex = 27;
             cleanUpOrphanedRulesButton.Text = "Clean Up Orphaned Rules";
-            cleanUpOrphanedRulesButton.UseVisualStyleBackColor = true;
+            cleanUpOrphanedRulesButton.UseVisualStyleBackColor = false;
             cleanUpOrphanedRulesButton.Click += CleanUpOrphanedRulesButton_Click;
             // 
             // dividerPanel1
             // 
-            dividerPanel1.BackColor = SystemColors.ControlDark;
-            dividerPanel1.Location = new Point(24, 283);
+            dividerPanel1.BackColor = Color.FromArgb(43, 43, 43);
+            dividerPanel1.BorderStyle = BorderStyle.FixedSingle;
+            dividerPanel1.ForeColor = Color.White;
+            dividerPanel1.Location = new Point(24, 309);
             dividerPanel1.Margin = new Padding(4, 3, 4, 3);
             dividerPanel1.Name = "dividerPanel1";
             dividerPanel1.Size = new Size(650, 1);
@@ -533,12 +620,47 @@ namespace MinimalFirewall
             // 
             // dividerPanel2
             // 
-            dividerPanel2.BackColor = SystemColors.ControlDark;
-            dividerPanel2.Location = new Point(24, 432);
+            dividerPanel2.BackColor = Color.FromArgb(43, 43, 43);
+            dividerPanel2.BorderStyle = BorderStyle.FixedSingle;
+            dividerPanel2.ForeColor = Color.White;
+            dividerPanel2.Location = new Point(24, 458);
             dividerPanel2.Margin = new Padding(4, 3, 4, 3);
             dividerPanel2.Name = "dividerPanel2";
             dividerPanel2.Size = new Size(650, 1);
             dividerPanel2.TabIndex = 38;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(25, 277);
+            label1.Name = "label1";
+            label1.Size = new Size(91, 16);
+            label1.TabIndex = 39;
+            label1.Text = "DNS Refresh:";
+            label1.Click += Label1_Click;
+            // 
+            // dnsRefreshNumericUpDown
+            // 
+            dnsRefreshNumericUpDown.Location = new Point(122, 275);
+            dnsRefreshNumericUpDown.Maximum = new decimal(new int[] { 120, 0, 0, 0 });
+            dnsRefreshNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            dnsRefreshNumericUpDown.Name = "dnsRefreshNumericUpDown";
+            dnsRefreshNumericUpDown.Size = new Size(64, 23);
+            dnsRefreshNumericUpDown.TabIndex = 40;
+            dnsRefreshNumericUpDown.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            dnsRefreshNumericUpDown.ValueChanged += DnsRefreshNumericUpDown_ValueChanged;
+            // 
+            // themedLabel1
+            // 
+            themedLabel1.AutoSize = true;
+            themedLabel1.BackColor = Color.Transparent;
+            themedLabel1.ForeColor = Color.White;
+            themedLabel1.Location = new Point(193, 277);
+            themedLabel1.Margin = new Padding(4, 0, 4, 0);
+            themedLabel1.Name = "themedLabel1";
+            themedLabel1.Size = new Size(56, 16);
+            themedLabel1.TabIndex = 41;
+            themedLabel1.Text = "minutes";
             // 
             // SettingsControl
             // 
@@ -548,11 +670,12 @@ namespace MinimalFirewall
             Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Margin = new Padding(4, 2, 4, 2);
             Name = "SettingsControl";
-            Size = new Size(888, 740);
+            Size = new Size(888, 765);
             coffeePanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).EndInit();
             mainSettingsPanel.ResumeLayout(false);
             mainSettingsPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dnsRefreshNumericUpDown).EndInit();
             ResumeLayout(false);
 
         }
@@ -595,5 +718,8 @@ namespace MinimalFirewall
         private DarkModeForms.ThemedButton exportDiagnosticButton;
         private DarkModeForms.ThemedPanel dividerPanel1;
         private DarkModeForms.ThemedPanel dividerPanel2;
+        private NumericUpDown dnsRefreshNumericUpDown;
+        private Label label1;
+        private DarkModeForms.ThemedLabel themedLabel1;
     }
 }

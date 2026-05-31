@@ -331,7 +331,7 @@ namespace MinimalFirewall
             {
                 string newDomains = dialog.Domains;
                 // Strip out old tag so we can append a fresh one
-                string cleanDescription = System.Text.RegularExpressions.Regex.Replace(currentDescription, @"\s*\[MFW-Domain:.*?\]", "").Trim();
+                string cleanDescription = MyRegex().Replace(currentDescription, "").Trim();
                 string newDescription = cleanDescription;
 
                 if (!string.IsNullOrWhiteSpace(newDomains))
@@ -558,7 +558,7 @@ namespace MinimalFirewall
                    : null;
         }
 
-        private string GetDomainsFromDescription(string? description)
+        private static string GetDomainsFromDescription(string? description)
         {
             if (string.IsNullOrEmpty(description)) return "";
             int start = description.IndexOf("[MFW-Domain:");
@@ -570,7 +570,7 @@ namespace MinimalFirewall
             return "";
         }
 
-        private string CleanDescription(string? description)
+        private static string CleanDescription(string? description)
         {
             if (string.IsNullOrEmpty(description)) return "";
             return System.Text.RegularExpressions.Regex.Replace(description, @"\s*\[MFW-Domain:.*?\]", "").Trim();
@@ -667,5 +667,8 @@ namespace MinimalFirewall
         {
 
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"\s*\[MFW-Domain:.*?\]")]
+        private static partial System.Text.RegularExpressions.Regex MyRegex();
     }
 }

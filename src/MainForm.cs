@@ -33,7 +33,7 @@ namespace MinimalFirewall
         private UserActivityLogger _activityLogger = null!;
         private WildcardRuleService _wildcardRuleService = null!;
         private RuleTimestampService _ruleTimestampService = null!;
-        private AppSettings _appSettings = null!;
+        private readonly AppSettings _appSettings = null!;
         private StartupService _startupService = null!;
         private FirewallGroupManager _groupManager = null!;
         private IconService _iconService = null!;
@@ -141,7 +141,7 @@ namespace MinimalFirewall
             _firewallSentryService = new FirewallSentryService(_firewallRuleService);
             var trafficMonitorViewModel = new TrafficMonitorViewModel();
 
-            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => _mainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
+            _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => MainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
 
             _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
             _eventListenerService.ActionsService = _actionsService;
@@ -247,7 +247,7 @@ namespace MinimalFirewall
             {
                 _startupService.VerifyAndCorrectStartupTaskPath();
             }
-            if (_mainViewModel.IsLockedDown)
+            if (MainViewModel.IsLockedDown)
             {
                 _eventListenerService.EnableAuditing();
                 _eventListenerService.Start();
@@ -362,7 +362,7 @@ namespace MinimalFirewall
                     _defaultTrayIcon = icon;
                     _unlockedTrayIcon = CreateRecoloredIcon(icon, Color.Red);
                     _alertTrayIcon = CreateRecoloredIcon(icon, Color.Orange);
-                    notifyIcon?.Icon = _mainViewModel.IsLockedDown ?
+                    notifyIcon?.Icon = MainViewModel.IsLockedDown ?
                                           _defaultTrayIcon : _unlockedTrayIcon;
                 }
             }
@@ -410,9 +410,9 @@ namespace MinimalFirewall
             bool isDark = IsDarkModeEnabled;
 
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
-            Theme.ApplyTitleBarTheme(this.Handle, isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode));
-            this.BackColor = Theme.Colors.Background;
-            this.ForeColor = Theme.Colors.TextInactive;
+            Theme.ApplyTitleBarTheme(Handle, isAuto ? Theme.DisplayMode.SystemDefault : (isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode));
+            BackColor = Theme.Colors.Background;
+            ForeColor = Theme.Colors.TextInactive;
 
             _cachedArrowPen?.Dispose();
             _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
@@ -435,7 +435,7 @@ namespace MinimalFirewall
             rescanButton.BringToFront();
         }
 
-        private void RefreshAllThemedControls(Control parent)
+        private static void RefreshAllThemedControls(Control parent)
         {
             foreach (Control control in parent.Controls)
             {
@@ -483,7 +483,7 @@ namespace MinimalFirewall
         {
             SafeInvoke(() =>
             {
-                if (_mainViewModel.PendingConnections.Count > 0 && _mainViewModel.IsLockedDown)
+                if (_mainViewModel.PendingConnections.Count > 0 && MainViewModel.IsLockedDown)
                 {
                     if (_trayBlinkTimer == null)
                     {
@@ -519,7 +519,7 @@ namespace MinimalFirewall
 
         private void UpdateTrayStatus()
         {
-            bool locked = _mainViewModel.IsLockedDown;
+            bool locked = MainViewModel.IsLockedDown;
             logoPictureBox.Visible = !locked;
             dashboardControl1.Visible = locked;
 
@@ -581,6 +581,11 @@ namespace MinimalFirewall
             if (e.PropertyName == nameof(AppSettings.IsPopupsEnabled) && !_appSettings.IsPopupsEnabled)
             {
                 SafeInvoke(DismissAllPopups);
+            }
+
+            if (e.PropertyName == nameof(AppSettings.DnsRefreshIntervalMinutes))
+            {
+                _mainViewModel?.UpdateDnsTimerInterval();
             }
         }
 
@@ -886,7 +891,7 @@ namespace MinimalFirewall
 
         private void TrayContextMenu_Opening(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            lockdownTrayMenuItem?.Text = _mainViewModel.IsLockedDown ? "Disable Lockdown" : "Enable Lockdown";
+            lockdownTrayMenuItem?.Text = MainViewModel.IsLockedDown ? "Disable Lockdown" : "Enable Lockdown";
         }
 
         private void SetupAutoRefreshTimer()
@@ -955,7 +960,7 @@ namespace MinimalFirewall
             ApplyLastWindowState();
             Show();
             Activate();
-            if (_mainViewModel.IsLockedDown)
+            if (MainViewModel.IsLockedDown)
             {
                 _eventListenerService.Start();
             }
@@ -1380,13 +1385,13 @@ namespace MinimalFirewall
 
         private void ToggleLockdownButton_Click(object sender, EventArgs e)
         {
-            bool wasLocked = _mainViewModel.IsLockedDown;
+            bool wasLocked = MainViewModel.IsLockedDown;
 
             _mainViewModel.ToggleLockdownMode();
 
             UpdateTrayStatus();
 
-            bool isNowLocked = _mainViewModel.IsLockedDown;
+            bool isNowLocked = MainViewModel.IsLockedDown;
             if (wasLocked && !isNowLocked)
             {
                 DismissAllPopups();
@@ -1421,7 +1426,7 @@ namespace MinimalFirewall
         {
             if (_cachedArrowPen == null)
             {
-                bool isDark = IsDarkModeEnabled;
+                _ = IsDarkModeEnabled;
                 _cachedArrowPen = new Pen(Theme.Colors.GraphicAccent, 2.5f) { EndCap = LineCap.ArrowAnchor };
             }
 
@@ -1479,7 +1484,7 @@ namespace MinimalFirewall
             bool isDark = IsDarkModeEnabled;
             if (button.Name == "lockdownButton")
             {
-                imageToDraw = _mainViewModel.IsLockedDown ?
+                imageToDraw = MainViewModel.IsLockedDown ?
                     _lockedGreenIcon : (isDark ? _unlockedWhiteIcon : appImageList.Images["unlocked.png"]);
             }
             else if (button.Name == "rescanButton")
