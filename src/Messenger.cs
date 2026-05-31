@@ -13,8 +13,8 @@ namespace DarkModeForms
 {
     public static class Messenger
     {
-        private static readonly Base64Icons _sharedIcons = new Base64Icons();
-        private static readonly Dictionary<string, string> _rawTranslations = new Dictionary<string, string>
+        private static readonly Base64Icons _sharedIcons = new();
+        private static readonly Dictionary<string, string> _rawTranslations = new()
         {
             { "en", "OK|Cancel|Yes|No|Continue|Retry|Abort|Ignore|Try Again" },
             { "es", "Aceptar|Cancelar|Sí|No|Continuar|Reintentar|Abortar|Ignorar|Intentar" },
@@ -65,7 +65,7 @@ namespace DarkModeForms
                 case MessageBoxIcon.Error: msgIcon = MsgIcon.Error; break;
             }
 
-            return MessageBox(Message, title, msgIcon, buttons, pIsDarkMode);
+            return MessageBox(Message: Message, title: title, icon: msgIcon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
         }
 
         public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton DefaultButton, bool pIsDarkMode = true)
@@ -76,12 +76,14 @@ namespace DarkModeForms
 
         public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
         {
-            return MessageBox(Message, title, icon, buttons, pIsDarkMode, owner: null);
+            // Explicitly name arguments 
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
         }
 
         public static DialogResult MessageBox(Form pOwner, string Message, string title, MessageBoxButtons buttons, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
         {
-            return MessageBox(Message, title, icon, buttons, pIsDarkMode, owner: pOwner);
+            // Explicitly name arguments
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: pOwner);
         }
 
         public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
@@ -89,7 +91,7 @@ namespace DarkModeForms
             using var form = new Form
             {
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                StartPosition = FormStartPosition.CenterParent,
+                StartPosition = owner != null ? FormStartPosition.CenterParent : FormStartPosition.CenterScreen,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 Text = title,
@@ -123,32 +125,28 @@ namespace DarkModeForms
 
             string CurrentLanguage = GetCurrentLanguage();
             var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, fontHeight);
+            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, bottomPanel, buttons, ButtonTranslations, fontHeight);
 
             int Padding = 4;
             int LastPos = form.ClientSize.Width;
 
             systemFont = SystemFonts.MessageBoxFont ?? SystemFonts.DefaultFont;
 
-            using (Graphics g = form.CreateGraphics())
+            for (int c = CmdButtons.Count - 1; c >= 0; c--)
             {
-                for (int c = CmdButtons.Count - 1; c >= 0; c--)
-                {
-                    ThemedButton _button = CmdButtons[c];
-                    _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
+                ThemedButton _button = CmdButtons[c];
+                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
 
-                    bottomPanel.Controls.Add(_button);
-                    _button.TabIndex = c;
-                    _button.Font = systemFont;
-                    SizeF textSize = g.MeasureString(_button.Text, systemFont);
-                    _button.Size = new Size((int)textSize.Width + 20, systemFont.Height + 10);
-                    _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
-                    LastPos = _button.Left;
-                }
+                _button.TabIndex = c;
+                _button.Font = systemFont;
+                Size textSize = TextRenderer.MeasureText(_button.Text, systemFont);
+                _button.Size = new Size(textSize.Width + 20, systemFont.Height + 10);
+                _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
+                LastPos = _button.Left;
             }
 
             int b = (int)_defaultButton;
-            if (b > 0)
+            if (b >= 0)
             {
                 b >>= 8;
                 if (b < CmdButtons.Count)
@@ -168,6 +166,13 @@ namespace DarkModeForms
             {
                 var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(64, 64) };
                 picIcon.Image = _sharedIcons.GetIcon(icon);
+
+                // Fallback to system icons 
+                if (picIcon.Image == null)
+                {
+                    picIcon.Image = GetSafeSystemIcon(icon, 64);
+                }
+
                 form.Controls.Add(picIcon);
 
                 picBox.Size = new Size(64, 64);
@@ -179,6 +184,7 @@ namespace DarkModeForms
 
             #region Prompt Text
 
+            int lblWidth = Math.Max(10, form.ClientSize.Width - (picBox.X + picBox.Width) - 12); // Fix: Prevent negative/zero scale measurements
             var lblPrompt = new ThemedLabel
             {
                 Text = Message,
@@ -186,15 +192,18 @@ namespace DarkModeForms
                 ForeColor = Theme.Colors.TextActive,
                 TextAlign = ContentAlignment.MiddleLeft,
                 Location = new Point(picBox.X + picBox.Width + 4, picBox.Y),
-                MaximumSize = new Size(form.ClientSize.Width - (picBox.X + picBox.Width) + 8, 0),
-                MinimumSize = new Size(form.ClientSize.Width - (picBox.X + picBox.Width) + 8, 64)
+                MaximumSize = new Size(lblWidth, 0),
+                MinimumSize = new Size(lblWidth, 0) 
             };
-            lblPrompt.BringToFront();
             form.Controls.Add(lblPrompt);
+            lblPrompt.BringToFront();
+
+            int promptHeight = Math.Max(64, lblPrompt.GetPreferredSize(new Size(lblWidth, 0)).Height);
+            lblPrompt.MinimumSize = new Size(lblWidth, promptHeight);
 
             #endregion Prompt Text
 
-            form.ClientSize = new Size(340, bottomPanel.Height + lblPrompt.Height + 20);
+            form.ClientSize = new Size(340, bottomPanel.Height + promptHeight + 20);
 
             #region Keyboard Shortcuts
 
@@ -224,7 +233,7 @@ namespace DarkModeForms
             using var form = new Form
             {
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                StartPosition = FormStartPosition.CenterParent,
+                StartPosition = FormStartPosition.CenterScreen,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 Text = title,
@@ -257,6 +266,13 @@ namespace DarkModeForms
             {
                 var picIcon = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(48, 48) };
                 picIcon.Image = _sharedIcons.GetIcon(icon);
+
+                // Fallback to system icons 
+                if (picIcon.Image == null)
+                {
+                    picIcon.Image = GetSafeSystemIcon(icon, 48);
+                }
+
                 bottomPanel.Controls.Add(picIcon);
                 picIcon.SetBounds(0, 2, 48, 48);
                 picIcon.BringToFront();
@@ -268,14 +284,13 @@ namespace DarkModeForms
 
             string CurrentLanguage = GetCurrentLanguage();
             var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, buttons, ButtonTranslations, SystemFonts.DefaultFont.Height);
+            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, bottomPanel, buttons, ButtonTranslations, SystemFonts.DefaultFont.Height);
 
             int Padding = 4;
             int LastPos = form.ClientSize.Width;
             foreach (var _button in CmdButtons)
             {
                 _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
-                bottomPanel.Controls.Add(_button);
                 _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
                 LastPos = _button.Left;
             }
@@ -544,12 +559,12 @@ namespace DarkModeForms
             timers.Add(control, (timer, disposedHandler));
         }
 
-        private static List<ThemedButton> GenerateDialogButtons(Form form, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
+        private static List<ThemedButton> GenerateDialogButtons(Form form, Panel bottomPanel, MessageBoxButtons buttons, Dictionary<string, string> translations, int fontHeight)
         {
             var CmdButtons = new List<ThemedButton>();
             ThemedButton CreateBtn(DialogResult result, string textKey, bool isFlat = true)
             {
-                return new ThemedButton
+                var btn = new ThemedButton
                 {
                     Anchor = AnchorStyles.Top | AnchorStyles.Right,
                     DialogResult = result,
@@ -557,6 +572,8 @@ namespace DarkModeForms
                     Height = fontHeight + 10,
                     FlatStyle = isFlat ? FlatStyle.System : FlatStyle.Standard
                 };
+                bottomPanel.Controls.Add(btn); 
+                return btn;
             }
 
             switch (buttons)
@@ -564,8 +581,7 @@ namespace DarkModeForms
                 case MessageBoxButtons.OK:
                     CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
                     form.AcceptButton = CmdButtons[0];
-                    form.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) { form.Close(); } };
-                    form.FormClosed += (s, e) => { form.DialogResult = DialogResult.OK; };
+                    form.CancelButton = CmdButtons[0];
                     break;
                 case MessageBoxButtons.OKCancel:
                     CmdButtons.Add(CreateBtn(DialogResult.OK, "OK"));
@@ -591,6 +607,7 @@ namespace DarkModeForms
                     CmdButtons.Add(CreateBtn(DialogResult.Yes, "Yes", false));
                     CmdButtons.Add(CreateBtn(DialogResult.No, "No", false));
                     form.AcceptButton = CmdButtons[0];
+                    form.CancelButton = CmdButtons[1]; 
                     form.ControlBox = false;
                     break;
                 case MessageBoxButtons.RetryCancel:
@@ -677,6 +694,26 @@ namespace DarkModeForms
             return false;
         }
 
+        private static Bitmap? GetSafeSystemIcon(MsgIcon icon, int size)
+        {
+            Icon? sysIcon = icon switch
+            {
+                MsgIcon.Warning => SystemIcons.Warning,
+                MsgIcon.Error => SystemIcons.Error,
+                MsgIcon.Question => SystemIcons.Question,
+                MsgIcon.Success or MsgIcon.Info => SystemIcons.Information,
+                _ => null
+            };
+
+            if (sysIcon == null) return null;
+
+            var bmp = new Bitmap(size, size);
+            using var g = Graphics.FromImage(bmp);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            g.DrawIcon(sysIcon, new Rectangle(0, 0, size, size));
+            return bmp;
+        }
+
         #endregion Private Stuff
     }
 
@@ -721,13 +758,10 @@ namespace DarkModeForms
         public List<KeyValue>? DataSet { get; set; }
         public string ErrorText { get; set; } = string.Empty;
 
-        public class ValidateEventArgs : EventArgs
+        public class ValidateEventArgs(string? newValue) : EventArgs
         {
-            public ValidateEventArgs(string? newValue) { NewValue = newValue; Cancel = false; }
-            public string? NewValue { get; }
-            public string OldValue { get; set; } = string.Empty;
-            public bool Cancel { get; set; }
-            public string ErrorText { get; set; } = string.Empty;
+            public string? NewValue { get; } = newValue; public string OldValue { get; set; } = string.Empty;
+            public bool Cancel { get; set; } = false; public string ErrorText { get; set; } = string.Empty;
         }
 
         public event EventHandler<ValidateEventArgs>? Validate;
@@ -739,17 +773,12 @@ namespace DarkModeForms
         public override string ToString() => string.Format("{0} - {1}", Key, Value);
     }
 
-    public class Base64Image
+    public class Base64Image(string pName, string pBase64Data)
     {
         private Image? _cachedImage;
-        public Base64Image(string pName, string pBase64Data)
-        {
-            Name = pName;
-            Base64Data = pBase64Data;
-        }
 
-        public string Name { get; set; } = string.Empty;
-        public string Base64Data { get; set; } = string.Empty;
+        public string Name { get; set; } = pName;
+        public string Base64Data { get; set; } = pBase64Data;
 
         public Image? Image
         {
