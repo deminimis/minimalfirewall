@@ -1460,9 +1460,9 @@ namespace MinimalFirewall
         {
             var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
             var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules ?? [])
-                .Select(r =>
+                .Select(static r =>
                 {
-                    if (r != null) r.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName);
+                    _ = (r?.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName));
                     return r;
                 }).Where(r => r != null).ToList();
             var wildcardRules = _wildcardRuleService.GetRules()

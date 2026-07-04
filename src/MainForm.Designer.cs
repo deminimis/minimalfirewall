@@ -121,6 +121,7 @@ namespace MinimalFirewall
             // 
             // dashboardTabPage
             // 
+            dashboardTabPage.BorderStyle = BorderStyle.FixedSingle;
             dashboardTabPage.Controls.Add(logoPictureBox);
             dashboardTabPage.Controls.Add(dashboardControl1);
             dashboardTabPage.ImageIndex = 3;
@@ -129,6 +130,7 @@ namespace MinimalFirewall
             dashboardTabPage.Padding = new Padding(3);
             dashboardTabPage.Size = new Size(872, 739);
             dashboardTabPage.TabIndex = 0;
+            dashboardTabPage.Tag = "themed";
             dashboardTabPage.Text = "Dashboard";
             dashboardTabPage.UseVisualStyleBackColor = true;
             // 
@@ -139,7 +141,7 @@ namespace MinimalFirewall
             logoPictureBox.Dock = DockStyle.Fill;
             logoPictureBox.Location = new Point(3, 3);
             logoPictureBox.Name = "logoPictureBox";
-            logoPictureBox.Size = new Size(866, 733);
+            logoPictureBox.Size = new Size(864, 731);
             logoPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             logoPictureBox.TabIndex = 1;
             logoPictureBox.TabStop = false;
@@ -148,7 +150,7 @@ namespace MinimalFirewall
             // 
             arrowPictureBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             arrowPictureBox.BackColor = Color.Transparent;
-            arrowPictureBox.Location = new Point(20, 662);
+            arrowPictureBox.Location = new Point(20, 660);
             arrowPictureBox.Name = "arrowPictureBox";
             arrowPictureBox.Size = new Size(60, 43);
             arrowPictureBox.TabIndex = 3;
@@ -161,7 +163,8 @@ namespace MinimalFirewall
             instructionLabel.AutoSize = true;
             instructionLabel.BackColor = Color.Transparent;
             instructionLabel.Font = new Font("Segoe UI", 9F);
-            instructionLabel.Location = new Point(20, 630);
+            instructionLabel.ForeColor = Color.White;
+            instructionLabel.Location = new Point(20, 628);
             instructionLabel.Name = "instructionLabel";
             instructionLabel.Size = new Size(241, 15);
             instructionLabel.TabIndex = 2;
@@ -170,14 +173,16 @@ namespace MinimalFirewall
             // dashboardControl1
             // 
             dashboardControl1.Dock = DockStyle.Fill;
+            dashboardControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             dashboardControl1.Location = new Point(3, 3);
             dashboardControl1.Margin = new Padding(3, 2, 3, 2);
             dashboardControl1.Name = "dashboardControl1";
-            dashboardControl1.Size = new Size(866, 733);
+            dashboardControl1.Size = new Size(864, 731);
             dashboardControl1.TabIndex = 2;
             // 
             // rulesTabPage
             // 
+            rulesTabPage.BorderStyle = BorderStyle.FixedSingle;
             rulesTabPage.Controls.Add(rulesControl1);
             rulesTabPage.ImageIndex = 8;
             rulesTabPage.Location = new Point(124, 4);
@@ -185,20 +190,23 @@ namespace MinimalFirewall
             rulesTabPage.Padding = new Padding(3);
             rulesTabPage.Size = new Size(872, 739);
             rulesTabPage.TabIndex = 1;
+            rulesTabPage.Tag = "themed";
             rulesTabPage.Text = "Rules";
             rulesTabPage.UseVisualStyleBackColor = true;
             // 
             // rulesControl1
             // 
             rulesControl1.Dock = DockStyle.Fill;
+            rulesControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             rulesControl1.Location = new Point(3, 3);
             rulesControl1.Margin = new Padding(3, 2, 3, 2);
             rulesControl1.Name = "rulesControl1";
-            rulesControl1.Size = new Size(866, 733);
+            rulesControl1.Size = new Size(864, 731);
             rulesControl1.TabIndex = 0;
             // 
             // wildcardRulesTabPage
             // 
+            wildcardRulesTabPage.BorderStyle = BorderStyle.FixedSingle;
             wildcardRulesTabPage.Controls.Add(wildcardRulesControl1);
             wildcardRulesTabPage.ImageIndex = 11;
             wildcardRulesTabPage.Location = new Point(124, 4);
@@ -207,40 +215,46 @@ namespace MinimalFirewall
             wildcardRulesTabPage.Padding = new Padding(3, 2, 3, 2);
             wildcardRulesTabPage.Size = new Size(872, 739);
             wildcardRulesTabPage.TabIndex = 7;
+            wildcardRulesTabPage.Tag = "themed";
             wildcardRulesTabPage.Text = "Wildcard Rules";
             wildcardRulesTabPage.UseVisualStyleBackColor = true;
             // 
             // wildcardRulesControl1
             // 
             wildcardRulesControl1.Dock = DockStyle.Fill;
+            wildcardRulesControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             wildcardRulesControl1.Location = new Point(3, 2);
             wildcardRulesControl1.Margin = new Padding(3, 2, 3, 2);
             wildcardRulesControl1.Name = "wildcardRulesControl1";
-            wildcardRulesControl1.Size = new Size(866, 735);
+            wildcardRulesControl1.Size = new Size(864, 733);
             wildcardRulesControl1.TabIndex = 0;
             // 
             // systemChangesTabPage
             // 
+            systemChangesTabPage.BorderStyle = BorderStyle.FixedSingle;
             systemChangesTabPage.Controls.Add(auditControl1);
             systemChangesTabPage.ImageIndex = 1;
             systemChangesTabPage.Location = new Point(124, 4);
             systemChangesTabPage.Name = "systemChangesTabPage";
             systemChangesTabPage.Size = new Size(872, 739);
             systemChangesTabPage.TabIndex = 2;
+            systemChangesTabPage.Tag = "themed";
             systemChangesTabPage.Text = "Audit";
             systemChangesTabPage.UseVisualStyleBackColor = true;
             // 
             // auditControl1
             // 
             auditControl1.Dock = DockStyle.Fill;
+            auditControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             auditControl1.Location = new Point(0, 0);
             auditControl1.Margin = new Padding(3, 2, 3, 2);
             auditControl1.Name = "auditControl1";
-            auditControl1.Size = new Size(872, 739);
+            auditControl1.Size = new Size(870, 737);
             auditControl1.TabIndex = 0;
             // 
             // groupsTabPage
             // 
+            groupsTabPage.BorderStyle = BorderStyle.FixedSingle;
             groupsTabPage.Controls.Add(groupsControl1);
             groupsTabPage.ImageIndex = 4;
             groupsTabPage.Location = new Point(124, 4);
@@ -248,20 +262,23 @@ namespace MinimalFirewall
             groupsTabPage.Padding = new Padding(3);
             groupsTabPage.Size = new Size(872, 739);
             groupsTabPage.TabIndex = 5;
+            groupsTabPage.Tag = "themed";
             groupsTabPage.Text = "Groups";
             groupsTabPage.UseVisualStyleBackColor = true;
             // 
             // groupsControl1
             // 
             groupsControl1.Dock = DockStyle.Fill;
+            groupsControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             groupsControl1.Location = new Point(3, 3);
             groupsControl1.Margin = new Padding(3, 2, 3, 2);
             groupsControl1.Name = "groupsControl1";
-            groupsControl1.Size = new Size(866, 733);
+            groupsControl1.Size = new Size(864, 731);
             groupsControl1.TabIndex = 0;
             // 
             // liveConnectionsTabPage
             // 
+            liveConnectionsTabPage.BorderStyle = BorderStyle.FixedSingle;
             liveConnectionsTabPage.Controls.Add(liveConnectionsControl1);
             liveConnectionsTabPage.ImageIndex = 0;
             liveConnectionsTabPage.Location = new Point(124, 4);
@@ -269,16 +286,18 @@ namespace MinimalFirewall
             liveConnectionsTabPage.Padding = new Padding(3);
             liveConnectionsTabPage.Size = new Size(872, 739);
             liveConnectionsTabPage.TabIndex = 6;
+            liveConnectionsTabPage.Tag = "themed";
             liveConnectionsTabPage.Text = "Live Connections";
             liveConnectionsTabPage.UseVisualStyleBackColor = true;
             // 
             // liveConnectionsControl1
             // 
             liveConnectionsControl1.Dock = DockStyle.Fill;
+            liveConnectionsControl1.Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             liveConnectionsControl1.Location = new Point(3, 3);
             liveConnectionsControl1.Margin = new Padding(3, 2, 3, 2);
             liveConnectionsControl1.Name = "liveConnectionsControl1";
-            liveConnectionsControl1.Size = new Size(866, 733);
+            liveConnectionsControl1.Size = new Size(864, 731);
             liveConnectionsControl1.TabIndex = 0;
             // 
             // settingsTabPage
@@ -324,9 +343,12 @@ namespace MinimalFirewall
             // 
             lockdownButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lockdownButton.BackColor = Color.Transparent;
-            lockdownButton.FlatAppearance.BorderColor = SystemColors.Control;
+            lockdownButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             lockdownButton.FlatAppearance.BorderSize = 2;
+            lockdownButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            lockdownButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             lockdownButton.FlatStyle = FlatStyle.Flat;
+            lockdownButton.ForeColor = Color.White;
             lockdownButton.Location = new Point(68, 691);
             lockdownButton.Name = "lockdownButton";
             lockdownButton.Size = new Size(44, 47);
@@ -340,9 +362,12 @@ namespace MinimalFirewall
             // 
             rescanButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             rescanButton.BackColor = Color.Transparent;
-            rescanButton.FlatAppearance.BorderColor = SystemColors.Control;
+            rescanButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
             rescanButton.FlatAppearance.BorderSize = 2;
+            rescanButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            rescanButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
             rescanButton.FlatStyle = FlatStyle.Flat;
+            rescanButton.ForeColor = Color.White;
             rescanButton.Location = new Point(16, 691);
             rescanButton.Name = "rescanButton";
             rescanButton.Size = new Size(44, 47);

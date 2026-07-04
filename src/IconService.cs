@@ -5,7 +5,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MinimalFirewall
@@ -195,6 +197,17 @@ namespace MinimalFirewall
             }
 
             _iconCache[filePath] = _systemIconIndex;
+            return _systemIconIndex;
+        }
+
+        public int GetUwpIconIndex(string rawIdentifier)
+        {
+            if (string.IsNullOrEmpty(rawIdentifier) || _imageList == null)
+                return _systemIconIndex;
+
+            if (_iconCache.TryGetValue(rawIdentifier, out int cachedIndex))
+                return cachedIndex;
+            _iconCache[rawIdentifier] = _systemIconIndex;
             return _systemIconIndex;
         }
 

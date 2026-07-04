@@ -46,6 +46,7 @@ namespace MinimalFirewall
             _backgroundTaskService = backgroundTaskService;
 
             dashboardDataGridView.AutoGenerateColumns = false;
+            if (dashIconColumn != null) dashIconColumn.DefaultCellStyle.NullValue = new Bitmap(1, 1);
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
             dashboardDataGridView.DataSource = _bindingSource;
 
@@ -236,11 +237,12 @@ namespace MinimalFirewall
             if (dashIconColumn != null && e.ColumnIndex == dashIconColumn.Index)
             {
                 e.Value = null;
-
                 if (_appSettings.ShowAppIcons &&
-                    dashboardDataGridView.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending)
+                    dashboardDataGridView.Rows[e.RowIndex].DataBoundItem is PendingConnectionViewModel pending &&
+                    !string.IsNullOrEmpty(pending.AppPath))
                 {
-                    int iconIndex = _iconService.GetIconIndex(pending.AppPath);
+                    bool isUwp = pending.AppPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || (!pending.AppPath.Contains('\\') && !pending.AppPath.Contains(':'));
+                    int iconIndex = isUwp ? _iconService.GetUwpIconIndex(pending.AppPath) : _iconService.GetIconIndex(pending.AppPath);
 
                     if (iconIndex != -1 && _iconService.ImageList != null && iconIndex < _iconService.ImageList.Images.Count)
                     {

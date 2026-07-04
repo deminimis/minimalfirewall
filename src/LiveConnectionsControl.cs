@@ -49,6 +49,7 @@ namespace MinimalFirewall
 
             liveConnectionsDataGridView.VirtualMode = true;
             liveConnectionsDataGridView.AutoGenerateColumns = false;
+            if (connIconColumn != null) connIconColumn.DefaultCellStyle.NullValue = new Bitmap(1, 1);
             liveConnectionsDataGridView.DataSource = null;
             liveConnectionsDataGridView.CellValueNeeded += LiveConnectionsDataGridView_CellValueNeeded;
 
@@ -185,7 +186,9 @@ namespace MinimalFirewall
                 case "connIconColumn":
                     if (_appSettings != null && _appSettings.ShowAppIcons && !string.IsNullOrEmpty(conn.ProcessPath))
                     {
-                        int iconIndex = _iconService.GetIconIndex(conn.ProcessPath);
+                        bool isUwp = conn.ProcessPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || (!conn.ProcessPath.Contains('\\') && !conn.ProcessPath.Contains(':'));
+                        int iconIndex = isUwp ? _iconService.GetUwpIconIndex(conn.ProcessPath) : _iconService.GetIconIndex(conn.ProcessPath);
+
                         if (iconIndex != -1 && _iconService.ImageList != null)
                         {
                             e.Value = _iconService.ImageList.Images[iconIndex];

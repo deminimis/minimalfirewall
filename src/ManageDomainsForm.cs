@@ -38,15 +38,15 @@ namespace MinimalFirewall
             instructionsLabel.AutoSize = true;
             instructionsLabel.Location = new Point(12, 15);
             instructionsLabel.Name = "instructionsLabel";
-            instructionsLabel.Size = new Size(340, 30);
+            instructionsLabel.MaximumSize = new Size(350, 0); 
 
             // domainsTextBox
-            domainsTextBox.Location = new Point(15, 50);
+            domainsTextBox.Location = new Point(15, 65);
             domainsTextBox.Name = "domainsTextBox";
             domainsTextBox.Size = new Size(350, 23);
 
             // okButton
-            okButton.Location = new Point(209, 85);
+            okButton.Location = new Point(209, 100);
             okButton.Name = "okButton";
             okButton.Size = new Size(75, 25);
             okButton.Text = "OK";
@@ -54,7 +54,7 @@ namespace MinimalFirewall
             okButton.Click += (s, e) => { DialogResult = DialogResult.OK; Close(); };
 
             // cancelButton
-            cancelButton.Location = new Point(290, 85);
+            cancelButton.Location = new Point(290, 100); 
             cancelButton.Name = "cancelButton";
             cancelButton.Size = new Size(75, 25);
             cancelButton.Text = "Cancel";
@@ -64,7 +64,7 @@ namespace MinimalFirewall
             // ManageDomainsForm
             AcceptButton = okButton;
             CancelButton = cancelButton;
-            ClientSize = new Size(384, 125);
+            ClientSize = new Size(384, 140);
             Controls.Add(cancelButton);
             Controls.Add(okButton);
             Controls.Add(domainsTextBox);

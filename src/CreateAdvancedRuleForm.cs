@@ -121,8 +121,25 @@ namespace MinimalFirewall
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)
         {
             ruleNameTextBox.Text = rule.Name;
-            descriptionTextBox.Text = rule.Description;
             enabledCheckBox.Checked = rule.IsEnabled;
+
+            // --- Domain Extraction Logic ---
+            string displayDescription = rule.Description ?? "";
+            string domainString = "";
+            int tagStart = displayDescription.IndexOf("[MFW-Domain:");
+
+            if (tagStart >= 0)
+            {
+                int tagEnd = displayDescription.IndexOf("]", tagStart);
+                if (tagEnd > tagStart)
+                {
+                    domainString = displayDescription.Substring(tagStart + 12, tagEnd - tagStart - 12).Trim();
+                    // Clean hidden tag in "description" box
+                    displayDescription = DomainTagRegex().Replace(displayDescription, "").Trim();
+                }
+            }
+
+            descriptionTextBox.Text = displayDescription;
 
             if (rule.Status == "Allow")
             {
@@ -149,7 +166,6 @@ namespace MinimalFirewall
             programPathTextBox.Text = rule.ApplicationName;
             serviceNameTextBox.Text = (rule.ServiceName == "*" || string.IsNullOrEmpty(rule.ServiceName)) ? string.Empty : rule.ServiceName;
 
-
             bool found = false;
             foreach (var item in protocolComboBox.Items)
             {
@@ -166,13 +182,25 @@ namespace MinimalFirewall
                 protocolComboBox.SelectedItem = ProtocolTypes.Any;
             }
 
-            _viewModel.SelectedProtocol = protocolComboBox.SelectedItem is ProtocolTypes selectedPt ? selectedPt : ProtocolTypes.Any;
+            _viewModel.SelectedProtocol = protocolComboBox.SelectedItem is ProtocolTypes selectedPt ?
+                selectedPt : ProtocolTypes.Any;
 
             localPortsTextBox.Text = rule.LocalPorts;
             remotePortsTextBox.Text = rule.RemotePorts;
 
             localAddressTextBox.Text = rule.LocalAddresses?.Replace("/255.255.255.255", "");
-            remoteAddressTextBox.Text = rule.RemoteAddresses?.Replace("/255.255.255.255", "");
+
+            // Display domains/raw ip
+            if (!string.IsNullOrWhiteSpace(domainString))
+            {
+                // Show the domains 
+                remoteAddressTextBox.Text = domainString;
+            }
+            else
+            {
+                // Fallback to showing raw IPs
+                remoteAddressTextBox.Text = rule.RemoteAddresses?.Replace("/255.255.255.255", "");
+            }
 
             domainCheckBox.Checked = rule.Profiles.Contains("Domain") || rule.Profiles == "All";
             privateCheckBox.Checked = rule.Profiles.Contains("Private") || rule.Profiles == "All";
@@ -360,6 +388,9 @@ namespace MinimalFirewall
             DialogResult = DialogResult.OK;
             Close();
         }
+
+        [System.Text.RegularExpressions.GeneratedRegex(@"\s*\[MFW-Domain:.*?\]")]
+        private static partial System.Text.RegularExpressions.Regex DomainTagRegex();
 
         private Directions GetDirection() => inboundRadioButton.Checked ? Directions.Incoming : outboundRadioButton.Checked ? Directions.Outgoing : Directions.Incoming | Directions.Outgoing;
 

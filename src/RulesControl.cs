@@ -70,6 +70,8 @@ namespace MinimalFirewall
             _iconService = iconService;
             _appSettings = appSettings;
 
+            if (advIconColumn != null) advIconColumn.DefaultCellStyle.NullValue = new Bitmap(1, 1);
+
             // Load initial filter states
             programFilterCheckBox.Checked = _appSettings.FilterPrograms;
             serviceFilterCheckBox.Checked = _appSettings.FilterServices;
@@ -544,15 +546,17 @@ namespace MinimalFirewall
         {
             if (!_appSettings.ShowAppIcons || string.IsNullOrEmpty(rule.ApplicationName)) return null;
 
-            if (rule.Type == RuleType.UWP ||
-                rule.ApplicationName.StartsWith('@') ||
-                rule.ApplicationName == "*" ||
+            // Allow '@' strings through so UWP icons can be processed
+            if (rule.ApplicationName == "*" ||
                 rule.ApplicationName.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
 
-            int iconIndex = _iconService.GetIconIndex(rule.ApplicationName);
+            int iconIndex = (rule.Type == RuleType.UWP)
+                ? _iconService.GetUwpIconIndex(rule.ApplicationName)
+                : _iconService.GetIconIndex(rule.ApplicationName);
+
             return (iconIndex != -1 && _iconService.ImageList != null)
                    ? _iconService.ImageList.Images[iconIndex]
                    : null;
@@ -573,7 +577,7 @@ namespace MinimalFirewall
         private static string CleanDescription(string? description)
         {
             if (string.IsNullOrEmpty(description)) return "";
-            return System.Text.RegularExpressions.Regex.Replace(description, @"\s*\[MFW-Domain:.*?\]", "").Trim();
+            return MyRegex().Replace(description, "").Trim();
         }
 
         private void RulesDataGridView_CellValueNeeded(object? sender, DataGridViewCellValueEventArgs e)
