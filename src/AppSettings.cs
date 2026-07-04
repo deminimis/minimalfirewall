@@ -9,6 +9,12 @@ using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
+    public class ColumnState
+    {
+        public int DisplayIndex { get; set; }
+        public int Width { get; set; }
+    }
+
     public class AppSettings : INotifyPropertyChanged
     {
         private static readonly string _configPath = ConfigPathManager.GetSettingsPath();
@@ -43,6 +49,11 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
+
+        private System.Collections.Generic.Dictionary<string, ColumnState>? _dashboardColumns = [];
+        private System.Collections.Generic.Dictionary<string, ColumnState>? _rulesColumns = [];
+        private System.Collections.Generic.Dictionary<string, ColumnState>? _liveConnectionsColumns = [];
+        private System.Collections.Generic.Dictionary<string, ColumnState>? _auditColumns = [];
         private List<string> _autoAllowExclusions =
         [
             Path.GetTempPath(),
@@ -90,6 +101,11 @@ namespace MinimalFirewall
         public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
+
+        public System.Collections.Generic.Dictionary<string, ColumnState> DashboardColumns { get => _dashboardColumns ??= []; set => SetField(ref _dashboardColumns, value); }
+        public System.Collections.Generic.Dictionary<string, ColumnState> RulesColumns { get => _rulesColumns ??= []; set => SetField(ref _rulesColumns, value); }
+        public System.Collections.Generic.Dictionary<string, ColumnState> LiveConnectionsColumns { get => _liveConnectionsColumns ??= []; set => SetField(ref _liveConnectionsColumns, value); }
+        public System.Collections.Generic.Dictionary<string, ColumnState> AuditColumns { get => _auditColumns ??= []; set => SetField(ref _auditColumns, value); }
 
         private int _dnsRefreshIntervalMinutes = 4;
         
@@ -207,6 +223,8 @@ namespace MinimalFirewall
 
     [JsonSourceGenerationOptions(WriteIndented = true)]
     [JsonSerializable(typeof(AppSettings))]
+    [JsonSerializable(typeof(System.Collections.Generic.Dictionary<string, ColumnState>))]
+    [JsonSerializable(typeof(ColumnState))]
     internal partial class AppSettingsJsonContext : JsonSerializerContext
     {
     }

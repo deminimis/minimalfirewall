@@ -73,7 +73,15 @@ namespace MinimalFirewall
             splitContainer.SplitterMoved += SplitContainer_SplitterMoved;
 
             ApplyThemeToControls();
+
+            dashboardDataGridView.AllowUserToOrderColumns = true;
+            DataGridViewHelper.RestoreColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns);
+
+            dashboardDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns, _appSettings);
+            dashboardDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns, _appSettings);
         }
+
+        
 
         private void ApplyThemeToControls()
         {

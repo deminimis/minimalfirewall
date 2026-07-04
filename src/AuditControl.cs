@@ -75,7 +75,15 @@ namespace MinimalFirewall
             _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font ?? Control.DefaultFont, FontStyle.Bold);
 
             ApplySearchFilter();
+
+            systemChangesDataGridView.AllowUserToOrderColumns = true;
+            DataGridViewHelper.RestoreColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns);
+
+            systemChangesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns, _appSettings);
+            systemChangesDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns, _appSettings);
         }
+
+
 
         private void RegisterEventHandlers()
         {

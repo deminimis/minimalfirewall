@@ -97,7 +97,15 @@ namespace MinimalFirewall
             serviceFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             uwpFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             wildcardFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
+
+            rulesDataGridView.AllowUserToOrderColumns = true;
+            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
+
+            rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
+            rulesDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
         }
+
+       
         #endregion
 
         #region Data & Logic
