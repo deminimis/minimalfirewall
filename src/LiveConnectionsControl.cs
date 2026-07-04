@@ -354,7 +354,7 @@ namespace MinimalFirewall
 
             killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
             blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
-            bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && File.Exists(connection.ProcessPath);
+            bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && (File.Exists(connection.ProcessPath) || connection.ProcessPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || connection.ProcessPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase));
             openFileLocationToolStripMenuItem.Enabled = pathExists;
             createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
         }
@@ -395,7 +395,7 @@ namespace MinimalFirewall
         {
             if (TryGetSelectedConnection(out var connection) && connection != null && !string.IsNullOrEmpty(connection.ProcessPath))
             {
-                if (!File.Exists(connection.ProcessPath) && !Directory.Exists(connection.ProcessPath))
+                if (!File.Exists(connection.ProcessPath) && !Directory.Exists(connection.ProcessPath) && !connection.ProcessPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !connection.ProcessPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                 {
                     Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;

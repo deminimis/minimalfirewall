@@ -32,89 +32,62 @@ namespace MinimalFirewall
 
         public async Task<List<UwpApp>> GetUwpAppsAsync(CancellationToken token)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
+                if (token.IsCancellationRequested) return [];
+
                 var uwpApps = new Dictionary<string, UwpApp>(StringComparer.OrdinalIgnoreCase);
-
-                var policyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
-                if (policyType == null)
-                {
-                    return [];
-                }
-
-                var firewallPolicy = (INetFwPolicy2?)Activator.CreateInstance(policyType);
-                if (firewallPolicy?.Rules == null)
-                {
-                    return [];
-                }
-
-                var comRules = firewallPolicy.Rules;
 
                 try
                 {
-                    foreach (INetFwRule2 rule in comRules)
+                    // Query Windows directly
+                    var processInfo = new ProcessStartInfo
                     {
-                        try
+                        FileName = "powershell.exe",
+                        Arguments = "-NoProfile -Command \"@(Get-AppxPackage -ErrorAction SilentlyContinue | Select-Object Name, PackageFamilyName, Publisher) | ConvertTo-Json -Compress\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+
+                    using var process = Process.Start(processInfo);
+                    if (process != null)
+                    {
+                        string jsonOutput = await process.StandardOutput.ReadToEndAsync(token);
+                        await process.WaitForExitAsync(token);
+
+                        // Safely extract just the JSON array
+                        int jsonStart = jsonOutput.IndexOf('[');
+                        if (jsonStart >= 0)
                         {
-                            if (token.IsCancellationRequested)
+                            string cleanJson = jsonOutput.Substring(jsonStart);
+                            var apps = JsonSerializer.Deserialize<List<UwpApp>>(cleanJson, UwpAppJsonContext.Default.ListUwpApp);
+                            if (apps != null)
                             {
-                                break;
-                            }
-
-                            string name = rule.Name ?? string.Empty;
-
-                            // skip non-UWP rules before Regex
-                            if (name.StartsWith("@{"))
-                            {
-                                var match = _pfnRegex.Match(name);
-                                if (match.Success)
+                                foreach (var app in apps)
                                 {
-                                    string pfn = match.Groups["pfn"].Value;
-
-                                    if (!string.IsNullOrEmpty(pfn) && !uwpApps.ContainsKey(pfn))
+                                    if (!string.IsNullOrEmpty(app.PackageFamilyName) && !uwpApps.ContainsKey(app.PackageFamilyName))
                                     {
-                                        uwpApps[pfn] = new UwpApp
-                                        {
-                                            Name = name, 
-                                            PackageFamilyName = pfn,
-                                            Publisher = ""
-                                        };
+                                        uwpApps[app.PackageFamilyName] = app;
                                     }
                                 }
                             }
                         }
-                        finally
-                        {
-                            if (rule != null)
-                            {
-                                Marshal.ReleaseComObject(rule);
-                            }
-                        }
                     }
-
-                    if (token.IsCancellationRequested)
-                    {
-                        return [];
-                    }
-
-                    var sortedApps = uwpApps.Values.OrderBy(app => app.Name).ToList();
-
-                    SaveUwpAppsToCache(sortedApps);
-
-                    return sortedApps;
                 }
-                finally
+                catch (Exception ex)
                 {
-                    if (comRules != null)
-                    {
-                        Marshal.ReleaseComObject(comRules);
-                    }
-
-                    if (firewallPolicy != null)
-                    {
-                        Marshal.ReleaseComObject(firewallPolicy);
-                    }
+                    Debug.WriteLine($"[ERROR] Failed to fetch UWP apps via PowerShell: {ex.Message}");
                 }
+
+                if (token.IsCancellationRequested) return [];
+
+                var sortedApps = uwpApps.Values.OrderBy(app => app.Name).ToList();
+                SaveUwpAppsToCache(sortedApps);
+
+                return sortedApps;
+
             }, token).ConfigureAwait(false);
         }
 

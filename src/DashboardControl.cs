@@ -424,7 +424,7 @@ namespace MinimalFirewall
         {
             if (GetSelectedPendingConnection() is { } pending && !string.IsNullOrEmpty(pending.AppPath))
             {
-                if (!File.Exists(pending.AppPath) && !Directory.Exists(pending.AppPath))
+                if (!File.Exists(pending.AppPath) && !Directory.Exists(pending.AppPath) && !pending.AppPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !pending.AppPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                 {
                     Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;

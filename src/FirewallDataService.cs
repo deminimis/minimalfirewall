@@ -155,6 +155,70 @@ namespace MinimalFirewall
                     progress?.Report((processedCount * 100) / totalRules);
                 }
 
+                // Translate UWP names 
+                var uwpApps = LoadUwpAppsFromCache();
+                foreach (var agg in aggRules)
+                {
+                    if (agg.Type == RuleType.UWP)
+                    {
+                        // Check Name, Grouping, Description, and the underlying COM rules
+                        var identifiers = new List<string> { agg.Name, agg.Grouping, agg.Description };
+                        var firstRule = agg.UnderlyingRules.FirstOrDefault();
+                        if (firstRule != null)
+                        {
+                            identifiers.Add(firstRule.Name);
+                            // Avoid AppContainer SIDs (S-1-15-2...)
+                            if (!string.IsNullOrEmpty(firstRule.ApplicationName) && !firstRule.ApplicationName.StartsWith("S-1-15-2"))
+                            {
+                                identifiers.Add(firstRule.ApplicationName);
+                            }
+                        }
+
+                        UwpApp? matchedApp = null;
+
+                        foreach (var id in identifiers)
+                        {
+                            if (string.IsNullOrWhiteSpace(id)) continue;
+
+                            // Strip Windows Firewall formatting (e.g., @{...} or ?ms-resource)
+                            string rawPackageString = id.Replace("@{", "").Split('?')[0].Trim('}');
+
+                            if (string.IsNullOrWhiteSpace(rawPackageString) || rawPackageString == "*") continue;
+
+                            matchedApp = uwpApps.FirstOrDefault(u =>
+                            {
+                                if (string.IsNullOrEmpty(u.PackageFamilyName)) return false;
+
+                                // Exact Match
+                                if (string.Equals(u.PackageFamilyName, rawPackageString, StringComparison.OrdinalIgnoreCase)) return true;
+
+                                // Partial Match (Resolves PackageFullName to PackageFamilyName)
+                                string uwpBase = u.PackageFamilyName.Split('_')[0];
+                                string uwpHash = u.PackageFamilyName.Split('_').Last();
+
+                                return rawPackageString.StartsWith(uwpBase, StringComparison.OrdinalIgnoreCase) &&
+                                       rawPackageString.EndsWith(uwpHash, StringComparison.OrdinalIgnoreCase);
+                            });
+
+                            if (matchedApp != null) break;
+                        }
+
+                        if (matchedApp != null && !string.IsNullOrWhiteSpace(matchedApp.Name))
+                        {
+                            agg.Name = matchedApp.Name;
+                        }
+                        else
+                        {
+                            // Strip the ugly version numbers and hashes 
+                            string fallback = identifiers.FirstOrDefault(i => i != null && i.Contains('_'))?.Replace("@{", "")?.Split('?')[0]?.Trim('}') ?? agg.Name;
+                            if (fallback.Contains('_'))
+                            {
+                                agg.Name = fallback.Split('_')[0];
+                            }
+                        }
+                    }
+                }
+
                 progress?.Report(100);
                 return aggRules.OrderBy(r => r.Name).ToList();
             }, token);

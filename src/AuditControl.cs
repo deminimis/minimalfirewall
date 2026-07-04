@@ -289,7 +289,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || Directory.Exists(appPath));
+            openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || Directory.Exists(appPath) || appPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || appPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase));
         }
 
         private void ProcessSelectedChanges(Action<FirewallRuleChange, int> action)
@@ -326,7 +326,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            if (!File.Exists(appPath) && !Directory.Exists(appPath))
+            if (!File.Exists(appPath) && !Directory.Exists(appPath) && !appPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !appPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
             {
                 Messenger.MessageBox("The path for this item is no longer valid or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;

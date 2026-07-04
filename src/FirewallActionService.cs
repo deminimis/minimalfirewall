@@ -194,7 +194,7 @@ namespace MinimalFirewall
 
             foreach (var appPath in normalizedAppPaths)
             {
-                if (!File.Exists(appPath))
+                if (!File.Exists(appPath) && !appPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !appPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                 {
                     activityLogger.LogDebug($"[Validation] Skipped creating rule for non-existent path: {appPath}");
                     continue;
@@ -906,7 +906,7 @@ namespace MinimalFirewall
             if (!string.IsNullOrWhiteSpace(vm.ApplicationName))
             {
                 vm.ApplicationName = PathResolver.NormalizePath(vm.ApplicationName);
-                if (!File.Exists(vm.ApplicationName))
+                if (!File.Exists(vm.ApplicationName) && !vm.ApplicationName.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !vm.ApplicationName.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                 {
                     activityLogger.LogDebug($"[Validation] Aborted creating advanced rule due to non-existent path: {vm.ApplicationName}");
                     return;
@@ -1422,7 +1422,7 @@ namespace MinimalFirewall
                     if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith('@'))
                     {
                         string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
-                        if (!File.Exists(expandedPath))
+                        if (!File.Exists(expandedPath) && !expandedPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !expandedPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                         {
                             orphanedRuleNames.Add(Name);
                             activityLogger.LogDebug($"Found orphaned rule '{Name}' for path: {expandedPath}");

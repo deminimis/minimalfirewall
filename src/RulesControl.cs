@@ -294,7 +294,7 @@ namespace MinimalFirewall
             }
 
             string? appPath = rule.ApplicationName;
-            openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && File.Exists(appPath);
+            openFileLocationToolStripMenuItem.Enabled = !string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || appPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || appPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase));
 
             var firstUnderlyingRule = rule.UnderlyingRules.FirstOrDefault();
             bool isEditableType = rule.Type == RuleType.Program || rule.Type == RuleType.Service || rule.Type == RuleType.Advanced;
@@ -420,7 +420,7 @@ namespace MinimalFirewall
                 {
                     string? appPath = rule.ApplicationName;
 
-                    if (!string.IsNullOrEmpty(appPath) && File.Exists(appPath))
+                    if (!string.IsNullOrEmpty(appPath) && (File.Exists(appPath) || appPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || appPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase)))
                     {
                         string safePath = appPath.Trim('\"');
                         Process.Start("explorer.exe", $"/select, \"{safePath}\"");
