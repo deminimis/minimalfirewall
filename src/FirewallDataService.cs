@@ -16,6 +16,8 @@ namespace MinimalFirewall
 
     public class FirewallDataService(FirewallRuleService firewallRuleService, WildcardRuleService wildcardRuleService, UwpService uwpService, RuleTimestampService ruleTimestampService)
     {
+        [System.Runtime.InteropServices.DllImport("shlwapi.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]
+        private static extern int SHLoadIndirectString(string pszSource, System.Text.StringBuilder pszOutBuf, uint cchOutBuf, IntPtr ppvReserved);
         private readonly FirewallRuleService _firewallRuleService = firewallRuleService;
         private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
         private readonly UwpService _uwpService = uwpService;
@@ -161,13 +163,36 @@ namespace MinimalFirewall
                 {
                     if (agg.Type == RuleType.UWP)
                     {
-                        // Check Name, Grouping, Description, and the underlying COM rules
-                        var identifiers = new List<string> { agg.Name, agg.Grouping, agg.Description };
                         var firstRule = agg.UnderlyingRules.FirstOrDefault();
+                        string? resolvedName = null;
+
+                        // Ask Windows to natively translate the internal ms-resource string (e.g., gets "Live Captions" instead of "Livtop")
+                        var resourceStrings = new[] { agg.Description, agg.Grouping, firstRule?.Description, firstRule?.Grouping };
+                        foreach (var resString in resourceStrings)
+                        {
+                            if (!string.IsNullOrWhiteSpace(resString) && resString.StartsWith("@{"))
+                            {
+                                var outBuf = new System.Text.StringBuilder(1024);
+                                if (SHLoadIndirectString(resString, outBuf, (uint)outBuf.Capacity, IntPtr.Zero) == 0)
+                                {
+                                    resolvedName = outBuf.ToString();
+                                    break; 
+                                }
+                            }
+                        }
+
+                        // Use Windows name if available
+                        if (!string.IsNullOrWhiteSpace(resolvedName) && !resolvedName.StartsWith("@"))
+                        {
+                            agg.Name = resolvedName;
+                            continue;
+                        }
+
+                        // Fallback to cache and name-stripping 
+                        var identifiers = new List<string> { agg.Name, agg.Grouping, agg.Description };
                         if (firstRule != null)
                         {
                             identifiers.Add(firstRule.Name);
-                            // Avoid AppContainer SIDs (S-1-15-2...)
                             if (!string.IsNullOrEmpty(firstRule.ApplicationName) && !firstRule.ApplicationName.StartsWith("S-1-15-2"))
                             {
                                 identifiers.Add(firstRule.ApplicationName);
@@ -180,19 +205,14 @@ namespace MinimalFirewall
                         {
                             if (string.IsNullOrWhiteSpace(id)) continue;
 
-                            // Strip Windows Firewall formatting (e.g., @{...} or ?ms-resource)
                             string rawPackageString = id.Replace("@{", "").Split('?')[0].Trim('}');
-
                             if (string.IsNullOrWhiteSpace(rawPackageString) || rawPackageString == "*") continue;
 
                             matchedApp = uwpApps.FirstOrDefault(u =>
                             {
                                 if (string.IsNullOrEmpty(u.PackageFamilyName)) return false;
-
-                                // Exact Match
                                 if (string.Equals(u.PackageFamilyName, rawPackageString, StringComparison.OrdinalIgnoreCase)) return true;
 
-                                // Partial Match (Resolves PackageFullName to PackageFamilyName)
                                 string uwpBase = u.PackageFamilyName.Split('_')[0];
                                 string uwpHash = u.PackageFamilyName.Split('_').Last();
 
@@ -209,7 +229,6 @@ namespace MinimalFirewall
                         }
                         else
                         {
-                            // Strip the ugly version numbers and hashes 
                             string fallback = identifiers.FirstOrDefault(i => i != null && i.Contains('_'))?.Replace("@{", "")?.Split('?')[0]?.Trim('}') ?? agg.Name;
                             if (fallback.Contains('_'))
                             {
