@@ -111,6 +111,10 @@ namespace MinimalFirewall
         #region Data & Logic
         public async Task RefreshDataAsync(bool forceUwpScan = false, IProgress<int>? progress = null, CancellationToken token = default)
         {
+            if (forceUwpScan)
+            {
+                await _mainViewModel.RefreshUwpAppsAsync(token);
+            }
             await _mainViewModel.RefreshRulesDataAsync(token, progress);
             await DisplayRulesAsync();
         }
@@ -565,9 +569,7 @@ namespace MinimalFirewall
                 ? _iconService.GetUwpIconIndex(rule.ApplicationName)
                 : _iconService.GetIconIndex(rule.ApplicationName);
 
-            return (iconIndex != -1 && _iconService.ImageList != null)
-                   ? _iconService.ImageList.Images[iconIndex]
-                   : null;
+            return _iconService.GetImage(iconIndex);
         }
 
         private static string GetDomainsFromDescription(string? description)

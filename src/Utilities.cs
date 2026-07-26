@@ -180,25 +180,27 @@ namespace MinimalFirewall
                 Debug.WriteLine($"[WARN] PathResolver failed to build DOS device map: {ex.Message}");
             }
 
-            var specialFolders = new[]
+            // Tokens must be REAL Windows environment variables: import expands them
+            // via Environment.ExpandEnvironmentVariables, so enum member names like
+            // %LocalApplicationData% would survive as literals and break the rule.
+            var specialFolders = new (Environment.SpecialFolder Folder, string EnvVar)[]
             {
-                Environment.SpecialFolder.UserProfile,
-                Environment.SpecialFolder.ApplicationData,
-                Environment.SpecialFolder.LocalApplicationData,
-                Environment.SpecialFolder.CommonApplicationData,
-                Environment.SpecialFolder.System,
-                Environment.SpecialFolder.ProgramFiles,
-                Environment.SpecialFolder.ProgramFilesX86,
-                Environment.SpecialFolder.Windows
+                (Environment.SpecialFolder.UserProfile, "%USERPROFILE%"),
+                (Environment.SpecialFolder.ApplicationData, "%APPDATA%"),
+                (Environment.SpecialFolder.LocalApplicationData, "%LOCALAPPDATA%"),
+                (Environment.SpecialFolder.CommonApplicationData, "%ProgramData%"),
+                (Environment.SpecialFolder.System, @"%SystemRoot%\System32"),
+                (Environment.SpecialFolder.ProgramFiles, "%ProgramFiles%"),
+                (Environment.SpecialFolder.ProgramFilesX86, "%ProgramFiles(x86)%"),
+                (Environment.SpecialFolder.Windows, "%SystemRoot%")
             };
-            foreach (var folder in specialFolders)
+            foreach (var (folder, envVar) in specialFolders)
             {
                 try
                 {
                     string path = Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
                     if (!string.IsNullOrEmpty(path))
                     {
-                        string envVar = $"%{folder}%";
                         _envVarMap[path] = envVar;
                     }
                 }
@@ -236,13 +238,31 @@ namespace MinimalFirewall
 
             try
             {
-                return Environment.ExpandEnvironmentVariables(environmentPath);
+                return Environment.ExpandEnvironmentVariables(TranslateLegacyTokens(environmentPath));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[WARN] ConvertFromEnvironmentPath failed: {ex.Message}");
                 return environmentPath;
             }
+        }
+
+        // Older exports used Environment.SpecialFolder member names, most of which
+        // are not real environment variables; translate them so old backups import.
+        private static string TranslateLegacyTokens(string path)
+        {
+            if (!path.Contains('%'))
+            {
+                return path;
+            }
+
+            return path
+                .Replace("%LocalApplicationData%", "%LOCALAPPDATA%", StringComparison.OrdinalIgnoreCase)
+                .Replace("%ApplicationData%", "%APPDATA%", StringComparison.OrdinalIgnoreCase)
+                .Replace("%CommonApplicationData%", "%ProgramData%", StringComparison.OrdinalIgnoreCase)
+                .Replace("%System%", @"%SystemRoot%\System32", StringComparison.OrdinalIgnoreCase)
+                .Replace("%ProgramFilesX86%", "%ProgramFiles(x86)%", StringComparison.OrdinalIgnoreCase)
+                .Replace("%Windows%", "%SystemRoot%", StringComparison.OrdinalIgnoreCase);
         }
 
         public static string NormalizePath(string path)

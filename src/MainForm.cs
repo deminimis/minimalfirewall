@@ -1311,49 +1311,68 @@ namespace MinimalFirewall
                 return;
             }
 
-            BeginInvoke(new Action(() =>
+            // Threadpool timer callback: the form can be disposed between the
+            // timer firing and this call (e.g. app exit), so guard like the
+            // auto-refresh timer does.
+            if (IsDisposed || !IsHandleCreated)
             {
-                if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
-                {
-                    return;
-                }
+                return;
+            }
 
-                switch (tabName)
+            try
+            {
+                BeginInvoke(new Action(() =>
                 {
-                    case "rulesTabPage":
-                        _mainViewModel.ClearRulesData();
-                        break;
-                    case "wildcardRulesTabPage":
-                        wildcardRulesControl1.ClearRules();
-                        break;
-                    case "systemChangesTabPage":
-                        if (_auditStatusForm?.IsDisposed == false)
-                        {
-                            _auditStatusForm?.Close();
-                        }
+                    if (IsDisposed)
+                    {
+                        return;
+                    }
+                    if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
+                    {
+                        return;
+                    }
 
-                        _auditStatusForm = null;
-                        _mainViewModel.SystemChanges.Clear();
-                        auditControl1.ApplySearchFilter();
-                        UpdateUiWithChangesCount();
-                        _firewallSentryService.Stop();
-                        _isSentryServiceStarted = false;
-                        break;
-                    case "groupsTabPage":
-                        groupsControl1.ClearGroups();
-                        break;
-                    case "liveConnectionsTabPage":
-                        liveConnectionsControl1.OnTabDeselected();
-                        break;
-                }
+                    switch (tabName)
+                    {
+                        case "rulesTabPage":
+                            _mainViewModel.ClearRulesData();
+                            break;
+                        case "wildcardRulesTabPage":
+                            wildcardRulesControl1.ClearRules();
+                            break;
+                        case "systemChangesTabPage":
+                            if (_auditStatusForm?.IsDisposed == false)
+                            {
+                                _auditStatusForm?.Close();
+                            }
 
-                GC.Collect();
-                if (_tabUnloadTimers.TryGetValue(tabName, out var timer))
-                {
-                    timer.Dispose();
-                    _tabUnloadTimers.Remove(tabName);
-                }
-            }));
+                            _auditStatusForm = null;
+                            _mainViewModel.SystemChanges.Clear();
+                            auditControl1.ApplySearchFilter();
+                            UpdateUiWithChangesCount();
+                            _firewallSentryService.Stop();
+                            _isSentryServiceStarted = false;
+                            break;
+                        case "groupsTabPage":
+                            groupsControl1.ClearGroups();
+                            break;
+                        case "liveConnectionsTabPage":
+                            liveConnectionsControl1.OnTabDeselected();
+                            break;
+                    }
+
+                    GC.Collect();
+                    if (_tabUnloadTimers.TryGetValue(tabName, out var timer))
+                    {
+                        timer.Dispose();
+                        _tabUnloadTimers.Remove(tabName);
+                    }
+                }));
+            }
+            catch (Exception ex) when (ex is ObjectDisposedException or InvalidOperationException)
+            {
+                // Form was torn down between the guard and the BeginInvoke.
+            }
         }
 
 
@@ -1525,7 +1544,7 @@ namespace MinimalFirewall
             return _scanCts.Token;
         }
 
-        private bool IsDarkModeEnabled => _appSettings.Theme == "Auto" ? Theme.IsSystemDarkMode() : _appSettings.Theme == "Dark";
+        private bool IsDarkModeEnabled => _appSettings.IsEffectiveDarkTheme;
 
         private void SafeInvoke(Action action)
         {

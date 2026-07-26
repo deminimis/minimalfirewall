@@ -58,6 +58,64 @@ namespace MinimalFirewall
             return _uwpService.LoadUwpAppsFromCache();
         }
 
+        private int _uwpScanInProgress;
+
+        // UWP friendly-name resolution reads only the uwp_apps.json cache, so a
+        // forced refresh must actually run the scan that populates it. First run
+        // (empty cache) is awaited so names resolve immediately; afterwards the
+        // scan runs in the background because PowerShell/Get-AppxPackage takes
+        // seconds and this is called on every rules-tab rescan.
+        public async Task RefreshUwpAppsAsync(CancellationToken token)
+        {
+            if (Interlocked.CompareExchange(ref _uwpScanInProgress, 1, 0) == 1)
+            {
+                return;
+            }
+
+            bool releaseInline = true;
+            try
+            {
+                if (_uwpService.LoadUwpAppsFromCache().Count == 0)
+                {
+                    try
+                    {
+                        await _uwpService.GetUwpAppsAsync(token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+                }
+                else
+                {
+                    releaseInline = false;
+                    _ = RefreshUwpCacheInBackgroundAsync();
+                }
+            }
+            finally
+            {
+                if (releaseInline)
+                {
+                    Interlocked.Exchange(ref _uwpScanInProgress, 0);
+                }
+            }
+        }
+
+        private async Task RefreshUwpCacheInBackgroundAsync()
+        {
+            try
+            {
+                await _uwpService.GetUwpAppsAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] Background UWP cache refresh failed: {ex.Message}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _uwpScanInProgress, 0);
+            }
+        }
+
         private Task<List<AdvancedRuleViewModel>> FetchAllMfwRulesAsync(CancellationToken token)
         {
             return Task.Run(() =>
@@ -104,13 +162,24 @@ namespace MinimalFirewall
 
         public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
         {
-            var result = await _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
+            if (_localCache.TryGetValue(MfwRulesCacheKey, out List<AdvancedRuleViewModel>? cached) && cached != null)
             {
-                entry.SlidingExpiration = TimeSpan.FromMinutes(10);
-                return await FetchAllMfwRulesAsync(token);
-            });
+                return cached;
+            }
 
-            return result ?? [];
+            var result = await FetchAllMfwRulesAsync(token);
+
+            // A cancelled scan yields a partial/empty list. Caching it would make every
+            // consumer (rule-status checks, popup suppression) see zero MFW rules, and
+            // the sliding expiration keeps renewing the poisoned entry on each read.
+            if (!token.IsCancellationRequested)
+            {
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                _localCache.Set(MfwRulesCacheKey, result, cacheOptions);
+            }
+
+            return result;
         }
 
         public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)

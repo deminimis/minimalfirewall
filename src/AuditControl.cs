@@ -572,12 +572,13 @@ namespace MinimalFirewall
         {
             diffRichTextBox.Clear();
 
-            bool isDark = Theme.IsSystemDarkMode();
-
             diffRichTextBox.BackColor = Theme.Colors.Surface;
             diffRichTextBox.ForeColor = Theme.Colors.TextActive;
-            Font boldFont = new(diffRichTextBox.Font ?? Control.DefaultFont, FontStyle.Bold);
+            // SelectionFont copies into the control, so these can be disposed
+            // when the method exits instead of leaking one set per selection.
             Font regFont = diffRichTextBox.Font ?? Control.DefaultFont;
+            using Font boldFont = new(regFont, FontStyle.Bold);
+            using Font strikeFont = new(regFont, FontStyle.Strikeout);
 
             Color oldColor = Theme.Colors.DangerText;
             Color newColor = Theme.Colors.SuccessText;
@@ -631,7 +632,7 @@ namespace MinimalFirewall
                 if (!string.Equals(oldVal, newVal, StringComparison.OrdinalIgnoreCase))
                 {
                     AppendText(diffRichTextBox, $"{label}: ", labelColor, boldFont);
-                    AppendText(diffRichTextBox, oldVal, oldColor, new Font(regFont, FontStyle.Strikeout));
+                    AppendText(diffRichTextBox, oldVal, oldColor, strikeFont);
                     AppendText(diffRichTextBox, " -> ", labelColor, regFont);
                     AppendText(diffRichTextBox, newVal, newColor, boldFont);
                     diffRichTextBox.AppendText(Environment.NewLine);

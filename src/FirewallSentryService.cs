@@ -95,7 +95,14 @@ namespace MinimalFirewall
 
                 using var targetInstance = (ManagementBaseObject)newEvent["TargetInstance"];
 
-                string ruleName = targetInstance["InstanceID"]?.ToString() ?? string.Empty;
+                // InstanceID is an internal identifier (typically a GUID) that does not
+                // match the display name INetFwRules.Item() resolves — rules added via
+                // wf.msc or PowerShell would silently fail the later COM lookup.
+                string ruleName = targetInstance["DisplayName"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(ruleName))
+                {
+                    ruleName = targetInstance["InstanceID"]?.ToString() ?? string.Empty;
+                }
                 string grouping = targetInstance["DisplayGroup"]?.ToString() ?? string.Empty;
 
                 if (string.IsNullOrEmpty(ruleName) || IsMfwRule(grouping))

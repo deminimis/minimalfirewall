@@ -54,7 +54,11 @@ namespace MinimalFirewall
 
                     var rulesToSave = new Dictionary<string, DateTime>(_temporaryRules, StringComparer.OrdinalIgnoreCase);
                     string json = JsonSerializer.Serialize(rulesToSave, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                    File.WriteAllText(_storagePath, json);
+                    // A torn write here would make the app forget which rules are temporary,
+                    // leaving expired Allow rules in the firewall forever.
+                    string tempPath = _storagePath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+                    File.Move(tempPath, _storagePath, overwrite: true);
                 }
                 catch (Exception ex)
                 {

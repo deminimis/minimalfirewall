@@ -111,6 +111,11 @@ namespace MinimalFirewall
             AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
         }
 
+        public async Task RefreshUwpAppsAsync(CancellationToken token)
+        {
+            await _dataService.RefreshUwpAppsAsync(token);
+        }
+
         public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             var vms = await Task.Run(() =>
@@ -272,6 +277,7 @@ namespace MinimalFirewall
                         var domains = domainsRaw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
                         var newIps = new List<string>();
+                        bool anyResolveFailed = false;
                         foreach (var domain in domains)
                         {
                             try
@@ -281,17 +287,29 @@ namespace MinimalFirewall
                             }
                             catch (Exception ex)
                             {
+                                anyResolveFailed = true;
                                 Debug.WriteLine($"[WARN] DNS Refresh: Failed to resolve '{domain}'. Keeping old IPs. {ex.Message}");
                             }
                         }
 
                         if (newIps.Count > 0)
                         {
-                            string newRemoteAddresses = string.Join(",", newIps.Distinct());
+                            var updatedIps = new HashSet<string>(newIps.Select(NormalizeIpEntry), StringComparer.OrdinalIgnoreCase);
+                            var currentIps = SplitIpList(rule.RemoteAddresses);
 
-                            // Check if IPs have actually shifted
-                            if (!string.Equals(rule.RemoteAddresses, newRemoteAddresses, StringComparison.OrdinalIgnoreCase))
+                            // A domain that failed to resolve must keep its previously known
+                            // IPs in the rule; dropping them would silently un-block it.
+                            // Old IPs are only pruned when every domain resolves successfully.
+                            if (anyResolveFailed)
                             {
+                                updatedIps.UnionWith(currentIps);
+                            }
+
+                            // Compare as normalized sets: Windows stores single hosts with a
+                            // /255.255.255.255 mask and DNS answer order varies per query.
+                            if (!updatedIps.SetEquals(currentIps))
+                            {
+                                string newRemoteAddresses = string.Join(",", updatedIps);
                                 _activityLogger.LogDebug($"DNS Refresh: IPs changed for '{rule.Name}'. Updating Windows Firewall.");
                                 FirewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
                                 rule.RemoteAddresses = newRemoteAddresses; // Update local cache
@@ -320,6 +338,38 @@ namespace MinimalFirewall
             }
         }
 
+        private static HashSet<string> SplitIpList(string? addresses)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(addresses) || addresses == "*")
+            {
+                return set;
+            }
+
+            foreach (var entry in addresses.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                set.Add(NormalizeIpEntry(entry));
+            }
+            return set;
+        }
+
+        private static string NormalizeIpEntry(string entry)
+        {
+            // Windows Firewall stores single hosts as "x.x.x.x/255.255.255.255"
+            // (or "/32", "/128"); strip the single-host mask so comparisons
+            // don't see phantom changes.
+            int slash = entry.IndexOf('/');
+            if (slash > 0)
+            {
+                string mask = entry[(slash + 1)..];
+                if (mask is "255.255.255.255" or "32" or "128")
+                {
+                    return entry[..slash];
+                }
+            }
+            return entry;
+        }
+
         public void UpdateDnsTimerInterval()
         {
             if (_dnsRefreshTimer == null) return;
@@ -327,8 +377,16 @@ namespace MinimalFirewall
             _dnsRefreshTimer.Change(TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(dnsInterval));
         }
 
+        private string _lastFilterSearchText = string.Empty;
+        private HashSet<RuleType> _lastFilterEnabledTypes = [];
+        private bool _lastFilterShowSystemRules;
+
         public void ApplyRulesFilters(string searchText, HashSet<RuleType> enabledTypes, bool showSystemRules)
         {
+            _lastFilterSearchText = searchText;
+            _lastFilterEnabledTypes = enabledTypes;
+            _lastFilterShowSystemRules = showSystemRules;
+
             IEnumerable<AggregatedRuleViewModel> filteredRules = AllAggregatedRules;
 
             if (!showSystemRules)
@@ -357,7 +415,9 @@ namespace MinimalFirewall
         {
             newRule.DateAdded ??= DateTime.UtcNow;
             AllAggregatedRules.Add(newRule);
-            ApplyRulesFilters(string.Empty, [], false);
+            // Re-apply the filters the Rules tab last used — creating a rule from a
+            // popup must not silently wipe the user's search text and checkboxes.
+            ApplyRulesFilters(_lastFilterSearchText, _lastFilterEnabledTypes, _lastFilterShowSystemRules);
         }
 
         private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
@@ -845,16 +905,32 @@ namespace MinimalFirewall
             catch (ObjectDisposedException) { } // timer disposed during shutdown
         }
 
-        private async void DebouncedSentryRefresh(object? state)
+        private void DebouncedSentryRefresh(object? state)
         {
-            try
+            async void runScan()
             {
-                _activityLogger.LogDebug("Sentry: Debounce timer elapsed. Checking for foreign rules.");
-                await ScanForSystemChangesAsync(CancellationToken.None);
+                try
+                {
+                    _activityLogger.LogDebug("Sentry: Debounce timer elapsed. Checking for foreign rules.");
+                    await ScanForSystemChangesAsync(CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    _activityLogger.LogException("Error during sentry refresh", ex);
+                }
             }
-            catch (Exception ex)
+
+            // SystemChanges and the snapshot file are only ever touched from the UI
+            // thread. This runs on a threadpool timer, so start the scan on the UI
+            // context — the post-await continuation then stays there instead of
+            // mutating the shared list concurrently with UI readers.
+            if (_uiContext != null)
             {
-                _activityLogger.LogException("Error during sentry refresh", ex);
+                _uiContext.Post(_ => runScan(), null);
+            }
+            else
+            {
+                runScan();
             }
         }
 

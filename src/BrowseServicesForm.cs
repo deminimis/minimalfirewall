@@ -16,7 +16,7 @@ namespace MinimalFirewall
             // prevents crashes if null list is passed
             _allServices = services ?? [];
 
-            bool isDark = appSettings.Theme == "Dark";
+            bool isDark = appSettings.IsEffectiveDarkTheme;
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
             Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             this.BackColor = Theme.Colors.Background;

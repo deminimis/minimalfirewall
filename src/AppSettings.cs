@@ -72,6 +72,11 @@ namespace MinimalFirewall
         public bool IsPopupsEnabled { get => _isPopupsEnabled; set => SetField(ref _isPopupsEnabled, value); }
         public bool IsLoggingEnabled { get => _isLoggingEnabled; set => SetField(ref _isLoggingEnabled, value); }
         public string Theme { get => _theme; set => SetField(ref _theme, value); }
+
+        // Single source of truth for the effective dark-mode state: an explicit
+        // "Dark"/"Light" setting wins; "Auto" follows the OS.
+        [JsonIgnore]
+        public bool IsEffectiveDarkTheme => _theme == "Dark" || (_theme == "Auto" && DarkModeForms.Theme.IsSystemDarkMode());
         public bool StartOnSystemStartup { get => _startOnSystemStartup; set => SetField(ref _startOnSystemStartup, value); }
         public bool CloseToTray { get => _closeToTray; set => SetField(ref _closeToTray, value); }
         public int AutoRefreshIntervalMinutes { get => _autoRefreshIntervalMinutes; set => SetField(ref _autoRefreshIntervalMinutes, value); }
@@ -178,7 +183,9 @@ namespace MinimalFirewall
                     ConfigPathManager.EnsureStorageDirectoryExists();
 
                     string json = JsonSerializer.Serialize(this, AppSettingsJsonContext.Default.AppSettings);
-                    File.WriteAllText(_configPath, json);
+                    string tempPath = _configPath + ".tmp";
+                    File.WriteAllText(tempPath, json);
+                    File.Move(tempPath, _configPath, overwrite: true);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {

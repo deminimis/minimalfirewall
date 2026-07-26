@@ -271,19 +271,14 @@ namespace MinimalFirewall
                 return;
             }
 
-            var rulesToRemove = new List<string>();
+            // DeleteConflictingServiceRules deletes the matched rules itself.
             if (parsedDirection.HasFlag(Directions.Incoming))
             {
-                rulesToRemove.AddRange(FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN));
+                FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
             }
             if (parsedDirection.HasFlag(Directions.Outgoing))
             {
-                rulesToRemove.AddRange(FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
-            }
-
-            if (rulesToRemove.Count != 0)
-            {
-                FirewallRuleService.DeleteRulesByName(rulesToRemove);
+                FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
             }
 
             ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
@@ -319,17 +314,14 @@ namespace MinimalFirewall
             }
 
             var packageFamilyNames = validApps.Select(app => app.PackageFamilyName).ToList();
-            var rulesToRemove = FirewallRuleService.DeleteUwpRules(packageFamilyNames);
+            // DeleteUwpRules already removes the old rules; new rules reuse the same
+            // names, so deleting the returned names afterwards would destroy them.
+            FirewallRuleService.DeleteUwpRules(packageFamilyNames);
             foreach (var app in validApps)
             {
                 void createRule(string name, Directions dir, Actions act) => CreateUwpRule(name, app.PackageFamilyName, dir, act, ProtocolTypes.Any.Value);
                 ApplyRuleAction(app.Name, action, createRule);
                 activityLogger.LogChange("UWP Rule Changed", action + " for " + app.Name);
-            }
-
-            if (rulesToRemove.Count != 0)
-            {
-                FirewallRuleService.DeleteRulesByName(rulesToRemove);
             }
         }
 
@@ -882,11 +874,19 @@ namespace MinimalFirewall
                 return;
             }
 
-            var ruleNames = changes.Select(c => c.Rule?.Name).Where(n => n != null).Select(n => n!).ToList();
-            if (ruleNames.Count != 0)
+            int accepted = 0;
+            foreach (var change in changes)
             {
-                activityLogger.LogChange("All Foreign Rules Accepted", $"{ruleNames.Count} rules accepted.");
-                activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
+                if (change?.Rule?.Name is not null)
+                {
+                    ProcessForeignRule(change, true, "Accepted");
+                    accepted++;
+                }
+            }
+
+            if (accepted != 0)
+            {
+                activityLogger.LogDebug($"Sentry: Accepted all {accepted} foreign rules.");
             }
         }
 
@@ -1482,10 +1482,30 @@ namespace MinimalFirewall
 
         public async Task ImportRulesAsync(string jsonContent, bool replace)
         {
+            if (!EnqueueImportTasks(jsonContent, replace, out int advancedCount, out int wildcardCount))
+            {
+                return;
+            }
+
+            // Wait for the queue to drain
+            await BackgroundTaskService!.WhenIdleAsync();
+
+            activityLogger.LogChange("Rules Imported", $"Imported {advancedCount} advanced rules and {wildcardCount} wildcard rules. Replace: {replace}");
+        }
+
+        // Enqueues the individual import tasks without waiting for them. The queue
+        // handler for ImportRules must use this instead of ImportRulesAsync: awaiting
+        // WhenIdleAsync from inside a handler deadlocks the single worker on its own
+        // queue (the handler counts as outstanding work until it returns).
+        public bool EnqueueImportTasks(string jsonContent, bool replace, out int advancedCount, out int wildcardCount)
+        {
+            advancedCount = 0;
+            wildcardCount = 0;
+
             if (BackgroundTaskService == null)
             {
                 activityLogger.LogDebug("[Import] BackgroundTaskService is not available.");
-                return;
+                return false;
             }
 
             try
@@ -1494,7 +1514,7 @@ namespace MinimalFirewall
                 if (container == null)
                 {
                     activityLogger.LogDebug("[Import] Failed to deserialize JSON content.");
-                    return;
+                    return false;
                 }
 
                 if (replace)
@@ -1508,22 +1528,22 @@ namespace MinimalFirewall
                     ruleVm.ApplicationName = PathResolver.ConvertFromEnvironmentPath(ruleVm.ApplicationName);
                     var payload = new CreateAdvancedRulePayload { ViewModel = ruleVm, InterfaceTypes = ruleVm.InterfaceTypes, IcmpTypesAndCodes = ruleVm.IcmpTypesAndCodes };
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                    advancedCount++;
                 }
 
                 foreach (var wildcardRule in container.WildcardRules ?? [])
                 {
                     wildcardRule.FolderPath = PathResolver.ConvertFromEnvironmentPath(wildcardRule.FolderPath);
                     BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.AddWildcardRule, wildcardRule));
+                    wildcardCount++;
                 }
 
-                // Wait for the queue to drain
-                await BackgroundTaskService.WhenIdleAsync();
-
-                activityLogger.LogChange("Rules Imported", $"Imported {container.AdvancedRules?.Count ?? 0} advanced rules and {container.WildcardRules?.Count ?? 0} wildcard rules. Replace: {replace}");
+                return true;
             }
             catch (JsonException ex)
             {
                 activityLogger.LogException("ImportRules", ex);
+                return false;
             }
         }
     }

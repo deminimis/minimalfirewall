@@ -197,9 +197,10 @@ namespace MinimalFirewall
                         bool isUwp = conn.ProcessPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || (!conn.ProcessPath.Contains('\\') && !conn.ProcessPath.Contains(':'));
                         int iconIndex = isUwp ? _iconService.GetUwpIconIndex(conn.ProcessPath) : _iconService.GetIconIndex(conn.ProcessPath);
 
-                        if (iconIndex != -1 && _iconService.ImageList != null)
+                        var iconImage = _iconService.GetImage(iconIndex);
+                        if (iconImage != null)
                         {
-                            e.Value = _iconService.ImageList.Images[iconIndex];
+                            e.Value = iconImage;
                         }
                     }
                     break;

@@ -130,6 +130,10 @@ namespace MinimalFirewall
 
             detailsRichTextBox.Clear();
 
+            // SelectionFont copies the font into the control, so one shared
+            // instance per render is enough and can be disposed afterwards.
+            using var boldFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
+
             void AppendDetail(string label, string? value)
             {
                 if (string.IsNullOrEmpty(value))
@@ -142,7 +146,7 @@ namespace MinimalFirewall
 
                 // Centralized Theme Styling
                 detailsRichTextBox.SelectionColor = Theme.Colors.InfoText;
-                detailsRichTextBox.SelectionFont = new Font(detailsRichTextBox.Font, FontStyle.Bold);
+                detailsRichTextBox.SelectionFont = boldFont;
                 detailsRichTextBox.AppendText(label + ": ");
 
                 detailsRichTextBox.SelectionColor = Theme.Colors.TextActive;
@@ -252,9 +256,10 @@ namespace MinimalFirewall
                     bool isUwp = pending.AppPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || (!pending.AppPath.Contains('\\') && !pending.AppPath.Contains(':'));
                     int iconIndex = isUwp ? _iconService.GetUwpIconIndex(pending.AppPath) : _iconService.GetIconIndex(pending.AppPath);
 
-                    if (iconIndex != -1 && _iconService.ImageList != null && iconIndex < _iconService.ImageList.Images.Count)
+                    var iconImage = _iconService.GetImage(iconIndex);
+                    if (iconImage != null)
                     {
-                        e.Value = _iconService.ImageList.Images[iconIndex];
+                        e.Value = iconImage;
                     }
                 }
             }

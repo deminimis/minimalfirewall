@@ -114,7 +114,7 @@ namespace MinimalFirewall
             closeToTraySwitch.Checked = _appSettings.CloseToTray;
             startOnStartupSwitch.Checked = _appSettings.StartOnSystemStartup;
             autoThemeSwitch.Checked = _appSettings.Theme == "Auto";
-            darkModeSwitch.Checked = _appSettings.Theme == "Dark" || (_appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
+            darkModeSwitch.Checked = _appSettings.IsEffectiveDarkTheme;
             darkModeSwitch.Enabled = !autoThemeSwitch.Checked;
             popupsSwitch.Checked = _appSettings.IsPopupsEnabled;
             loggingSwitch.Checked = _appSettings.IsLoggingEnabled;
@@ -487,6 +487,41 @@ namespace MinimalFirewall
                 try
                 {
                     string jsonContent = await File.ReadAllTextAsync(openDialog.FileName);
+
+                    // The file is untrusted input: summarize what it will do before
+                    // touching the firewall, so a doctored "backup" can't silently
+                    // open network access.
+                    ExportContainer? container;
+                    try
+                    {
+                        container = System.Text.Json.JsonSerializer.Deserialize(jsonContent, ExportContainerJsonContext.Default.ExportContainer);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        container = null;
+                    }
+
+                    if (container == null)
+                    {
+                        Messenger.MessageBox("The selected file is not a valid Minimal Firewall rules backup.", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    int advancedCount = container.AdvancedRules?.Count ?? 0;
+                    int allowCount = container.AdvancedRules?.Count(r => r != null && string.Equals(r.Status, "Allow", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                    int wildcardCount = container.WildcardRules?.Count ?? 0;
+
+                    string summary =
+                        $"This file contains {advancedCount} rule(s) ({allowCount} Allow) and {wildcardCount} wildcard rule(s)." +
+                        (replace ? "\nAll existing Minimal Firewall rules will be deleted first." : string.Empty) +
+                        "\n\nOnly import files you created yourself or fully trust — imported Allow rules open network access for the programs they list.\n\nContinue?";
+
+                    var proceed = Messenger.MessageBox(summary, "Confirm Import", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (proceed != DialogResult.Yes)
+                    {
+                        return;
+                    }
+
                     await _actionsService.ImportRulesAsync(jsonContent, replace);
                     await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
 

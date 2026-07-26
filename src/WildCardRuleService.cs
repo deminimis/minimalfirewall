@@ -168,7 +168,9 @@ namespace MinimalFirewall
             try
             {
                 string json = JsonSerializer.Serialize(_rules, WildcardRuleJsonContext.Default.ListWildcardRule);
-                File.WriteAllText(_configPath, json);
+                string tempPath = _configPath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, _configPath, overwrite: true);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

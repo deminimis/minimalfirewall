@@ -41,9 +41,10 @@ namespace MinimalFirewall
         }
 
         private const int WTD_UI_NONE = 2;
-        private const int WTD_REVOKE_NONE = 0;
+        private const int WTD_REVOKE_WHOLECHAIN = 1;
         private const int WTD_CHOICE_FILE = 1;
         private const int WTD_STATEACTION_IGNORE = 0;
+        private const int WTD_REVOCATION_CHECK_CHAIN = 0x40;
 
         public static bool GetPublisherInfo(string filePath, out string? publisherName)
             => IsSignatureTrusted(filePath, out publisherName);
@@ -140,13 +141,16 @@ namespace MinimalFirewall
                     pPolicyCallbackData = IntPtr.Zero,
                     pSIPClientData = IntPtr.Zero,
                     dwUIChoice = WTD_UI_NONE,
-                    fdwRevocationChecks = WTD_REVOKE_NONE,
+                    // Revoked code-signing certs (the standard response to cert theft) must not
+                    // pass the auto-allow gate. If revocation status can't be determined
+                    // (e.g. offline), the check fails and the user gets a prompt instead.
+                    fdwRevocationChecks = WTD_REVOKE_WHOLECHAIN,
                     dwUnionChoice = WTD_CHOICE_FILE,
                     pUnion = pFileInfo,
                     dwStateAction = WTD_STATEACTION_IGNORE,
                     hWVTStateData = IntPtr.Zero,
                     pwszURLReference = IntPtr.Zero,
-                    dwProvFlags = 0,
+                    dwProvFlags = WTD_REVOCATION_CHECK_CHAIN,
                     dwUIContext = 0,
                     pSignatureSettings = IntPtr.Zero
                 };

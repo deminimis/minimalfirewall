@@ -127,17 +127,21 @@ namespace MinimalFirewall
 
             try
             {
-                string xmlContent = e.EventRecord.ToXml();
+                // The record wraps an unmanaged event-log handle and 5157 fires for
+                // nearly every blocked packet in lockdown mode — dispose it here;
+                // everything the async processing needs is extracted first.
+                using var record = e.EventRecord;
+                string xmlContent = record.ToXml();
 
                 // Culture-Invariant - Extract raw Direction integer from properties
                 int? rawDirectionCode = null;
-                if (e.EventRecord.Properties != null && e.EventRecord.Properties.Count > 2)
+                if (record.Properties != null && record.Properties.Count > 2)
                 {
                     try
                     {
-                        if (e.EventRecord.Properties[2].Value != null)
+                        if (record.Properties[2].Value != null)
                         {
-                            rawDirectionCode = Convert.ToInt32(e.EventRecord.Properties[2].Value);
+                            rawDirectionCode = Convert.ToInt32(record.Properties[2].Value);
                         }
                     }
                     catch { /* Ignore cast errors, fall back to XML parsing */ }

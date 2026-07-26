@@ -331,8 +331,10 @@ namespace MinimalFirewall
                 p => _actionsService.RemoveWildcardDefinitionOnly(p.Wildcard), TaskResult.WildcardOnly),
                 [FirewallTaskType.DeleteAllMfwRules] = new ActionHandler<object>(
                 _ => _actionsService.DeleteAllMfwRules(), TaskResult.CacheOnly),
-                [FirewallTaskType.ImportRules] = new AsyncActionHandler<ImportRulesPayload>(
-                async p => await _actionsService.ImportRulesAsync(p.JsonContent, p.Replace), TaskResult.CacheOnly)
+                // Must not call ImportRulesAsync here: it awaits WhenIdleAsync, which can
+                // never complete while this handler itself counts as outstanding work.
+                [FirewallTaskType.ImportRules] = new ActionHandler<ImportRulesPayload>(
+                p => _actionsService.EnqueueImportTasks(p.JsonContent, p.Replace, out _, out _), TaskResult.CacheOnly)
             };
             return map;
         }

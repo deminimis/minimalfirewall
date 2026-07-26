@@ -13,7 +13,7 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
-            bool isDark = appSettings.Theme == "Dark" || (appSettings.Theme == "Auto" && Theme.IsSystemDarkMode());
+            bool isDark = appSettings.IsEffectiveDarkTheme;
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
             Theme.ApplyTitleBarTheme(Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             BackColor = Theme.Colors.Background;

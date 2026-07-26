@@ -211,8 +211,36 @@ namespace MinimalFirewall
             return _systemIconIndex;
         }
 
+        private readonly Dictionary<int, Image> _imageInstanceCache = [];
+
+        // ImageList.Images[i] allocates a new Bitmap copy on every access; grids
+        // ask for icons from CellFormatting/CellValueNeeded on each repaint, so
+        // hand out one cached copy per index instead of a fresh copy per paint.
+        public Image? GetImage(int index)
+        {
+            if (_imageList == null || index < 0 || index >= _imageList.Images.Count)
+            {
+                return null;
+            }
+
+            if (_imageInstanceCache.TryGetValue(index, out var cached))
+            {
+                return cached;
+            }
+
+            var image = _imageList.Images[index];
+            _imageInstanceCache[index] = image;
+            return image;
+        }
+
         public void ClearCache()
         {
+            foreach (var image in _imageInstanceCache.Values)
+            {
+                image.Dispose();
+            }
+            _imageInstanceCache.Clear();
+
             if (_imageList == null)
             {
                 _iconCache.Clear();
