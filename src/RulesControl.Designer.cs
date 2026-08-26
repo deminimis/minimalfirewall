@@ -496,6 +496,7 @@ namespace MinimalFirewall
             // 
             // autoAllowedColumn
             // 
+            autoAllowedColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
             autoAllowedColumn.DataPropertyName = "AutoAllowedPublisher";
             autoAllowedColumn.FillWeight = 8F;
             autoAllowedColumn.HeaderText = "Origin";
