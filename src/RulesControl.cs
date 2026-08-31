@@ -31,6 +31,7 @@ namespace MinimalFirewall
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
         private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = [];
+        private readonly Dictionary<DataGridViewColumn, int> _rulesColumnMaximumWidths = [];
         private readonly System.Windows.Forms.Timer _searchDebounceTimer;
 
         public event Func<Task>? DataRefreshRequested;
@@ -100,9 +101,11 @@ namespace MinimalFirewall
 
             rulesDataGridView.AllowUserToOrderColumns = true;
             DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
+            ConfigureCompactRuleColumns();
+            DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
-            rulesDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
+            rulesDataGridView.ColumnWidthChanged += RulesDataGridView_ColumnWidthChanged;
         }
 
        
@@ -502,6 +505,39 @@ namespace MinimalFirewall
             {
                 rulesDataGridView.ClearSelection();
             }
+        }
+
+        private void ConfigureCompactRuleColumns()
+        {
+            foreach (var column in new[] { inboundStatusColumn, outboundStatusColumn, advProtocolColumn })
+            {
+                column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+
+                int maximumWidth = column.GetPreferredWidth(DataGridViewAutoSizeColumnMode.ColumnHeader, false);
+                if (column == inboundStatusColumn || column == outboundStatusColumn)
+                {
+                    var headerStyle = column.HeaderCell.InheritedStyle;
+                    var font = headerStyle.Font ?? rulesDataGridView.Font;
+                    int statusWidth = TextRenderer.MeasureText("Allow, Block", font).Width + headerStyle.Padding.Horizontal + 2;
+                    maximumWidth = Math.Max(maximumWidth, statusWidth);
+                }
+
+                _rulesColumnMaximumWidths[column] = maximumWidth;
+                if (column.Width > maximumWidth)
+                {
+                    column.Width = maximumWidth;
+                }
+            }
+        }
+
+        private void RulesDataGridView_ColumnWidthChanged(object? sender, DataGridViewColumnEventArgs e)
+        {
+            if (_rulesColumnMaximumWidths.TryGetValue(e.Column, out int maximumWidth) && e.Column.Width > maximumWidth)
+            {
+                e.Column.Width = maximumWidth;
+            }
+
+            DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
         }
 
         private void RulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
