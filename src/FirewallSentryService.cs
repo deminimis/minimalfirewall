@@ -14,6 +14,7 @@ namespace MinimalFirewall
     public partial class FirewallSentryService : IDisposable
     {
         private readonly FirewallRuleService firewallService;
+        private readonly AppSettings _appSettings;
         private ManagementEventWatcher? _watcher;
         private bool _isStarted = false;
 
@@ -29,9 +30,12 @@ namespace MinimalFirewall
             _pendingChanges.Clear();
         }
 
-        public FirewallSentryService(FirewallRuleService firewallService)
+        public FirewallSentryService(
+    FirewallRuleService firewallService,
+    AppSettings appSettings)
         {
             this.firewallService = firewallService;
+            _appSettings = appSettings;
         }
 
         public void Start()
@@ -272,14 +276,26 @@ namespace MinimalFirewall
             return changes;
         }
 
-        private void EnrichWithPublisher(FirewallRuleChange changeObj, string? appPath)
+        private void EnrichWithPublisher(
+    FirewallRuleChange changeObj,
+    string? appPath)
         {
+            // Do not verify anything unless the user has enabled at least one feature that requires it.
+            if (!_appSettings.AutoAllowWhitelistedPublishers &&
+                !_appSettings.AutoAllowSystemSignedApps)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(appPath))
             {
                 return;
             }
 
-            if (string.Equals(appPath, "System", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(
+                appPath,
+                "System",
+                StringComparison.OrdinalIgnoreCase))
             {
                 changeObj.Publisher = "Microsoft Corporation (System)";
                 return;
@@ -287,22 +303,23 @@ namespace MinimalFirewall
 
             try
             {
-                string expandedPath = Environment.ExpandEnvironmentVariables(appPath.Trim());
-                if (File.Exists(expandedPath))
+                string expandedPath =
+                    Environment.ExpandEnvironmentVariables(appPath.Trim());
+
+                if (File.Exists(expandedPath) &&
+                    SignatureValidationService.GetPublisherInfo(
+                        expandedPath,
+                        out string? publisher))
                 {
-                    if (SignatureValidationService.GetPublisherInfo(expandedPath, out string? publisher))
-                    {
-                        changeObj.Publisher = publisher ?? string.Empty;
-                    }
+                    changeObj.Publisher = publisher ?? string.Empty;
                 }
             }
             catch
             {
-                /* Ignore invalid paths/perms to prevent scanning interruption */
+                // Ignore invalid paths/permission  
             }
         }
 
-        // Changed to accept string directly to avoid passing COM objects
         private static bool IsMfwRule(string grouping)
         {
             if (string.IsNullOrEmpty(grouping))

@@ -138,7 +138,7 @@ namespace MinimalFirewall
 
             var uwpService = new UwpService(_firewallRuleService);
             _dataService = new FirewallDataService(_firewallRuleService, _wildcardRuleService, uwpService, _ruleTimestampService);
-            _firewallSentryService = new FirewallSentryService(_firewallRuleService);
+            _firewallSentryService = new FirewallSentryService(_firewallRuleService, _appSettings);
             var trafficMonitorViewModel = new TrafficMonitorViewModel();
 
             _eventListenerService = new FirewallEventListenerService(_dataService, _wildcardRuleService, () => MainViewModel.IsLockedDown, msg => _activityLogger.LogDebug(msg), _appSettings, _whitelistService);
