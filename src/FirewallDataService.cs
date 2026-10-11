@@ -98,8 +98,14 @@ namespace MinimalFirewall
 
         private static string MergeDistinct(IEnumerable<string> items)
         {
-            var distinctItems = items.Where(p => !string.IsNullOrEmpty(p) && p != "*").Distinct().ToList();
-            return distinctItems.Count > 0 ? string.Join(", ", distinctItems) : "*";
+            var distinctItems = items
+                .Where(p => !string.IsNullOrWhiteSpace(p) && p != "*")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return distinctItems.Count > 0
+                ? string.Join(", ", distinctItems)
+                : "*";
         }
 
         public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
@@ -111,6 +117,33 @@ namespace MinimalFirewall
             });
 
             return result ?? [];
+        }
+
+        private static string NormalizeRuleKey(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Trim().ToUpperInvariant();
+        }
+
+        private static string NormalizeRulePathKey(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return string.Empty;
+            }
+
+            if (path == "*" || path.StartsWith('@'))
+            {
+                return path.ToUpperInvariant();
+            }
+
+            string normalizedPath = PathResolver.NormalizePath(path);
+
+            return normalizedPath
+                .Trim()
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .ToUpperInvariant();
         }
 
         public async Task<List<AggregatedRuleViewModel>> GetAggregatedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
@@ -137,9 +170,13 @@ namespace MinimalFirewall
                 }
 
                 var groupedByGroupingAndProtocol = allMfwRules
-                    .Where(r => r.IsEnabled)
-                    .GroupBy(r => (r.Grouping, r.ApplicationName, r.ServiceName, r.Protocol))
-                    .ToList();
+    .Where(r => r.IsEnabled)
+    .GroupBy(r => (
+        Grouping: NormalizeRuleKey(r.Grouping),
+        ApplicationName: NormalizeRulePathKey(r.ApplicationName),
+        ServiceName: NormalizeRuleKey(r.ServiceName),
+        r.Protocol))
+    .ToList();
 
                 var aggRules = new List<AggregatedRuleViewModel>();
                 int processedCount = 0;
