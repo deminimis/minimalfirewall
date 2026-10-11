@@ -539,7 +539,14 @@ namespace MinimalFirewall
                 {
                     activityLogger.LogException("SetDefaultOutboundAction(Allow) after audit failure", ex);
                 }
-                activityLogger.LogDebug("Lockdown Mode Failed: Could not enable audit policy.");
+                ManageCryptoServiceRule(false);
+                ManageDhcpClientRule(false);
+                ManageWslRules(false);
+
+                activityLogger.LogDebug(
+                    "Lockdown Mode Failed: Could not enable audit policy. " +
+                    "Temporary system and WSL rules were removed.");
+
                 return;
             }
 
@@ -574,51 +581,153 @@ namespace MinimalFirewall
         }
 
 
-        private void ManageWslRules(bool enable)
+        public void ManageWslRules(bool enable)
         {
-            // SharedAccess (ICS) 
+            // Host-side WSL/Hyper-V prerequisites.
             ManageSystemRule(
                 "Minimal Firewall System - WSL Relay (ICS)",
                 "Allows Internet Connection Sharing for WSL2/Hyper-V.",
                 "svchost.exe",
                 "SharedAccess",
-                256, 
-                "*", "*", 
+                ProtocolTypes.Any.Value,
+                "*",
+                "*",
                 enable
             );
 
-            // System (PID 4)
             ManageSystemRule(
                 "Minimal Firewall System - Kernel/Hyper-V",
-                "Allows the System process (PID 4) for WSL2 vSwitch traffic.",
+                "Allows System traffic required by the WSL2 virtual network.",
                 "System",
-                "", // No Service
-                256, 
-                "*", "*",
+                "",
+                ProtocolTypes.Any.Value,
+                "*",
+                "*",
                 enable
             );
 
-            // DNS Client (Dnscache)
             ManageSystemRule(
                 "Minimal Firewall System - DNS Client",
-                "Allows Windows to resolve domain names (Essential for WSL).",
+                "Allows the Windows DNS Client to resolve names for WSL.",
                 "svchost.exe",
                 "Dnscache",
-                17, 
-                "53", "*", 
+                ProtocolTypes.UDP.Value,
+                "53",
+                "*",
                 enable
             );
 
-            // DNS Client (Dnscache) - TCP for DoH (443), DoT (853), and TCP/53 fallback
             ManageSystemRule(
                 "Minimal Firewall System - DNS Client (TCP)",
-                "Allows the DNS Client (Dnscache) to use DNS-over-HTTPS, DNS-over-TLS, and TCP DNS fallback.",
+                "Allows TCP DNS fallback, DNS-over-HTTPS, and DNS-over-TLS.",
                 "svchost.exe",
                 "Dnscache",
-                6,
-                "53,443,853", "*",
+                ProtocolTypes.TCP.Value,
+                "53,443,853",
+                "*",
                 enable
             );
+
+            // WSL2 networking is filtered by Hyper-V Firewall separately 
+            ManageWslHyperVFirewallRule(enable);
+        }
+
+        private void ManageWslHyperVFirewallRule(bool enable)
+        {
+            const string wslVmCreatorId =
+                "{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}";
+
+            const string ruleName =
+                "MinimalFirewall-WSL-Outbound-Allow";
+
+            string script;
+
+            if (enable)
+            {
+                script = string.Join(
+                    Environment.NewLine,
+                    "$ErrorActionPreference = 'Stop'",
+                    "",
+                    "if (-not (Get-Command 'Get-NetFirewallHyperVRule' -ErrorAction SilentlyContinue))",
+                    "{",
+                    "    Write-Output 'Hyper-V Firewall cmdlets are not available on this Windows version.'",
+                    "    exit 0",
+                    "}",
+                    "",
+                    $"$existingRule = Get-NetFirewallHyperVRule -Name '{ruleName}' -ErrorAction SilentlyContinue",
+                    "",
+                    "if ($null -eq $existingRule)",
+                    "{",
+                    $"    New-NetFirewallHyperVRule -Name '{ruleName}' -DisplayName 'Minimal Firewall - WSL Outbound Allow' -Direction Outbound -Action Allow -Enabled True -VMCreatorId '{wslVmCreatorId}' -Protocol Any | Out-Null",
+                    "    Write-Output 'Created WSL Hyper-V outbound allow rule.'",
+                    "}",
+                    "else",
+                    "{",
+                    $"    Set-NetFirewallHyperVRule -Name '{ruleName}' -Direction Outbound -Action Allow -Enabled True -VMCreatorId '{wslVmCreatorId}' -Protocol Any | Out-Null",
+                    "    Write-Output 'Updated WSL Hyper-V outbound allow rule.'",
+                    "}"
+                );
+            }
+            else
+            {
+                script = string.Join(
+                    Environment.NewLine,
+                    "$ErrorActionPreference = 'Stop'",
+                    "",
+                    "if (-not (Get-Command 'Get-NetFirewallHyperVRule' -ErrorAction SilentlyContinue))",
+                    "{",
+                    "    exit 0",
+                    "}",
+                    "",
+                    $"$existingRule = Get-NetFirewallHyperVRule -Name '{ruleName}' -ErrorAction SilentlyContinue",
+                    "",
+                    "if ($null -ne $existingRule)",
+                    "{",
+                    $"    Remove-NetFirewallHyperVRule -Name '{ruleName}' -Confirm:$false",
+                    "    Write-Output 'Removed WSL Hyper-V outbound allow rule.'",
+                    "}"
+                );
+            }
+
+            try
+            {
+                string encodedCommand = Convert.ToBase64String(
+                    System.Text.Encoding.Unicode.GetBytes(script));
+
+                string powerShellPath = Path.Combine(
+                    Environment.SystemDirectory,
+                    "WindowsPowerShell",
+                    "v1.0",
+                    "powershell.exe");
+
+                ProcessHelper.RunHiddenCommand(
+                    powerShellPath,
+                    $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}",
+                    out string output,
+                    out string error);
+
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    activityLogger.LogDebug(
+                        $"[WSL Hyper-V Firewall] {output.Trim()}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    activityLogger.LogDebug(
+                        $"[WSL Hyper-V Firewall Error] {error.Trim()}");
+                }
+            }
+            catch (Exception ex) when (
+                ex is IOException or
+                UnauthorizedAccessException or
+                System.ComponentModel.Win32Exception or
+                InvalidOperationException)
+            {
+                activityLogger.LogException(
+                    "ManageWslHyperVFirewallRule",
+                    ex);
+            }
         }
 
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)

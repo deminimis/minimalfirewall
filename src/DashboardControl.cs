@@ -75,10 +75,37 @@ namespace MinimalFirewall
             ApplyThemeToControls();
 
             dashboardDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns);
 
-            dashboardDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns, _appSettings);
-            dashboardDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(dashboardDataGridView, _appSettings.DashboardColumns, _appSettings);
+            DataGridViewHelper.RestoreColumnSettings(
+                dashboardDataGridView,
+                _appSettings.DashboardColumns);
+
+            NormalizeDashboardColumns();
+
+            dashboardDataGridView.ColumnDisplayIndexChanged += (s, e) =>
+                DataGridViewHelper.SaveColumnSettings(
+                    dashboardDataGridView,
+                    _appSettings.DashboardColumns,
+                    _appSettings);
+
+            dashboardDataGridView.ColumnWidthChanged += (s, e) =>
+            {
+                if (!dashboardDataGridView.IsHandleCreated ||
+                    dashboardDataGridView.ClientSize.Width <= 0 ||
+                    !dashboardDataGridView.Visible)
+                {
+                    return;
+                }
+
+                DataGridViewHelper.SaveColumnSettings(
+                    dashboardDataGridView,
+                    _appSettings.DashboardColumns,
+                    _appSettings);
+            };
+
+            Resize += (_, _) => NormalizeDashboardColumns();
+
+            BeginInvoke(new Action(NormalizeDashboardColumns));
         }
 
         
@@ -172,7 +199,12 @@ namespace MinimalFirewall
 
         public void SetIconColumnVisibility(bool visible)
         {
-            dashIconColumn?.Visible = visible;
+            if (dashIconColumn != null)
+            {
+                dashIconColumn.Visible = visible;
+            }
+
+            NormalizeDashboardColumns();
         }
 
         private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -195,14 +227,93 @@ namespace MinimalFirewall
 
         private void LoadDashboardItems()
         {
+            if (dashboardDataGridView == null || dashboardDataGridView.IsDisposed)
+            {
+                return;
+            }
+
             dashboardDataGridView.SuspendLayout();
-            var prevAutoSize = dashboardDataGridView.AutoSizeColumnsMode;
-            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
 
-            _bindingSource.ResetBindings(false);
+            try
+            {
+                _bindingSource.ResetBindings(false);
+                NormalizeDashboardColumns();
+            }
+            finally
+            {
+                dashboardDataGridView.ResumeLayout(true);
+                dashboardDataGridView.Invalidate();
+            }
+        }
 
-            dashboardDataGridView.AutoSizeColumnsMode = prevAutoSize;
-            dashboardDataGridView.ResumeLayout();
+        private void NormalizeDashboardColumns()
+        {
+            if (dashboardDataGridView == null ||
+                dashboardDataGridView.IsDisposed ||
+                dashboardDataGridView.Columns.Count == 0)
+            {
+                return;
+            }
+
+            dashboardDataGridView.AutoSizeColumnsMode =
+                DataGridViewAutoSizeColumnsMode.Fill;
+
+            // Fixed-width columns.
+            if (dashIconColumn != null)
+            {
+                dashIconColumn.AutoSizeMode =
+                    DataGridViewAutoSizeColumnMode.None;
+                dashIconColumn.MinimumWidth = 32;
+                dashIconColumn.Width = 32;
+                dashIconColumn.Resizable = DataGridViewTriState.False;
+            }
+
+            ConfigureActionColumn(allowButtonColumn);
+            ConfigureActionColumn(blockButtonColumn);
+            ConfigureActionColumn(ignoreButtonColumn);
+
+            // Fill columns must never collapse to only a few pixels.
+            ConfigureFillColumn(dashAppColumn, 30F, 120);
+            ConfigureFillColumn(dashServiceColumn, 22F, 100);
+            ConfigureFillColumn(dashDirectionColumn, 12F, 85);
+            ConfigureFillColumn(dashProtocolColumn, 10F, 80);
+            ConfigureFillColumn(dashPathColumn, 46F, 180);
+
+            dashboardDataGridView.PerformLayout();
+        }
+
+        private static void ConfigureActionColumn(
+            DataGridViewColumn? column)
+        {
+            if (column == null)
+            {
+                return;
+            }
+
+            column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            column.MinimumWidth = 90;
+            column.Width = 90;
+            column.Resizable = DataGridViewTriState.False;
+        }
+
+        private static void ConfigureFillColumn(
+            DataGridViewColumn? column,
+            float fillWeight,
+            int minimumWidth)
+        {
+            if (column == null)
+            {
+                return;
+            }
+
+            column.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            column.FillWeight = fillWeight;
+            column.MinimumWidth = minimumWidth;
+
+            if (column.Width < minimumWidth)
+            {
+                column.Width = minimumWidth;
+            }
         }
 
         private void DashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
