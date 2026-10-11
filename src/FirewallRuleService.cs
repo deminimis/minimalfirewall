@@ -73,6 +73,27 @@ namespace MinimalFirewall
             return mappedList;
         }
 
+        private sealed record FirewallRuleSnapshot
+        {
+            public string Name { get; init; } = string.Empty;
+            public string Description { get; init; } = string.Empty;
+            public string ApplicationName { get; init; } = string.Empty;
+            public string ServiceName { get; init; } = string.Empty;
+            public int Protocol { get; init; }
+            public string LocalPorts { get; init; } = string.Empty;
+            public string RemotePorts { get; init; } = string.Empty;
+            public string IcmpTypesAndCodes { get; init; } = string.Empty;
+            public string LocalAddresses { get; init; } = string.Empty;
+            public string RemoteAddresses { get; init; } = string.Empty;
+            public NET_FW_RULE_DIRECTION_ Direction { get; init; }
+            public NET_FW_ACTION_ Action { get; init; }
+            public bool Enabled { get; init; }
+            public int Profiles { get; init; }
+            public string Grouping { get; init; } = string.Empty;
+            public string InterfaceTypes { get; init; } = string.Empty;
+            public bool EdgeTraversal { get; init; }
+        }
+
         public static List<INetFwRule2> GetAllRules()
         {
             INetFwPolicy2 firewallPolicy = GetLocalPolicy();
@@ -482,48 +503,303 @@ namespace MinimalFirewall
             }
         }
 
-        public static void CreateRule(INetFwRule2 rule)
+        private static string NormalizeRuleText(string? value)
         {
-            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            INetFwRules? rulesCollection = null;
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : value.Trim();
+        }
+
+        private static string NormalizeRulePath(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            string trimmed = value.Trim().Trim('"');
+
+            if (trimmed == "*" || trimmed.StartsWith('@'))
+            {
+                return trimmed;
+            }
+
+            return PathResolver.NormalizePath(trimmed)
+                .TrimEnd(
+                    Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar);
+        }
+
+        private static string ReadOptionalString(
+            Func<string?> reader,
+            string fallback = "")
+        {
             try
             {
-                if (firewallPolicy?.Rules == null)
+                return NormalizeRuleText(reader());
+            }
+            catch (COMException)
+            {
+                return fallback;
+            }
+        }
+
+        private static bool ReadOptionalBool(
+            Func<bool> reader,
+            bool fallback = false)
+        {
+            try
+            {
+                return reader();
+            }
+            catch (COMException)
+            {
+                return fallback;
+            }
+        }
+
+        private static FirewallRuleSnapshot CreateRuleSnapshot(
+            INetFwRule2 rule)
+        {
+            string applicationName;
+
+            try
+            {
+                applicationName = NormalizeRulePath(
+                    rule.ApplicationName);
+            }
+            catch (COMException)
+            {
+                applicationName = string.Empty;
+            }
+
+            return new FirewallRuleSnapshot
+            {
+                Name = ReadOptionalString(() => rule.Name),
+                Description = ReadOptionalString(() => rule.Description),
+                ApplicationName = applicationName,
+                ServiceName = ReadOptionalString(() => rule.serviceName),
+                Protocol = rule.Protocol,
+
+                // Ports are unavailable for protocols that do not support ports.
+                LocalPorts = ReadOptionalString(() => rule.LocalPorts),
+                RemotePorts = ReadOptionalString(() => rule.RemotePorts),
+
+                // ICMP settings are unavailable for non-ICMP protocols.
+                IcmpTypesAndCodes =
+                    ReadOptionalString(() => rule.IcmpTypesAndCodes),
+
+                LocalAddresses =
+                    ReadOptionalString(() => rule.LocalAddresses, "*"),
+
+                RemoteAddresses =
+                    ReadOptionalString(() => rule.RemoteAddresses, "*"),
+
+                Direction = rule.Direction,
+                Action = rule.Action,
+                Enabled = rule.Enabled,
+                Profiles = rule.Profiles,
+                Grouping = ReadOptionalString(() => rule.Grouping),
+                InterfaceTypes =
+                    ReadOptionalString(() => rule.InterfaceTypes, "All"),
+
+                EdgeTraversal =
+                    ReadOptionalBool(() => rule.EdgeTraversal)
+            };
+        }
+
+        private static bool AreRulesExactlyEqual(
+            FirewallRuleSnapshot left,
+            FirewallRuleSnapshot right)
+        {
+            static bool EqualText(string? first, string? second) =>
+                string.Equals(
+                    NormalizeRuleText(first),
+                    NormalizeRuleText(second),
+                    StringComparison.OrdinalIgnoreCase);
+
+            return
+                EqualText(left.Name, right.Name) &&
+                EqualText(left.Description, right.Description) &&
+                string.Equals(
+                    NormalizeRulePath(left.ApplicationName),
+                    NormalizeRulePath(right.ApplicationName),
+                    StringComparison.OrdinalIgnoreCase) &&
+                EqualText(left.ServiceName, right.ServiceName) &&
+                left.Protocol == right.Protocol &&
+                EqualText(left.LocalPorts, right.LocalPorts) &&
+                EqualText(left.RemotePorts, right.RemotePorts) &&
+                EqualText(
+                    left.IcmpTypesAndCodes,
+                    right.IcmpTypesAndCodes) &&
+                EqualText(left.LocalAddresses, right.LocalAddresses) &&
+                EqualText(left.RemoteAddresses, right.RemoteAddresses) &&
+                left.Direction == right.Direction &&
+                left.Action == right.Action &&
+                left.Enabled == right.Enabled &&
+                left.Profiles == right.Profiles &&
+                EqualText(left.Grouping, right.Grouping) &&
+                EqualText(left.InterfaceTypes, right.InterfaceTypes) &&
+                left.EdgeTraversal == right.EdgeTraversal;
+        }
+
+        private static bool IsMinimalFirewallRule(
+            FirewallRuleSnapshot rule)
+        {
+            return
+                rule.Grouping.EndsWith(
+                    MFWConstants.MfwRuleSuffix,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    rule.Grouping,
+                    MFWConstants.MainRuleGroup,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    rule.Grouping,
+                    MFWConstants.WildcardRuleGroup,
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool RuleAlreadyExists(INetFwRule2 candidate)
+        {
+            FirewallRuleSnapshot candidateSnapshot =
+                CreateRuleSnapshot(candidate);
+
+            INetFwPolicy2? firewallPolicy = null;
+            INetFwRules? rulesCollection = null;
+
+            try
+            {
+                firewallPolicy = GetLocalPolicy();
+                rulesCollection = firewallPolicy.Rules;
+
+                foreach (INetFwRule2 existingRule in rulesCollection)
                 {
-                    Debug.WriteLine("[ERROR] CreateRule: Firewall policy or rules collection is null.");
+                    try
+                    {
+                        FirewallRuleSnapshot existingSnapshot =
+                            CreateRuleSnapshot(existingRule);
+
+                        if (AreRulesExactlyEqual(
+                                existingSnapshot,
+                                candidateSnapshot))
+                        {
+                            return true;
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        Debug.WriteLine(
+                            $"[WARN] RuleAlreadyExists: Could not inspect " +
+                            $"a firewall rule. HResult: 0x{ex.HResult:X8}. " +
+                            $"Message: {ex.Message}");
+                    }
+                    finally
+                    {
+                        if (existingRule != null)
+                        {
+                            Marshal.ReleaseComObject(existingRule);
+                        }
+                    }
+                }
+
+                return false;
+            }
+            finally
+            {
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
+            }
+        }
+
+        public static void CreateRule(INetFwRule2 rule)
+        {
+            INetFwPolicy2? firewallPolicy = null;
+            INetFwRules? rulesCollection = null;
+
+            try
+            {
+                if (RuleAlreadyExists(rule))
+                {
+                    Debug.WriteLine(
+                        $"[INFO] CreateRule: Exact duplicate skipped: " +
+                        $"'{rule.Name}'.");
+
                     return;
                 }
+
+                firewallPolicy = GetLocalPolicy();
+
+                if (firewallPolicy.Rules == null)
+                {
+                    Debug.WriteLine(
+                        "[ERROR] CreateRule: Firewall rules collection is null.");
+
+                    return;
+                }
+
                 rulesCollection = firewallPolicy.Rules;
 
                 try
                 {
-                    Debug.WriteLine($"[FirewallRuleService] Committing Rule: {rule.Name}");
-                    Debug.WriteLine($"[FirewallRuleService] - App: {rule.ApplicationName}");
-                    Debug.WriteLine($"[FirewallRuleService] - Interfaces: {rule.InterfaceTypes}");
-                    Debug.WriteLine($"[FirewallRuleService] - Protocol: {rule.Protocol}");
+                    Debug.WriteLine(
+                        $"[FirewallRuleService] Committing Rule: {rule.Name}");
+
+                    Debug.WriteLine(
+                        $"[FirewallRuleService] - App: " +
+                        $"{rule.ApplicationName}");
+
+                    Debug.WriteLine(
+                        $"[FirewallRuleService] - Interfaces: " +
+                        $"{rule.InterfaceTypes}");
+
+                    Debug.WriteLine(
+                        $"[FirewallRuleService] - Protocol: {rule.Protocol}");
                 }
-                catch
+                catch (COMException)
                 {
-                    Debug.WriteLine("[FirewallRuleService] Could not read rule properties for logging.");
+                    Debug.WriteLine(
+                        "[FirewallRuleService] Could not read rule " +
+                        "properties for logging.");
                 }
 
                 rulesCollection.Add(rule);
             }
             catch (COMException ex)
             {
-                if (ex.HResult == HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS)
+                if (ex.HResult ==
+                    HRESULT_FROM_WIN32_ERROR_ALREADY_EXISTS)
                 {
-                    Debug.WriteLine($"[WARN] CreateRule: Rule '{rule?.Name}' already exists. Skipping.");
+                    Debug.WriteLine(
+                        $"[WARN] CreateRule: Rule '{rule?.Name}' " +
+                        "already exists. Skipping.");
                 }
                 else
                 {
-                    Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
+                    Debug.WriteLine(
+                        $"[ERROR] CreateRule " +
+                        $"('{rule?.Name ?? "null"}'): Failed. " +
+                        $"HResult: 0x{ex.HResult:X8}. " +
+                        $"Message: {ex.Message}");
+
                     throw;
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[ERROR] CreateRule ('{rule?.Name ?? "null"}'): Unexpected error. Type: {ex.GetType().Name}. Message: {ex.Message}");
+                Debug.WriteLine(
+                    $"[ERROR] CreateRule " +
+                    $"('{rule?.Name ?? "null"}'): Unexpected error. " +
+                    $"Type: {ex.GetType().Name}. " +
+                    $"Message: {ex.Message}");
+
                 throw;
             }
             finally
@@ -533,6 +809,123 @@ namespace MinimalFirewall
                     Marshal.ReleaseComObject(rule);
                 }
 
+                if (rulesCollection != null)
+                {
+                    Marshal.ReleaseComObject(rulesCollection);
+                }
+
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
+            }
+        }
+
+        public static int DeleteExactDuplicateMfwRules()
+        {
+            INetFwPolicy2? firewallPolicy = null;
+            INetFwRules? rulesCollection = null;
+
+            try
+            {
+                firewallPolicy = GetLocalPolicy();
+                rulesCollection = firewallPolicy.Rules;
+
+                var snapshots =
+                    new List<FirewallRuleSnapshot>();
+
+                foreach (INetFwRule2 rule in rulesCollection)
+                {
+                    try
+                    {
+                        FirewallRuleSnapshot snapshot =
+                            CreateRuleSnapshot(rule);
+
+                        if (IsMinimalFirewallRule(snapshot))
+                        {
+                            snapshots.Add(snapshot);
+                        }
+                    }
+                    catch (COMException ex)
+                    {
+                        Debug.WriteLine(
+                            $"[WARN] Duplicate cleanup could not inspect " +
+                            $"a rule. HResult: 0x{ex.HResult:X8}. " +
+                            $"Message: {ex.Message}");
+                    }
+                    finally
+                    {
+                        if (rule != null)
+                        {
+                            Marshal.ReleaseComObject(rule);
+                        }
+                    }
+                }
+
+                var duplicateGroups =
+                    new List<List<FirewallRuleSnapshot>>();
+
+                foreach (FirewallRuleSnapshot snapshot in snapshots)
+                {
+                    List<FirewallRuleSnapshot>? matchingGroup =
+                        duplicateGroups.FirstOrDefault(group =>
+                            AreRulesExactlyEqual(group[0], snapshot));
+
+                    if (matchingGroup == null)
+                    {
+                        duplicateGroups.Add([snapshot]);
+                    }
+                    else
+                    {
+                        matchingGroup.Add(snapshot);
+                    }
+                }
+
+                int removedCount = 0;
+
+                foreach (List<FirewallRuleSnapshot> group in
+                         duplicateGroups.Where(g => g.Count > 1))
+                {
+                    // Keep the first copy and remove only the extras.
+                    for (int index = 1; index < group.Count; index++)
+                    {
+                        string duplicateName = group[index].Name;
+
+                        if (string.IsNullOrWhiteSpace(duplicateName))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            rulesCollection.Remove(duplicateName);
+                            removedCount++;
+
+                            Debug.WriteLine(
+                                $"[INFO] Removed exact duplicate rule: " +
+                                $"'{duplicateName}'.");
+                        }
+                        catch (FileNotFoundException)
+                        {
+                            Debug.WriteLine(
+                                $"[WARN] Duplicate rule '{duplicateName}' " +
+                                "was already removed.");
+                        }
+                        catch (COMException ex)
+                        {
+                            Debug.WriteLine(
+                                $"[ERROR] Failed to remove duplicate rule " +
+                                $"'{duplicateName}'. " +
+                                $"HResult: 0x{ex.HResult:X8}. " +
+                                $"Message: {ex.Message}");
+                        }
+                    }
+                }
+
+                return removedCount;
+            }
+            finally
+            {
                 if (rulesCollection != null)
                 {
                     Marshal.ReleaseComObject(rulesCollection);

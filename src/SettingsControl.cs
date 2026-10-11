@@ -428,25 +428,46 @@ namespace MinimalFirewall
             }
         }
 
-        private async void CleanUpOrphanedRulesButton_Click(object? sender, EventArgs e)
+        private async void CleanUpOrphanedRulesButton_Click(
+    object? sender,
+    EventArgs e)
         {
             var result = Messenger.MessageBox(
-                "This will scan for rules whose associated application no longer exists on disk and delete them.\n\nAre you sure you want to continue?",
-                "Clean Up Orphaned Rules",
+                "This will:\n\n" +
+                "1. Delete Minimal Firewall rules whose application " +
+                "no longer exists.\n" +
+                "2. Remove exact duplicate Minimal Firewall rules, " +
+                "keeping one copy.\n\n" +
+                "Rules are considered duplicates only when every " +
+                "firewall setting matches, ignoring letter casing.\n\n" +
+                "Continue?",
+                "Clean Up Rules",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
-            if (result == DialogResult.Yes)
+            if (result != DialogResult.Yes)
             {
-                try
-                {
-                    await _mainViewModel.CleanUpOrphanedRulesAsync();
-                }
-                catch (Exception ex)
-                {
-                    _activityLogger?.LogException("CleanOrphanedRules", ex);
-                    Messenger.MessageBox($"Failed to clean rules: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                return;
+            }
+
+            try
+            {
+                await _mainViewModel.CleanUpOrphanedRulesAsync();
+
+                await (DataRefreshRequested?.Invoke()
+                       ?? Task.CompletedTask);
+            }
+            catch (Exception ex)
+            {
+                _activityLogger?.LogException(
+                    "CleanOrphanedAndDuplicateRules",
+                    ex);
+
+                Messenger.MessageBox(
+                    $"Failed to clean rules: {ex.Message}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

@@ -943,45 +943,121 @@ namespace MinimalFirewall
             PendingConnections.Remove(pending);
         }
 
+        private HashSet<RuleType> GetCurrentRuleTypeFilters()
+        {
+            var types = new HashSet<RuleType>();
+
+            if (_appSettings.FilterPrograms)
+            {
+                types.Add(RuleType.Program);
+            }
+
+            if (_appSettings.FilterServices)
+            {
+                types.Add(RuleType.Service);
+            }
+
+            if (_appSettings.FilterUwp)
+            {
+                types.Add(RuleType.UWP);
+            }
+
+            if (_appSettings.FilterWildcards)
+            {
+                types.Add(RuleType.Wildcard);
+            }
+
+            types.Add(RuleType.Advanced);
+
+            return types;
+        }
+
         public async Task CleanUpOrphanedRulesAsync()
         {
-            using var statusForm = new StatusForm("Scanning for orphaned rules...", _appSettings);
+            using var statusForm =
+                new StatusForm(
+                    "Scanning for orphaned and duplicate rules...",
+                    _appSettings);
+
             statusForm.Show(Form.ActiveForm);
-            var progress = new Progress<int>(p => statusForm.UpdateProgress(p));
-            var cts = new CancellationTokenSource();
-            statusForm.FormClosing += (s, e) =>
+
+            var progress = new Progress<int>(
+                percentage => statusForm.UpdateProgress(percentage));
+
+            using var cts = new CancellationTokenSource();
+
+            statusForm.FormClosing += (_, e) =>
             {
                 if (e.CloseReason == CloseReason.UserClosing)
                 {
                     cts.Cancel();
                 }
             };
+
             try
             {
-                var deletedRules = await _actionsService.CleanUpOrphanedRulesAsync(cts.Token, progress);
-                if (!cts.IsCancellationRequested)
+                var deletedOrphanedRules =
+                    await _actionsService.CleanUpOrphanedRulesAsync(
+                        cts.Token,
+                        progress);
+
+                if (cts.IsCancellationRequested)
                 {
-                    statusForm.Close();
-                    Messenger.MessageBox(
-                        $"{deletedRules.Count} orphaned rule(s) found and deleted.",
-                        "Cleanup Complete",
-                        MessageBoxButtons.OK,
-                        MsgIcon.None);
-                    ClearRulesCache();
+                    return;
                 }
+
+                statusForm.UpdateStatus(
+                    "Scanning for exact duplicate rules...");
+
+                int deletedDuplicateCount = await Task.Run(
+                    FirewallRuleService.DeleteExactDuplicateMfwRules,
+                    cts.Token);
+
+                if (cts.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                ClearRulesCache();
+
+                await RefreshRulesDataAsync(
+                    CancellationToken.None);
+
+                ApplyRulesFilters(
+                    _appSettings.RulesSearchText,
+                    GetCurrentRuleTypeFilters(),
+                    _appSettings.FilterSystem);
+
+                statusForm.Close();
+
+                Messenger.MessageBox(
+                    $"{deletedOrphanedRules.Count} orphaned rule(s) deleted.\n" +
+                    $"{deletedDuplicateCount} exact duplicate rule(s) deleted.",
+                    "Cleanup Complete",
+                    MessageBoxButtons.OK,
+                    MsgIcon.None);
             }
             catch (OperationCanceledException)
             {
-            }
-            catch (Exception ex)
-            {
-                _activityLogger.LogException("CleanUpOrphanedRulesAsync", ex);
                 if (!statusForm.IsDisposed)
                 {
                     statusForm.Close();
                 }
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException(
+                    "CleanUpOrphanedRulesAsync",
+                    ex);
+
+                if (!statusForm.IsDisposed)
+                {
+                    statusForm.Close();
+                }
+
                 Messenger.MessageBox(
-                    "An error occurred during the cleanup process. Please check the debug log for details.",
+                    "An error occurred during cleanup. " +
+                    "Please check the debug log for details.",
                     "Cleanup Error",
                     MessageBoxButtons.OK,
                     MsgIcon.Error);
