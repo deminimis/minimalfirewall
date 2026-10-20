@@ -52,7 +52,7 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
     
 - **Light & Dark Themes:** A clean, modern user interface that's easy on the eyes, day or night, with DPI scaling support for multi-monitor setups.
     
-- **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet, and stores all rules and logs locally in your `%LocalAppData%` folder.
+- **100% Local and Private:** Minimal Firewall contains no telemetry, does not connect to the internet (unless you enable auto-trust publishers/Windows to check certificates), and stores all rules and logs locally in your `%LocalAppData%` folder.
     
 - **Portable:** Minimal Firewall is a single executable that requires no installation. All rules are native to Windows Firewall, so no custom drivers or services are left behind.
     
