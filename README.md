@@ -1,4 +1,4 @@
-<h1>
+<img width="4032" height="307" alt="image" src="https://github.com/user-attachments/assets/30db9c77-861f-4e24-a990-4fdaad525e7b" /><h1>
   Minimal Firewall
   <a href="https://github.com/deminimis/minimalfirewall">
     <img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo1.png" alt="Logo" width="100" height="100">
@@ -42,9 +42,9 @@ The program is designed to be intuitive. For a concise user guide, see the [wiki
     
 - **Live Traffic Monitoring:** The "Live Connections" tab displays all active TCP connections on your system in real-time with optimized polling, showing which process is connected to which remote address.
     
-- **Wildcard Rules:** Easily manage applications that update frequently (like web browsers) by creating rules that apply to any executable within a specific folder. Updates to the wildcard list are now reflected immediately.
+- **File-Path Wildcard Rules:** Easily manage applications that update frequently, such as web browsers, by creating rules that apply to executables within a specific folder. These wildcards apply only to executable file paths, not to domain names. Updates to the wildcard list are reflected immediately.
 
-- **Domain Name Filtering:** Block or allow specific websites and domains (e.g., `example.com`). Since Windows Firewall only understands IP addresses, Minimal Firewall acts as a translator. It runs a lightweight, configurable background timer that securely asks your OS's DNS server to resolve domains into IP addresses. If a domain changes its IP (like CDNs often do), the application silently updates the underlying Windows Firewall IP rules to ensure your rules never break.
+- **Domain Name Filtering:** Block or allow specific, fully qualified hostnames, such as example.com or api.example.com. Since Windows Firewall only understands IP addresses, Minimal Firewall resolves each hostname to its current IP addresses and creates the corresponding Windows Firewall rules. A lightweight, configurable background timer checks for DNS changes and updates the underlying IP rules when necessary. Domain wildcards such as *.example.com are not currently supported; each hostname must be added separately.
 
 - **Rule Import & Export**: Save your entire rule configuration (including advanced and wildcard rules) to a single JSON file. This is perfect for backups or migrating your setup to a new computer. Paths are made portable using environment variables (%LOCALAPPDATA%, etc.) for easy sharing. You can choose to either add imported rules to your existing set or completely replace them.
 
@@ -72,7 +72,6 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 |**Advanced Rule Editor**|✅|❌|✅|✅|
 |**Domain Name Blocking**|✅|✅|✅|❌| 
 |**Firewall Change Auditing**|✅|❌|❌|❌|
-|**Wildcards**|✅|❌|❌|✅|
 |**Open Source**|✅|✅|✅|✅|
 |**Avoids low-level filters**|✅|✅|❌|❌|
 
@@ -92,7 +91,7 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 1. **Do I need to keep the app running?**
     
-    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program, change a rule, or review the historical ledger in the Audit tab. Wildcard rules are only automatically added if the app is open (or closed to tray). If the app is closed, any new updates to the wildcard folders will silently fail until you open the app again.
+    - You do not need to keep the app running to ensure the firewall rules are hardened. These are persistent changes until you unlock it in the app. You only need to run the app when you want to authorize a new program, change a rule, or review the historical ledger in the Audit tab. File-path wildcard rules are processed only while the app is running, including when it is minimized to the system tray. If the app is completely closed, new executables added to wildcard folders will not receive rules until Minimal Firewall is opened again. Domain-name rules do not support wildcards.
   
 2. **How do I completely uninstall Minimal Firewall?**
 
@@ -132,7 +131,7 @@ Minimal Firewall is a **Windows Forms** application written in **C#** on the **.
     
 - **Live Traffic:** The live connection monitor uses the `GetExtendedTcpTable` function from `iphlpapi.dll` to retrieve a list of active TCP connections and their associated Process IDs.
 
-- - **Domain Resolution:** For domain-based rules, the application uses the native Windows `DnsQuery()` API to resolve hostnames to IP addresses. A thread-safe background timer polls for DNS changes at user-defined intervals (to seamlessly handle CDNs and dynamic IPs) and translates these into standard IP-blocking rules within the Windows Firewall engine.
+- - **Domain Resolution:** For domain-based rules, the application resolves each configured hostname to its current IP addresses. A thread-safe background timer checks for DNS changes at user-defined intervals and translates the results into standard IP-based Windows Firewall rules. Only exact hostnames can be resolved; wildcard domain patterns such as *.example.com are not supported.
     
 - **Performance:** The UI utilizes double buffering for smooth data grid rendering and optimized polling for live connections to minimize CPU usage.
     
