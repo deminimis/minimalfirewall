@@ -9,6 +9,7 @@ internal static class Program
     {
         Application.SetHighDpiMode(HighDpiMode.SystemAware);
         Application.EnableVisualStyles();
+        PopupChecks.Run();
 
         static void Check(bool condition, string message)
         {
