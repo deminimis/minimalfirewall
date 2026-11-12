@@ -10,6 +10,8 @@ internal static class PopupChecks
         Directory.CreateDirectory(directory);
         foreach (bool dark in new[] { false, true })
         {
+            Theme.Colors = Theme.GetSystemColors(dark ? 0 : 1);
+            var previousColors = Theme.Colors;
             string message = @"Allow C:\Applications\A very long executable identity\browser.exe" + "\r\n\r\n" +
                 string.Join("\r\n\r\n", Enumerable.Repeat("All profiles, protocols, ports and addresses. Existing scoped and third-party rules are replaced. " +
                 new string('x', 200), 15));
@@ -42,8 +44,9 @@ internal static class PopupChecks
             };
             timer.Start();
             Messenger.MessageBox(message, "Popup regression", MsgIcon.Warning, MessageBoxButtons.YesNo,
-                pIsDarkMode: dark, defaultButton: MessageBoxDefaultButton.Button2);
+                defaultButton: MessageBoxDefaultButton.Button2);
             if (failure != null) throw failure;
+            Check(ReferenceEquals(Theme.Colors, previousColors), "Closing a popup must preserve the application's palette.");
         }
         foreach (bool dark in new[] { false, true })
         foreach (int percent in new[] { 100, 125, 150, 200 })
@@ -105,6 +108,9 @@ internal static class PopupChecks
     private static void ValidateLayout(Form form)
     {
         form.PerformLayout();
+        Application.DoEvents();
+        Capture(form, $"layout-{form.GetType().Name}-{form.Font.SizeInPoints:0.00}.png",
+            Path.Combine(Environment.CurrentDirectory, "artifacts", "applications"));
         Check(Screen.FromControl(form).WorkingArea.Contains(form.Bounds), $"{form.Text}: dialog must remain inside the working area.");
         foreach (var parent in Descendants(form).Prepend(form))
         {
@@ -113,7 +119,7 @@ internal static class PopupChecks
             {
                 var child = children[i];
                 if (parent is not ScrollableControl { AutoScroll: true })
-                    Check(parent.ClientRectangle.Contains(child.Bounds), $"{form.Text}: {child.Name} ({child.GetType().Name}) exceeds {parent.GetType().Name}.");
+                    Check(parent.ClientRectangle.Contains(child.Bounds), $"{form.Text}: {child.Name} ({child.GetType().Name}) {child.Bounds} exceeds {parent.GetType().Name} {parent.ClientRectangle}.");
                 for (int j = i + 1; j < children.Count; j++)
                     Check(!child.Bounds.IntersectsWith(children[j].Bounds), $"{form.Text}: {child.Name} overlaps {children[j].Name}.");
                 if (child is Label label && label.Text.Length > 0)

@@ -257,12 +257,7 @@ public sealed class ApplicationsControl : UserControl
     {
         var rule = SelectedRule;
         if (rule == null || _busy) return;
-        var colors = Theme.Colors;
         using var dialog = new CreateAdvancedRuleForm(_actions, rule, _settings);
-        // The existing editor selects its own palette; retain the active application theme.
-        Theme.Colors = colors;
-        MainForm.RefreshAllThemedControls(dialog);
-        Theme.ApplyTitleBarTheme(dialog.Handle, colors.Surface.R < 128 ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
         if (dialog.ShowDialog(FindForm()) != DialogResult.OK || dialog.RuleVm is not { } updated || rule.HasSameSettings(updated)) return;
         await QueueAndRefreshAsync(() =>
         {

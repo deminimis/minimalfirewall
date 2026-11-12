@@ -46,15 +46,13 @@ namespace DarkModeForms
 
         #region MessageBox
 
-        private static MessageBoxDefaultButton _defaultButton = MessageBoxDefaultButton.Button1;
-
         public static DialogResult MessageBox(string Message)
             => MessageBox(Message, string.Empty, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
         public static DialogResult MessageBox(Exception ex, bool ShowTrace = true) =>
             MessageBox(ex.Message + (ShowTrace ? "\r\n" + ex.StackTrace : ""), "Error!", icon: MessageBoxIcon.Error);
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information, bool? pIsDarkMode = null, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1)
         {
             MsgIcon msgIcon = MsgIcon.None;
             switch (icon)
@@ -65,33 +63,32 @@ namespace DarkModeForms
                 case MessageBoxIcon.Error: msgIcon = MsgIcon.Error; break;
             }
 
-            return MessageBox(Message: Message, title: title, icon: msgIcon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
+            return MessageBox(Message: Message, title: title, icon: msgIcon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: defaultButton, owner: null);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton DefaultButton, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton DefaultButton, bool? pIsDarkMode = null)
         {
-            _defaultButton = DefaultButton;
-            return MessageBox(Message, title, buttons, icon, pIsDarkMode);
+            return MessageBox(Message, title, buttons, icon, pIsDarkMode, DefaultButton);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MsgIcon icon = MsgIcon.None, bool? pIsDarkMode = null)
         {
             // Explicitly name arguments 
-            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: MessageBoxDefaultButton.Button1, owner: null);
         }
 
-        public static DialogResult MessageBox(Form pOwner, string Message, string title, MessageBoxButtons buttons, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(Form pOwner, string Message, string title, MessageBoxButtons buttons, MsgIcon icon = MsgIcon.None, bool? pIsDarkMode = null)
         {
             // Explicitly name arguments
-            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: pOwner);
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: MessageBoxDefaultButton.Button1, owner: pOwner);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
+        public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool? pIsDarkMode = null, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
         {
             var previousColors = Theme.Colors;
             try
             {
-                using var form = CreateMessageDialog(Message, title, icon, buttons, pIsDarkMode, defaultButton, owner);
+                using var form = CreateMessageDialog(Message, title, icon, buttons, pIsDarkMode ?? Theme.Colors.Surface.R < 128, defaultButton, owner);
                 return owner == null ? form.ShowDialog() : form.ShowDialog(owner);
             }
             finally { Theme.Colors = previousColors; }
@@ -160,7 +157,7 @@ namespace DarkModeForms
 
             var commands = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.RightToLeft,
+                Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true, Margin = new Padding(0, Scale(16), 0, 0)
             };
             var commandButtons = GenerateDialogButtons(form, commands, buttons, GetButtonTranslations(GetCurrentLanguage()), form.Font.Height);

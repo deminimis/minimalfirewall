@@ -86,12 +86,12 @@ namespace MinimalFirewall
 
         private void ApplyDynamicTheme()
         {
-            bool isDark = _appSettings.Theme == "Dark";
+            bool isDark = _appSettings.Theme == "Auto" ? Theme.IsSystemDarkMode() : _appSettings.Theme == "Dark";
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
             Theme.ApplyTitleBarTheme(Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             BackColor = Theme.Colors.Background;
             ForeColor = Theme.Colors.TextInactive;
-
+            MainForm.RefreshAllThemedControls(this);
         }
 
         private void BindDynamicUI()
