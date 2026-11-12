@@ -142,6 +142,7 @@ public sealed class ApplicationsControl : UserControl
         _background = background;
         _settings = settings;
         _icons = icons;
+        InitializeColumnSettings(settings);
         _viewModel.ReportedBlockedAttempts.CollectionChanged += AttemptsChanged;
         RefreshApplications();
     }
@@ -152,6 +153,20 @@ public sealed class ApplicationsControl : UserControl
         _applications.Columns["Icon"]!.Visible = _settings.ShowAppIcons;
         DisplayApplications(ApplicationEntry.Build(_viewModel.ApplicationRules, _viewModel.ReportedBlockedAttempts)
             .Where(e => e.Matches(_search.Text.Trim(), _filter.SelectedIndex)).ToList());
+    }
+
+    internal void InitializeColumnSettings(AppSettings settings)
+    {
+        foreach (var (grid, columns) in new[]
+        {
+            (_applications, settings.ApplicationsColumns), (_rules, settings.ApplicationRulesColumns),
+            (_attempts, settings.ApplicationAttemptsColumns)
+        })
+        {
+            DataGridViewHelper.RestoreColumnSettings(grid, columns);
+            grid.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+            grid.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+        }
     }
 
     internal void DisplayApplications(List<ApplicationEntry> entries)

@@ -8,6 +8,7 @@ The Applications view implements the first iteration proposed in [issue #176](ht
 - `MainForm.cs` and its designer add navigation and reuse existing refresh, theme, icon, and background-operation services. The Rules view's delayed unload cannot clear a visible Applications snapshot.
 - `ThemedTabControl.cs` draws keyboard focus for the application details tabs and the main navigation.
 - `tests/ApplicationsChecks` exercises identity, filtering, scope preservation, observation semantics, and UI refresh state. The Windows workflow builds the application and runs these checks without invoking firewall mutation actions.
+- `Messenger.cs` bounds confirmations to the monitor working area, scrolls long messages, uses the requested default button, and preserves the application's palette. The rule editor and status dialog use content-driven layouts instead of overlapping pixel positions.
 
 ## Behavior and scope
 
@@ -25,7 +26,7 @@ Edit opens the existing advanced rule editor for the individual selected rule. I
 
 ## Validation
 
-The [Windows verification run](https://github.com/malys/minimalfirewall/actions/runs/43255897115) passes compilation, model checks, UI refresh checks, and search/filter/direction mnemonic checks. Only pre-existing nullable warnings remain in unrelated source files.
+The Windows workflow compiles the application and checks the model, UI refresh state, search/filter/direction mnemonics, and popup layout. It opens the actual confirmation, progress, and rule-editor forms; long messages must scroll, buttons must remain visible, and sibling controls must not overlap.
 
 Committed captures show standalone controls from that run, using an empty baseline and synthetic application data, at 100% layout scale:
 
@@ -41,7 +42,7 @@ msbuild tests/ApplicationsChecks/ApplicationsChecks.csproj /restore /p:Configura
 dotnet tests/ApplicationsChecks/bin/x64/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.dll
 ```
 
-The checks produce an empty existing Rules control capture and populated Applications captures using synthetic data, in both themes at 100%, 125%, 150%, and 200% layout scaling. GitHub Actions uploads these as `applications-screenshots`. Layout scaling in the harness does not replace a real Windows display-DPI check.
+The checks produce captures using synthetic data in both themes with fonts at 100%, 125%, 150%, and 200% of their default size. Unlike enlarging control bounds alone, this exercises text wrapping and layout at a fixed viewport. They also resize the rule editor and toggle its protocol sections. GitHub Actions uploads the captures as `applications-screenshots`. Font-size checks do not replace a real Windows display-DPI check.
 
 Manual acceptance checks on a disposable Windows installation:
 

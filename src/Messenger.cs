@@ -105,8 +105,8 @@ namespace DarkModeForms
                 MinimizeBox = false,
                 Text = title,
                 Font = SystemFonts.MessageBoxFont ?? SystemFonts.DefaultFont,
-                AutoScaleMode = AutoScaleMode.Dpi,
-                AutoScaleDimensions = new SizeF(96, 96),
+                // Layout dimensions are converted with DeviceDpi below; avoid scaling them twice.
+                AutoScaleMode = AutoScaleMode.None,
                 KeyPreview = true
             };
             if (owner != null) form.Location = owner.Location;

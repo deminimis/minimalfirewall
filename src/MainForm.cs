@@ -163,7 +163,7 @@ namespace MinimalFirewall
             applicationsControl1.Initialize(_mainViewModel, _actionsService, _backgroundTaskService, _appSettings, _iconService);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService);
+            groupsControl1.Initialize(_groupManager, _backgroundTaskService, _appSettings);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));

@@ -7,6 +7,10 @@ namespace MinimalFirewall
     {
         public static void RestoreColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings)
         {
+            // Fill sizing redistributes user widths whenever the viewport changes.
+            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            grid.AllowUserToResizeColumns = true;
+            foreach (DataGridViewColumn column in grid.Columns) column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
             if (settings == null || settings.Count == 0) return;
 
             var sortedList = new List<KeyValuePair<string, ColumnState>>(settings);

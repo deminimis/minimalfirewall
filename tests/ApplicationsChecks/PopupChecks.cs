@@ -92,7 +92,30 @@ internal static class PopupChecks
                 editor.MinimumSize = new Size(480, 320);
                 editor.ClientSize = new Size(600, 480);
                 ValidateLayout(editor);
+                var protocol = Descendants(editor).OfType<ComboBox>().Single(c => c.Name == "protocolComboBox");
+                foreach (var option in protocol.Items.Cast<ProtocolTypes>().Where(p => p.Value is 1 or 6 or 256).ToArray())
+                {
+                    protocol.SelectedItem = option;
+                    ValidateLayout(editor);
+                }
                 Capture(editor, $"editor-{(dark ? "dark" : "light")}-font-{percent}.png", directory);
+            }
+            using (var notification = new NotifierForm(new PendingConnectionViewModel
+            {
+                AppPath = @"C:\Applications\Browser\browser.exe", Direction = "Outbound", ServiceName = "Example service",
+                RemoteAddress = "192.0.2.1", RemotePort = "443"
+            }, dark))
+            {
+                using var font = new Font(notification.Font.FontFamily, notification.Font.SizeInPoints * percent / 100f);
+                notification.Font = font;
+                notification.Show();
+                ValidateLayout(notification);
+                var publisher = Descendants(notification).OfType<CheckBox>().Single(c => c.Name == "trustPublisherCheckBox");
+                publisher.Text = "Trust: Example Publisher";
+                publisher.Visible = true;
+                notification.ClientSize = new Size(450, 330);
+                ValidateLayout(notification);
+                Capture(notification, $"notification-{(dark ? "dark" : "light")}-font-{percent}.png", directory);
             }
         }
         Console.WriteLine("Popup bounds, layout, large-font and default-button checks passed.");

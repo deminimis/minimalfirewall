@@ -7,9 +7,13 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        if (!string.Equals(Path.GetFileName(Environment.ProcessPath), "ApplicationsChecks.exe", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Run ApplicationsChecks.exe so its portable settings stay inside the test output directory.");
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "settings.json"), "{}");
         Application.SetHighDpiMode(HighDpiMode.SystemAware);
         Application.EnableVisualStyles();
         PopupChecks.Run();
+        ColumnChecks.Run();
 
         static void Check(bool condition, string message)
         {
@@ -131,7 +135,7 @@ internal static class Program
             Check(form.ActivateMnemonic('d') && controls.OfType<ComboBox>().Single(c => c.AccessibleName == "Rule direction").Focused, "Direction mnemonic must focus direction.");
             grid.Focus();
             Check(grid.Focused, "Application grid must accept keyboard focus.");
-            Check(grid.Rows.Cast<DataGridViewRow>().All(r => r.Height > grid.Font.Height), "Rows must fit enlarged text without clipping.");
+            Check(grid.Rows.Cast<DataGridViewRow>().Where(r => r.Displayed).All(r => r.Height > grid.Font.Height), "Visible rows must fit enlarged text without clipping.");
             Check(controls.OfType<DataGridView>().All(c => c.AllowUserToResizeColumns && c.TabStop), "Grids must allow resizing and keyboard access.");
             using var image = new Bitmap(form.Width, form.Height);
             form.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));

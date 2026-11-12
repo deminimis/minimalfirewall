@@ -59,8 +59,6 @@ namespace MinimalFirewall
             AutoScaleDimensions = new SizeF(96, 96);
             AutoScaleMode = AutoScaleMode.Dpi;
             Font = SystemFonts.MessageBoxFont;
-            AutoSize = true;
-            AutoSizeMode = AutoSizeMode.GrowAndShrink;
             ClientSize = new Size(420, 150);
             MinimumSize = new Size(360, 150);
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -69,6 +67,7 @@ namespace MinimalFirewall
             Name = "StatusForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Scanning...";
+            layout.SizeChanged += (_, _) => ClientSize = new Size(ClientSize.Width, layout.Height);
         }
 
         #endregion

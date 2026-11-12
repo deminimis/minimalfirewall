@@ -31,7 +31,6 @@ namespace MinimalFirewall
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
         private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = [];
-        private readonly Dictionary<DataGridViewColumn, int> _rulesColumnMaximumWidths = [];
         private readonly System.Windows.Forms.Timer _searchDebounceTimer;
 
         public event Func<Task>? DataRefreshRequested;
@@ -99,9 +98,15 @@ namespace MinimalFirewall
             uwpFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             wildcardFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
 
+            InitializeColumnSettings(appSettings);
+        }
+
+        internal void InitializeColumnSettings(AppSettings appSettings)
+        {
+            _appSettings = appSettings;
             rulesDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
             ConfigureCompactRuleColumns();
+            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
@@ -522,7 +527,6 @@ namespace MinimalFirewall
                     maximumWidth = Math.Max(maximumWidth, statusWidth);
                 }
 
-                _rulesColumnMaximumWidths[column] = maximumWidth;
                 if (column.Width > maximumWidth)
                 {
                     column.Width = maximumWidth;
@@ -532,11 +536,6 @@ namespace MinimalFirewall
 
         private void RulesDataGridView_ColumnWidthChanged(object? sender, DataGridViewColumnEventArgs e)
         {
-            if (_rulesColumnMaximumWidths.TryGetValue(e.Column, out int maximumWidth) && e.Column.Width > maximumWidth)
-            {
-                e.Column.Width = maximumWidth;
-            }
-
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
         }
 
