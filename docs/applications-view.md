@@ -6,6 +6,7 @@ The Applications view implements the first iteration proposed in [issue #176](ht
 - `ApplicationsControl.cs` provides search, filters, executable details, scoped rule inspection, reported blocked attempts, and existing rule actions. It preserves the selected executable, focused column, and scroll position when the list updates.
 - `MainViewModel.cs` reuses the data service's unaggregated rule snapshot and retains the last 500 reported blocked attempts for the session. `DataModels.cs` adds the report timestamp.
 - `MainForm.cs` and its designer add navigation and reuse existing refresh, theme, icon, and background-operation services. The Rules view's delayed unload cannot clear a visible Applications snapshot.
+- `ThemedTabControl.cs` draws keyboard focus for the application details tabs and the main navigation.
 - `tests/ApplicationsChecks` exercises identity, filtering, scope preservation, observation semantics, and UI refresh state. The Windows workflow builds the application and runs these checks without invoking firewall mutation actions.
 
 ## Behavior and scope
@@ -28,7 +29,7 @@ Use Windows with the .NET 10 SDK and Visual Studio MSBuild, which supports COM r
 
 ```powershell
 msbuild tests/ApplicationsChecks/ApplicationsChecks.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
-dotnet tests/ApplicationsChecks/bin/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.dll
+dotnet tests/ApplicationsChecks/bin/x64/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.dll
 ```
 
 The checks produce an empty existing Rules control capture and populated Applications captures using synthetic data, in both themes at 100%, 125%, 150%, and 200% layout scaling. GitHub Actions uploads these as `applications-screenshots`. Layout scaling in the harness does not replace a real Windows display-DPI check.

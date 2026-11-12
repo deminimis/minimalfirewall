@@ -46,8 +46,10 @@ public sealed class ApplicationsControl : UserControl
         var searchBar = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 2 };
         searchBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
         searchBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-        searchBar.Controls.Add(new ThemedLabel { Text = "&Search applications", AutoSize = true }, 0, 0);
-        searchBar.Controls.Add(new ThemedLabel { Text = "&Filter applications", AutoSize = true }, 1, 0);
+        _search.TabIndex = 1;
+        _filter.TabIndex = 3;
+        searchBar.Controls.Add(new ThemedLabel { Text = "&Search applications", AutoSize = true, TabIndex = 0 }, 0, 0);
+        searchBar.Controls.Add(new ThemedLabel { Text = "&Filter applications", AutoSize = true, TabIndex = 2 }, 1, 0);
         searchBar.Controls.Add(_search, 0, 1);
         searchBar.Controls.Add(_filter, 1, 1);
 
@@ -197,11 +199,25 @@ public sealed class ApplicationsControl : UserControl
     private void ShowDetails()
     {
         var entry = SelectedApplication;
+        string? selectedRule = SelectedRule?.ApplicationName.Equals(entry?.AppPath, StringComparison.OrdinalIgnoreCase) == true
+            ? SelectedRule.Name : null;
+        int firstRule = _rules.FirstDisplayedScrollingRowIndex;
+        int horizontal = _rules.HorizontalScrollingOffset;
         var publishers = entry?.Rules.Select(r => r.AutoAllowedPublisher).Where(p => !string.IsNullOrWhiteSpace(p))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
         _identity.Text = entry == null ? "Select an application to inspect its rules and reported blocks."
             : $"{entry.AppPath}\r\nPublisher (rule metadata): {(publishers.Count > 0 ? string.Join(", ", publishers) : "Not available")}\r\nSignature status: Not available";
         _rules.DataSource = new BindingList<AdvancedRuleViewModel>(entry?.Rules ?? []);
+        if (selectedRule != null && entry != null)
+        {
+            int index = entry.Rules.FindIndex(r => r.Name == selectedRule);
+            if (index >= 0)
+            {
+                _rules.CurrentCell = _rules.Rows[index].Cells[0];
+                _rules.FirstDisplayedScrollingRowIndex = Math.Clamp(firstRule, 0, _rules.Rows.Count - 1);
+                _rules.HorizontalScrollingOffset = horizontal;
+            }
+        }
         _attempts.DataSource = new BindingList<PendingConnectionViewModel>(entry?.Attempts.OrderByDescending(a => a.ObservedAt).ToList() ?? []);
         UpdateActions();
     }
@@ -223,7 +239,8 @@ public sealed class ApplicationsControl : UserControl
         string warning = $"{action} {entry.AppPath}\r\n\r\nDirection: {_direction.Text}.\r\nAll network profiles, protocols, ports and addresses; all services using this executable.\r\n\r\nExisting rules for this executable in the selected direction(s), including scoped and third-party rules, will be replaced.";
         if (action == "Allow") warning += "\r\nExisting Minimal Firewall general block rules for this executable may also be removed in either direction.";
         warning += "\r\n\r\nOther firewall rules may still affect traffic. Continue?";
-        if (Messenger.MessageBox(warning, $"Confirm {action}", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+        if (Messenger.MessageBox(warning, $"Confirm {action}", MsgIcon.Warning, MessageBoxButtons.YesNo,
+            pIsDarkMode: Theme.Colors.Surface.R < 128, defaultButton: MessageBoxDefaultButton.Button2, owner: FindForm()) != DialogResult.Yes) return;
         await QueueAndRefreshAsync(() => _background.EnqueueTask(new FirewallTask(FirewallTaskType.ApplyApplicationRule,
             new ApplyApplicationRulePayload { AppPaths = [entry.AppPath], Action = $"{action} {direction}" })));
     }
@@ -232,7 +249,12 @@ public sealed class ApplicationsControl : UserControl
     {
         var rule = SelectedRule;
         if (rule == null || _busy) return;
+        var colors = Theme.Colors;
         using var dialog = new CreateAdvancedRuleForm(_actions, rule, _settings);
+        // The existing editor selects its own palette; retain the active application theme.
+        Theme.Colors = colors;
+        MainForm.RefreshAllThemedControls(dialog);
+        Theme.ApplyTitleBarTheme(dialog.Handle, colors.Surface.R < 128 ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
         if (dialog.ShowDialog(FindForm()) != DialogResult.OK || dialog.RuleVm is not { } updated || rule.HasSameSettings(updated)) return;
         await QueueAndRefreshAsync(() =>
         {
@@ -255,7 +277,8 @@ public sealed class ApplicationsControl : UserControl
         }
         catch (Exception ex)
         {
-            if (!IsDisposed) Messenger.MessageBox($"Could not update application rules: {ex.Message}", "Applications", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (!IsDisposed) Messenger.MessageBox($"Could not update application rules: {ex.Message}", "Applications",
+                MessageBoxButtons.OK, MessageBoxIcon.Error, pIsDarkMode: Theme.Colors.Surface.R < 128);
         }
         finally { _busy = false; if (!IsDisposed) UpdateActions(); }
     }

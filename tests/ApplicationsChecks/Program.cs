@@ -63,6 +63,8 @@ Check(ApplicationEntry.Build([first, first], []).Single().RuleSummary == "Multip
 var latest = new PendingConnectionViewModel { AppPath = attempt.AppPath, ObservedAt = timestamp.AddMinutes(2) };
 Check(ApplicationEntry.Build([first], [latest, attempt]).Single().LatestAttempt == latest.ObservedAt, "Use latest timestamp, independent of input order.");
 Check(ApplicationEntry.Build([], []).Count == 0, "Handle an empty snapshot.");
+Check(ApplicationEntry.Build([new() { ApplicationName = @"C:\Tools\legacy.com" }], []).Count == 1, "Support executable paths beyond the .exe extension.");
+Check(ApplicationEntry.Build([new() { ApplicationName = @"relative\tool.exe" }], []).Count == 0, "Do not treat relative paths as executable identities.");
 var screenshotPath = Path.Combine(Environment.CurrentDirectory, "artifacts", "applications");
 Directory.CreateDirectory(screenshotPath);
 using (var before = new Form { ClientSize = new Size(870, 730), Text = "Existing Rules view (empty fixture)" })
@@ -94,6 +96,7 @@ foreach (int percent in new[] { 100, 125, 150, 200 })
     view.DisplayApplications(snapshot);
     var controls = Descendants(view).ToList();
     var grid = controls.OfType<DataGridView>().Single(c => c.AccessibleName == "Applications");
+    grid.Columns["AppPath"].Width = 500;
     grid.CurrentCell = grid.Rows[25].Cells["AppPath"];
     grid.Rows[25].Selected = true;
     grid.FirstDisplayedScrollingRowIndex = 20;
@@ -101,6 +104,7 @@ foreach (int percent in new[] { 100, 125, 150, 200 })
     string selectedPath = ((ApplicationEntry)grid.Rows[25].Tag!).AppPath;
     string topPath = ((ApplicationEntry)grid.Rows[20].Tag!).AppPath;
     int horizontal = grid.HorizontalScrollingOffset;
+    Check(horizontal > 0, "Exercise a genuinely scrolled horizontal viewport.");
     snapshot.Insert(0, new ApplicationEntry { AppPath = @"C:\New\new.exe" });
     view.DisplayApplications(snapshot);
     Check(((ApplicationEntry)grid.CurrentRow!.Tag!).AppPath == selectedPath, "Refresh must preserve selected executable when row positions change.");
@@ -114,6 +118,12 @@ foreach (int percent in new[] { 100, 125, 150, 200 })
     Check(!controls.OfType<Button>().Single(c => c.Text == "&Allow…").Enabled, "Empty result must disable application actions.");
 
     view.DisplayApplications(ApplicationEntry.Build([first, second, conflict], [attempt, observedOnly]));
+    grid.Columns["AppPath"].Width = 260;
+    var ruleGrid = controls.OfType<DataGridView>().Single(c => c.AccessibleName == "Explicit executable rules");
+    ruleGrid.CurrentCell = ruleGrid.Rows[1].Cells["Name"];
+    ruleGrid.Rows[1].Selected = true;
+    view.DisplayApplications(ApplicationEntry.Build([first, second, conflict], [attempt, observedOnly]));
+    Check(((AdvancedRuleViewModel)ruleGrid.CurrentRow!.DataBoundItem!).Name == conflict.Name, "Refresh must preserve the selected individual rule.");
     grid.Focus();
     Check(grid.Focused, "Application grid must accept keyboard focus.");
     Check(controls.OfType<DataGridView>().All(c => c.AllowUserToResizeColumns && c.TabStop), "Grids must allow resizing and keyboard access.");
