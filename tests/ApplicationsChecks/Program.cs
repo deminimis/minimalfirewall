@@ -90,7 +90,8 @@ internal static class Program
             form.Show();
             MainForm.RefreshAllThemedControls(form);
             view.ApplyThemeFixes();
-            form.Scale(new SizeF(percent / 100f, percent / 100f));
+            using var displayFont = new Font(view.Font.FontFamily, view.Font.SizeInPoints * percent / 100f);
+            view.Font = displayFont;
 
             var snapshot = ApplicationEntry.Build([first, second, conflict], [attempt, observedOnly]);
             snapshot.AddRange(Enumerable.Range(0, 60).Select(i => new ApplicationEntry { AppPath = $@"C:\Fixture\Application{i:00}\tool.exe" }));
@@ -130,6 +131,7 @@ internal static class Program
             Check(form.ActivateMnemonic('d') && controls.OfType<ComboBox>().Single(c => c.AccessibleName == "Rule direction").Focused, "Direction mnemonic must focus direction.");
             grid.Focus();
             Check(grid.Focused, "Application grid must accept keyboard focus.");
+            Check(grid.Rows.Cast<DataGridViewRow>().All(r => r.Height > grid.Font.Height), "Rows must fit enlarged text without clipping.");
             Check(controls.OfType<DataGridView>().All(c => c.AllowUserToResizeColumns && c.TabStop), "Grids must allow resizing and keyboard access.");
             using var image = new Bitmap(form.Width, form.Height);
             form.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));

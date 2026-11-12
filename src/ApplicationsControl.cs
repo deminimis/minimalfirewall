@@ -14,7 +14,9 @@ public sealed class ApplicationsControl : UserControl
     private readonly ThemedDataGridView _applications = CreateGrid();
     private readonly ThemedDataGridView _rules = CreateGrid();
     private readonly ThemedDataGridView _attempts = CreateGrid();
-    private readonly TextBox _identity = new() { Dock = DockStyle.Fill, ReadOnly = true, Multiline = true, ScrollBars = ScrollBars.Both, WordWrap = false };
+    private readonly TextBox _identity = new() { Dock = DockStyle.Fill, ReadOnly = true };
+    private readonly ThemedLabel _publisher = new() { Dock = DockStyle.Fill, AutoSize = true };
+    private readonly ThemedLabel _signature = new() { Dock = DockStyle.Fill, AutoSize = true };
     private readonly ThemedLabel _count = new() { AutoSize = true };
     private readonly ThemedLabel _scope = new() { AutoSize = true, Dock = DockStyle.Fill };
     private readonly ComboBox _direction = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Width = 130 };
@@ -80,19 +82,24 @@ public sealed class ApplicationsControl : UserControl
         actions.Controls.Add(new ThemedLabel { Text = "&Direction:", AutoSize = true, Margin = new Padding(3, 8, 3, 3) });
         actions.Controls.AddRange([_direction, _allow, _block, _edit]);
 
+        var identity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Margin = new Padding(0, 8, 0, 8) };
+        identity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        identity.Controls.Add(_identity, 0, 0);
+        identity.Controls.Add(_publisher, 0, 1);
+        identity.Controls.Add(_signature, 0, 2);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.Controls.Add(searchBar, 0, 0);
         layout.Controls.Add(_count, 0, 1);
         layout.Controls.Add(_applications, 0, 2);
-        layout.Controls.Add(_identity, 0, 3);
+        layout.Controls.Add(identity, 0, 3);
         layout.Controls.Add(details, 0, 4);
         layout.Controls.Add(_scope, 0, 5);
         layout.Controls.Add(actions, 0, 6);
@@ -205,8 +212,9 @@ public sealed class ApplicationsControl : UserControl
         int horizontal = _rules.HorizontalScrollingOffset;
         var publishers = entry?.Rules.Select(r => r.AutoAllowedPublisher).Where(p => !string.IsNullOrWhiteSpace(p))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? [];
-        _identity.Text = entry == null ? "Select an application to inspect its rules and reported blocks."
-            : $"{entry.AppPath}\r\nPublisher (rule metadata): {(publishers.Count > 0 ? string.Join(", ", publishers) : "Not available")}\r\nSignature status: Not available";
+        _identity.Text = entry?.AppPath ?? "Select an application to inspect its rules and reported blocks.";
+        _publisher.Text = entry == null ? "" : $"Publisher (rule metadata): {(publishers.Count > 0 ? string.Join(", ", publishers) : "Not available")}";
+        _signature.Text = entry == null ? "" : "Signature status: Not available";
         _rules.DataSource = new BindingList<AdvancedRuleViewModel>(entry?.Rules ?? []);
         if (selectedRule != null && entry != null)
         {
@@ -299,6 +307,8 @@ public sealed class ApplicationsControl : UserControl
         Dock = DockStyle.Fill, ReadOnly = true, AutoGenerateColumns = false, AllowUserToAddRows = false,
         AllowUserToDeleteRows = false, AllowUserToOrderColumns = true, RowHeadersVisible = false,
         MultiSelect = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCellsExceptHeaders,
+        ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
         AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None
     };
 

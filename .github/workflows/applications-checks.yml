@@ -13,6 +13,7 @@ permissions:
 jobs:
   check:
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
