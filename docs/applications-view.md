@@ -8,7 +8,8 @@ The Applications view implements the first iteration proposed in [issue #176](ht
 - `MainForm.cs` and its designer add navigation and reuse existing refresh, theme, icon, and background-operation services. The Rules view's delayed unload cannot clear a visible Applications snapshot.
 - `ThemedTabControl.cs` draws keyboard focus for the application details tabs and the main navigation.
 - `tests/ApplicationsChecks` exercises identity, filtering, scope preservation, observation semantics, and UI refresh state. The Windows workflow builds the application and runs these checks without invoking firewall mutation actions.
-- `Messenger.cs` bounds confirmations to the monitor working area, scrolls long messages, uses the requested default button, and preserves the application's palette. The rule editor and status dialog use content-driven layouts instead of overlapping pixel positions.
+- `Messenger.cs` bounds confirmations to the monitor working area, scrolls long messages, uses the requested default button, and preserves the application's palette. The rule editor, status dialog, and connection notifications use content-driven layouts instead of overlapping pixel positions.
+- Table widths and order use the existing settings serializer. Applications, its two detail grids, Groups, and Wildcards gain persistent column preferences. The shared restore helper disables Fill sizing for Dashboard, Rules, Live Connections, and Audit as well. Rules applies compact defaults before restoring saved widths and no longer caps manual resizing.
 
 ## Behavior and scope
 
@@ -39,10 +40,12 @@ Use Windows with the .NET 10 SDK and Visual Studio MSBuild, which supports COM r
 
 ```powershell
 msbuild tests/ApplicationsChecks/ApplicationsChecks.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
-dotnet tests/ApplicationsChecks/bin/x64/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.dll
+./tests/ApplicationsChecks/bin/x64/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.exe
 ```
 
 The checks produce captures using synthetic data in both themes with fonts at 100%, 125%, 150%, and 200% of their default size. Unlike enlarging control bounds alone, this exercises text wrapping and layout at a fixed viewport. They also resize the rule editor and toggle its protocol sections. GitHub Actions uploads the captures as `applications-screenshots`. Font-size checks do not replace a real Windows display-DPI check.
+
+Run the generated test executable directly. The harness creates portable settings beside that executable, inside the disposable test output directory, to avoid using an installed application's preferences. Column tests use the production settings serializer to verify widths and order after reopening each view.
 
 Manual acceptance checks on a disposable Windows installation:
 

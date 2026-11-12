@@ -93,7 +93,7 @@ internal static class PopupChecks
                 editor.ClientSize = new Size(600, 480);
                 ValidateLayout(editor);
                 var protocol = Descendants(editor).OfType<ComboBox>().Single(c => c.Name == "protocolComboBox");
-                foreach (var option in protocol.Items.Cast<ProtocolTypes>().Where(p => p.Value is 1 or 6 or 256).ToArray())
+                foreach (var option in protocol.Items.Cast<MinimalFirewall.ProtocolTypes>().Where(p => p.Value is 1 or 6 or 256).ToArray())
                 {
                     protocol.SelectedItem = option;
                     ValidateLayout(editor);
