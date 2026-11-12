@@ -10,14 +10,14 @@ namespace MinimalFirewall;
 public sealed class ApplicationsControl : UserControl
 {
     private readonly TextBox _search = new() { Dock = DockStyle.Fill, PlaceholderText = "Application name or executable path" };
-    private readonly ComboBox _filter = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _filter = new() { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat };
     private readonly ThemedDataGridView _applications = CreateGrid();
     private readonly ThemedDataGridView _rules = CreateGrid();
     private readonly ThemedDataGridView _attempts = CreateGrid();
     private readonly TextBox _identity = new() { Dock = DockStyle.Fill, ReadOnly = true, Multiline = true, ScrollBars = ScrollBars.Both, WordWrap = false };
     private readonly ThemedLabel _count = new() { AutoSize = true };
     private readonly ThemedLabel _scope = new() { AutoSize = true, Dock = DockStyle.Fill };
-    private readonly ComboBox _direction = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 130 };
+    private readonly ComboBox _direction = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Width = 130 };
     private readonly ThemedButton _allow = new() { Text = "&Allow…", AutoSize = true };
     private readonly ThemedButton _block = new() { Text = "&Block…", AutoSize = true };
     private readonly ThemedButton _edit = new() { Text = "&Edit selected rule…", AutoSize = true };
@@ -85,7 +85,7 @@ public sealed class ApplicationsControl : UserControl
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -142,7 +142,7 @@ public sealed class ApplicationsControl : UserControl
     public void RefreshApplications()
     {
         if (_viewModel == null || IsDisposed) return;
-        _applications.Columns["Icon"].Visible = _settings.ShowAppIcons;
+        _applications.Columns["Icon"]!.Visible = _settings.ShowAppIcons;
         DisplayApplications(ApplicationEntry.Build(_viewModel.ApplicationRules, _viewModel.ReportedBlockedAttempts)
             .Where(e => e.Matches(_search.Text.Trim(), _filter.SelectedIndex)).ToList());
     }
@@ -150,7 +150,7 @@ public sealed class ApplicationsControl : UserControl
     internal void DisplayApplications(List<ApplicationEntry> entries)
     {
         string? selected = SelectedApplication?.AppPath;
-        string? selectedColumn = _applications.CurrentCell?.OwningColumn.Name;
+        string? selectedColumn = _applications.CurrentCell?.OwningColumn?.Name;
         int first = _applications.FirstDisplayedScrollingRowIndex;
         string? firstPath = first >= 0 ? (_applications.Rows[first].Tag as ApplicationEntry)?.AppPath : null;
         int horizontal = _applications.HorizontalScrollingOffset;
@@ -160,7 +160,7 @@ public sealed class ApplicationsControl : UserControl
             _applications.Rows.Clear();
             foreach (var entry in entries)
             {
-                int row = _applications.Rows.Add(null, entry.Name, entry.AppPath, entry.RuleSummary,
+                int row = _applications.Rows.Add(null!, entry.Name, entry.AppPath, entry.RuleSummary,
                     entry.LatestAttempt?.ToString("g") ?? "Not observed");
                 _applications.Rows[row].Tag = entry;
             }
@@ -169,7 +169,7 @@ public sealed class ApplicationsControl : UserControl
             {
                 int selectedIndex = entries.FindIndex(e => e.AppPath.Equals(selected, StringComparison.OrdinalIgnoreCase));
                 var row = _applications.Rows[Math.Max(0, selectedIndex)];
-                _applications.CurrentCell = row.Cells[selectedColumn != null && _applications.Columns[selectedColumn].Visible ? selectedColumn : "Name"];
+                _applications.CurrentCell = row.Cells[selectedColumn != null && _applications.Columns[selectedColumn]!.Visible ? selectedColumn : "Name"];
                 row.Selected = true;
                 int top = entries.FindIndex(e => e.AppPath.Equals(firstPath, StringComparison.OrdinalIgnoreCase));
                 _applications.FirstDisplayedScrollingRowIndex = top >= 0 ? top : Math.Clamp(first, 0, entries.Count - 1);
