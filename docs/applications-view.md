@@ -25,6 +25,15 @@ Edit opens the existing advanced rule editor for the individual selected rule. I
 
 ## Validation
 
+The [Windows verification run](https://github.com/malys/minimalfirewall/actions/runs/43255897115) passes compilation, model checks, UI refresh checks, and search/filter/direction mnemonic checks. Only pre-existing nullable warnings remain in unrelated source files.
+
+Committed captures show standalone controls from that run, using an empty baseline and synthetic application data, at 100% layout scale:
+
+- [Before: existing Rules control, empty](screenshots/issue-176/before-rules-empty.png)
+- [After: Applications, light](screenshots/issue-176/applications-light.png)
+- [After: Applications, dark](screenshots/issue-176/applications-dark.png)
+- [After: reported blocks, dark](screenshots/issue-176/reported-blocks-dark.png)
+
 Use Windows with the .NET 10 SDK and Visual Studio MSBuild, which supports COM reference generation:
 
 ```powershell
