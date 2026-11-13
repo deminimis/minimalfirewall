@@ -736,6 +736,8 @@ namespace MinimalFirewall
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             var shortSnoozeDuration = TimeSpan.FromSeconds(10);
             var longSnoozeDuration = TimeSpan.FromMinutes(2);
+            // Never widen a local-network-only decision by trusting the publisher.
+            trustPublisher &= decision != "AllowLocalNetwork";
             if (trustPublisher && SignatureValidationService.IsSignatureTrusted(pending.AppPath, out var publisherName) && !string.IsNullOrEmpty(publisherName))
             {
                 _whitelistService.Add(publisherName);

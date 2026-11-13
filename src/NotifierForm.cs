@@ -240,7 +240,8 @@ namespace MinimalFirewall
         private void CloseWithAllow(NotifierResult result)
         {
             Result = result;
-            TrustPublisher = trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
+            // Trusting the publisher allows its apps everywhere, which would defeat a local-network-only rule.
+            TrustPublisher = result == NotifierResult.Allow && trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
             DialogResult = DialogResult.OK;
             Close();
         }
