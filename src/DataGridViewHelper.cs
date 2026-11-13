@@ -7,6 +7,9 @@ namespace MinimalFirewall
     {
         private const int MinRestoredWidth = 20;
 
+        // Columns the designer marked as Fill, recorded before restore resets every column to None.
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<DataGridView, HashSet<string>> _designedFill = new();
+
         public static void RestoreColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
         {
             settings ??= [];
@@ -14,6 +17,11 @@ namespace MinimalFirewall
             // Keep user widths; one text column absorbs unused viewport space.
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             grid.AllowUserToResizeColumns = true;
+            if (!_designedFill.TryGetValue(grid, out _))
+            {
+                _designedFill.Add(grid, grid.Columns.Cast<DataGridViewColumn>()
+                    .Where(c => c.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill).Select(c => c.Name).ToHashSet());
+            }
             foreach (DataGridViewColumn column in grid.Columns) column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
             var sortedList = new List<KeyValuePair<string, ColumnState>>(settings);
             sortedList.Sort((a, b) => a.Value.DisplayIndex.CompareTo(b.Value.DisplayIndex));
@@ -65,7 +73,10 @@ namespace MinimalFirewall
             }
 
             var visible = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).OrderBy(c => c.DisplayIndex).ToList();
-            var fillColumn = visible.LastOrDefault(c => c is DataGridViewTextBoxColumn)
+            // Prefer the designer's fill column (a text column can also hold a drawn toggle, as in Groups).
+            var designed = _designedFill.TryGetValue(grid, out var names) ? names : [];
+            var fillColumn = visible.LastOrDefault(c => designed.Contains(c.Name))
+                ?? visible.LastOrDefault(c => c is DataGridViewTextBoxColumn)
                 ?? visible.LastOrDefault(c => c is not DataGridViewImageColumn and not DataGridViewButtonColumn);
 
             foreach (DataGridViewColumn column in grid.Columns)
