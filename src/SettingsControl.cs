@@ -56,6 +56,7 @@ namespace MinimalFirewall
             Control Row(params Control[] controls)
             {
                 var row = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, Margin = new Padding(0, 0, 0, S(4)) };
+                KeepTransparent(row);
                 foreach (var control in controls)
                 {
                     control.Anchor = AnchorStyles.Left;
@@ -94,6 +95,7 @@ namespace MinimalFirewall
                     AutoSizeMode = AutoSizeMode.GrowAndShrink,
                     Margin = Padding.Empty,
                 };
+                KeepTransparent(body);
                 body.Controls.Add(header);
                 body.Controls.AddRange(rows);
                 var card = new DarkModeForms.ThemedPanel
@@ -166,6 +168,19 @@ namespace MinimalFirewall
             mainSettingsPanel.Controls.Add(_cardFlow);
             _cardFlow.BringToFront();
             SizeCards();
+        }
+
+        // The theme pass repaints every panel in the window color; inner layout panels must show the card instead.
+        private static void KeepTransparent(Control panel)
+        {
+            panel.BackColor = Color.Transparent;
+            panel.BackColorChanged += (_, _) =>
+            {
+                if (panel.BackColor != Color.Transparent)
+                {
+                    panel.BackColor = Color.Transparent;
+                }
+            };
         }
 
         private void SizeCards()
