@@ -31,7 +31,8 @@ namespace MinimalFirewall
                     value = typed;
                     return true;
                 }
-                _entries.TryRemove(key, out _);
+                // Remove only the expired instance; another thread may have just stored a fresh one.
+                _entries.TryRemove(new KeyValuePair<string, Entry>(key, entry));
             }
 
             value = null;
@@ -46,7 +47,7 @@ namespace MinimalFirewall
             {
                 if (pair.Value.IsExpired(now))
                 {
-                    _entries.TryRemove(pair.Key, out _);
+                    _entries.TryRemove(pair);
                 }
             }
             _entries[key] = new Entry(value, slidingExpiration);
