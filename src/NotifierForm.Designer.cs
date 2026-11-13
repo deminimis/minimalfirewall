@@ -85,7 +85,10 @@ namespace MinimalFirewall
             _notificationLayout.Controls.Add(trustPublisherCheckBox, 0, 3);
             _notificationLayout.Controls.Add(Commands(copyDetailsButton, createWildcardButton, tempAllowButton), 0, 4);
             _notificationLayout.Controls.Add(Commands(allowButton, blockButton, ignoreButton), 0, 5);
-            _notificationLayout.Layout += (_, _) => FitToWorkingArea();
+            _notificationLayout.Layout += (_, _) =>
+            {
+                if (IsHandleCreated && !_fittingLayout) BeginInvoke((Action)FitToWorkingArea);
+            };
             Controls.Add(_notificationLayout);
             Font = SystemFonts.MessageBoxFont;
             AutoScaleDimensions = new SizeF(96, 96);

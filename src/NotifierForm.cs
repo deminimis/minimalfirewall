@@ -163,8 +163,9 @@ namespace MinimalFirewall
                 MinimumSize = new Size(minimumWidth, Math.Min(MinimumSize.Height, maximumHeight));
                 Width = Math.Clamp(Width, minimumWidth, maximumWidth);
                 pathLabel.MinimumSize = new Size(0, Font.Height * 3);
-                int minimumHeight = Math.Min(maximumHeight,
-                    _notificationLayout.GetPreferredSize(new Size(ClientSize.Width, 0)).Height + frameHeight);
+                int contentHeight = _notificationLayout.Padding.Vertical + pathLabel.MinimumSize.Height + pathLabel.Margin.Vertical
+                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != pathLabel).Sum(c => c.Height + c.Margin.Vertical);
+                int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
                 MinimumSize = new Size(minimumWidth, minimumHeight);
                 Height = Math.Clamp(Height, minimumHeight, maximumHeight);
                 Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
