@@ -177,7 +177,10 @@ namespace MinimalFirewall
                 }
 
                 Save();
-            }, TaskScheduler.Default);
+            },
+            // The UI thread edits the column dictionaries; serializing them on another thread can throw
+            // "Collection was modified" and silently lose the save. Save on the caller's UI thread when there is one.
+            SynchronizationContext.Current != null ? TaskScheduler.FromCurrentSynchronizationContext() : TaskScheduler.Default);
         }
 
         public void Save()

@@ -867,8 +867,17 @@ namespace MinimalFirewall
             void processDetection()
             {
                 // Keep reported observations after a dashboard decision, bounded to this session.
-                if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
-                ReportedBlockedAttempts.Add(pending);
+                // A blocked app retries many times; record each endpoint once so retries neither rebuild the
+                // Applications view on every event nor push other apps out of the bounded history.
+                bool alreadyReported = ReportedBlockedAttempts.Any(a =>
+                    a.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                    a.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase) &&
+                    a.RemoteAddress == pending.RemoteAddress && a.RemotePort == pending.RemotePort);
+                if (!alreadyReported)
+                {
+                    if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
+                    ReportedBlockedAttempts.Add(pending);
+                }
                 bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
                 if (alreadyPending)
                 {

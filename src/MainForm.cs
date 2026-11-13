@@ -1087,8 +1087,18 @@ namespace MinimalFirewall
                     case "dashboardTabPage":
                         break;
                     case "rulesTabPage":
-                    case "applicationsTabPage":
                         await ForceDataRefreshAsync(true);
+                        break;
+                    case "applicationsTabPage":
+                        // The view only needs the MFW rule list: reuse it when loaded, and never force a UWP rescan.
+                        if (_mainViewModel.ApplicationRules.Count > 0)
+                        {
+                            applicationsControl1.RefreshApplications();
+                        }
+                        else
+                        {
+                            await ForceDataRefreshAsync(false);
+                        }
                         break;
                     case "wildcardRulesTabPage":
                         wildcardRulesControl1.LoadRules();

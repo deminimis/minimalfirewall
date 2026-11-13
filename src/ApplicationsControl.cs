@@ -191,7 +191,8 @@ public sealed class ApplicationsControl : UserControl
             {
                 int selectedIndex = entries.FindIndex(e => e.AppPath.Equals(selected, StringComparison.OrdinalIgnoreCase));
                 var row = _applications.Rows[Math.Max(0, selectedIndex)];
-                _applications.CurrentCell = row.Cells[selectedColumn != null && _applications.Columns[selectedColumn]!.Visible ? selectedColumn : "Name"];
+                _applications.CurrentCell = selectedColumn != null && _applications.Columns[selectedColumn]!.Visible
+                    ? row.Cells[selectedColumn] : FirstVisibleCell(row);
                 row.Selected = true;
                 int top = entries.FindIndex(e => e.AppPath.Equals(firstPath, StringComparison.OrdinalIgnoreCase));
                 _applications.FirstDisplayedScrollingRowIndex = top >= 0 ? top : Math.Clamp(first, 0, entries.Count - 1);
@@ -213,6 +214,10 @@ public sealed class ApplicationsControl : UserControl
             grid.DefaultCellStyle.SelectionForeColor = Color.Black;
         }
     }
+
+    // Any column can be hidden from the header menu, and an invisible cell cannot become the current cell.
+    private static DataGridViewCell? FirstVisibleCell(DataGridViewRow row) =>
+        row.Cells.Cast<DataGridViewCell>().Where(c => c.OwningColumn.Visible).MinBy(c => c.OwningColumn.DisplayIndex);
 
     private ApplicationEntry? SelectedApplication => _applications.CurrentRow?.Selected == true
         ? _applications.CurrentRow.Tag as ApplicationEntry : null;
@@ -236,7 +241,7 @@ public sealed class ApplicationsControl : UserControl
             int index = entry.Rules.FindIndex(r => r.Name == selectedRule);
             if (index >= 0)
             {
-                _rules.CurrentCell = _rules.Rows[index].Cells[0];
+                _rules.CurrentCell = FirstVisibleCell(_rules.Rows[index]);
                 _rules.FirstDisplayedScrollingRowIndex = Math.Clamp(firstRule, 0, _rules.Rows.Count - 1);
                 _rules.HorizontalScrollingOffset = horizontal;
             }
