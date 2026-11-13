@@ -18,6 +18,154 @@ namespace DarkModeForms
             DoubleBuffered = true;
         }
 
+        #region Flat sidebar (left-aligned tabs)
+        // Left-aligned tabs are painted as a flat sidebar: no native 3D borders, a small icon and a
+        // label per row, and an accent bar on the selected row. Top-aligned tabs keep OnDrawItem.
+        private const int TcmAdjustRect = 0x1328;
+        private int _hotIndex = -1;
+
+        private bool IsSidebar => Alignment == TabAlignment.Left;
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            if (IsSidebar)
+            {
+                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+            }
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct NativeRect { public int Left, Top, Right, Bottom; }
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            // Let the pages fill everything right of the strip, removing the native border and margins.
+            if (m.Msg == TcmAdjustRect && IsSidebar && m.WParam == IntPtr.Zero && !DesignMode)
+            {
+                var rect = System.Runtime.InteropServices.Marshal.PtrToStructure<NativeRect>(m.LParam);
+                rect.Left = ItemSize.Height;
+                rect.Top = 0;
+                rect.Right = Width;
+                rect.Bottom = Height;
+                System.Runtime.InteropServices.Marshal.StructureToPtr(rect, m.LParam, false);
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            if (!IsSidebar)
+            {
+                base.OnPaint(e);
+                return;
+            }
+
+            var colors = Theme.Colors;
+            using (var strip = new SolidBrush(Parent?.BackColor ?? colors.Background))
+            {
+                e.Graphics.FillRectangle(strip, ClientRectangle);
+            }
+
+            for (int i = 0; i < TabPages.Count; i++)
+            {
+                DrawSidebarItem(e.Graphics, i);
+            }
+        }
+
+        private void DrawSidebarItem(Graphics g, int index)
+        {
+            var colors = Theme.Colors;
+            TabPage page = TabPages[index];
+            Rectangle rect = GetTabRect(index);
+            rect.Width = ItemSize.Height;
+            bool selected = SelectedIndex == index;
+            float dpi = g.DpiX / 96f;
+
+            if (selected || index == _hotIndex)
+            {
+                using var back = new SolidBrush(selected ? colors.Surface : colors.SurfaceLight);
+                g.FillRectangle(back, rect);
+            }
+
+            if (selected)
+            {
+                using var accent = new SolidBrush(colors.Accent);
+                g.FillRectangle(accent, new Rectangle(rect.X, rect.Y + (int)(8 * dpi), (int)Math.Max(3, 3 * dpi), rect.Height - (int)(16 * dpi)));
+            }
+
+            int iconSize = (int)Math.Round(20 * dpi);
+            int left = rect.X + (int)Math.Round(16 * dpi);
+            if (ImageList != null && page.ImageIndex >= 0 && page.ImageIndex < ImageList.Images.Count)
+            {
+                Image icon = GetThemedIcon(page, ImageList.Images[page.ImageIndex]);
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(icon, new Rectangle(left, rect.Y + (rect.Height - iconSize) / 2, iconSize, iconSize));
+            }
+
+            int textLeft = left + iconSize + (int)Math.Round(12 * dpi);
+            var textRect = new Rectangle(textLeft, rect.Y, rect.Right - textLeft - (int)(8 * dpi), rect.Height);
+            TextRenderer.DrawText(g, page.Text, Font, textRect, selected ? colors.TextActive : colors.TextInactive,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+
+            if (selected && Focused && ShowFocusCues)
+            {
+                ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(rect, -3, -3), colors.TextActive, colors.Surface);
+            }
+        }
+
+        private Image GetThemedIcon(TabPage page, Image icon)
+        {
+            bool skipRecolor = page.ImageKey == "locked.png" || page.Tag?.ToString() == "NoRecolor";
+            if (Theme.Colors.Surface.R >= 128 || skipRecolor)
+            {
+                return icon;
+            }
+
+            string cacheKey = (string.IsNullOrEmpty(page.ImageKey) ? page.ImageIndex.ToString() : page.ImageKey) + "_dark";
+            if (!_darkIconCache.TryGetValue(cacheKey, out Image? cached))
+            {
+                cached = RecolorImage(icon, Color.White);
+                _darkIconCache[cacheKey] = cached;
+            }
+            return cached;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (!IsSidebar)
+            {
+                return;
+            }
+
+            int hot = -1;
+            for (int i = 0; i < TabPages.Count; i++)
+            {
+                if (GetTabRect(i).Contains(e.Location))
+                {
+                    hot = i;
+                    break;
+                }
+            }
+            if (hot != _hotIndex)
+            {
+                _hotIndex = hot;
+                Invalidate();
+            }
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            if (_hotIndex != -1)
+            {
+                _hotIndex = -1;
+                Invalidate();
+            }
+        }
+        #endregion
+
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
             if (Parent == null || e.Index < 0) return;
