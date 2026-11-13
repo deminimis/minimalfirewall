@@ -14,6 +14,31 @@ namespace MinimalFirewall
 
         public WildcardRule NewRule { get; private set; } = new();
 
+        // The instructions are taller than their designed box with the app font or a larger display font.
+        // Grow the box to fit and push the controls below it down, so nothing is cut or overlapped.
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            int needed = instructionLabel.GetPreferredSize(new Size(instructionLabel.Width, 0)).Height;
+            int delta = needed - instructionLabel.Height;
+            if (delta <= 0)
+            {
+                return;
+            }
+
+            int oldBottom = instructionLabel.Bottom;
+            instructionLabel.Height = needed;
+            foreach (Control control in Controls)
+            {
+                if (control != instructionLabel && control.Top >= oldBottom && !control.Anchor.HasFlag(AnchorStyles.Bottom))
+                {
+                    control.Top += delta;
+                }
+            }
+            // Bottom-anchored controls (OK, Cancel) move down with the taller client area.
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta);
+        }
+
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService, AppSettings appSettings, WildcardRule? ruleToEdit = null)
         {
             InitializeComponent();
