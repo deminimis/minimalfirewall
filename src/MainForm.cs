@@ -115,6 +115,11 @@ namespace MinimalFirewall
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
             settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
             rulesControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(false, false);
+            applicationsControl1.DataRefreshRequested += async () =>
+            {
+                _mainViewModel.ClearRulesCache();
+                await ForceDataRefreshAsync(false, false);
+            };
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
 
@@ -155,9 +160,10 @@ namespace MinimalFirewall
             // Initialize UI Controls with Services
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, _wildcardRuleService, _actionsService, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList);
+            applicationsControl1.Initialize(_mainViewModel, _actionsService, _backgroundTaskService, _appSettings, _iconService);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService);
+            groupsControl1.Initialize(_groupManager, _backgroundTaskService, _appSettings);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
@@ -423,6 +429,7 @@ namespace MinimalFirewall
             RefreshAllThemedControls(this);
 
             rulesControl1.ApplyThemeFixes();
+            applicationsControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
             settingsControl1.ApplyTheme(isDark);
             settingsControl1.ApplyThemeFixes();
@@ -437,7 +444,7 @@ namespace MinimalFirewall
             rescanButton.BringToFront();
         }
 
-        private static void RefreshAllThemedControls(Control parent)
+        internal static void RefreshAllThemedControls(Control parent)
         {
             foreach (Control control in parent.Controls)
             {
@@ -475,6 +482,7 @@ namespace MinimalFirewall
         private void UpdateIconColumnVisibility()
         {
             rulesControl1.UpdateIconColumnVisibility();
+            applicationsControl1.RefreshApplications();
             dashboardControl1.SetIconColumnVisibility(_appSettings.ShowAppIcons);
             liveConnectionsControl1.UpdateIconColumnVisibility();
         }
@@ -913,7 +921,7 @@ namespace MinimalFirewall
                     {
                         Invoke(new Action(async () =>
                         {
-                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
+                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage"))
                             {
                                 await ForceDataRefreshAsync();
                             }
@@ -1079,6 +1087,7 @@ namespace MinimalFirewall
                     case "dashboardTabPage":
                         break;
                     case "rulesTabPage":
+                    case "applicationsTabPage":
                         await ForceDataRefreshAsync(true);
                         break;
                     case "wildcardRulesTabPage":
@@ -1130,6 +1139,7 @@ namespace MinimalFirewall
                 _iconService.ClearCache();
 
                 await rulesControl1.RefreshDataAsync(forceUwpScan, progress, token);
+                applicationsControl1.RefreshApplications();
 
                 if (token.IsCancellationRequested)
                 {
@@ -1323,6 +1333,7 @@ namespace MinimalFirewall
                 switch (tabName)
                 {
                     case "rulesTabPage":
+                        if (mainTabControl.SelectedTab == applicationsTabPage) break;
                         _mainViewModel.ClearRulesData();
                         break;
                     case "wildcardRulesTabPage":

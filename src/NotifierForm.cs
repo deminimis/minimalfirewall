@@ -24,16 +24,33 @@ namespace MinimalFirewall
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
 
+        // Every alert carries the app name and icon so users can tell it apart from a look-alike window.
+        private const string AppTitlePrefix = "Minimal Firewall - ";
+        private static readonly Lazy<Icon?> _appIcon = new(() => Environment.ProcessPath is string path ? Icon.ExtractAssociatedIcon(path) : null);
+
 
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
+        private bool _fittingLayout;
+        private bool _isDarkMode;
+
+        private void ApplyAppIdentity()
+        {
+            ShowIcon = true;
+            if (_appIcon.Value is Icon icon)
+            {
+                Icon = icon;
+            }
+        }
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
+            _isDarkMode = isDarkMode;
             Theme.Colors = Theme.GetSystemColors(isDarkMode ? 0 : 1);
             Theme.ApplyTitleBarTheme(this.Handle, isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
+            MainForm.RefreshAllThemedControls(this);
 
             pathLabel.BackColor = Theme.Colors.PathLabelBackground;
             pathLabel.ForeColor = Theme.Colors.TextActive;
@@ -52,17 +69,19 @@ namespace MinimalFirewall
         public NotifierForm(FirewallRuleChange rule, bool isDarkMode)
         {
             InitializeComponent();
+            ApplyAppIdentity();
             RuleChange = rule;
 
             
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
-            Text = "New Firewall Rule Detected";
+            appNameLabel.Text = appName;
+            Text = AppTitlePrefix + "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
             pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
@@ -74,16 +93,20 @@ namespace MinimalFirewall
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
         {
             InitializeComponent();
+            ApplyAppIdentity();
             PendingConnection = pending;
 
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
-            Text = "Connection Blocked";
+            Text = AppTitlePrefix + "Connection Blocked";
+            // Connection alerts only exist in lockdown, where the tray icon blinks while one is pending.
+            trayHintLabel.Text = "Genuine alerts make the Minimal Firewall tray icon blink.";
+            trayHintLabel.Visible = true;
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
             pathLabel.Text = pending.AppPath;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
@@ -141,11 +164,38 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[WARN] NotifierForm.OnLoad failed to restore layout: {ex.Message}");
             }
+            FitToWorkingArea();
+        }
+
+        private void FitToWorkingArea()
+        {
+            if (!IsHandleCreated || _notificationLayout == null || _fittingLayout) return;
+            _fittingLayout = true;
+            try
+            {
+                var working = Screen.FromRectangle(Bounds).WorkingArea;
+                int maximumWidth = working.Width - 32;
+                int maximumHeight = working.Height - 32;
+                int frameHeight = Height - ClientSize.Height;
+                int minimumWidth = Math.Min(maximumWidth, Math.Max((int)(360 * DeviceDpi / 96f), Font.Height * 22));
+                MinimumSize = new Size(minimumWidth, Math.Min(MinimumSize.Height, maximumHeight));
+                Width = Math.Clamp(Width, minimumWidth, maximumWidth);
+                pathLabel.MinimumSize = new Size(0, Font.Height * 3);
+                int contentHeight = _notificationLayout.Padding.Vertical + pathLabel.MinimumSize.Height + pathLabel.Margin.Vertical
+                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != pathLabel).Sum(c => c.Height + c.Margin.Vertical);
+                int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
+                MinimumSize = new Size(minimumWidth, minimumHeight);
+                Height = Math.Clamp(Height, minimumHeight, maximumHeight);
+                Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
+                    Math.Clamp(Top, working.Top, working.Bottom - Height));
+            }
+            finally { _fittingLayout = false; }
         }
 
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            ApplyThemeStyles(_isDarkMode);
             try
             {
                 if (PendingConnection == null)
@@ -155,6 +205,7 @@ namespace MinimalFirewall
 
                 string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
+                if (IsDisposed) return;
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
                 {
@@ -311,13 +362,13 @@ namespace MinimalFirewall
                     }
                 }
 
-                copyDetailsButton.Text = "✓";
+                copyDetailsButton.Text = "Copied";
 
                 await Task.Delay(2000);
 
                 if (!IsDisposed && IsHandleCreated)
                 {
-                    copyDetailsButton.Text = "📋";
+                    copyDetailsButton.Text = "Copy details";
                 }
             }
             catch (Exception ex)

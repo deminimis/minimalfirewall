@@ -30,13 +30,16 @@ namespace MinimalFirewall
 
         }
 
-        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService)
+        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
         {
             _groupManager = groupManager;
             _backgroundTaskService = backgroundTaskService;
 
             groupsDataGridView.AutoGenerateColumns = false;
             groupsDataGridView.DataSource = _bindingSource;
+            DataGridViewHelper.RestoreColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
+            groupsDataGridView.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
+            groupsDataGridView.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
         }
 
         
@@ -188,7 +191,7 @@ namespace MinimalFirewall
 
         private void GroupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0)
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0)
             {
                 return;
             }

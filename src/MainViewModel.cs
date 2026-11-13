@@ -39,7 +39,9 @@ namespace MinimalFirewall
 
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
+        public ObservableCollection<PendingConnectionViewModel> ReportedBlockedAttempts { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
+        public List<AdvancedRuleViewModel> ApplicationRules { get; private set; } = [];
         public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
         public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
         public int UnseenSystemChangesCount => SystemChanges.Count(c => c.Rule.IsEnabled);
@@ -102,12 +104,14 @@ namespace MinimalFirewall
         {
             ClearRulesCache();
             AllAggregatedRules.Clear();
+            ApplicationRules = [];
             VirtualRulesData.Clear();
             RulesListUpdated?.Invoke();
         }
 
         public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
         {
+            ApplicationRules = await _dataService.GetMfwRulesAsync(token);
             AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
         }
 
@@ -862,6 +866,9 @@ namespace MinimalFirewall
         {
             void processDetection()
             {
+                // Keep reported observations after a dashboard decision, bounded to this session.
+                if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
+                ReportedBlockedAttempts.Add(pending);
                 bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
                 if (alreadyPending)
                 {
