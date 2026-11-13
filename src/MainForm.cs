@@ -224,6 +224,14 @@ namespace MinimalFirewall
                 };
                 fadeTimer.Tick += (sender, args) =>
                 {
+                    // The window can be closed while fading in; touching Opacity then recreates a disposed handle.
+                    if (IsDisposed)
+                    {
+                        fadeTimer.Stop();
+                        fadeTimer.Dispose();
+                        return;
+                    }
+
                     Opacity += 0.1;
                     if (Opacity >= 1.0)
                     {
