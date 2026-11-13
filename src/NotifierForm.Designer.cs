@@ -29,7 +29,7 @@ namespace MinimalFirewall
 
         #region Windows Form Designer generated code
 
-        private TableLayoutPanel? _notificationLayout;
+        private TableLayoutPanel _notificationLayout;
 
         private void InitializeComponent()
         {

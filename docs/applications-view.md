@@ -27,14 +27,16 @@ Edit opens the existing advanced rule editor for the individual selected rule. I
 
 ## Validation
 
-The Windows workflow compiles the application and checks the model, UI refresh state, search/filter/direction mnemonics, and popup layout. It opens the actual confirmation, progress, and rule-editor forms; long messages must scroll, buttons must remain visible, and sibling controls must not overlap.
+The Windows workflow runs `mise run build` to compile Release/x64, then checks the model, UI refresh state, search/filter/direction mnemonics, popup layout, and saved column preferences. It opens the actual confirmation, progress, rule-editor, and notification forms; long messages must scroll, buttons must remain visible, and sibling controls must not overlap.
 
-Committed captures show standalone controls from that run, using an empty baseline and synthetic application data, at 100% layout scale:
+Committed captures show standalone controls from that run, using an empty baseline and synthetic application data, at the default font size:
 
 - [Before: existing Rules control, empty](screenshots/issue-176/before-rules-empty.png)
 - [After: Applications, light](screenshots/issue-176/applications-light.png)
 - [After: Applications, dark](screenshots/issue-176/applications-dark.png)
 - [After: reported blocks, dark](screenshots/issue-176/reported-blocks-dark.png)
+- [Confirmation with scrollable message](screenshots/issue-176/confirmation-light.png)
+- [Notification, dark, 200% font size](screenshots/issue-176/notification-dark-font-200.png)
 
 Use Windows with the .NET 10 SDK and Visual Studio MSBuild, which supports COM reference generation:
 
