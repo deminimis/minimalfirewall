@@ -179,6 +179,8 @@ namespace MinimalFirewall
                 group.AutoSizeMode = AutoSizeMode.GrowAndShrink;
                 group.Padding = new Padding(12, 24, 12, 12);
                 group.Controls.Add(child);
+            child.SizeChanged += (_, _) =>
+                group.MinimumSize = new Size(0, child.Bottom + group.Padding.Bottom);
             }
             var heading = Fields();
             Field(heading, labelName, ruleNameTextBox);
