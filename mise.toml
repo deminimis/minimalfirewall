@@ -17,20 +17,24 @@ exit $LASTEXITCODE
 
 [tasks.build]
 description = "Build Minimal Firewall for Windows x64 (Release)"
+run = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/msbuild.ps1 src/MinimalFirewall.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal"
+
+[tasks.publish]
+description = "Publish the production single-file MinimalFirewall.exe to artifacts/publish"
+run = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/msbuild.ps1 src/MinimalFirewall.csproj /restore /t:Publish /p:Configuration=Release /p:Platform=x64 /p:PublishDir=../artifacts/publish/ /p:DebugType=none /verbosity:minimal"
+
+[tasks.install-local]
+description = "Replace the winget-installed MinimalFirewall.exe with artifacts/publish (keeps the original as MinimalFirewall.exe.old)"
+depends = ["publish"]
 shell = "powershell.exe -NoProfile -Command"
 run = '''
 $ErrorActionPreference = 'Stop'
-$msbuild = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
-if ($msbuild) {
-    $msbuildPath = $msbuild.Source
-} else {
-    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (!(Test-Path $vswhere)) {
-        throw 'Install Visual Studio 2026 or Build Tools with the .NET desktop development workload.'
-    }
-    $msbuildPath = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
-    if (!$msbuildPath) { throw 'Visual Studio MSBuild.exe was not found.' }
-}
-& $msbuildPath src/MinimalFirewall.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
-exit $LASTEXITCODE
+$dir = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Directory -Filter 'Deminimis.MinimalFirewall_*' | Select-Object -First 1
+if (!$dir) { throw 'No winget installation of Minimal Firewall was found.' }
+if (Get-Process MinimalFirewall -ErrorAction SilentlyContinue) { throw 'Minimal Firewall is running. Exit it from the tray menu first.' }
+$target = Join-Path $dir.FullName 'MinimalFirewall.exe'
+# Keep the first backup so repeated installs never overwrite the original winget build.
+if ((Test-Path $target) -and !(Test-Path "$target.old")) { Move-Item $target "$target.old" }
+Copy-Item 'artifacts/publish/MinimalFirewall.exe' $target
+Write-Host "Installed to $target (original kept as MinimalFirewall.exe.old)."
 '''
