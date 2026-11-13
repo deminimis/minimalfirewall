@@ -47,7 +47,7 @@ namespace MinimalFirewall
         {
             try
             {
-                string? dirPath = Path.GetDirectoryName(initialAppPath);
+                string? dirPath = WildcardRuleService.SuggestFolder(initialAppPath);
                 if (!string.IsNullOrEmpty(dirPath))
                 {
                     folderPathTextBox.Text = dirPath;

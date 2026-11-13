@@ -228,6 +228,37 @@ namespace MinimalFirewall
             _regexCache[rule] = (folderRegex, exeRegex);
         }
 
+        // Version folders (app-1.0.9015, 120.0.6099.71) change on every update, so a wildcard on them stops
+        // matching. Suggest the stable parent instead, but never a drive root or a shared system folder,
+        // where a wildcard would cover unrelated programs.
+        private static readonly Regex VersionFolder = new(@"\d+[._-]\d+", RegexOptions.CultureInvariant);
+        private static readonly string[] BroadFolders =
+        [
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        ];
+
+        public static string? SuggestFolder(string exePath)
+        {
+            string? folder = Path.GetDirectoryName(exePath);
+            for (int level = 0; level < 3 && folder != null && VersionFolder.IsMatch(Path.GetFileName(folder)); level++)
+            {
+                string? parent = Path.GetDirectoryName(folder);
+                if (parent == null || Path.GetPathRoot(parent) == parent
+                    || BroadFolders.Any(broad => broad.Length > 0 && parent.TrimEnd('\\').Equals(broad.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+                {
+                    break;
+                }
+                folder = parent;
+            }
+            return folder;
+        }
+
         // A folder prefix only matches on a separator boundary: "C:\Tools" must not match "C:\ToolsEvil\x.exe".
         public static bool IsInFolder(string path, string folder)
         {
