@@ -49,6 +49,9 @@ namespace MinimalFirewall
             if (dashIconColumn != null) dashIconColumn.DefaultCellStyle.NullValue = new Bitmap(1, 1);
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
             dashboardDataGridView.DataSource = _bindingSource;
+            dashboardDataGridView.Paint += DashboardDataGridView_PaintEmptyState;
+            // Centered text must be redrawn in full when the grid resizes.
+            dashboardDataGridView.Resize += (_, _) => { if (dashboardDataGridView.Rows.Count == 0) dashboardDataGridView.Invalidate(); };
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
@@ -223,6 +226,25 @@ namespace MinimalFirewall
             {
                 LoadDashboardItems();
             }
+        }
+
+        // An empty grid looked broken; explain what the Dashboard is for until something is pending.
+        private void DashboardDataGridView_PaintEmptyState(object? sender, PaintEventArgs e)
+        {
+            if (dashboardDataGridView.Rows.Count > 0)
+            {
+                return;
+            }
+
+            string message = "No blocked connections are waiting for a decision.\n\n" +
+                (_appSettings.IsPopupsEnabled
+                    ? "Blocked programs get a popup. Popups you close without choosing are listed here."
+                    : "Popups are off: every blocked program is listed here to allow, block or ignore.");
+
+            int top = dashboardDataGridView.ColumnHeadersVisible ? dashboardDataGridView.ColumnHeadersHeight : 0;
+            var bounds = new Rectangle(16, top + 16, dashboardDataGridView.ClientSize.Width - 32, dashboardDataGridView.ClientSize.Height - top - 32);
+            TextRenderer.DrawText(e.Graphics, message, dashboardDataGridView.Font, bounds, Theme.Colors.TextInactive,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak);
         }
 
         private void LoadDashboardItems()
