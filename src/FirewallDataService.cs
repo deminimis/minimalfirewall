@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using MinimalFirewall.TypedObjects;
 using System.Collections.Generic;
-using Microsoft.Extensions.Caching.Memory;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,7 +21,7 @@ namespace MinimalFirewall
         private readonly WildcardRuleService _wildcardRuleService = wildcardRuleService;
         private readonly UwpService _uwpService = uwpService;
         private readonly RuleTimestampService _ruleTimestampService = ruleTimestampService;
-        private readonly MemoryCache _localCache = new(new MemoryCacheOptions());
+        private readonly SlidingCache _localCache = new();
         private const string ServicesCacheKey = "ServicesList";
         private const string MfwRulesCacheKey = "MfwRulesList";
         private const string AggregatedRulesCacheKey = "AggregatedRulesList";
@@ -47,9 +46,7 @@ namespace MinimalFirewall
             }
 
             services = SystemDiscoveryService.GetServicesWithExePaths();
-            var cacheOptions = new MemoryCacheEntryOptions()
-                 .SetSlidingExpiration(TimeSpan.FromMinutes(10));
-            _localCache.Set(ServicesCacheKey, services, cacheOptions);
+            _localCache.Set(ServicesCacheKey, services, TimeSpan.FromMinutes(10));
             return services;
         }
 
@@ -110,13 +107,17 @@ namespace MinimalFirewall
 
         public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
         {
-            var result = await _localCache.GetOrCreateAsync(MfwRulesCacheKey, async entry =>
+            if (_localCache.TryGetValue(MfwRulesCacheKey, out List<AdvancedRuleViewModel>? cached) && cached != null)
             {
-                entry.SlidingExpiration = TimeSpan.FromMinutes(10);
-                return await FetchAllMfwRulesAsync(token);
-            });
+                return cached;
+            }
 
-            return result ?? [];
+            var result = await FetchAllMfwRulesAsync(token);
+            if (!token.IsCancellationRequested)
+            {
+                _localCache.Set(MfwRulesCacheKey, result, TimeSpan.FromMinutes(10));
+            }
+            return result;
         }
 
         private static string NormalizeRuleKey(string? value)
@@ -284,8 +285,7 @@ namespace MinimalFirewall
                 return [];
             }
 
-            var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
-            _localCache.Set(AggregatedRulesCacheKey, aggregatedRules, cacheEntryOptions);
+            _localCache.Set(AggregatedRulesCacheKey, aggregatedRules, TimeSpan.FromMinutes(5));
 
             return aggregatedRules;
         }
