@@ -147,10 +147,18 @@ namespace MinimalFirewall
 
             // DPI Scaling calculation
             float scaleFactor = g.DpiY / 96f;
-            int switchWidth = (int)(SwitchWidthBase * scaleFactor);
-            int switchHeight = (int)(SwitchHeightBase * scaleFactor);
-            int thumbSize = (int)(ThumbSizeBase * scaleFactor);
-            int padding = (int)(2 * scaleFactor);
+            // Fit the switch inside the cell: rows can be shorter than the 25 px design (or narrower than 50 px),
+            // and drawing past the cell overlaps the neighbouring rows and columns.
+            float scale = Math.Min(scaleFactor, Math.Min((bounds.Height - 4) / (float)SwitchHeightBase, (bounds.Width - 4) / (float)SwitchWidthBase));
+            if (scale <= 0)
+            {
+                return;
+            }
+
+            int switchWidth = (int)(SwitchWidthBase * scale);
+            int switchHeight = (int)(SwitchHeightBase * scale);
+            int thumbSize = (int)(ThumbSizeBase * scale);
+            int padding = (int)(2 * scale);
 
             var switchRect = new Rectangle(
                 bounds.X + (bounds.Width - switchWidth) / 2,
