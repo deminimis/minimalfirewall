@@ -1313,7 +1313,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            BeginInvoke(new Action(() =>
+            BeginInvokeIfAlive(new Action(() =>
             {
                 if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
                 {
@@ -1356,6 +1356,24 @@ namespace MinimalFirewall
                     _tabUnloadTimers.Remove(tabName);
                 }
             }));
+        }
+
+        // Called from thread-pool timers: the form may be closing or already disposed.
+        private void BeginInvokeIfAlive(Action action)
+        {
+            if (IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(action);
+            }
+            catch (InvalidOperationException)
+            {
+                // Handle destroyed between the check and the call (includes ObjectDisposedException).
+            }
         }
 
 
