@@ -40,6 +40,8 @@ namespace MinimalFirewall
         private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
+        private const string BlockAllOutboundRuleName = "Minimal Firewall System - Block All Outbound";
+        private const string BlockAllInboundRuleName = "Minimal Firewall System - Block All Inbound";
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
 
@@ -455,6 +457,82 @@ namespace MinimalFirewall
                 {
                     Marshal.ReleaseComObject(rule);
                 }
+            }
+        }
+
+        // Block rules take precedence over allow rules in Windows Firewall, so two
+        // program-less block rules cut all traffic without touching the user's rules.
+        public bool IsBlockAllTrafficEnabled()
+        {
+            var rule = FirewallRuleService.GetRuleByName(BlockAllOutboundRuleName);
+            if (rule == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return rule.Enabled;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(rule);
+            }
+        }
+
+        public void SetBlockAllTraffic(bool enable)
+        {
+            try
+            {
+                if (enable)
+                {
+                    CreateBlockAllRule(BlockAllOutboundRuleName, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
+                    CreateBlockAllRule(BlockAllInboundRuleName, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
+                }
+                else
+                {
+                    FirewallRuleService.DeleteRulesByName([BlockAllOutboundRuleName, BlockAllInboundRuleName]);
+                }
+
+                activityLogger.LogChange("Block All Traffic", enable ? "Enabled" : "Disabled");
+            }
+            catch (Exception ex) when (ex is COMException or InvalidOperationException)
+            {
+                activityLogger.LogException($"SetBlockAllTraffic (enable: {enable})", ex);
+                SafeShowMessageBox("Failed to change the Block All Traffic rules.\nCheck debug_log.txt for details.",
+                    "Block All Traffic", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static bool IsBlockAllRuleName(string name) =>
+            name == BlockAllOutboundRuleName || name == BlockAllInboundRuleName;
+
+        private static void CreateBlockAllRule(string ruleName, NET_FW_RULE_DIRECTION_ direction)
+        {
+            // Replace any stale or disabled copy so the rule always ends up enabled.
+            FirewallRuleService.DeleteRulesByName([ruleName]);
+
+            if (FwRuleType == null)
+            {
+                throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
+            }
+
+            var rule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
+            try
+            {
+                rule.Name = ruleName;
+                rule.Description = "Blocks all network traffic, including allowed programs, until turned off from the Minimal Firewall tray menu.";
+                rule.Direction = direction;
+                rule.Action = NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+                rule.Grouping = MFWConstants.MainRuleGroup;
+                rule.InterfaceTypes = "All";
+                rule.Protocol = ProtocolTypes.Any.Value;
+                rule.Enabled = true;
+                FirewallRuleService.CreateRule(rule);
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(rule);
             }
         }
 
@@ -1573,7 +1651,7 @@ namespace MinimalFirewall
                 {
                     _ = (r?.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName));
                     return r;
-                }).Where(r => r != null).ToList();
+                }).Where(r => r != null && !IsBlockAllRuleName(r.Name)).ToList();
             var wildcardRules = _wildcardRuleService.GetRules()
                 .Select(r =>
                 {
