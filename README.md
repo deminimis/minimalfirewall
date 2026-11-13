@@ -1,4 +1,4 @@
-<img width="4032" height="307" alt="image" src="https://github.com/user-attachments/assets/30db9c77-861f-4e24-a990-4fdaad525e7b" /><h1>
+
   Minimal Firewall
   <a href="https://github.com/deminimis/minimalfirewall">
     <img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo1.png" alt="Logo" width="100" height="100">
