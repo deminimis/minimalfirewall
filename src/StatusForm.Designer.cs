@@ -27,70 +27,47 @@ namespace MinimalFirewall
 
         private void InitializeComponent()
         {
-            statusLabel = new DarkModeForms.ThemedLabel();
-            okButton = new DarkModeForms.ThemedButton();
-            progressBar = new ProgressBar();
-            progressLabel = new DarkModeForms.ThemedLabel();
-            SuspendLayout();
-            // 
-            // statusLabel
-            // 
-            statusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            statusLabel.Location = new Point(7, 24);
-            statusLabel.Name = "statusLabel";
-            statusLabel.Size = new Size(443, 28);
-            statusLabel.TabIndex = 0;
-            statusLabel.Text = "Scanning, please wait...";
-            statusLabel.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // okButton
-            // 
-            okButton.Anchor = AnchorStyles.Bottom;
-            okButton.Location = new Point(171, 108);
-            okButton.Name = "okButton";
-            okButton.Size = new Size(114, 43);
-            okButton.TabIndex = 2;
-            okButton.Text = "OK";
-            okButton.UseVisualStyleBackColor = true;
-            okButton.Visible = false;
+            statusLabel = new DarkModeForms.ThemedLabel
+            {
+                Name = "statusLabel", AutoSize = true, Dock = DockStyle.Fill,
+                Text = "Scanning, please wait...", MaximumSize = new Size(388, 0),
+                Margin = new Padding(0, 0, 0, 16)
+            };
+            progressBar = new ProgressBar { Name = "progressBar", Dock = DockStyle.Fill, MinimumSize = new Size(120, 24), Margin = new Padding(0, 0, 12, 0) };
+            progressLabel = new DarkModeForms.ThemedLabel
+            {
+                Name = "progressLabel", AutoSize = true, Text = "0%", Anchor = AnchorStyles.Left, Margin = Padding.Empty
+            };
+            okButton = new DarkModeForms.ThemedButton
+            {
+                Name = "okButton", AutoSize = true, MinimumSize = new Size(90, 32), Text = "OK", Visible = false
+            };
             okButton.Click += okButton_Click;
-            // 
-            // progressBar
-            // 
-            progressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            progressBar.Location = new Point(32, 72);
-            progressBar.Name = "progressBar";
-            progressBar.Size = new Size(320, 28);
-            progressBar.TabIndex = 1;
-            // 
-            // progressLabel
-            // 
-            progressLabel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            progressLabel.Location = new Point(359, 72);
-            progressLabel.Name = "progressLabel";
-            progressLabel.Size = new Size(67, 28);
-            progressLabel.TabIndex = 3;
-            progressLabel.Text = "0%";
-            progressLabel.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // StatusForm
-            // 
-            AutoScaleDimensions = new SizeF(8F, 18F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(457, 180);
-            Controls.Add(progressLabel);
-            Controls.Add(okButton);
-            Controls.Add(progressBar);
-            Controls.Add(statusLabel);
-            Font = new Font("Roboto Mono", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            var progress = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Fill, ColumnCount = 2, Margin = Padding.Empty };
+            progress.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            progress.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            progress.Controls.Add(progressBar, 0, 0);
+            progress.Controls.Add(progressLabel, 1, 0);
+            var commands = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, Margin = new Padding(0, 16, 0, 0) };
+            commands.Controls.Add(okButton);
+            var layout = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, ColumnCount = 1, Padding = new Padding(16) };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.Controls.Add(statusLabel, 0, 0);
+            layout.Controls.Add(progress, 0, 1);
+            layout.Controls.Add(commands, 0, 2);
+            Controls.Add(layout);
+            AutoScaleDimensions = new SizeF(96, 96);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            Font = SystemFonts.MessageBoxFont;
+            ClientSize = new Size(420, 150);
+            MinimumSize = new Size(360, 150);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "StatusForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Scanning...";
-            ResumeLayout(false);
-
+            layout.SizeChanged += (_, _) => ClientSize = new Size(ClientSize.Width, layout.Height);
         }
 
         #endregion

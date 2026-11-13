@@ -119,6 +119,7 @@ namespace MinimalFirewall
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            MaximumSize = Screen.FromControl(Owner ?? this).WorkingArea.Size;
             if (Owner != null)
             {
                 Location = new Point(Owner.Location.X + (Owner.Width - Width) / 2,

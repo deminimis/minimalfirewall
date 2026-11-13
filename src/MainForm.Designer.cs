@@ -8,6 +8,8 @@ namespace MinimalFirewall
         private DarkModeForms.ThemedTabControl mainTabControl;
         private System.Windows.Forms.TabPage dashboardTabPage;
         private System.Windows.Forms.TabPage rulesTabPage;
+        private System.Windows.Forms.TabPage applicationsTabPage;
+        private ApplicationsControl applicationsControl1;
         private System.Windows.Forms.TabPage systemChangesTabPage;
         private System.Windows.Forms.TabPage settingsTabPage;
         private System.Windows.Forms.TabPage groupsTabPage;
@@ -67,6 +69,8 @@ namespace MinimalFirewall
             dashboardControl1 = new DashboardControl();
             rulesTabPage = new TabPage();
             rulesControl1 = new RulesControl();
+            applicationsTabPage = new TabPage();
+            applicationsControl1 = new ApplicationsControl();
             wildcardRulesTabPage = new TabPage();
             wildcardRulesControl1 = new WildcardRulesControl();
             systemChangesTabPage = new TabPage();
@@ -99,6 +103,7 @@ namespace MinimalFirewall
             // 
             mainTabControl.Alignment = TabAlignment.Left;
             mainTabControl.Controls.Add(dashboardTabPage);
+            mainTabControl.Controls.Add(applicationsTabPage);
             mainTabControl.Controls.Add(rulesTabPage);
             mainTabControl.Controls.Add(wildcardRulesTabPage);
             mainTabControl.Controls.Add(systemChangesTabPage);
@@ -118,6 +123,14 @@ namespace MinimalFirewall
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
             mainTabControl.Deselecting += MainTabControl_Deselecting;
+            //
+            // applicationsTabPage
+            //
+            applicationsTabPage.Name = "applicationsTabPage";
+            applicationsTabPage.Text = "Applications";
+            applicationsTabPage.ImageIndex = 3;
+            applicationsTabPage.Padding = new Padding(3);
+            applicationsTabPage.Controls.Add(applicationsControl1);
             // 
             // dashboardTabPage
             // 
