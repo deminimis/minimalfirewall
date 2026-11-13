@@ -118,6 +118,8 @@ namespace MinimalFirewall
             rulesControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(false, false);
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
+            // The tray item and tooltip only exist now; reflect a Block All left on by a previous session.
+            UpdateBlockAllTrayState();
 
             lockdownButton.BringToFront();
             rescanButton.BringToFront();
@@ -146,7 +148,6 @@ namespace MinimalFirewall
 
             _actionsService = new FirewallActionsService(_firewallRuleService, _activityLogger, _eventListenerService, _firewallSentryService, _whitelistService, _wildcardRuleService, _dataService);
             _eventListenerService.ActionsService = _actionsService;
-            UpdateBlockAllTrayState();
 
             _backgroundTaskService = new BackgroundFirewallTaskService(_actionsService, _activityLogger, _wildcardRuleService, _dataService);
             _actionsService.BackgroundTaskService = _backgroundTaskService;
