@@ -13,6 +13,10 @@ namespace MinimalFirewall
         private readonly object _debugLock = new object();
         private readonly object _changeLock = new object();
 
+        // Bounds for log files that otherwise grow for the lifetime of the install.
+        private const int MaxChangeLogEntries = 1000;
+        private const long MaxDebugLogBytes = 5 * 1024 * 1024;
+
         private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true
@@ -60,6 +64,10 @@ namespace MinimalFirewall
                     }
 
                     logEntries.Add(newLogEntry);
+                    if (logEntries.Count > MaxChangeLogEntries)
+                    {
+                        logEntries.RemoveRange(0, logEntries.Count - MaxChangeLogEntries);
+                    }
 
                     string newJson = JsonSerializer.Serialize(logEntries, _jsonOptions);
                     File.WriteAllText(_changeLogFilePath, newJson);
@@ -108,6 +116,11 @@ namespace MinimalFirewall
             {
                 try
                 {
+                    var info = new FileInfo(_debugLogFilePath);
+                    if (info.Exists && info.Length > MaxDebugLogBytes)
+                    {
+                        File.Move(_debugLogFilePath, _debugLogFilePath + ".old", overwrite: true);
+                    }
                     File.AppendAllText(_debugLogFilePath, text);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
