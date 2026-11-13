@@ -217,7 +217,7 @@ namespace MinimalFirewall
         {
             if (connIconColumn != null && _appSettings != null)
             {
-                connIconColumn.Visible = _appSettings.ShowAppIcons && DataGridViewHelper.IsColumnVisible(_appSettings.LiveConnectionsColumns, connIconColumn.Name);
+                connIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.LiveConnectionsColumns, connIconColumn.Name);
                 liveConnectionsDataGridView.InvalidateColumn(connIconColumn.Index);
             }
         }

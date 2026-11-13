@@ -150,7 +150,7 @@ public sealed class ApplicationsControl : UserControl
     public void RefreshApplications()
     {
         if (_viewModel == null || IsDisposed) return;
-        _applications.Columns["Icon"]!.Visible = _settings.ShowAppIcons && DataGridViewHelper.IsColumnVisible(_settings.ApplicationsColumns, "Icon");
+        _applications.Columns["Icon"]!.Visible = DataGridViewHelper.IsIconColumnVisible(_settings, _settings.ApplicationsColumns, "Icon");
         DisplayApplications(ApplicationEntry.Build(_viewModel.ApplicationRules, _viewModel.ReportedBlockedAttempts)
             .Where(e => e.Matches(_search.Text.Trim(), _filter.SelectedIndex)).ToList());
     }

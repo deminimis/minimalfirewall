@@ -165,6 +165,7 @@ namespace MinimalFirewall
         public void QueueSave()
         {
             _saveCts?.Cancel();
+            _saveCts?.Dispose();
             _saveCts = new CancellationTokenSource();
             var token = _saveCts.Token;
 

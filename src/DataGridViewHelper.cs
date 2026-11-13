@@ -7,6 +7,8 @@ namespace MinimalFirewall
     {
         public static void RestoreColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
         {
+            settings ??= [];
+
             // Keep user widths; one text column absorbs unused viewport space.
             grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             grid.AllowUserToResizeColumns = true;
@@ -23,31 +25,71 @@ namespace MinimalFirewall
                         col.DisplayIndex = kvp.Value.DisplayIndex;
                     }
                     if (kvp.Value.Width > 0) col.Width = kvp.Value.Width;
-                    col.Visible = kvp.Value.Visible;
+                    // Action buttons are not user-toggleable; app icons also follow the global icon setting.
+                    if (col is not DataGridViewButtonColumn)
+                    {
+                        col.Visible = kvp.Value.Visible && (col is not DataGridViewImageColumn || appSettings.ShowAppIcons);
+                    }
                 }
             }
 
-            if (grid.Columns.Count > 0 && !grid.Columns.Cast<DataGridViewColumn>().Any(c => c.Visible))
-                grid.Columns[0].Visible = true;
-            UpdateFillColumn(grid);
+            if (!DataColumns(grid).Any(c => c.Visible) && DataColumns(grid).FirstOrDefault() is DataGridViewColumn first)
+            {
+                // Never restore a table with no readable column; persist the repair so it is not repeated.
+                first.Visible = true;
+                if (settings.TryGetValue(first.Name, out var state)) state.Visible = true;
+            }
+            UpdateFillColumn(grid, settings);
             ConfigureColumnMenu(grid, settings, appSettings);
         }
 
-        public static bool IsColumnVisible(Dictionary<string, ColumnState> settings, string columnName) =>
-            !settings.TryGetValue(columnName, out var state) || state.Visible;
+        public static bool IsColumnVisible(Dictionary<string, ColumnState>? settings, string columnName) =>
+            settings is null || !settings.TryGetValue(columnName, out var state) || state.Visible;
 
-        private static void UpdateFillColumn(DataGridView grid)
+        public static bool IsIconColumnVisible(AppSettings appSettings, Dictionary<string, ColumnState>? settings, string columnName) =>
+            appSettings.ShowAppIcons && IsColumnVisible(settings, columnName);
+
+        // Columns that carry row data: the menu lists them and at least one must stay visible.
+        private static IEnumerable<DataGridViewColumn> DataColumns(DataGridView grid) =>
+            grid.Columns.Cast<DataGridViewColumn>().Where(c => c is not DataGridViewImageColumn and not DataGridViewButtonColumn);
+
+        private static void UpdateFillColumn(DataGridView grid, Dictionary<string, ColumnState> settings)
         {
-            DataGridViewColumn? fillColumn = null;
+            // A grid in Fill mode (Dashboard) distributes width by FillWeight itself.
+            if (grid.AutoSizeColumnsMode == DataGridViewAutoSizeColumnsMode.Fill)
+            {
+                return;
+            }
+
+            var visible = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).OrderBy(c => c.DisplayIndex).ToList();
+            var fillColumn = visible.LastOrDefault(c => c is DataGridViewTextBoxColumn)
+                ?? visible.LastOrDefault(c => c is not DataGridViewImageColumn and not DataGridViewButtonColumn);
+
             foreach (DataGridViewColumn column in grid.Columns)
             {
-                if (column.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill)
-                    column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-                if (column.Visible && column is DataGridViewTextBoxColumn)
-                    fillColumn = column;
+                if (column == fillColumn || column.AutoSizeMode != DataGridViewAutoSizeColumnMode.Fill)
+                {
+                    continue;
+                }
+
+                // Leaving Fill keeps the stretched width; return to the user's own width instead.
+                column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                if (settings.TryGetValue(column.Name, out var state) && state.Width > 0)
+                {
+                    column.Width = state.Width;
+                }
             }
-            fillColumn ??= grid.Columns.Cast<DataGridViewColumn>().LastOrDefault(c => c.Visible);
-            if (fillColumn != null) fillColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            if (fillColumn != null && fillColumn.AutoSizeMode != DataGridViewAutoSizeColumnMode.Fill)
+            {
+                // Remember the user's width before Fill stretches it, so it can be restored later.
+                if (!settings.TryGetValue(fillColumn.Name, out var state))
+                {
+                    settings[fillColumn.Name] = state = new ColumnState { DisplayIndex = fillColumn.DisplayIndex };
+                }
+                if (state.Width <= 0) state.Width = fillColumn.Width;
+                fillColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            }
         }
 
         private static void ConfigureColumnMenu(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
@@ -57,27 +99,30 @@ namespace MinimalFirewall
             menu.Items.Add(new ToolStripSeparator());
             foreach (DataGridViewColumn column in grid.Columns)
             {
+                column.HeaderCell.ContextMenuStrip = menu;
+                if (column is DataGridViewButtonColumn)
+                {
+                    continue;
+                }
+
                 string label = string.IsNullOrWhiteSpace(column.HeaderText)
                     ? (column is DataGridViewImageColumn ? "Icon" : column.Name) : column.HeaderText;
                 var item = new ToolStripMenuItem(label.Replace("&", "&&")) { Tag = column };
                 item.Click += (_, _) =>
                 {
-                    if (column.Visible && column is not DataGridViewImageColumn
-                        && grid.Columns.Cast<DataGridViewColumn>().Count(c => c.Visible && c is not DataGridViewImageColumn) <= 1) return;
+                    if (column.Visible && column is not DataGridViewImageColumn && DataColumns(grid).Count(c => c.Visible) <= 1) return;
                     if (!settings.TryGetValue(column.Name, out var state))
                         settings[column.Name] = state = new ColumnState { Width = column.Width, DisplayIndex = column.DisplayIndex };
                     state.Visible = !column.Visible;
                     column.Visible = state.Visible;
-                    UpdateFillColumn(grid);
-                    SaveColumnSettings(grid, settings, appSettings);
+                    UpdateFillColumn(grid, settings);
                     appSettings.QueueSave();
                 };
                 menu.Items.Add(item);
-                column.HeaderCell.ContextMenuStrip = menu;
             }
             menu.Opening += (_, _) =>
             {
-                int visibleCount = grid.Columns.Cast<DataGridViewColumn>().Count(c => c.Visible && c is not DataGridViewImageColumn);
+                int visibleCount = DataColumns(grid).Count(c => c.Visible);
                 foreach (ToolStripMenuItem item in menu.Items.OfType<ToolStripMenuItem>())
                 {
                     if (item.Tag is not DataGridViewColumn column) continue;
@@ -92,7 +137,7 @@ namespace MinimalFirewall
 
         public static void SaveColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
         {
-            if (appSettings == null) return;
+            if (appSettings == null || settings == null) return;
 
             bool changed = false;
             foreach (DataGridViewColumn col in grid.Columns)
@@ -103,10 +148,12 @@ namespace MinimalFirewall
                     settings[col.Name] = state;
                 }
 
-                if (state.DisplayIndex != col.DisplayIndex || state.Width != col.Width)
+                // A Fill column's width follows the viewport, so persisting it would overwrite the user's width.
+                bool isFill = col.InheritedAutoSizeMode == DataGridViewAutoSizeColumnMode.Fill;
+                if (state.DisplayIndex != col.DisplayIndex || (!isFill && state.Width != col.Width))
                 {
                     state.DisplayIndex = col.DisplayIndex;
-                    state.Width = col.Width;
+                    if (!isFill) state.Width = col.Width;
                     changed = true;
                 }
             }

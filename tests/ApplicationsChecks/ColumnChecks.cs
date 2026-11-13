@@ -43,6 +43,7 @@ internal static class ColumnChecks
         });
         VerifyWildcardButtons();
         VerifyIconPreference();
+        VerifyFillAndRepair();
         Check(JsonSerializer.Deserialize("{\"Width\":125}", AppSettingsJsonContext.Default.ColumnState)!.Visible,
             "Existing settings without visibility must keep columns visible.");
         Console.WriteLine("Column menus toggle visibility and prevent hiding the last column. Visibility, widths and order survive reopening; tables remain filled.");
@@ -125,7 +126,7 @@ internal static class ColumnChecks
 
     private static void VerifyColumnMenu(DataGridView grid)
     {
-        var original = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).OrderBy(c => c is DataGridViewImageColumn).ToList();
+        var original = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible && c is not DataGridViewButtonColumn).OrderBy(c => c is DataGridViewImageColumn).ToList();
         foreach (var column in original.Skip(1)) ToggleColumn(grid, column);
         var remaining = original[0];
         ToggleColumn(grid, remaining);
@@ -154,6 +155,49 @@ internal static class ColumnChecks
         Check(!icon.Visible, "Global icon settings must preserve per-table preference.");
         ToggleColumn(grid, icon);
         Check(icon.Visible, "Icon column must be restorable through its menu.");
+    }
+
+    // Regressions from review: fill column choice, width restore, button columns, all-hidden repair.
+    private static void VerifyFillAndRepair()
+    {
+        var settings = new AppSettings();
+        using var host = new Form { ClientSize = new Size(900, 300) };
+        using var grid = new DataGridView { Dock = DockStyle.Fill };
+        grid.Columns.Add(new DataGridViewImageColumn { Name = "Icon", Width = 32 });
+        foreach (var name in new[] { "A", "B", "C" }) grid.Columns.Add(new DataGridViewTextBoxColumn { Name = name, HeaderText = name, Width = 100 });
+        grid.Columns.Add(new DataGridViewButtonColumn { Name = "Act", HeaderText = "Act", Width = 60 });
+        host.Controls.Add(grid);
+        host.Show();
+
+        var columns = new Dictionary<string, ColumnState>();
+        DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+        Check(grid.Columns["C"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill, "Last text column must fill.");
+        var menu = grid.Columns["A"]!.HeaderCell.ContextMenuStrip!;
+        Check(!menu.Items.OfType<ToolStripMenuItem>().Any(i => ReferenceEquals(i.Tag, grid.Columns["Act"])), "Button columns must not be in the column menu.");
+
+        DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+        Check(columns["C"].Width == 100, "Fill width must not be persisted.");
+
+        ToggleColumn(grid, grid.Columns["C"]!);
+        Check(grid.Columns["B"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill, "Fill must move to the previous text column.");
+        ToggleColumn(grid, grid.Columns["C"]!);
+        Check(grid.Columns["B"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.None && grid.Columns["B"]!.Width == 100,
+            "A column leaving Fill must return to its own width.");
+
+        grid.Columns["C"]!.DisplayIndex = 1;
+        DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+        DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+        Check(grid.Columns["B"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill, "Fill must follow display order, not declaration order.");
+
+        foreach (var name in new[] { "Icon", "A", "B", "C" }) columns[name].Visible = false;
+        DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+        Check(grid.Columns["A"]!.Visible && columns["A"].Visible, "All-hidden settings must show and persist a text column, not the icon.");
+
+        settings.ShowAppIcons = false;
+        columns["Icon"].Visible = true;
+        DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+        Check(!grid.Columns["Icon"]!.Visible, "Icon column must respect ShowAppIcons when restored.");
+        Check(DataGridViewHelper.IsColumnVisible(null, "A"), "Null settings must count as visible.");
     }
 
     private static void CheckFilled(DataGridView grid)

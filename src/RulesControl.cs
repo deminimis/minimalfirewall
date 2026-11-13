@@ -580,7 +580,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null && _appSettings != null)
             {
-                advIconColumn.Visible = _appSettings.ShowAppIcons && DataGridViewHelper.IsColumnVisible(_appSettings.RulesColumns, advIconColumn.Name);
+                advIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.RulesColumns, advIconColumn.Name);
                 rulesDataGridView.InvalidateColumn(advIconColumn.Index);
             }
         }
