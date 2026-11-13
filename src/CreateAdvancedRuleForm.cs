@@ -185,6 +185,7 @@ namespace MinimalFirewall
             Field(heading, labelDescription, descriptionTextBox);
             enabledCheckBox.AutoSize = true;
             heading.Controls.Add(enabledCheckBox, 1, heading.RowCount++);
+            heading.SetColumnSpan(enabledCheckBox, 2);
             Add(heading);
 
             var options = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true };
@@ -220,7 +221,9 @@ namespace MinimalFirewall
             var icmp = Fields();
             Field(icmp, labelIcmpInfo, icmpTypesAndCodesTextBox);
             labelIcmpExample.AutoSize = true;
-            icmp.Controls.Add(labelIcmpExample, 1, icmp.RowCount++);
+            labelIcmpExample.Dock = DockStyle.Fill;
+            icmp.Controls.Add(labelIcmpExample, 0, icmp.RowCount++);
+            icmp.SetColumnSpan(labelIcmpExample, 3);
             Group(icmpGroupBox, icmp);
             Add(icmpGroupBox);
             var scope = Fields();
