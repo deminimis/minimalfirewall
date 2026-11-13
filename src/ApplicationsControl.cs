@@ -150,7 +150,7 @@ public sealed class ApplicationsControl : UserControl
     public void RefreshApplications()
     {
         if (_viewModel == null || IsDisposed) return;
-        _applications.Columns["Icon"]!.Visible = _settings.ShowAppIcons;
+        _applications.Columns["Icon"]!.Visible = _settings.ShowAppIcons && DataGridViewHelper.IsColumnVisible(_settings.ApplicationsColumns, "Icon");
         DisplayApplications(ApplicationEntry.Build(_viewModel.ApplicationRules, _viewModel.ReportedBlockedAttempts)
             .Where(e => e.Matches(_search.Text.Trim(), _filter.SelectedIndex)).ToList());
     }
@@ -163,7 +163,7 @@ public sealed class ApplicationsControl : UserControl
             (_attempts, settings.ApplicationAttemptsColumns)
         })
         {
-            DataGridViewHelper.RestoreColumnSettings(grid, columns);
+            DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
             grid.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
             grid.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
         }

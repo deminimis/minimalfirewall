@@ -37,7 +37,7 @@ namespace MinimalFirewall
 
             groupsDataGridView.AutoGenerateColumns = false;
             groupsDataGridView.DataSource = _bindingSource;
-            DataGridViewHelper.RestoreColumnSettings(groupsDataGridView, appSettings.GroupsColumns);
+            DataGridViewHelper.RestoreColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
             groupsDataGridView.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
             groupsDataGridView.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
         }
@@ -191,7 +191,7 @@ namespace MinimalFirewall
 
         private void GroupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0)
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0)
             {
                 return;
             }

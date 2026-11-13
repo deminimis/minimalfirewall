@@ -5,13 +5,18 @@ using DarkModeForms;
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         if (!string.Equals(Path.GetFileName(Environment.ProcessPath), "ApplicationsChecks.exe", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Run ApplicationsChecks.exe so its portable settings stay inside the test output directory.");
         File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "settings.json"), "{}");
         Application.SetHighDpiMode(HighDpiMode.SystemAware);
         Application.EnableVisualStyles();
+        if (args.Contains("--columns"))
+        {
+            ColumnChecks.Run();
+            return;
+        }
         PopupChecks.Run();
         ColumnChecks.Run();
 

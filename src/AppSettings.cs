@@ -13,6 +13,7 @@ namespace MinimalFirewall
     {
         public int DisplayIndex { get; set; }
         public int Width { get; set; }
+        public bool Visible { get; set; } = true;
     }
 
     public class AppSettings : INotifyPropertyChanged

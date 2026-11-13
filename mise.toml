@@ -1,6 +1,23 @@
 [tools]
 dotnet = "10.0"
 
+[hooks]
+postinstall = { task = "install-buildtools" }
+
+[tasks.install-buildtools]
+description = "Install Visual Studio Build Tools (.NET desktop) if MSBuild is missing"
+shell = "powershell.exe -NoProfile -Command"
+run = '''
+$ErrorActionPreference = 'Stop'
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+if ((Test-Path $vswhere) -and (& $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe')) {
+    Write-Host 'Visual Studio MSBuild already installed.'
+    exit 0
+}
+winget install --id Microsoft.VisualStudio.BuildTools --accept-package-agreements --accept-source-agreements --override "--passive --wait --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.Net.Component.4.8.SDK --includeRecommended"
+exit $LASTEXITCODE
+'''
+
 [tasks.build]
 description = "Build Minimal Firewall for Windows x64 (Release)"
 shell = "powershell.exe -NoProfile -Command"

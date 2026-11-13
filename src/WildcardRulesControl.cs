@@ -27,7 +27,7 @@ namespace MinimalFirewall
             _wildcardRuleService = wildcardRuleService;
             _backgroundTaskService = backgroundTaskService;
             _appSettings = appSettings;
-            DataGridViewHelper.RestoreColumnSettings(wildcardDataGridView, appSettings.WildcardColumns);
+            DataGridViewHelper.RestoreColumnSettings(wildcardDataGridView, appSettings.WildcardColumns, appSettings);
             wildcardDataGridView.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(wildcardDataGridView, appSettings.WildcardColumns, appSettings);
             wildcardDataGridView.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(wildcardDataGridView, appSettings.WildcardColumns, appSettings);
         }

@@ -106,7 +106,7 @@ namespace MinimalFirewall
             _appSettings = appSettings;
             rulesDataGridView.AllowUserToOrderColumns = true;
             ConfigureCompactRuleColumns();
-            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
+            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
@@ -541,7 +541,7 @@ namespace MinimalFirewall
 
         private void RulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0 || _appSettings == null) return;
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0 || _appSettings == null) return;
 
             if (_rulesSortColumn == e.ColumnIndex)
             {
@@ -580,7 +580,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null && _appSettings != null)
             {
-                advIconColumn.Visible = _appSettings.ShowAppIcons;
+                advIconColumn.Visible = _appSettings.ShowAppIcons && DataGridViewHelper.IsColumnVisible(_appSettings.RulesColumns, advIconColumn.Name);
                 rulesDataGridView.InvalidateColumn(advIconColumn.Index);
             }
         }

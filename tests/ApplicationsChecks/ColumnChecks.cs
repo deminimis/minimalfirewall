@@ -29,13 +29,29 @@ internal static class ColumnChecks
             view.Initialize(null!, null!, settings);
             return view;
         });
-        Console.WriteLine("Column widths and order survive resize, serialization and reopening.");
+        Verify(settings =>
+        {
+            var view = new AuditControl();
+            var grid = Grids(view).Single();
+            var source = new BindingSource();
+            grid.Disposed += (_, _) => source.Dispose();
+            grid.DataSource = source;
+            view.InitializeColumnSettings(settings);
+            source.DataSource = new SortableBindingList<FirewallRuleChange>([]);
+            source.ResetBindings(false);
+            return view;
+        });
+        VerifyWildcardButtons();
+        VerifyIconPreference();
+        Check(JsonSerializer.Deserialize("{\"Width\":125}", AppSettingsJsonContext.Default.ColumnState)!.Visible,
+            "Existing settings without visibility must keep columns visible.");
+        Console.WriteLine("Column menus toggle visibility and prevent hiding the last column. Visibility, widths and order survive reopening; tables remain filled.");
     }
 
     private static void Verify(Func<AppSettings, Control> create)
     {
         var settings = new AppSettings();
-        var expected = new Dictionary<string, List<(string Name, int Width, int Index)>>();
+        var expected = new Dictionary<string, List<(string Name, int Width, int Index, bool Visible)>>();
         using (var host = new Form { ClientSize = new Size(870, 730) })
         {
             var view = create(settings);
@@ -45,19 +61,40 @@ internal static class ColumnChecks
             Application.DoEvents();
             foreach (var grid in Grids(view))
             {
-                Check(grid.AutoSizeColumnsMode == DataGridViewAutoSizeColumnsMode.None, "Fill mode must not overwrite user widths.");
+                if (grid.Visible) CheckFilled(grid);
+                VerifyColumnMenu(grid);
                 foreach (DataGridViewColumn column in grid.Columns)
                 {
                     column.Width = 250 + column.Index * 7;
-                    Check(column.Width == 250 + column.Index * 7, $"{column.Name}: width must not be clamped.");
+                    if (column.AutoSizeMode != DataGridViewAutoSizeColumnMode.Fill)
+                        Check(column.Width == 250 + column.Index * 7, $"{column.Name}: width must not be clamped.");
                 }
                 grid.Columns[0].DisplayIndex = grid.Columns.Count - 1;
+                var hidden = grid.Columns.Cast<DataGridViewColumn>().Last(c => c is DataGridViewTextBoxColumn);
+                ToggleColumn(grid, hidden);
+                Check(!hidden.Visible, "Column must hide from the header menu.");
+                if (view is AuditControl && grid.DataSource is BindingSource source)
+                {
+                    var columns = grid.Columns.Cast<DataGridViewColumn>().ToList();
+                    source.DataSource = new SortableBindingList<FirewallRuleChange>([]);
+                    source.ResetBindings(false);
+                    Application.DoEvents();
+                    Check(columns.SequenceEqual(grid.Columns.Cast<DataGridViewColumn>()), "Audit refresh must preserve column instances and header menus.");
+                    Check(!hidden.Visible, "Audit refresh must preserve hidden columns.");
+                    ToggleColumn(grid, hidden);
+                    Check(hidden.Visible, "Audit menu must still show a hidden column after refresh.");
+                    ToggleColumn(grid, hidden);
+                }
+                if (grid.Visible) CheckFilled(grid);
                 expected[grid.AccessibleName ?? grid.Name] = Snapshot(grid);
             }
             host.ClientSize = new Size(1050, 700);
             Application.DoEvents();
             foreach (var grid in Grids(view))
                 Check(expected[grid.AccessibleName ?? grid.Name].SequenceEqual(Snapshot(grid)), "Resizing a window must preserve column sizes and order.");
+            host.ClientSize = new Size(2400, 730);
+            Application.DoEvents();
+            foreach (var grid in Grids(view).Where(g => g.Visible)) CheckFilled(grid);
         }
         string json = JsonSerializer.Serialize(settings, AppSettingsJsonContext.Default.AppSettings);
         var loaded = JsonSerializer.Deserialize(json, AppSettingsJsonContext.Default.AppSettings)!;
@@ -71,8 +108,88 @@ internal static class ColumnChecks
             Check(expected[grid.AccessibleName ?? grid.Name].SequenceEqual(Snapshot(grid)), $"{grid.Name}: persisted column sizes and order must be restored.");
     }
 
-    private static List<(string Name, int Width, int Index)> Snapshot(DataGridView grid) =>
-        grid.Columns.Cast<DataGridViewColumn>().Select(c => (c.Name, c.Width, c.DisplayIndex)).ToList();
+    private static List<(string Name, int Width, int Index, bool Visible)> Snapshot(DataGridView grid) =>
+        grid.Columns.Cast<DataGridViewColumn>().Select(c => (c.Name,
+            c.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill ? 0 : c.Width, c.DisplayIndex, c.Visible)).ToList();
+
+    private static void ToggleColumn(DataGridView grid, DataGridViewColumn column)
+    {
+        var menu = column.HeaderCell.ContextMenuStrip;
+        Check(menu != null, "Each column header must provide the column menu.");
+        menu!.Show(grid, Point.Empty);
+        var item = menu.Items.OfType<ToolStripMenuItem>().Single(i => ReferenceEquals(i.Tag, column));
+        Check(item.Checked == column.Visible, "Menu checkmark must match current visibility.");
+        item.PerformClick();
+        menu.Close();
+    }
+
+    private static void VerifyColumnMenu(DataGridView grid)
+    {
+        var original = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).OrderBy(c => c is DataGridViewImageColumn).ToList();
+        foreach (var column in original.Skip(1)) ToggleColumn(grid, column);
+        var remaining = original[0];
+        ToggleColumn(grid, remaining);
+        Check(remaining.Visible, "The last visible column must not be hidden.");
+        foreach (var column in original.Skip(1)) ToggleColumn(grid, column);
+        Check(original.All(c => c.Visible), "Hidden columns must remain available in the menu.");
+    }
+
+    private static void VerifyIconPreference()
+    {
+        var settings = new AppSettings();
+        using var host = new Form();
+        using var view = new RulesControl { Dock = DockStyle.Fill };
+        view.InitializeColumnSettings(settings);
+        host.Controls.Add(view);
+        host.Show();
+        var grid = Grids(view).Single();
+        var icon = grid.Columns.Cast<DataGridViewColumn>().Single(c => c is DataGridViewImageColumn);
+        ToggleColumn(grid, icon);
+        view.UpdateIconColumnVisibility();
+        Check(!icon.Visible, "Refresh must preserve a hidden icon column.");
+        settings.ShowAppIcons = false;
+        view.UpdateIconColumnVisibility();
+        settings.ShowAppIcons = true;
+        view.UpdateIconColumnVisibility();
+        Check(!icon.Visible, "Global icon settings must preserve per-table preference.");
+        ToggleColumn(grid, icon);
+        Check(icon.Visible, "Icon column must be restorable through its menu.");
+    }
+
+    private static void CheckFilled(DataGridView grid)
+    {
+        int width = grid.Columns.Cast<DataGridViewColumn>().Where(c => c.Visible).Sum(c => c.Width);
+        Check(width >= grid.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 2,
+            $"{grid.Name}: columns must fill the available table width.");
+    }
+
+    private static void VerifyWildcardButtons()
+    {
+        foreach (bool dark in new[] { false, true })
+        foreach (int percent in new[] { 100, 125, 150, 200 })
+        {
+            DarkModeForms.Theme.Colors = DarkModeForms.Theme.GetSystemColors(dark ? 0 : 1);
+            using var host = new Form { ClientSize = new Size(700, 480) };
+            using var view = new WildcardRulesControl { Dock = DockStyle.Fill };
+            using var font = new Font(view.Font.FontFamily, view.Font.SizeInPoints * percent / 100f);
+            view.Font = font;
+            host.Controls.Add(view);
+            host.Show();
+            Application.DoEvents();
+            var buttons = view.Controls.Find("topPanel", true).Single().Controls.OfType<Button>().ToList();
+            foreach (var button in buttons)
+            {
+                Check(button.Height >= button.GetPreferredSize(Size.Empty).Height, $"{button.Name}: text must fit vertically.");
+                Check(button.Parent!.ClientRectangle.Contains(button.Bounds), $"{button.Name}: button must fit inside toolbar.");
+                Check(!buttons.Any(other => other != button && other.Bounds.IntersectsWith(button.Bounds)), "Toolbar buttons must not overlap.");
+            }
+            var directory = Path.Combine(Environment.CurrentDirectory, "artifacts", "applications");
+            Directory.CreateDirectory(directory);
+            using var image = new Bitmap(host.Width, host.Height);
+            host.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));
+            image.Save(Path.Combine(directory, $"wildcard-{(dark ? "dark" : "light")}-font-{percent}.png"));
+        }
+    }
 
     private static IEnumerable<DataGridView> Grids(Control parent)
     {
