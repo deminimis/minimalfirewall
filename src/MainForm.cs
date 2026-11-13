@@ -74,6 +74,124 @@ namespace MinimalFirewall
         [LibraryImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool DestroyIcon(IntPtr handle);
+
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool RegisterHotKey(IntPtr hWnd, int id, uint modifiers, uint virtualKey);
+
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(Point point);
+
+        [LibraryImport("user32.dll")]
+        private static partial IntPtr GetAncestor(IntPtr hWnd, uint flags);
+
+        [LibraryImport("user32.dll")]
+        private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
+        #endregion
+
+        #region Global Hotkeys
+        // Ctrl+Alt+Shift avoids clashing with common editor and browser shortcuts.
+        private const uint HotkeyModifiers = 0x0001 | 0x0002 | 0x0004 | 0x4000; // Alt | Ctrl | Shift | NoRepeat
+        private const int WmHotkey = 0x0312;
+        private const uint GaRoot = 2;
+        private const int HotkeyAllowWindow = 1;
+        private const int HotkeyAllowProcess = 2;
+        private const int HotkeyAllowFile = 3;
+        private bool _isQuickAllowOpen;
+
+        // Hotkeys bind to a window handle, and WinForms recreates the handle (e.g. when ShowInTaskbar changes).
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            RegisterGlobalHotkeys();
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            UnregisterGlobalHotkeys();
+            base.OnHandleDestroyed(e);
+        }
+
+        private void RegisterGlobalHotkeys()
+        {
+            (int Id, Keys Key)[] hotkeys = [(HotkeyAllowWindow, Keys.W), (HotkeyAllowProcess, Keys.P), (HotkeyAllowFile, Keys.E)];
+            foreach (var (id, key) in hotkeys)
+            {
+                if (!RegisterHotKey(Handle, id, HotkeyModifiers, (uint)key))
+                {
+                    _activityLogger?.LogDebug($"[Hotkeys] Ctrl+Alt+Shift+{key} is already in use by another program.");
+                }
+            }
+        }
+
+        private void UnregisterGlobalHotkeys()
+        {
+            foreach (int id in new[] { HotkeyAllowWindow, HotkeyAllowProcess, HotkeyAllowFile })
+            {
+                UnregisterHotKey(Handle, id);
+            }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WmHotkey)
+            {
+                // Dialogs pump messages, so ignore hotkeys while one is already open.
+                if (_isQuickAllowOpen)
+                {
+                    return;
+                }
+
+                _isQuickAllowOpen = true;
+                try
+                {
+                    switch ((int)m.WParam)
+                    {
+                        case HotkeyAllowWindow: AllowWindowUnderCursor(); break;
+                        case HotkeyAllowProcess: AllowRunningProgram(); break;
+                        case HotkeyAllowFile: AllowProgramFile(); break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _activityLogger?.LogException("GlobalHotkey", ex);
+                }
+                finally
+                {
+                    _isQuickAllowOpen = false;
+                }
+                return;
+            }
+            base.WndProc(ref m);
+        }
+
+        // TinyWall-style: hover a window and press the hotkey to allow the program that owns it.
+        private void AllowWindowUnderCursor()
+        {
+            IntPtr window = GetAncestor(WindowFromPoint(Cursor.Position), GaRoot);
+            if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out int processId) == 0)
+            {
+                return;
+            }
+
+            if (processId == Environment.ProcessId)
+            {
+                return;
+            }
+
+            string? path = ProcessPickerForm.GetProcessPath(processId);
+            if (string.IsNullOrEmpty(path))
+            {
+                Messenger.MessageBox("Could not find the program for this window.", "Allow Application", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            ConfirmAndAllowProgram(path);
+        }
         #endregion
 
         #region Constructor and Initialization
