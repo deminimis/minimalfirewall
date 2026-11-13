@@ -69,6 +69,9 @@ namespace MinimalFirewall
 
         public void CleanupTemporaryRulesOnStartup()
         {
+            // An allow-all rule left by a crash belongs to the previous session; never carry it over.
+            RemoveTemporaryAllowAllRules();
+
             var expiredRules = _temporaryRuleManager.GetExpiredRules();
             if (expiredRules.Count != 0)
             {
@@ -98,6 +101,47 @@ namespace MinimalFirewall
             }
         }
 
+        // The allow-all rule disables lockdown for every program, so it must not outlive the app:
+        // the removal timer only runs while the app does. Remove any active one when the app exits.
+        private int _allowAllExitHookInstalled;
+
+        private void EnsureAllowAllRemovedOnExit()
+        {
+            if (Interlocked.Exchange(ref _allowAllExitHookInstalled, 1) == 0)
+            {
+                Application.ApplicationExit += (_, _) => RemoveTemporaryAllowAllRules();
+            }
+        }
+
+        public void RemoveTemporaryAllowAllRules()
+        {
+            var names = _temporaryRuleManager.GetActiveRules().Keys
+                .Where(name => name.StartsWith(TemporaryAllowAllRulePrefix, StringComparison.Ordinal))
+                .ToList();
+            if (names.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                FirewallRuleService.DeleteRulesByName(names);
+                foreach (var name in names)
+                {
+                    _temporaryRuleManager.Remove(name);
+                    if (_temporaryRuleTimers.TryRemove(name, out var timer))
+                    {
+                        timer.Dispose();
+                    }
+                }
+                activityLogger.LogChange("Temporary Rule Removed", "Allow all outbound traffic ended because the app is closing.");
+            }
+            catch (COMException ex)
+            {
+                activityLogger.LogException("RemoveTemporaryAllowAllRules", ex);
+            }
+        }
+
         public void CreateTemporaryAllowAllOutbound(TimeSpan duration)
         {
             // A program-less allow rule lets everything through the lockdown default block;
@@ -110,6 +154,7 @@ namespace MinimalFirewall
                 _temporaryRuleManager.Add(ruleName, DateTime.UtcNow.Add(duration));
                 SetupRuleTimer(ruleName, duration);
                 activityLogger.LogChange("Temporary Rule Created", $"Allowed all outbound traffic for {duration.TotalMinutes} minutes.");
+                EnsureAllowAllRemovedOnExit();
             }
             catch (Exception ex) when (ex is COMException or InvalidOperationException)
             {
