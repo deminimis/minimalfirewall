@@ -2,7 +2,6 @@ using DarkModeForms;
 using System.IO;
 using System.Management;
 using System.Diagnostics;
-using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Security.Cryptography;
 
@@ -12,7 +11,7 @@ namespace MinimalFirewall
     {
         private static bool _wmiQueryFailedMessageShown = false;
         public record ProcessExtendedDetails(string CommandLine, string ParentProcessId, string ParentProcessName, string ProcessOwner);
-        private static readonly MemoryCache _processDetailsCache = new(new MemoryCacheOptions());
+        private static readonly SlidingCache _processDetailsCache = new();
 
         public static List<ServiceViewModel> GetServicesWithExePaths()
         {
@@ -127,8 +126,7 @@ namespace MinimalFirewall
             }
 
             var details = new ProcessExtendedDetails(commandLine, parentPid, parentName, owner);
-            var cacheOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(5));
-            _processDetailsCache.Set(cacheKey, details, cacheOptions);
+            _processDetailsCache.Set(cacheKey, details, TimeSpan.FromMinutes(5));
 
             return details;
         }
