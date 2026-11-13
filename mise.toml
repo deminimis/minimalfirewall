@@ -1,0 +1,22 @@
+[tools]
+dotnet = "10.0"
+
+[tasks.build]
+description = "Build Minimal Firewall for Windows x64 (Release)"
+shell = "powershell.exe -NoProfile -Command"
+run = '''
+$ErrorActionPreference = 'Stop'
+$msbuild = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
+if ($msbuild) {
+    $msbuildPath = $msbuild.Source
+} else {
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (!(Test-Path $vswhere)) {
+        throw 'Install Visual Studio 2026 or Build Tools with the .NET desktop development workload.'
+    }
+    $msbuildPath = & $vswhere -latest -products '*' -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+    if (!$msbuildPath) { throw 'Visual Studio MSBuild.exe was not found.' }
+}
+& $msbuildPath src/MinimalFirewall.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+exit $LASTEXITCODE
+'''

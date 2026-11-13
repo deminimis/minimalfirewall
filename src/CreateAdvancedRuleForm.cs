@@ -191,7 +191,7 @@ namespace MinimalFirewall
             foreach (var group in new[] { actionGroupBox, directionGroupBox, profilesGroupBox, interfaceTypesGroupBox })
             {
                 var choices = group.Controls.Cast<Control>().OrderBy(c => c.TabIndex).ToArray();
-                var flow = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.TopDown, WrapContents = false };
+            var flow = new FlowLayoutPanel { Location = new Point(12, 24), AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.TopDown, WrapContents = false };
                 foreach (var choice in choices) { choice.AutoSize = true; choice.Margin = new Padding(0, 2, 8, 2); flow.Controls.Add(choice); }
                 Group(group, flow);
                 group.Margin = new Padding(0, 0, 8, 8);

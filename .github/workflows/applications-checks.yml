@@ -4,7 +4,7 @@ on:
   push:
     branches: [feat/176-applications-view]
   pull_request:
-    paths: ['src/**', 'tests/ApplicationsChecks/**', '.github/workflows/applications-checks.yml']
+    paths: ['src/**', 'tests/ApplicationsChecks/**', 'mise.toml', '.github/workflows/applications-checks.yml']
   workflow_dispatch:
 
 permissions:
@@ -16,9 +16,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+      - uses: jdx/mise-action@v3
+      - run: mise run build
       - uses: microsoft/setup-msbuild@v2
       # COM reference generation requires Windows and full-framework MSBuild.
       - run: msbuild tests/ApplicationsChecks/ApplicationsChecks.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
