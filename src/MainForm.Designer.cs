@@ -108,7 +108,7 @@ namespace MinimalFirewall
             mainTabControl.Dock = DockStyle.Fill;
             mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             mainTabControl.ImageList = appImageList;
-            mainTabControl.ItemSize = new Size(85, 120);
+            mainTabControl.ItemSize = new Size(44, 172);
             mainTabControl.Location = new Point(0, 0);
             mainTabControl.Multiline = true;
             mainTabControl.Name = "mainTabControl";
