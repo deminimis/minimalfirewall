@@ -5,6 +5,8 @@ namespace MinimalFirewall
 {
     public static class DataGridViewHelper
     {
+        private const int MinRestoredWidth = 20;
+
         public static void RestoreColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
         {
             settings ??= [];
@@ -24,7 +26,8 @@ namespace MinimalFirewall
                     {
                         col.DisplayIndex = kvp.Value.DisplayIndex;
                     }
-                    if (kvp.Value.Width > 0) col.Width = kvp.Value.Width;
+                    // Widths below this were saved from a collapsed or hidden grid; keep the default instead.
+                    if (kvp.Value.Width >= MinRestoredWidth) col.Width = kvp.Value.Width;
                     // Action buttons are not user-toggleable; app icons also follow the global icon setting.
                     if (col is not DataGridViewButtonColumn)
                     {
@@ -74,7 +77,7 @@ namespace MinimalFirewall
 
                 // Leaving Fill keeps the stretched width; return to the user's own width instead.
                 column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-                if (settings.TryGetValue(column.Name, out var state) && state.Width > 0)
+                if (settings.TryGetValue(column.Name, out var state) && state.Width >= MinRestoredWidth)
                 {
                     column.Width = state.Width;
                 }
@@ -87,7 +90,7 @@ namespace MinimalFirewall
                 {
                     settings[fillColumn.Name] = state = new ColumnState { DisplayIndex = fillColumn.DisplayIndex };
                 }
-                if (state.Width <= 0) state.Width = fillColumn.Width;
+                if (state.Width < MinRestoredWidth) state.Width = fillColumn.Width;
                 fillColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             }
         }
@@ -138,6 +141,8 @@ namespace MinimalFirewall
         public static void SaveColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
         {
             if (appSettings == null || settings == null) return;
+            // A zero-width grid (not laid out yet, or collapsed) reports widths that must not overwrite the user's layout.
+            if (grid.ClientSize.Width <= 0) return;
 
             bool changed = false;
             foreach (DataGridViewColumn col in grid.Columns)

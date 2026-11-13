@@ -198,6 +198,22 @@ internal static class ColumnChecks
         DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
         Check(!grid.Columns["Icon"]!.Visible, "Icon column must respect ShowAppIcons when restored.");
         Check(DataGridViewHelper.IsColumnVisible(null, "A"), "Null settings must count as visible.");
+
+        // Collapsed widths saved by older builds (Audit had 5 px columns) must not be restored.
+        settings.ShowAppIcons = true;
+        foreach (var name in new[] { "A", "B", "C" }) { columns[name].Visible = true; columns[name].Width = 5; }
+        grid.Columns["A"]!.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+        grid.Columns["A"]!.Width = 100;
+        DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+        Check(grid.Columns["A"]!.Width == 100, "Collapsed saved widths must be ignored on restore.");
+
+        // A zero-width grid must not overwrite saved widths.
+        columns["A"].Width = 140;
+        grid.Dock = DockStyle.None; grid.Width = 0;
+        grid.Columns["A"]!.Width = 30;
+        DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+        Check(columns["A"].Width == 140, "Saving from a zero-width grid must keep the stored width.");
+        grid.Dock = DockStyle.Fill;
     }
 
     private static void CheckFilled(DataGridView grid)
