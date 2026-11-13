@@ -123,6 +123,8 @@ namespace MinimalFirewall
 
         private void ConfigureResponsiveLayout()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
             Font = SystemFonts.MessageBoxFont;
             mainPanel.Controls.Clear();
             bottomPanel.Controls.Clear();
