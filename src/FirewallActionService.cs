@@ -179,7 +179,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null, string? autoAllowedPublisher = null)
+        public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null, string? autoAllowedPublisher = null, string remoteAddresses = "*")
         {
             if (appPaths == null) return;
 
@@ -234,7 +234,7 @@ namespace MinimalFirewall
                     {
                         description = "";
                     }
-                    CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description);
+                    CreateApplicationRule(baseName, appPath, dir, act, ProtocolTypes.Any.Value, description, remoteAddresses);
                 }
 
                 ApplyRuleAction(appName, action, createRule);
@@ -259,7 +259,7 @@ namespace MinimalFirewall
             }
         }
 
-        public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null)
+        public void ApplyServiceRuleChange(string serviceName, string action, string? appPath = null, string remoteAddresses = "*")
         {
             if (string.IsNullOrEmpty(serviceName))
             {
@@ -289,7 +289,7 @@ namespace MinimalFirewall
             ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
             {
                 string dirStr = dir == Directions.Incoming ? "In" : "Out";
-                CreateServiceRule($"{serviceName} - {dirStr}{suffix}", serviceName, dir, parsedAction, proto, appPath);
+                CreateServiceRule($"{serviceName} - {dirStr}{suffix}", serviceName, dir, parsedAction, proto, appPath, remoteAddresses);
             });
 
             activityLogger.LogChange("Service Rule Changed", action + " for " + serviceName);
@@ -750,20 +750,23 @@ namespace MinimalFirewall
             switch (decision)
             {
                 case "Allow":
+                case "AllowLocalNetwork":
                 case "Block":
                     eventListenerService.SnoozeNotificationsForApp(pending.AppPath, shortSnoozeDuration);
-                    string action = (decision == "Allow" ? "Allow" : "Block") + " (" + pending.Direction + ")";
+                    string action = (decision == "Block" ? "Block" : "Allow") + " (" + pending.Direction + ")";
+                    // LocalSubnet is a Windows Firewall keyword for the addresses of the connected subnets.
+                    string remoteAddresses = decision == "AllowLocalNetwork" ? "LocalSubnet" : "*";
                     if (!string.IsNullOrEmpty(pending.ServiceName))
                     {
                         var serviceNames = pending.ServiceName.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
                         foreach (var serviceName in serviceNames)
                         {
-                            ApplyServiceRuleChange(serviceName, action, pending.AppPath);
+                            ApplyServiceRuleChange(serviceName, action, pending.AppPath, remoteAddresses);
                         }
                     }
                     else if (!string.IsNullOrEmpty(pending.AppPath))
                     {
-                        ApplyApplicationRuleChange([pending.AppPath], action);
+                        ApplyApplicationRuleChange([pending.AppPath], action, remoteAddresses: remoteAddresses);
                     }
                     break;
                 case "TemporaryAllow":
@@ -1273,7 +1276,7 @@ namespace MinimalFirewall
             }
         }
 
-        private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType)
+        private void BuildAndCreateRule(string name, string description, string grouping, Directions direction, Actions action, int protocol, string appPath, string serviceName, RuleType ruleType, string remoteAddresses = "*")
         {
             // MFW prefix to protect against OS overwrites
             string safeName = (name ?? string.Empty).StartsWith("MFW - ", StringComparison.OrdinalIgnoreCase) ?
@@ -1293,7 +1296,7 @@ namespace MinimalFirewall
                 LocalPorts = "*",
                 RemotePorts = "*",
                 LocalAddresses = "*",
-                RemoteAddresses = "*",
+                RemoteAddresses = remoteAddresses,
                 Profiles = "All",
                 Type = ruleType,
                 InterfaceTypes = "All",
@@ -1303,18 +1306,18 @@ namespace MinimalFirewall
             CreateSingleAdvancedRule(vm, "All", "");
         }
 
-        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description)
+        private void CreateApplicationRule(string name, string appPath, Directions direction, Actions action, int protocol, string description, string remoteAddresses = "*")
         {
             activityLogger.LogDebug($"Creating Application Rule: '{name}' for '{appPath}'");
             string grouping = (!string.IsNullOrEmpty(description) && description.StartsWith(MFWConstants.WildcardDescriptionPrefix, StringComparison.OrdinalIgnoreCase))
                 ? MFWConstants.WildcardRuleGroup : MFWConstants.MainRuleGroup;
-            BuildAndCreateRule(name, description, grouping, direction, action, protocol, appPath, "", RuleType.Program);
+            BuildAndCreateRule(name, description, grouping, direction, action, protocol, appPath, "", RuleType.Program, remoteAddresses);
         }
 
-        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string? appPath = null)
+        private void CreateServiceRule(string name, string serviceName, Directions direction, Actions action, int protocol, string? appPath = null, string remoteAddresses = "*")
         {
             activityLogger.LogDebug($"Creating Service Rule: '{name}' for service '{serviceName}' with AppPath: '{appPath ?? "null"}'");
-            BuildAndCreateRule(name, "", MFWConstants.MainRuleGroup, direction, action, protocol, appPath!, serviceName, RuleType.Service);
+            BuildAndCreateRule(name, "", MFWConstants.MainRuleGroup, direction, action, protocol, appPath!, serviceName, RuleType.Service, remoteAddresses);
         }
 
         private void CreateUwpRule(string name, string packageFamilyName, Directions direction, Actions action, int protocol)
