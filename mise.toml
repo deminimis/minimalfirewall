@@ -1,9 +1,6 @@
 [tools]
 dotnet = "10.0"
 
-[hooks]
-postinstall = { task = "install-buildtools" }
-
 [tasks.install-buildtools]
 description = "Install Visual Studio Build Tools (.NET desktop) if MSBuild is missing"
 shell = "powershell.exe -NoProfile -Command"
