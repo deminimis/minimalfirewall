@@ -39,6 +39,7 @@ namespace MinimalFirewall
         private IconService _iconService = null!;
         private PublisherWhitelistService _whitelistService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
+        private WslOpenSnitchBridge _wslBridge = null!;
         private MainViewModel _mainViewModel = null!;
         private readonly Queue<PendingConnectionViewModel> _popupQueue = [];
         private volatile bool _isPopupVisible = false;
@@ -115,6 +116,11 @@ namespace MinimalFirewall
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
             settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
             rulesControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(false, false);
+            applicationsControl1.DataRefreshRequested += async () =>
+            {
+                _mainViewModel.ClearRulesCache();
+                await ForceDataRefreshAsync(false, false);
+            };
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
 
@@ -155,12 +161,33 @@ namespace MinimalFirewall
             // Initialize UI Controls with Services
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, _wildcardRuleService, _actionsService, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList);
+            applicationsControl1.Initialize(_mainViewModel, _actionsService, _backgroundTaskService, _appSettings, _iconService);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService);
+            groupsControl1.Initialize(_groupManager, _backgroundTaskService, _appSettings);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
+
+            _wslBridge = new WslOpenSnitchBridge(msg => _activityLogger.LogDebug(msg));
+            _wslBridge.ConnectionAsked += _mainViewModel.AddWslPendingConnection;
+            _mainViewModel.WslBridge = _wslBridge;
+            // Deferred so a change made from the Rules tab finishes before the list is rebuilt.
+            _wslBridge.RulesChanged += () =>
+            {
+                if (IsHandleCreated && !IsDisposed) BeginInvoke(() =>
+                {
+                    _mainViewModel.MergeWslRules();
+                    rulesControl1.ApplyRulesFilters();
+                    applicationsControl1.RefreshApplications();
+                });
+            };
+            _wslBridge.Failed += msg => SafeInvoke(() => MessageBox.Show(this,
+                $"WSL filtering is not active: {msg}.\n\nPrerequisites in the default WSL 2 distro:\n" +
+                "  sudo apt install opensnitch python3-grpcio\n  sudo systemctl enable --now opensnitch\n" +
+                "systemd must be enabled ([boot] systemd=true in /etc/wsl.conf).\n\nTurn the setting off and on again after installing.",
+                "Filter WSL programs", MessageBoxButtons.OK, MessageBoxIcon.Warning));
+            if (_appSettings.WslOpenSnitchEnabled) _wslBridge.Start();
         }
 
         private void OnQueueCountChanged(int count)
@@ -190,6 +217,7 @@ namespace MinimalFirewall
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
             _appSettings?.PropertyChanged -= AppSettings_PropertyChanged;
+            _wslBridge?.Dispose();
 
             _cachedArrowPen?.Dispose();
             base.OnFormClosed(e);
@@ -423,6 +451,7 @@ namespace MinimalFirewall
             RefreshAllThemedControls(this);
 
             rulesControl1.ApplyThemeFixes();
+            applicationsControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
             settingsControl1.ApplyTheme(isDark);
             settingsControl1.ApplyThemeFixes();
@@ -437,7 +466,7 @@ namespace MinimalFirewall
             rescanButton.BringToFront();
         }
 
-        private static void RefreshAllThemedControls(Control parent)
+        internal static void RefreshAllThemedControls(Control parent)
         {
             foreach (Control control in parent.Controls)
             {
@@ -475,6 +504,7 @@ namespace MinimalFirewall
         private void UpdateIconColumnVisibility()
         {
             rulesControl1.UpdateIconColumnVisibility();
+            applicationsControl1.RefreshApplications();
             dashboardControl1.SetIconColumnVisibility(_appSettings.ShowAppIcons);
             liveConnectionsControl1.UpdateIconColumnVisibility();
         }
@@ -588,6 +618,12 @@ namespace MinimalFirewall
             if (e.PropertyName == nameof(AppSettings.DnsRefreshIntervalMinutes))
             {
                 _mainViewModel?.UpdateDnsTimerInterval();
+            }
+
+            if (e.PropertyName == nameof(AppSettings.WslOpenSnitchEnabled) && _wslBridge != null)
+            {
+                if (_appSettings.WslOpenSnitchEnabled) _wslBridge.Start();
+                else _wslBridge.Stop();
             }
         }
 
@@ -913,7 +949,7 @@ namespace MinimalFirewall
                     {
                         Invoke(new Action(async () =>
                         {
-                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
+                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage"))
                             {
                                 await ForceDataRefreshAsync();
                             }
@@ -1081,6 +1117,17 @@ namespace MinimalFirewall
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
                         break;
+                    case "applicationsTabPage":
+                        // The view only needs the MFW rule list: reuse it when loaded, and never force a UWP rescan.
+                        if (_mainViewModel.ApplicationRules.Count > 0)
+                        {
+                            applicationsControl1.RefreshApplications();
+                        }
+                        else
+                        {
+                            await ForceDataRefreshAsync(false);
+                        }
+                        break;
                     case "wildcardRulesTabPage":
                         wildcardRulesControl1.LoadRules();
                         break;
@@ -1130,6 +1177,7 @@ namespace MinimalFirewall
                 _iconService.ClearCache();
 
                 await rulesControl1.RefreshDataAsync(forceUwpScan, progress, token);
+                applicationsControl1.RefreshApplications();
 
                 if (token.IsCancellationRequested)
                 {
@@ -1323,6 +1371,7 @@ namespace MinimalFirewall
                 switch (tabName)
                 {
                     case "rulesTabPage":
+                        if (mainTabControl.SelectedTab == applicationsTabPage) break;
                         _mainViewModel.ClearRulesData();
                         break;
                     case "wildcardRulesTabPage":

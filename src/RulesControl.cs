@@ -31,7 +31,6 @@ namespace MinimalFirewall
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
         private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = [];
-        private readonly Dictionary<DataGridViewColumn, int> _rulesColumnMaximumWidths = [];
         private readonly System.Windows.Forms.Timer _searchDebounceTimer;
 
         public event Func<Task>? DataRefreshRequested;
@@ -99,9 +98,15 @@ namespace MinimalFirewall
             uwpFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             wildcardFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
 
+            InitializeColumnSettings(appSettings);
+        }
+
+        internal void InitializeColumnSettings(AppSettings appSettings)
+        {
+            _appSettings = appSettings;
             rulesDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
             ConfigureCompactRuleColumns();
+            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
@@ -129,7 +134,7 @@ namespace MinimalFirewall
             await Task.CompletedTask;
         }
 
-        private void ApplyRulesFilters()
+        public void ApplyRulesFilters()
         {
             var enabledTypes = new HashSet<RuleType>();
             if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
@@ -289,9 +294,14 @@ namespace MinimalFirewall
         {
             if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action) return;
 
-            foreach (var item in GetSelectedRules())
+            var selected = GetSelectedRules();
+            foreach (var item in selected)
             {
                 _mainViewModel.ApplyRuleChange(item, action);
+            }
+            if (action.Contains("(Inbound)", StringComparison.Ordinal) && selected.Any(r => r.IsWsl))
+            {
+                Messenger.MessageBox("OpenSnitch filters outbound connections only, so the selected WSL rules were not changed.", "WSL rules", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -314,7 +324,8 @@ namespace MinimalFirewall
                              ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
                               !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
             editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
-            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType;
+            // OpenSnitch rules have no Windows rule definition to edit.
+            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && !rule.IsWsl;
         }
 
         private async void ManageDomainsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -522,7 +533,6 @@ namespace MinimalFirewall
                     maximumWidth = Math.Max(maximumWidth, statusWidth);
                 }
 
-                _rulesColumnMaximumWidths[column] = maximumWidth;
                 if (column.Width > maximumWidth)
                 {
                     column.Width = maximumWidth;
@@ -532,17 +542,12 @@ namespace MinimalFirewall
 
         private void RulesDataGridView_ColumnWidthChanged(object? sender, DataGridViewColumnEventArgs e)
         {
-            if (_rulesColumnMaximumWidths.TryGetValue(e.Column, out int maximumWidth) && e.Column.Width > maximumWidth)
-            {
-                e.Column.Width = maximumWidth;
-            }
-
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
         }
 
         private void RulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0 || _appSettings == null) return;
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0 || _appSettings == null) return;
 
             if (_rulesSortColumn == e.ColumnIndex)
             {
@@ -581,7 +586,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null && _appSettings != null)
             {
-                advIconColumn.Visible = _appSettings.ShowAppIcons;
+                advIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.RulesColumns, advIconColumn.Name);
                 rulesDataGridView.InvalidateColumn(advIconColumn.Index);
             }
         }
@@ -649,6 +654,7 @@ namespace MinimalFirewall
                 _ when col == advDescColumn => CleanDescription(rule.Description),
                 _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
                 _ when col == autoAllowedColumn => string.IsNullOrEmpty(rule.AutoAllowedPublisher) ? "" : "Auto",
+                _ when col == attributesColumn => rule.Attributes,
                 _ => e.Value
             };
         }

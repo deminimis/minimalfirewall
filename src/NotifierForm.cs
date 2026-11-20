@@ -27,13 +27,17 @@ namespace MinimalFirewall
 
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
+        private bool _fittingLayout;
+        private bool _isDarkMode;
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
+            _isDarkMode = isDarkMode;
             Theme.Colors = Theme.GetSystemColors(isDarkMode ? 0 : 1);
             Theme.ApplyTitleBarTheme(this.Handle, isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
+            MainForm.RefreshAllThemedControls(this);
 
             pathLabel.BackColor = Theme.Colors.PathLabelBackground;
             pathLabel.ForeColor = Theme.Colors.TextActive;
@@ -58,11 +62,12 @@ namespace MinimalFirewall
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
+            appNameLabel.Text = appName;
             Text = "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
             pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
@@ -83,11 +88,20 @@ namespace MinimalFirewall
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
             pathLabel.Text = pending.AppPath;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
+
+            if (pending.IsWsl)
+            {
+                // opensnitchd holds the connection until a decision; Windows publisher and wildcard rules do not apply.
+                Text = "WSL Connection";
+                infoLabel.Text = $"WSL program waiting for a {pending.Direction} connection to {pending.RemoteAddress}:{pending.RemotePort}:";
+                createWildcardButton.Visible = false;
+                trustPublisherCheckBox.Visible = false;
+            }
         }
 
         // Restore window position
@@ -141,11 +155,38 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[WARN] NotifierForm.OnLoad failed to restore layout: {ex.Message}");
             }
+            FitToWorkingArea();
+        }
+
+        private void FitToWorkingArea()
+        {
+            if (!IsHandleCreated || _notificationLayout == null || _fittingLayout) return;
+            _fittingLayout = true;
+            try
+            {
+                var working = Screen.FromRectangle(Bounds).WorkingArea;
+                int maximumWidth = working.Width - 32;
+                int maximumHeight = working.Height - 32;
+                int frameHeight = Height - ClientSize.Height;
+                int minimumWidth = Math.Min(maximumWidth, Math.Max((int)(360 * DeviceDpi / 96f), Font.Height * 22));
+                MinimumSize = new Size(minimumWidth, Math.Min(MinimumSize.Height, maximumHeight));
+                Width = Math.Clamp(Width, minimumWidth, maximumWidth);
+                pathLabel.MinimumSize = new Size(0, Font.Height * 3);
+                int contentHeight = _notificationLayout.Padding.Vertical + pathLabel.MinimumSize.Height + pathLabel.Margin.Vertical
+                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != pathLabel).Sum(c => c.Height + c.Margin.Vertical);
+                int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
+                MinimumSize = new Size(minimumWidth, minimumHeight);
+                Height = Math.Clamp(Height, minimumHeight, maximumHeight);
+                Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
+                    Math.Clamp(Top, working.Top, working.Bottom - Height));
+            }
+            finally { _fittingLayout = false; }
         }
 
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            ApplyThemeStyles(_isDarkMode);
             try
             {
                 if (PendingConnection == null)
@@ -155,6 +196,7 @@ namespace MinimalFirewall
 
                 string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
+                if (IsDisposed) return;
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
                 {
@@ -311,13 +353,13 @@ namespace MinimalFirewall
                     }
                 }
 
-                copyDetailsButton.Text = "✓";
+                copyDetailsButton.Text = "Copied";
 
                 await Task.Delay(2000);
 
                 if (!IsDisposed && IsHandleCreated)
                 {
-                    copyDetailsButton.Text = "📋";
+                    copyDetailsButton.Text = "Copy details";
                 }
             }
             catch (Exception ex)

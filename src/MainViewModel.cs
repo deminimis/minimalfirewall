@@ -39,7 +39,9 @@ namespace MinimalFirewall
 
         public TrafficMonitorViewModel TrafficMonitorViewModel { get; }
         public ObservableCollection<PendingConnectionViewModel> PendingConnections { get; } = [];
+        public ObservableCollection<PendingConnectionViewModel> ReportedBlockedAttempts { get; } = [];
         public List<AggregatedRuleViewModel> AllAggregatedRules { get; private set; } = [];
+        public List<AdvancedRuleViewModel> ApplicationRules { get; private set; } = [];
         public SortableBindingList<AggregatedRuleViewModel> VirtualRulesData { get; private set; } = new([]);
         public List<FirewallRuleChange> SystemChanges { get; private set; } = [];
         public int UnseenSystemChangesCount => SystemChanges.Count(c => c.Rule.IsEnabled);
@@ -102,13 +104,68 @@ namespace MinimalFirewall
         {
             ClearRulesCache();
             AllAggregatedRules.Clear();
+            ApplicationRules = [];
             VirtualRulesData.Clear();
+            _rulesLoaded = false;
             RulesListUpdated?.Invoke();
         }
 
+        // True while the rule lists hold the Windows rules; WSL rows are merged only then.
+        private bool _rulesLoaded;
+
         public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
         {
-            AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
+            ApplicationRules = [.. await _dataService.GetMfwRulesAsync(token), .. GetWslRules()];
+            // New list: the data service may return its cached list.
+            AllAggregatedRules = [.. await _dataService.GetAggregatedRulesAsync(token, progress), .. GetWslRules()];
+            _rulesLoaded = true;
+        }
+
+        public WslOpenSnitchBridge? WslBridge { get; set; }
+
+        // Replaces the WSL rows after the bridge reported a rule change.
+        public void MergeWslRules()
+        {
+            // Otherwise WSL rows alone would make unloaded lists look loaded (the bridge reports its
+            // rules at startup, before any tab loads the Windows rules); the next load adds them.
+            if (!_rulesLoaded) return;
+            AllAggregatedRules = [.. AllAggregatedRules.Where(r => !r.IsWsl), .. GetWslRules()];
+            ApplicationRules = [.. ApplicationRules.Where(r => !r.IsWsl), .. GetWslRules()];
+        }
+
+        private IEnumerable<AggregatedRuleViewModel> GetWslRules()
+        {
+            var bridge = WslBridge;
+            if (bridge == null) return [];
+
+            return bridge.GetRules().Select(r =>
+            {
+                bool isPath = r.Operand == "process.path";
+                return new AggregatedRuleViewModel
+                {
+                    Name = "WSL - " + (isPath ? Path.GetFileName(r.Data) : r.Name),
+                    ApplicationName = isPath ? bridge.ToWindowsPath(r.Data) : string.Empty,
+                    InboundStatus = "N/A",
+                    OutboundStatus = r.Action == "allow" ? Actions.Allow.ToString() : Actions.Block.ToString(),
+                    // The Applications view reads the single-rule fields.
+                    Status = r.Action == "allow" ? Actions.Allow.ToString() : Actions.Block.ToString(),
+                    Direction = Directions.Outgoing,
+                    IsEnabled = r.Enabled,
+                    Type = RuleType.Program,
+                    // Rules created from Minimal Firewall popups count as its own rules.
+                    Grouping = r.Name.StartsWith("mfw-", StringComparison.Ordinal) ? "OpenSnitch (WSL)" + MFWConstants.MfwRuleSuffix : "OpenSnitch (WSL)",
+                    Profiles = "All",
+                    ProtocolName = "Any",
+                    LocalPorts = "Any",
+                    RemotePorts = "Any",
+                    LocalAddresses = "Any",
+                    RemoteAddresses = "Any",
+                    ServiceName = "N/A",
+                    Description = isPath ? $"OpenSnitch rule {r.Name}" : $"OpenSnitch rule {r.Name}: {r.Operand} {r.Data}",
+                    Attributes = $"WSL ({bridge.Distro})",
+                    WslRuleName = r.Name,
+                };
+            });
         }
 
         public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
@@ -378,6 +435,7 @@ namespace MinimalFirewall
                 13 => rule => rule.Description,
                 14 => rule => rule.DateAdded ?? DateTime.MinValue,
                 15 => rule => rule.AutoAllowedPublisher,
+                16 => rule => rule.Attributes,
                 _ => rule => rule.Name,
             };
         }
@@ -422,7 +480,7 @@ namespace MinimalFirewall
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing: {decision} {pending.FileName}"));
             PendingConnections.Remove(pending);
 
-            if (decision == "Allow" || decision == "Block")
+            if (!pending.IsWsl && (decision == "Allow" || decision == "Block"))
             {
                 string action = $"{decision} ({pending.Direction})";
                 FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
@@ -472,14 +530,19 @@ namespace MinimalFirewall
             {
                 _eventListenerService.Stop();
 
-                // Clear pending notifications when unlocked
+                // Clear pending notifications when unlocked. WSL questions do not depend on
+                // Lockdown and opensnitchd still waits for them, so they stay.
+                void clearWindowsPending()
+                {
+                    foreach (var p in PendingConnections.Where(p => !p.IsWsl).ToList()) PendingConnections.Remove(p);
+                }
                 if (_uiContext != null)
                 {
-                    _uiContext.Post(_ => PendingConnections.Clear(), null);
+                    _uiContext.Post(_ => clearWindowsPending(), null);
                 }
                 else
                 {
-                    PendingConnections.Clear();
+                    clearWindowsPending();
                 }
             }
         }
@@ -661,6 +724,17 @@ namespace MinimalFirewall
 
         public void ApplyRuleChange(AggregatedRuleViewModel item, string action)
         {
+            if (item.IsWsl)
+            {
+                // OpenSnitch filters outbound connections only; the bridge refreshes the row.
+                FirewallActionsService.ParseActionString(action, out Actions wslAction, out Directions wslDirection);
+                if (wslDirection.HasFlag(Directions.Outgoing))
+                {
+                    WslBridge?.SetAction(item.WslRuleName, wslAction == Actions.Allow);
+                }
+                return;
+            }
+
             var firstRule = item.UnderlyingRules.FirstOrDefault();
             if (firstRule == null)
             {
@@ -738,6 +812,10 @@ namespace MinimalFirewall
                 .Where(i => i.Type != RuleType.Wildcard)
                 .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
                 .ToList();
+            foreach (var wslRule in rulesToDelete.Where(r => r.IsWsl))
+            {
+                WslBridge?.Delete(wslRule.WslRuleName);
+            }
             foreach (var wildcardRule in wildcardRulesToDelete)
             {
                 var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
@@ -858,10 +936,36 @@ namespace MinimalFirewall
             }
         }
 
+        public void AddWslPendingConnection(PendingConnectionViewModel pending)
+        {
+            // Wildcard rules also match \\wsl.localhost paths; answer opensnitchd instead of
+            // creating a Windows rule, which would leave the daemon waiting and then allow.
+            // OpenSnitch only asks about outbound connections, so an inbound-only wildcard does not apply.
+            var wildcard = _wildcardRuleService.Match(pending.AppPath);
+            if (wildcard != null && !(wildcard.Action.Contains("Inbound", StringComparison.OrdinalIgnoreCase)))
+            {
+                pending.WslReply!(wildcard.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "BlockOnce" : "AllowOnce", default);
+                return;
+            }
+            OnPendingConnectionDetected(pending);
+        }
+
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
             void processDetection()
             {
+                // Keep reported observations after a dashboard decision, bounded to this session.
+                // A blocked app retries many times; record each endpoint once so retries neither rebuild the
+                // Applications view on every event nor push other apps out of the bounded history.
+                bool alreadyReported = ReportedBlockedAttempts.Any(a =>
+                    a.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) &&
+                    a.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase) &&
+                    a.RemoteAddress == pending.RemoteAddress && a.RemotePort == pending.RemotePort);
+                if (!alreadyReported)
+                {
+                    if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
+                    ReportedBlockedAttempts.Add(pending);
+                }
                 bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
                 if (alreadyPending)
                 {
@@ -888,6 +992,12 @@ namespace MinimalFirewall
 
         public void ProcessSpecificAllow(PendingConnectionViewModel pending)
         {
+            if (pending.IsWsl)
+            {
+                // opensnitch 1.5 cannot receive list rules over gRPC; allow the program instead.
+                ProcessDashboardAction(pending, "Allow");
+                return;
+            }
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
             _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
             PendingConnections.Remove(pending);
@@ -925,6 +1035,12 @@ namespace MinimalFirewall
 
         public void CreateWildcardRule(PendingConnectionViewModel pending, WildcardRule newRule)
         {
+            if (pending.IsWsl)
+            {
+                // Wildcard folders are Windows paths; apply the decision to the WSL program only.
+                ProcessDashboardAction(pending, newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow");
+                return;
+            }
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
             _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
 
