@@ -274,6 +274,13 @@ namespace MinimalFirewall
 
             UpdateTrayStatus();
 
+            _actionsService.LockdownGuard.Restored += message => SafeInvoke(() =>
+            {
+                UpdateTrayStatus();
+                notifyIcon?.ShowBalloonTip(5000, "Secure Profile", message, ToolTipIcon.Warning);
+            });
+            _actionsService.LockdownGuard.Start(MainViewModel.IsLockedDown);
+
             await Task.Run(_actionsService.ReenableMfwRules);
 
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
