@@ -73,6 +73,7 @@ namespace MinimalFirewall
 
             tempAllowButton?.Visible = false;
             createWildcardButton?.Visible = false;
+            searchOnlineButton?.Visible = false;
             trustPublisherCheckBox?.Visible = false;
         }
 
@@ -87,12 +88,46 @@ namespace MinimalFirewall
             Text = "Connection Blocked";
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
-            pathLabel.Text = pending.AppPath;
+            pathLabel.Text = BuildConnectionDetails(pending);
             pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
+        }
+
+        // Describes what the executable is and what it is trying to reach, so the user can decide.
+        public static string BuildConnectionDetails(PendingConnectionViewModel pending)
+        {
+            var lines = new System.Collections.Generic.List<string> { pending.AppPath };
+            void Add(string label, string? value)
+            {
+                if (!string.IsNullOrWhiteSpace(value)) lines.Add($"{label}: {value.Trim()}");
+            }
+
+            try
+            {
+                if (File.Exists(pending.AppPath))
+                {
+                    var info = FileVersionInfo.GetVersionInfo(pending.AppPath);
+                    Add("Description", info.FileDescription);
+                    Add("Product", string.Join(" ", new[] { info.ProductName, info.ProductVersion }.Where(s => !string.IsNullOrWhiteSpace(s))));
+                    Add("Company", info.CompanyName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm could not read version info: {ex.Message}");
+            }
+
+            Add("Service", pending.ServiceName);
+            Add("Remote", string.IsNullOrEmpty(pending.RemoteAddress) ? null
+                : $"{pending.RemoteAddress}{(string.IsNullOrEmpty(pending.RemotePort) ? "" : ":" + pending.RemotePort)} {pending.ProtocolDisplay}");
+            Add("Parent process", string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId
+                : $"{pending.ParentProcessName} (PID {pending.ParentProcessId})");
+            Add("User", pending.ProcessOwner);
+            Add("Command line", pending.CommandLine);
+            return string.Join(Environment.NewLine, lines);
         }
 
         // Restore window position
@@ -287,6 +322,46 @@ namespace MinimalFirewall
             Result = NotifierResult.CreateWildcard;
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        // Web search on the file name plus its publisher explains what the program does better than local metadata.
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string SearchEngine { get; set; } = "Google";
+
+        public static string BuildSearchUrl(string appPath, string engine)
+        {
+            string prefix = engine switch
+            {
+                "Bing" => "https://www.bing.com/search?q=",
+                "DuckDuckGo" => "https://duckduckgo.com/?q=",
+                _ => "https://www.google.com/search?q="
+            };
+            string query = $"\"{Path.GetFileName(appPath)}\"";
+            try
+            {
+                if (File.Exists(appPath) && FileVersionInfo.GetVersionInfo(appPath).CompanyName is string company && !string.IsNullOrWhiteSpace(company))
+                {
+                    query += " " + company.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm could not read company name: {ex.Message}");
+            }
+            return prefix + Uri.EscapeDataString(query);
+        }
+
+        private void SearchOnlineButton_Click(object? sender, EventArgs e)
+        {
+            if (PendingConnection == null) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(BuildSearchUrl(PendingConnection.AppPath, SearchEngine)) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm.SearchOnlineButton_Click failed: {ex.Message}");
+            }
         }
 
         private async void CopyDetailsButton_Click(object sender, EventArgs e)

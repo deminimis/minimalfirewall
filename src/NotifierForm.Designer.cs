@@ -12,6 +12,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox trustPublisherCheckBox;
         private DarkModeForms.ThemedButton createWildcardButton;
         private DarkModeForms.ThemedButton copyDetailsButton;
+        private DarkModeForms.ThemedButton searchOnlineButton;
         private DarkModeForms.ThemedButton allowButton;
         private DarkModeForms.ThemedButton tempAllowButton;
         private DarkModeForms.ThemedButton blockButton;
@@ -50,12 +51,14 @@ namespace MinimalFirewall
             tempAllowButton = new DarkModeForms.ThemedButton { Name = "tempAllowButton", Text = "Allow Temporarily" };
             createWildcardButton = new DarkModeForms.ThemedButton { Name = "createWildcardButton", Text = "Create Wildcard Rule..." };
             copyDetailsButton = new DarkModeForms.ThemedButton { Name = "copyDetailsButton", Text = "Copy details" };
+            searchOnlineButton = new DarkModeForms.ThemedButton { Name = "searchOnlineButton", Text = "Search online" };
             allowButton.Click += AllowButton_Click;
             blockButton.Click += BlockButton_Click;
             ignoreButton.Click += IgnoreButton_Click;
             tempAllowButton.Click += TempAllowButton_Click;
             createWildcardButton.Click += CreateWildcardButton_Click;
             copyDetailsButton.Click += CopyDetailsButton_Click;
+            searchOnlineButton.Click += SearchOnlineButton_Click;
 
             FlowLayoutPanel Commands(params Button[] buttons)
             {
@@ -83,7 +86,7 @@ namespace MinimalFirewall
             _notificationLayout.Controls.Add(appNameLabel, 0, 1);
             _notificationLayout.Controls.Add(pathLabel, 0, 2);
             _notificationLayout.Controls.Add(trustPublisherCheckBox, 0, 3);
-            _notificationLayout.Controls.Add(Commands(copyDetailsButton, createWildcardButton, tempAllowButton), 0, 4);
+            _notificationLayout.Controls.Add(Commands(searchOnlineButton, copyDetailsButton, createWildcardButton, tempAllowButton), 0, 4);
             _notificationLayout.Controls.Add(Commands(allowButton, blockButton, ignoreButton), 0, 5);
             _notificationLayout.Layout += (_, _) =>
             {

@@ -6,6 +6,22 @@ internal static class PopupChecks
 {
     public static void Run()
     {
+        var cmd = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+        var details = NotifierForm.BuildConnectionDetails(new PendingConnectionViewModel
+        {
+            AppPath = cmd, RemoteAddress = "192.0.2.1", RemotePort = "443", Protocol = "6",
+            ParentProcessName = "explorer.exe", ParentProcessId = "42", CommandLine = "cmd.exe /c ping"
+        });
+        Check(details.StartsWith(cmd) && details.Contains("Description: Windows Command Processor") && details.Contains("Company: Microsoft"),
+            $"Popup details miss version info: {details}");
+        Check(details.Contains("Remote: 192.0.2.1:443 TCP") && details.Contains("Parent process: explorer.exe (PID 42)") && details.Contains("Command line: cmd.exe /c ping"),
+            $"Popup details miss connection context: {details}");
+        Check(NotifierForm.BuildConnectionDetails(new PendingConnectionViewModel { AppPath = @"C:\Missing\app.exe" }) == @"C:\Missing\app.exe",
+            "Popup details must fall back to the path for a missing file.");
+        var searchUrl = NotifierForm.BuildSearchUrl(cmd, "Google");
+        Check(searchUrl == "https://www.google.com/search?q=%22cmd.exe%22%20Microsoft%20Corporation", $"Unexpected search URL: {searchUrl}");
+        Check(NotifierForm.BuildSearchUrl(@"C:\Missing\app.exe", "DuckDuckGo") == "https://duckduckgo.com/?q=%22app.exe%22", "Search must fall back to the file name.");
+
         var directory = Path.Combine(Environment.CurrentDirectory, "artifacts", "applications");
         Directory.CreateDirectory(directory);
         foreach (bool dark in new[] { false, true })

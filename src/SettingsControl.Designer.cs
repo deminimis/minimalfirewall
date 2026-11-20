@@ -57,6 +57,8 @@ namespace MinimalFirewall
             label1 = new Label();
             dnsRefreshNumericUpDown = new NumericUpDown();
             themedLabel1 = new DarkModeForms.ThemedLabel();
+            searchEngineLabel = new DarkModeForms.ThemedLabel();
+            searchEngineComboBox = new ComboBox();
             coffeePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)coffeePictureBox).BeginInit();
             mainSettingsPanel.SuspendLayout();
@@ -471,6 +473,8 @@ namespace MinimalFirewall
             mainSettingsPanel.BackColor = Color.FromArgb(43, 43, 43);
             mainSettingsPanel.BorderStyle = BorderStyle.FixedSingle;
             mainSettingsPanel.Controls.Add(themedLabel1);
+            mainSettingsPanel.Controls.Add(searchEngineLabel);
+            mainSettingsPanel.Controls.Add(searchEngineComboBox);
             mainSettingsPanel.Controls.Add(dnsRefreshNumericUpDown);
             mainSettingsPanel.Controls.Add(label1);
             mainSettingsPanel.Controls.Add(coffeeLinkLabel);
@@ -662,6 +666,24 @@ namespace MinimalFirewall
             themedLabel1.TabIndex = 41;
             themedLabel1.Text = "minutes";
             // 
+            // searchEngineLabel
+            // 
+            searchEngineLabel.AutoSize = true;
+            searchEngineLabel.BackColor = Color.Transparent;
+            searchEngineLabel.Location = new Point(306, 163);
+            searchEngineLabel.Name = "searchEngineLabel";
+            searchEngineLabel.Text = "Web search:";
+            // 
+            // searchEngineComboBox
+            // 
+            searchEngineComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            searchEngineComboBox.Items.AddRange(new object[] { "Google", "Bing", "DuckDuckGo" });
+            searchEngineComboBox.Location = new Point(400, 160);
+            searchEngineComboBox.Name = "searchEngineComboBox";
+            searchEngineComboBox.Size = new Size(130, 23);
+            searchEngineComboBox.TabIndex = 42;
+            searchEngineComboBox.SelectedIndexChanged += SearchEngineComboBox_SelectedIndexChanged;
+            // 
             // SettingsControl
             // 
             AutoScaleDimensions = new SizeF(7F, 16F);
@@ -721,5 +743,7 @@ namespace MinimalFirewall
         private NumericUpDown dnsRefreshNumericUpDown;
         private Label label1;
         private DarkModeForms.ThemedLabel themedLabel1;
+        private DarkModeForms.ThemedLabel searchEngineLabel;
+        private ComboBox searchEngineComboBox;
     }
 }
