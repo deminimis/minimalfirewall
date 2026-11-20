@@ -47,17 +47,53 @@ namespace MinimalFirewall
                : this(actionsService, appSettings)
         {
             programPathTextBox.Text = appPath;
-            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase))
+            // Pending connections use "Incoming"/"Outgoing".
+            if (direction.Equals("Inbound", StringComparison.OrdinalIgnoreCase) || direction.Equals("Incoming", StringComparison.OrdinalIgnoreCase))
             {
                 inboundRadioButton.Checked = true;
             }
-            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase))
+            else if (direction.Equals("Outbound", StringComparison.OrdinalIgnoreCase) || direction.Equals("Outgoing", StringComparison.OrdinalIgnoreCase))
             {
                 outboundRadioButton.Checked = true;
             }
             else
             {
                 bothDirRadioButton.Checked = true;
+            }
+        }
+
+        // Prefills the blocked connection's service, protocol, remote address and remote port,
+        // so a rule can target this endpoint only. Every field stays editable.
+        public CreateAdvancedRuleForm(FirewallActionsService actionsService, PendingConnectionViewModel pending, AppSettings appSettings)
+            : this(actionsService, pending.AppPath, pending.Direction, appSettings)
+        {
+            if (!string.IsNullOrEmpty(pending.ServiceName) && pending.ServiceName != "Unknown Service")
+            {
+                serviceNameTextBox.Text = pending.ServiceName;
+            }
+
+            if (int.TryParse(pending.Protocol, out int protocol))
+            {
+                foreach (var item in protocolComboBox.Items)
+                {
+                    if (item is ProtocolTypes pt && pt.Value == protocol)
+                    {
+                        protocolComboBox.SelectedItem = item;
+                        _viewModel.SelectedProtocol = pt;
+                        break;
+                    }
+                }
+            }
+
+            // Ports only exist for TCP and UDP.
+            if ((protocol == 6 || protocol == 17) && !string.IsNullOrEmpty(pending.RemotePort) && pending.RemotePort != "0")
+            {
+                remotePortsTextBox.Text = pending.RemotePort;
+            }
+
+            if (!string.IsNullOrEmpty(pending.RemoteAddress))
+            {
+                remoteAddressTextBox.Text = pending.RemoteAddress;
             }
         }
 
