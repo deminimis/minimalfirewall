@@ -20,6 +20,9 @@ except ImportError:
 if not os.path.exists('/usr/bin/opensnitchd'):
     print('ERROR opensnitchd is not installed (sudo apt install opensnitch)', flush=True)
     sys.exit(1)
+if os.system('systemctl is-active --quiet opensnitch') != 0:
+    print('ERROR the opensnitch service is not running (needs systemd=true in /etc/wsl.conf, then sudo systemctl enable --now opensnitch)', flush=True)
+    sys.exit(1)
 SOCK = '/tmp/osui.sock'
 lock = threading.Lock()
 waiting = {}
@@ -96,6 +99,9 @@ reader()
 
         public event Action<PendingConnectionViewModel>? ConnectionAsked;
 
+        // Raised with a user-facing message when a prerequisite is missing.
+        public event Action<string>? Failed;
+
         public WslOpenSnitchBridge(Action<string> log)
         {
             _log = log;
@@ -126,6 +132,7 @@ reader()
             catch (Exception ex)
             {
                 _log($"[WSL] Could not start wsl.exe: {ex.Message}");
+                Failed?.Invoke($"Could not start wsl.exe: {ex.Message}");
                 return;
             }
             if (_process == null) return;
@@ -159,6 +166,7 @@ reader()
 
         private void ReadLoop(Process process)
         {
+            bool started = false, reported = false;
             try
             {
                 string? line;
@@ -167,12 +175,19 @@ reader()
                     var parts = line.Split(' ', 3);
                     if (parts[0] == "HELLO" && parts.Length > 1)
                     {
+                        started = true;
                         _distro = parts[1];
                         _log($"[WSL] OpenSnitch bridge listening in {_distro}.");
                     }
                     else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
                     {
                         OnAsk(id, Convert.FromBase64String(parts[2]));
+                    }
+                    else if (parts[0] == "ERROR")
+                    {
+                        _log($"[WSL] {line}");
+                        reported = true;
+                        Failed?.Invoke(line[6..]);
                     }
                     else
                     {
@@ -183,6 +198,12 @@ reader()
             catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException or FormatException)
             {
                 _log($"[WSL] Bridge stopped: {ex.Message}");
+            }
+
+            // wsl.exe failed before the script ran (no WSL 2 distro, no python3) and the user did not stop it.
+            if (!started && !reported && ReferenceEquals(_process, process))
+            {
+                Failed?.Invoke("wsl.exe exited before the bridge started (needs a default WSL 2 distro with python3)");
             }
         }
 

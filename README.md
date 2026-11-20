@@ -103,7 +103,12 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
 4. **Can I filter programs running inside WSL?**
 
-   - Windows Firewall cannot see processes inside a WSL 2 virtual machine, so allowing WSL allows every Linux program. Minimal Firewall can instead act as the user interface for [OpenSnitch](https://github.com/evilsocket/opensnitch) running in your default WSL distro. Install it there with `sudo apt install opensnitch python3-grpcio`, then enable "Filter WSL programs (OpenSnitch)" in Settings. Each new Linux program that connects out then appears in the normal popup and dashboard list; Allow and Block save an OpenSnitch rule in `/etc/opensnitchd/rules`. Nothing listens on a Windows port: the bridge talks to Minimal Firewall through `wsl.exe`. While the setting is on, the WSL VM stays running. When Minimal Firewall is closed, OpenSnitch applies its own `DefaultAction` (allow by default). Anyone with root inside the distro can stop OpenSnitch, so this is not a security boundary.
+   - Windows Firewall cannot see processes inside a WSL 2 virtual machine, so allowing WSL allows every Linux program. Minimal Firewall can instead act as the user interface for [OpenSnitch](https://github.com/evilsocket/opensnitch) running in your default WSL distro. Prerequisites, inside that distro:
+      - WSL 2 with systemd enabled (`[boot]` `systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`).
+      - `sudo apt install opensnitch python3-grpcio` (tested with OpenSnitch 1.5.8 on Ubuntu 24.04).
+      - `sudo systemctl enable --now opensnitch`, and keep its `Server.Address` at the default `unix:///tmp/osui.sock`.
+
+     Then enable "Filter WSL programs (OpenSnitch)" in Settings. If a prerequisite is missing, Minimal Firewall says which one. Each new Linux program that connects out then appears in the normal popup and dashboard list; Allow and Block save an OpenSnitch rule in `/etc/opensnitchd/rules`. Nothing listens on a Windows port: the bridge talks to Minimal Firewall through `wsl.exe`. While the setting is on, the WSL VM stays running. When Minimal Firewall is closed, OpenSnitch applies its own `DefaultAction` (allow by default). Anyone with root inside the distro can stop OpenSnitch, so this is not a security boundary.
 
 ## Security by Default
 
