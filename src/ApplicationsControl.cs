@@ -255,7 +255,8 @@ public sealed class ApplicationsControl : UserControl
     private void UpdateActions()
     {
         _allow.Enabled = _block.Enabled = !_busy && SelectedApplication != null;
-        _edit.Enabled = !_busy && SelectedRule != null;
+        // OpenSnitch rules have no Windows rule definition to edit.
+        _edit.Enabled = !_busy && SelectedRule is { IsWsl: false };
         _direction.Enabled = !_busy;
     }
 
@@ -263,6 +264,18 @@ public sealed class ApplicationsControl : UserControl
     {
         var entry = SelectedApplication;
         if (entry == null || _busy) return;
+        if (_viewModel?.WslBridge?.ToLinuxPath(entry.AppPath) is { } linuxPath)
+        {
+            // WSL programs are filtered by OpenSnitch, which only sees outbound connections.
+            if (_direction.SelectedIndex == 1)
+            {
+                Messenger.MessageBox("OpenSnitch filters outbound connections only. Choose Outbound or Both directions.", "Applications",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information, pIsDarkMode: Theme.Colors.Surface.R < 128);
+                return;
+            }
+            _viewModel.WslBridge.SetProgramAction(linuxPath, action == "Allow");
+            return;
+        }
         string direction = _direction.SelectedIndex == 2 ? "(All)" : $"({_direction.Text})";
         string warning = $"{action} {entry.AppPath}\r\n\r\nDirection: {_direction.Text}.\r\nAll network profiles, protocols, ports and addresses; all services using this executable.\r\n\r\nExisting rules for this executable in the selected direction(s), including scoped and third-party rules, will be replaced.";
         if (action == "Allow") warning += "\r\nExisting Minimal Firewall general block rules for this executable may also be removed in either direction.";

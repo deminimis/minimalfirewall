@@ -152,6 +152,29 @@ reader()
             Notify(OpenSnitchProtocol.ChangeRuleAction, rule);
         }
 
+        // Converts \\wsl.localhost\<distro>\usr\bin\curl back to /usr/bin/curl; null for other paths.
+        public string? ToLinuxPath(string windowsPath)
+        {
+            string prefix = $@"\\wsl.localhost\{_distro}\";
+            return windowsPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? "/" + windowsPath[prefix.Length..].Replace('\\', '/')
+                : null;
+        }
+
+        // Allows or blocks a program, reusing its existing process.path rule if there is one.
+        public void SetProgramAction(string linuxPath, bool allow)
+        {
+            WslRule rule;
+            lock (_lock)
+            {
+                var existing = _rules.Values.FirstOrDefault(r => r.Operand == "process.path" && r.Data == linuxPath);
+                rule = (existing ?? new WslRule(OpenSnitchProtocol.RuleName(linuxPath), true, "", "always", "simple", "process.path", linuxPath))
+                    with { Action = allow ? "allow" : "deny" };
+                _rules[rule.Name] = rule;
+            }
+            Notify(OpenSnitchProtocol.ChangeRuleAction, rule);
+        }
+
         public void Delete(string ruleName)
         {
             WslRule? rule;

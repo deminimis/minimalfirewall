@@ -179,6 +179,7 @@ namespace MinimalFirewall
                 {
                     _mainViewModel.MergeWslRules();
                     rulesControl1.ApplyRulesFilters();
+                    applicationsControl1.RefreshApplications();
                 });
             };
             _wslBridge.Failed += msg => SafeInvoke(() => MessageBox.Show(this,

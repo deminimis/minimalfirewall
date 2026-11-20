@@ -111,7 +111,7 @@ namespace MinimalFirewall
 
         public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
         {
-            ApplicationRules = await _dataService.GetMfwRulesAsync(token);
+            ApplicationRules = [.. await _dataService.GetMfwRulesAsync(token), .. GetWslRules()];
             // New list: the data service may return its cached list.
             AllAggregatedRules = [.. await _dataService.GetAggregatedRulesAsync(token, progress), .. GetWslRules()];
         }
@@ -122,6 +122,7 @@ namespace MinimalFirewall
         public void MergeWslRules()
         {
             AllAggregatedRules = [.. AllAggregatedRules.Where(r => !r.IsWsl), .. GetWslRules()];
+            ApplicationRules = [.. ApplicationRules.Where(r => !r.IsWsl), .. GetWslRules()];
         }
 
         private IEnumerable<AggregatedRuleViewModel> GetWslRules()
@@ -138,6 +139,9 @@ namespace MinimalFirewall
                     ApplicationName = isPath ? bridge.ToWindowsPath(r.Data) : string.Empty,
                     InboundStatus = "N/A",
                     OutboundStatus = r.Action == "allow" ? Actions.Allow.ToString() : Actions.Block.ToString(),
+                    // The Applications view reads the single-rule fields.
+                    Status = r.Action == "allow" ? Actions.Allow.ToString() : Actions.Block.ToString(),
+                    Direction = Directions.Outgoing,
                     IsEnabled = r.Enabled,
                     Type = RuleType.Program,
                     // Rules created from Minimal Firewall popups count as its own rules.
