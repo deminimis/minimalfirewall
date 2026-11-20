@@ -530,9 +530,13 @@ namespace MinimalFirewall
         {
             if (GetSelectedPendingConnection() is { } pending)
             {
-                using var dialog = new CreateAdvancedRuleForm(_actionsService, pending.AppPath!, pending.Direction!, _appSettings);
-                if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
+                using var dialog = new CreateAdvancedRuleForm(_actionsService, pending, _appSettings);
+                if (dialog.ShowDialog(FindForm()) == DialogResult.OK && dialog.RuleVm != null)
                 {
+                    // The dialog only returns the rule: create it, as the other callers do.
+                    var payload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
+                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+
                     // Clean up the alert from dashboard
                     _viewModel.ProcessDashboardAction(pending, "Ignore");
                 }

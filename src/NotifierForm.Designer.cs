@@ -105,7 +105,7 @@ namespace MinimalFirewall
             createWildcardButton.Name = "createWildcardButton";
             createWildcardButton.Size = new Size(165, 37);
             createWildcardButton.TabIndex = 4;
-            createWildcardButton.Text = "Create Wildcard Rule...";
+            createWildcardButton.Text = "Create Rule...";
             createWildcardButton.UseVisualStyleBackColor = true;
             createWildcardButton.Click += CreateWildcardButton_Click;
             // 
