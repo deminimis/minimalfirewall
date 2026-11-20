@@ -264,16 +264,24 @@ public sealed class ApplicationsControl : UserControl
     {
         var entry = SelectedApplication;
         if (entry == null || _busy) return;
-        if (_viewModel?.WslBridge?.ToLinuxPath(entry.AppPath) is { } linuxPath)
+        // Linux programs seen through OpenSnitch are filtered there. A Windows .exe stored on the WSL file
+        // system also has a \\wsl.localhost path but stays a Windows Firewall application.
+        if (entry.Attempts.Any(a => a.IsWsl) || entry.Rules.Any(r => r.IsWsl))
         {
-            // WSL programs are filtered by OpenSnitch, which only sees outbound connections.
+            string? message = null;
             if (_direction.SelectedIndex == 1)
             {
-                Messenger.MessageBox("OpenSnitch filters outbound connections only. Choose Outbound or Both directions.", "Applications",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information, pIsDarkMode: Theme.Colors.Surface.R < 128);
-                return;
+                message = "OpenSnitch filters outbound connections only. Choose Outbound or Both directions.";
             }
-            _viewModel.WslBridge.SetProgramAction(linuxPath, action == "Allow");
+            else if (_viewModel?.WslBridge?.ToLinuxPath(entry.AppPath) is not { } linuxPath
+                || !_viewModel.WslBridge.SetProgramAction(linuxPath, action == "Allow"))
+            {
+                message = "WSL filtering is not running, so the OpenSnitch rule was not changed. Turn on \"Filter WSL programs (OpenSnitch)\" in Settings.";
+            }
+            if (message != null)
+            {
+                Messenger.MessageBox(message, "Applications", MessageBoxButtons.OK, MessageBoxIcon.Information, pIsDarkMode: Theme.Colors.Surface.R < 128);
+            }
             return;
         }
         string direction = _direction.SelectedIndex == 2 ? "(All)" : $"({_direction.Text})";
