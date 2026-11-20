@@ -22,6 +22,7 @@ namespace MinimalFirewall
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource = null!;
+        private DashboardOverview _overview = null!;
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
 
         public DashboardControl()
@@ -49,9 +50,18 @@ namespace MinimalFirewall
             if (dashIconColumn != null) dashIconColumn.DefaultCellStyle.NullValue = new Bitmap(1, 1);
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
             dashboardDataGridView.DataSource = _bindingSource;
+            dashboardDataGridView.Paint += DashboardDataGridView_PaintEmptyState;
+            // Centered text must be redrawn in full when the grid resizes.
+            dashboardDataGridView.Resize += (_, _) => { if (dashboardDataGridView.Rows.Count == 0) dashboardDataGridView.Invalidate(); };
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
+
+            // Added after the split container so it docks first and takes the top edge.
+            _overview = new DashboardOverview(_viewModel, _wildcardRuleService);
+            Controls.Add(_overview);
+            _actionsService.PendingConnectionProcessed += ActionsService_PendingConnectionProcessed;
+            _viewModel.SystemChangesUpdated += ViewModel_SystemChangesUpdated;
 
             try
             {
@@ -215,14 +225,56 @@ namespace MinimalFirewall
                 return;
             }
 
+            int added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 0 : 0;
+            void update()
+            {
+                _overview.AddAlerts(added);
+                LoadDashboardItems();
+            }
+
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(LoadDashboardItems));
+                BeginInvoke(new Action(update));
             }
             else
             {
-                LoadDashboardItems();
+                update();
             }
+        }
+
+        private void ActionsService_PendingConnectionProcessed(PendingConnectionViewModel pending, string decision)
+        {
+            if (!Disposing && !IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(() => _overview.AddDecision(pending, decision)));
+            }
+        }
+
+        private void ViewModel_SystemChangesUpdated()
+        {
+            if (!Disposing && !IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(_overview.Invalidate));
+            }
+        }
+
+        // An empty grid looked broken; explain what the Dashboard is for until something is pending.
+        private void DashboardDataGridView_PaintEmptyState(object? sender, PaintEventArgs e)
+        {
+            if (dashboardDataGridView.Rows.Count > 0)
+            {
+                return;
+            }
+
+            string message = "No blocked connections are waiting for a decision.\n\n" +
+                (_appSettings.IsPopupsEnabled
+                    ? "Blocked programs get a popup. Popups you close without choosing are listed here."
+                    : "Popups are off: every blocked program is listed here to allow, block or ignore.");
+
+            int top = dashboardDataGridView.ColumnHeadersVisible ? dashboardDataGridView.ColumnHeadersHeight : 0;
+            var bounds = new Rectangle(16, top + 16, dashboardDataGridView.ClientSize.Width - 32, dashboardDataGridView.ClientSize.Height - top - 32);
+            TextRenderer.DrawText(e.Graphics, message, dashboardDataGridView.Font, bounds, Theme.Colors.TextInactive,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak);
         }
 
         private void LoadDashboardItems()

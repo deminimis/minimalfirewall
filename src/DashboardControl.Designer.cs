@@ -51,6 +51,8 @@ namespace MinimalFirewall
             if (disposing && _viewModel != null)
             {
                 _viewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
+                _viewModel.SystemChangesUpdated -= ViewModel_SystemChangesUpdated;
+                if (_actionsService != null) _actionsService.PendingConnectionProcessed -= ActionsService_PendingConnectionProcessed;
             }
 
             if (disposing && (components != null))
