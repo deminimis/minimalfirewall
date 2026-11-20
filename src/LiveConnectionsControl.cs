@@ -41,6 +41,7 @@ namespace MinimalFirewall
         private readonly CheckBox _showLoopback = new() { Text = "Loopback" };
         private readonly CheckBox _autoRefresh = new() { Text = "Auto-refresh (2 s)" };
         private readonly ThemedButton _exportButton = new() { Text = "Export CSV...", AutoSize = true };
+        private readonly ThemedButton _refreshButton = new() { Text = "Refresh", AutoSize = true };
         private readonly ThemedLabel _countLabel = new() { AutoSize = true, Margin = new Padding(8, 8, 3, 0) };
         private readonly ToolTip _toolTip = new();
         private readonly System.Windows.Forms.Timer _refreshTimer = new() { Interval = 2000 };
@@ -75,6 +76,7 @@ namespace MinimalFirewall
                 box.Margin = new Padding(3, 6, 6, 0);
                 options.Controls.Add(box);
             }
+            options.Controls.Add(_refreshButton);
             options.Controls.Add(_exportButton);
             options.Controls.Add(_countLabel);
 
@@ -97,6 +99,8 @@ namespace MinimalFirewall
             _toolTip.SetToolTip(_showLoopback, "Show connections bound to 127.0.0.1 or ::1.");
             _toolTip.SetToolTip(_autoRefresh, "Rescan every 2 seconds while this tab is visible. New connections are shown in bold; closed ones stay one cycle, greyed out and struck through.");
 
+            _toolTip.SetToolTip(_refreshButton, "Rescan connections now (F5).");
+            _refreshButton.Click += (_, _) => RefreshRequested?.Invoke();
             _refreshTimer.Tick += (_, _) => RefreshRequested?.Invoke();
             VisibleChanged += (_, _) => UpdateRefreshTimer();
             _exportButton.Click += ExportButton_Click;
@@ -470,6 +474,17 @@ namespace MinimalFirewall
                 using var brush = new SolidBrush(Theme.Colors.HighlightOverlay);
                 e.Graphics.FillRectangle(brush, e.RowBounds);
             }
+        }
+
+        // F5 rescans while focus is anywhere in this tab.
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == Keys.F5)
+            {
+                RefreshRequested?.Invoke();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         protected override void OnLoad(EventArgs e)
