@@ -30,9 +30,19 @@ namespace MinimalFirewall
             connRemoteAddrColumn = new DataGridViewTextBoxColumn();
             connRemotePortColumn = new DataGridViewTextBoxColumn();
             connPathColumn = new DataGridViewTextBoxColumn();
+            connProtocolColumn = new DataGridViewTextBoxColumn();
+            connPidColumn = new DataGridViewTextBoxColumn();
             liveConnectionsContextMenu = new ContextMenuStrip(components);
             killProcessToolStripMenuItem = new ToolStripMenuItem();
+            closeConnectionToolStripMenuItem = new ToolStripMenuItem();
             blockRemoteIPToolStripMenuItem = new ToolStripMenuItem();
+            filterToolStripMenuItem = new ToolStripMenuItem();
+            onlyProcessToolStripMenuItem = new ToolStripMenuItem();
+            hideProcessToolStripMenuItem = new ToolStripMenuItem();
+            onlyRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
+            hideRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
+            clearFilterToolStripMenuItem = new ToolStripMenuItem();
+            propertiesToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
             createAdvancedRuleToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
@@ -61,7 +71,7 @@ namespace MinimalFirewall
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             liveConnectionsDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             liveConnectionsDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            liveConnectionsDataGridView.Columns.AddRange(new DataGridViewColumn[] { connIconColumn, connNameColumn, connStateColumn, connLocalAddrColumn, connLocalPortColumn, connRemoteAddrColumn, connRemotePortColumn, connPathColumn });
+            liveConnectionsDataGridView.Columns.AddRange(new DataGridViewColumn[] { connIconColumn, connNameColumn, connStateColumn, connLocalAddrColumn, connLocalPortColumn, connRemoteAddrColumn, connRemotePortColumn, connPathColumn, connProtocolColumn, connPidColumn });
             liveConnectionsDataGridView.ContextMenuStrip = liveConnectionsContextMenu;
             liveConnectionsDataGridView.Dock = DockStyle.Fill;
             liveConnectionsDataGridView.GridColor = SystemColors.Control;
@@ -80,6 +90,7 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.CellMouseEnter += LiveConnectionsDataGridView_CellMouseEnter;
             liveConnectionsDataGridView.CellMouseLeave += LiveConnectionsDataGridView_CellMouseLeave;
             liveConnectionsDataGridView.RowPostPaint += LiveConnectionsDataGridView_RowPostPaint;
+            liveConnectionsDataGridView.CellDoubleClick += LiveConnectionsDataGridView_CellDoubleClick;
             // 
             // connIconColumn
             // 
@@ -149,11 +160,27 @@ namespace MinimalFirewall
             connPathColumn.HeaderText = "Path";
             connPathColumn.Name = "connPathColumn";
             connPathColumn.ReadOnly = true;
-            // 
+            //
+            // connProtocolColumn
+            //
+            connProtocolColumn.DataPropertyName = "Protocol";
+            connProtocolColumn.FillWeight = 10F;
+            connProtocolColumn.HeaderText = "Protocol";
+            connProtocolColumn.Name = "connProtocolColumn";
+            connProtocolColumn.ReadOnly = true;
+            //
+            // connPidColumn
+            //
+            connPidColumn.DataPropertyName = "ProcessId";
+            connPidColumn.FillWeight = 10F;
+            connPidColumn.HeaderText = "PID";
+            connPidColumn.Name = "connPidColumn";
+            connPidColumn.ReadOnly = true;
+            //
             // liveConnectionsContextMenu
-            // 
+            //
             liveConnectionsContextMenu.ImageScalingSize = new Size(20, 20);
-            liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, blockRemoteIPToolStripMenuItem, toolStripSeparator1, createAdvancedRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem });
+            liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, closeConnectionToolStripMenuItem, blockRemoteIPToolStripMenuItem, filterToolStripMenuItem, toolStripSeparator1, createAdvancedRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem, propertiesToolStripMenuItem });
             liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
             liveConnectionsContextMenu.Size = new Size(200, 126);
             liveConnectionsContextMenu.Opening += LiveConnectionsContextMenu_Opening;
@@ -164,7 +191,56 @@ namespace MinimalFirewall
             killProcessToolStripMenuItem.Size = new Size(199, 22);
             killProcessToolStripMenuItem.Text = "Kill Process";
             killProcessToolStripMenuItem.Click += KillProcessToolStripMenuItem_Click;
-            // 
+            //
+            // closeConnectionToolStripMenuItem
+            //
+            closeConnectionToolStripMenuItem.Name = "closeConnectionToolStripMenuItem";
+            closeConnectionToolStripMenuItem.Size = new Size(199, 22);
+            closeConnectionToolStripMenuItem.Text = "Close Connection";
+            closeConnectionToolStripMenuItem.Click += CloseConnectionToolStripMenuItem_Click;
+            //
+            // filterToolStripMenuItem
+            //
+            filterToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { onlyProcessToolStripMenuItem, hideProcessToolStripMenuItem, onlyRemoteAddressToolStripMenuItem, hideRemoteAddressToolStripMenuItem, clearFilterToolStripMenuItem });
+            filterToolStripMenuItem.Name = "filterToolStripMenuItem";
+            filterToolStripMenuItem.Size = new Size(199, 22);
+            filterToolStripMenuItem.Text = "Filter";
+            //
+            // onlyProcessToolStripMenuItem
+            //
+            onlyProcessToolStripMenuItem.Name = "onlyProcessToolStripMenuItem";
+            onlyProcessToolStripMenuItem.Size = new Size(230, 22);
+            onlyProcessToolStripMenuItem.Text = "Show Only This Process";
+            onlyProcessToolStripMenuItem.Click += OnlyProcessToolStripMenuItem_Click;
+            //
+            // hideProcessToolStripMenuItem
+            //
+            hideProcessToolStripMenuItem.Name = "hideProcessToolStripMenuItem";
+            hideProcessToolStripMenuItem.Size = new Size(230, 22);
+            hideProcessToolStripMenuItem.Text = "Hide This Process";
+            hideProcessToolStripMenuItem.Click += HideProcessToolStripMenuItem_Click;
+            //
+            // onlyRemoteAddressToolStripMenuItem
+            //
+            onlyRemoteAddressToolStripMenuItem.Name = "onlyRemoteAddressToolStripMenuItem";
+            onlyRemoteAddressToolStripMenuItem.Size = new Size(230, 22);
+            onlyRemoteAddressToolStripMenuItem.Text = "Show Only This Remote Address";
+            onlyRemoteAddressToolStripMenuItem.Click += OnlyRemoteAddressToolStripMenuItem_Click;
+            //
+            // hideRemoteAddressToolStripMenuItem
+            //
+            hideRemoteAddressToolStripMenuItem.Name = "hideRemoteAddressToolStripMenuItem";
+            hideRemoteAddressToolStripMenuItem.Size = new Size(230, 22);
+            hideRemoteAddressToolStripMenuItem.Text = "Hide This Remote Address";
+            hideRemoteAddressToolStripMenuItem.Click += HideRemoteAddressToolStripMenuItem_Click;
+            //
+            // clearFilterToolStripMenuItem
+            //
+            clearFilterToolStripMenuItem.Name = "clearFilterToolStripMenuItem";
+            clearFilterToolStripMenuItem.Size = new Size(230, 22);
+            clearFilterToolStripMenuItem.Text = "Clear Advanced Filter";
+            clearFilterToolStripMenuItem.Click += ClearFilterToolStripMenuItem_Click;
+            //
             // blockRemoteIPToolStripMenuItem
             // 
             blockRemoteIPToolStripMenuItem.Name = "blockRemoteIPToolStripMenuItem";
@@ -202,6 +278,14 @@ namespace MinimalFirewall
             copyDetailsToolStripMenuItem.Size = new Size(199, 22);
             copyDetailsToolStripMenuItem.Text = "Copy Details";
             copyDetailsToolStripMenuItem.Click += CopyDetailsToolStripMenuItem_Click;
+            //
+            // propertiesToolStripMenuItem
+            //
+            propertiesToolStripMenuItem.Font = new Font(propertiesToolStripMenuItem.Font, FontStyle.Bold);
+            propertiesToolStripMenuItem.Name = "propertiesToolStripMenuItem";
+            propertiesToolStripMenuItem.Size = new Size(199, 22);
+            propertiesToolStripMenuItem.Text = "Properties...";
+            propertiesToolStripMenuItem.Click += PropertiesToolStripMenuItem_Click;
             // 
             // disabledPanel
             // 
@@ -260,5 +344,15 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn connRemoteAddrColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn connRemotePortColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn connPathColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connProtocolColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connPidColumn;
+        private System.Windows.Forms.ToolStripMenuItem closeConnectionToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem filterToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem onlyProcessToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem hideProcessToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem onlyRemoteAddressToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem hideRemoteAddressToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem clearFilterToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
     }
 }
