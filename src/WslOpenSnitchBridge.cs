@@ -122,7 +122,7 @@ def connections():
             local_ip, local_port = addr(c[1])
             remote_ip, remote_port = addr(c[2])
             pid, exe = owners.get(c[9], (0, ''))
-            rows.append([proto, local_ip, local_port, remote_ip, remote_port, int(c[3], 16), pid, int(c[7]), exe])
+            rows.append([proto, local_ip, local_port, remote_ip, remote_port, int(c[3], 16), pid, int(c[7]), exe, c[9] != "0"])
     return rows
 
 def reader():
@@ -223,7 +223,7 @@ reader()
                 row[0].GetString() ?? "",
                 IPAddress.Parse(row[1].GetString() ?? "0.0.0.0"), row[2].GetInt32(),
                 IPAddress.Parse(row[3].GetString() ?? "0.0.0.0"), row[4].GetInt32(),
-                row[5].GetInt32(), row[6].GetUInt32(), row[7].GetUInt32(), row[8].GetString() ?? ""))];
+                row[5].GetInt32(), row[6].GetUInt32(), row[7].GetUInt32(), row[8].GetString() ?? "", row[9].GetBoolean()))];
         }
 
         public void SetAction(string ruleName, bool allow)
@@ -459,9 +459,10 @@ reader()
         }
     }
 
-    // A socket inside the WSL distro. ProcessId is 0 and ProcessPath empty when no process owns it (TIME_WAIT).
+    // A socket inside the WSL distro. ProcessPath is empty when no distro process owns it: without an inode the
+    // socket is closing (TIME_WAIT); with one, WSL itself owns it outside the distro (DNS tunneling, time sync).
     public sealed record WslConnection(string Protocol, IPAddress LocalAddress, int LocalPort, IPAddress RemoteAddress, int RemotePort,
-        int State, uint ProcessId, uint UserId, string ProcessPath);
+        int State, uint ProcessId, uint UserId, string ProcessPath, bool HasSocketInode);
 
     // A persistent opensnitch rule as the daemon reports it.
     public sealed record WslRule(string Name, bool Enabled, string Action, string Duration, string OperatorType, string Operand, string Data);

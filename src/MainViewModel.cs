@@ -248,8 +248,10 @@ namespace MinimalFirewall
                 var row = new Firewall.Traffic.TcpTrafficTracker.TcpTrafficRow(
                     new System.Net.IPEndPoint(r.LocalAddress, r.LocalPort), new System.Net.IPEndPoint(r.RemoteAddress, r.RemotePort),
                     r.ProcessId, isUdp ? 0 : WslOpenSnitchBridge.ToWindowsTcpState(r.State), isUdp);
-                // Sockets without an owner (TIME_WAIT, inode 0) belong to no process.
-                var info = (known ? Path.GetFileName(r.ProcessPath) : "(no process)", known ? bridge.ToWindowsPath(r.ProcessPath) : string.Empty, string.Empty);
+                // No inode: closing socket (TIME_WAIT). Inode without a distro process: WSL's own service
+                // outside the distro's PID namespace (DNS tunneling on 10.255.255.254:53, time sync on 323).
+                string name = known ? Path.GetFileName(r.ProcessPath) : r.HasSocketInode ? "(WSL system)" : "(no process)";
+                var info = (name, known ? bridge.ToWindowsPath(r.ProcessPath) : string.Empty, string.Empty);
                 return new TcpConnectionViewModel(row, info, _backgroundTaskService) { Attributes = attributes, WslUserId = r.UserId };
             })];
         }
