@@ -39,6 +39,7 @@ namespace MinimalFirewall
         private IconService _iconService = null!;
         private PublisherWhitelistService _whitelistService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
+        private WslOpenSnitchBridge _wslBridge = null!;
         private MainViewModel _mainViewModel = null!;
         private readonly Queue<PendingConnectionViewModel> _popupQueue = [];
         private volatile bool _isPopupVisible = false;
@@ -161,6 +162,10 @@ namespace MinimalFirewall
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
+
+            _wslBridge = new WslOpenSnitchBridge(msg => _activityLogger.LogDebug(msg));
+            _wslBridge.ConnectionAsked += _mainViewModel.AddWslPendingConnection;
+            if (_appSettings.WslOpenSnitchEnabled) _wslBridge.Start();
         }
 
         private void OnQueueCountChanged(int count)
@@ -190,6 +195,7 @@ namespace MinimalFirewall
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
             _appSettings?.PropertyChanged -= AppSettings_PropertyChanged;
+            _wslBridge?.Dispose();
 
             _cachedArrowPen?.Dispose();
             base.OnFormClosed(e);
@@ -588,6 +594,12 @@ namespace MinimalFirewall
             if (e.PropertyName == nameof(AppSettings.DnsRefreshIntervalMinutes))
             {
                 _mainViewModel?.UpdateDnsTimerInterval();
+            }
+
+            if (e.PropertyName == nameof(AppSettings.WslOpenSnitchEnabled) && _wslBridge != null)
+            {
+                if (_appSettings.WslOpenSnitchEnabled) _wslBridge.Start();
+                else _wslBridge.Stop();
             }
         }
 
