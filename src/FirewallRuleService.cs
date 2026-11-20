@@ -24,6 +24,29 @@ namespace MinimalFirewall
             return (INetFwPolicy2)Activator.CreateInstance(_firewallPolicyType.Value)!;
         }
 
+        // Bit mask of the active profiles (NET_FW_PROFILE_TYPE2_), or 0 when it cannot be read.
+        public static int GetCurrentProfileTypes()
+        {
+            INetFwPolicy2? firewallPolicy = null;
+            try
+            {
+                firewallPolicy = GetLocalPolicy();
+                return firewallPolicy.CurrentProfileTypes;
+            }
+            catch (Exception ex) when (ex is COMException or InvalidOperationException)
+            {
+                Debug.WriteLine($"[ERROR] GetCurrentProfileTypes: {ex.Message}");
+                return 0;
+            }
+            finally
+            {
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
+            }
+        }
+
         public static List<T> GetAllRulesMapped<T>(Func<INetFwRule2, T> mapper)
         {
             var mappedList = new List<T>();

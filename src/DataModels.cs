@@ -198,6 +198,8 @@ public class PendingConnectionViewModel
 
     public string RemotePort { get; set; } = string.Empty;
     public string RemoteAddress { get; set; } = string.Empty;
+    public string LocalPort { get; set; } = string.Empty;
+    public string LocalAddress { get; set; } = string.Empty;
     public string FilterId { get; set; } = string.Empty;
     public string LayerId { get; set; } = string.Empty;
 }
