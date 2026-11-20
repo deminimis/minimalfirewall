@@ -1,6 +1,7 @@
 using DarkModeForms;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("ApplicationsChecks")]
@@ -23,6 +24,7 @@ public sealed class ApplicationsControl : UserControl
     private readonly ThemedButton _allow = new() { Text = "&Allow…", AutoSize = true };
     private readonly ThemedButton _block = new() { Text = "&Block…", AutoSize = true };
     private readonly ThemedButton _edit = new() { Text = "&Edit selected rule…", AutoSize = true };
+    private readonly ThemedButton _searchOnline = new() { Text = "Search &online", AutoSize = true };
     private MainViewModel _viewModel = null!;
     private FirewallActionsService _actions = null!;
     private BackgroundFirewallTaskService _background = null!;
@@ -82,11 +84,15 @@ public sealed class ApplicationsControl : UserControl
         actions.Controls.Add(new ThemedLabel { Text = "&Direction:", AutoSize = true, Margin = new Padding(3, 8, 3, 3) });
         actions.Controls.AddRange([_direction, _allow, _block, _edit]);
 
-        var identity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, Margin = new Padding(0, 8, 0, 8) };
+        var identity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Margin = new Padding(0, 8, 0, 8) };
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.Controls.Add(_identity, 0, 0);
+        identity.Controls.Add(_searchOnline, 1, 0);
         identity.Controls.Add(_publisher, 0, 1);
         identity.Controls.Add(_signature, 0, 2);
+        identity.SetColumnSpan(_publisher, 2);
+        identity.SetColumnSpan(_signature, 2);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -130,6 +136,7 @@ public sealed class ApplicationsControl : UserControl
         _allow.Click += async (_, _) => await ApplyAsync("Allow");
         _block.Click += async (_, _) => await ApplyAsync("Block");
         _edit.Click += async (_, _) => await EditAsync();
+        _searchOnline.Click += (_, _) => SearchOnline();
         UpdateScope();
         UpdateActions();
     }
@@ -256,7 +263,22 @@ public sealed class ApplicationsControl : UserControl
     {
         _allow.Enabled = _block.Enabled = !_busy && SelectedApplication != null;
         _edit.Enabled = !_busy && SelectedRule != null;
+        _searchOnline.Enabled = SelectedApplication != null;
         _direction.Enabled = !_busy;
+    }
+
+    // Same query as the connection popup; only sent on explicit click.
+    private void SearchOnline()
+    {
+        if (SelectedApplication is not { } entry) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(NotifierForm.BuildSearchUrl(entry.AppPath, _settings.SearchEngine)) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WARN] ApplicationsControl.SearchOnline failed: {ex.Message}");
+        }
     }
 
     private async Task ApplyAsync(string action)
