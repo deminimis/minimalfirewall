@@ -20,6 +20,11 @@ except ImportError:
 if not os.path.exists('/usr/bin/opensnitchd'):
     print('ERROR opensnitchd is not installed (sudo apt install opensnitch)', flush=True)
     sys.exit(1)
+# The ui.proto Action values used for rule changes differ in later OpenSnitch versions.
+version = os.popen('opensnitchd -version 2>&1').read().strip()
+if not version.startswith('1.5.'):
+    print('ERROR opensnitchd %s is not supported (the bridge speaks the OpenSnitch 1.5 UI protocol)' % version, flush=True)
+    sys.exit(1)
 if os.system('systemctl is-active --quiet opensnitch') != 0:
     print('ERROR the opensnitch service is not running (needs systemd=true in /etc/wsl.conf, then sudo systemctl enable --now opensnitch)', flush=True)
     sys.exit(1)
@@ -90,6 +95,8 @@ reader()
 
         // The daemon gives up on a question after 120 s; older entries are stale.
         private static readonly TimeSpan AskLifetime = TimeSpan.FromSeconds(115);
+        // The script stops waiting for a decision after this (ev.wait(110)); a later answer reaches nobody.
+        private static readonly TimeSpan AnswerTimeout = TimeSpan.FromSeconds(110);
 
         private readonly Action<string> _log;
         private readonly Lock _lock = new();
@@ -145,8 +152,8 @@ reader()
 
         public void Stop()
         {
-            var process = _process;
-            _process = null;
+            // Stop can run from the UI thread and from the reader when the bridge dies.
+            var process = Interlocked.Exchange(ref _process, null);
             if (process == null) return;
 
             try
@@ -172,38 +179,58 @@ reader()
                 string? line;
                 while ((line = process.StandardOutput.ReadLine()) != null)
                 {
-                    var parts = line.Split(' ', 3);
-                    if (parts[0] == "HELLO" && parts.Length > 1)
+                    // One bad line must not stop the loop: stdout would no longer be drained and every question would time out.
+                    try
                     {
-                        started = true;
-                        _distro = parts[1];
-                        _log($"[WSL] OpenSnitch bridge listening in {_distro}.");
+                        HandleLine(line, ref started, ref reported);
                     }
-                    else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
+                    catch (Exception ex)
                     {
-                        OnAsk(id, Convert.FromBase64String(parts[2]));
-                    }
-                    else if (parts[0] == "ERROR")
-                    {
-                        _log($"[WSL] {line}");
-                        reported = true;
-                        Failed?.Invoke(line[6..]);
-                    }
-                    else
-                    {
-                        _log($"[WSL] {line}");
+                        _log($"[WSL] Ignored bridge message: {ex.Message}");
                     }
                 }
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException or FormatException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
                 _log($"[WSL] Bridge stopped: {ex.Message}");
             }
 
-            // wsl.exe failed before the script ran (no WSL 2 distro, no python3) and the user did not stop it.
-            if (!started && !reported && ReferenceEquals(_process, process))
+            // The bridge ended without Stop() (wsl --shutdown, distro restart, python crash): release it so the
+            // setting can start it again, and tell the user.
+            if (ReferenceEquals(_process, process))
             {
-                Failed?.Invoke("wsl.exe exited before the bridge started (needs a default WSL 2 distro with python3)");
+                Stop();
+                if (!reported)
+                {
+                    Failed?.Invoke(started
+                        ? "the WSL bridge stopped (WSL was shut down or restarted); turn the setting off and on to reconnect"
+                        : "wsl.exe exited before the bridge started (needs a default WSL 2 distro with python3)");
+                }
+            }
+        }
+
+        private void HandleLine(string line, ref bool started, ref bool reported)
+        {
+            var parts = line.Split(' ', 3);
+            if (parts[0] == "HELLO" && parts.Length > 1)
+            {
+                started = true;
+                _distro = parts[1];
+                _log($"[WSL] OpenSnitch bridge listening in {_distro}.");
+            }
+            else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
+            {
+                OnAsk(id, Convert.FromBase64String(parts[2]));
+            }
+            else if (parts[0] == "ERROR")
+            {
+                _log($"[WSL] {line}");
+                reported = true;
+                Failed?.Invoke(line[6..]);
+            }
+            else
+            {
+                _log($"[WSL] {line}");
             }
         }
 
@@ -241,10 +268,17 @@ reader()
         private void Reply(string processPath, string decision, TimeSpan duration)
         {
             List<long> ids;
+            DateTime created;
             lock (_lock)
             {
                 if (!_waiting.Remove(processPath, out var entry)) return;
-                ids = entry.Ids;
+                (ids, created) = entry;
+            }
+            if (DateTime.UtcNow - created >= AnswerTimeout)
+            {
+                // The daemon already applied its default action and will ask again on the next connection.
+                _log($"[WSL] Decision for {processPath} arrived after OpenSnitch stopped waiting; it was not applied.");
+                return;
             }
 
             var (action, ruleDuration) = OpenSnitchProtocol.MapDecision(decision, duration);
@@ -318,6 +352,16 @@ reader()
             _ => ("deny", "once"),
         };
 
+        // One rule per program: a later decision replaces the earlier one. The readable part maps case and
+        // punctuation together (/opt/App/run and /opt/app/run), so a hash of the exact path keeps names unique.
+        public static string RuleName(string processPath)
+        {
+            string readable = new string(processPath.ToLowerInvariant()
+                .Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+            string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(processPath)))[..8];
+            return $"mfw-{readable}-{hash.ToLowerInvariant()}";
+        }
+
         public static byte[] WriteRule(string processPath, string action, string duration)
         {
             var op = new List<byte>();
@@ -325,9 +369,7 @@ reader()
             WriteString(op, 2, "process.path");
             WriteString(op, 3, processPath);
 
-            // One rule per program: a later decision replaces the earlier one.
-            string name = "mfw-" + new string(processPath.ToLowerInvariant()
-                .Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+            string name = RuleName(processPath);
             var rule = new List<byte>();
             WriteString(rule, 1, name);
             rule.Add(2 << 3); rule.Add(1); // enabled = true
