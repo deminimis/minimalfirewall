@@ -14,6 +14,47 @@ namespace MinimalFirewall
 
         public WildcardRule NewRule { get; private set; } = new();
 
+        // The buttons have fixed designer sizes and clip their text when the display font is larger.
+        // Grow each to its preferred size and move the controls around it so nothing overlaps.
+        private void FitButtons()
+        {
+            static int Grow(Button button, int minimumHeight)
+            {
+                var preferred = button.GetPreferredSize(Size.Empty);
+                int heightDelta = Math.Max(0, Math.Max(preferred.Height, minimumHeight) - button.Height);
+                button.Size = new Size(Math.Max(button.Width, preferred.Width), button.Height + heightDelta);
+                return heightDelta;
+            }
+
+            // Browse sits beside the folder box: match its height and take width from the box.
+            Grow(browseButton, folderPathTextBox.Height);
+            browseButton.Top = folderPathTextBox.Top;
+            browseButton.Left = exeNameTextBox.Right - browseButton.Width;
+            folderPathTextBox.Width = browseButton.Left - 6 - folderPathTextBox.Left;
+
+            // Advanced: push everything below it down by the extra height.
+            int oldBottom = advancedButton.Bottom;
+            int delta = Grow(advancedButton, 0);
+            if (delta > 0)
+            {
+                foreach (Control control in Controls)
+                {
+                    if (control != advancedButton && control.Top >= oldBottom && !control.Anchor.HasFlag(AnchorStyles.Bottom))
+                    {
+                        control.Top += delta;
+                    }
+                }
+            }
+
+            // OK and Cancel are anchored bottom-right: keep their right edges and bottom line.
+            int right = cancelButton.Right, bottom = cancelButton.Bottom;
+            int dialogDelta = Math.Max(Grow(okButton, 0), Grow(cancelButton, 0));
+            okButton.Height = cancelButton.Height = Math.Max(okButton.Height, cancelButton.Height);
+            cancelButton.Location = new Point(right - cancelButton.Width, bottom - cancelButton.Height);
+            okButton.Location = new Point(cancelButton.Left - 6 - okButton.Width, cancelButton.Top);
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta + dialogDelta);
+        }
+
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService, AppSettings appSettings, WildcardRule? ruleToEdit = null)
         {
             InitializeComponent();
