@@ -34,6 +34,7 @@ namespace MinimalFirewall
             coffeeLinkLabel = new LinkLabel();
             versionLabel = new DarkModeForms.ThemedLabel();
             checkForUpdatesButton = new DarkModeForms.ThemedButton();
+            verifyAllowedAppsButton = new DarkModeForms.ThemedButton();
             openFirewallButton = new DarkModeForms.ThemedButton();
             openAppDataButton = new DarkModeForms.ThemedButton();
             forumLink = new LinkLabel();
@@ -308,6 +309,24 @@ namespace MinimalFirewall
             checkForUpdatesButton.UseVisualStyleBackColor = false;
             checkForUpdatesButton.Click += CheckForUpdatesButton_Click;
             // 
+            // verifyAllowedAppsButton
+            // 
+            verifyAllowedAppsButton.BackColor = Color.FromArgb(55, 55, 55);
+            verifyAllowedAppsButton.FlatAppearance.BorderColor = Color.FromArgb(18, 18, 18);
+            verifyAllowedAppsButton.FlatAppearance.BorderSize = 0;
+            verifyAllowedAppsButton.FlatAppearance.CheckedBackColor = Color.FromArgb(196, 34, 118, 250);
+            verifyAllowedAppsButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 67, 67);
+            verifyAllowedAppsButton.FlatStyle = FlatStyle.Flat;
+            verifyAllowedAppsButton.ForeColor = Color.White;
+            verifyAllowedAppsButton.Location = new Point(465, 623);
+            verifyAllowedAppsButton.Margin = new Padding(4, 3, 4, 3);
+            verifyAllowedAppsButton.Name = "verifyAllowedAppsButton";
+            verifyAllowedAppsButton.Size = new Size(210, 30);
+            verifyAllowedAppsButton.TabIndex = 42;
+            verifyAllowedAppsButton.Text = "Verify Allowed Apps";
+            verifyAllowedAppsButton.UseVisualStyleBackColor = false;
+            verifyAllowedAppsButton.Click += VerifyAllowedAppsButton_Click;
+            // 
             // openFirewallButton
             // 
             openFirewallButton.BackColor = Color.FromArgb(55, 55, 55);
@@ -494,6 +513,7 @@ namespace MinimalFirewall
             mainSettingsPanel.Controls.Add(coffeePanel);
             mainSettingsPanel.Controls.Add(versionLabel);
             mainSettingsPanel.Controls.Add(checkForUpdatesButton);
+            mainSettingsPanel.Controls.Add(verifyAllowedAppsButton);
             mainSettingsPanel.Controls.Add(openFirewallButton);
             mainSettingsPanel.Controls.Add(openAppDataButton);
             mainSettingsPanel.Controls.Add(forumLink);
@@ -698,6 +718,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.PictureBox coffeePictureBox;
         private DarkModeForms.ThemedLabel versionLabel;
         private DarkModeForms.ThemedButton checkForUpdatesButton;
+        private DarkModeForms.ThemedButton verifyAllowedAppsButton;
         private DarkModeForms.ThemedButton openFirewallButton;
         private DarkModeForms.ThemedButton openAppDataButton;
         private System.Windows.Forms.LinkLabel forumLink;
