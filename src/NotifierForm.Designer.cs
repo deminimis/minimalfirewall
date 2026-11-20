@@ -8,10 +8,13 @@ namespace MinimalFirewall
         private System.ComponentModel.IContainer components = null;
         private DarkModeForms.ThemedLabel infoLabel;
         private DarkModeForms.ThemedLabel appNameLabel;
-        private System.Windows.Forms.TextBox pathLabel;
+        private DarkModeForms.ThemedLabel subtitleLabel;
+        private Panel detailsPanel;
+        private TableLayoutPanel detailsGrid;
         private System.Windows.Forms.CheckBox trustPublisherCheckBox;
-        private DarkModeForms.ThemedButton createWildcardButton;
-        private DarkModeForms.ThemedButton copyDetailsButton;
+        private LinkLabel createWildcardButton;
+        private LinkLabel copyDetailsButton;
+        private LinkLabel searchOnlineButton;
         private DarkModeForms.ThemedButton allowButton;
         private DarkModeForms.ThemedButton tempAllowButton;
         private DarkModeForms.ThemedButton blockButton;
@@ -29,187 +32,80 @@ namespace MinimalFirewall
 
         #region Windows Form Designer generated code
 
+        private TableLayoutPanel _notificationLayout;
+
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            infoLabel = new DarkModeForms.ThemedLabel();
-            appNameLabel = new DarkModeForms.ThemedLabel();
-            pathLabel = new TextBox();
-            trustPublisherCheckBox = new CheckBox();
-            createWildcardButton = new DarkModeForms.ThemedButton();
-            copyDetailsButton = new DarkModeForms.ThemedButton();
-            allowButton = new DarkModeForms.ThemedButton();
-            tempAllowButton = new DarkModeForms.ThemedButton();
-            blockButton = new DarkModeForms.ThemedButton();
-            ignoreButton = new DarkModeForms.ThemedButton();
             tempAllowContextMenu = new ContextMenuStrip(components);
             toolTip1 = new ToolTip(components);
-            SuspendLayout();
-            // 
-            // infoLabel
-            // 
-            infoLabel.AutoSize = true;
-            infoLabel.Location = new Point(14, 11);
-            infoLabel.Margin = new Padding(4, 0, 4, 0);
-            infoLabel.Name = "infoLabel";
-            infoLabel.Size = new Size(182, 16);
-            infoLabel.TabIndex = 0;
-            infoLabel.Text = "Blocked a connection for:";
-            // 
-            // appNameLabel
-            // 
-            appNameLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            appNameLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            appNameLabel.Location = new Point(4, 32);
-            appNameLabel.Margin = new Padding(4, 0, 4, 0);
-            appNameLabel.Name = "appNameLabel";
-            appNameLabel.Size = new Size(330, 29);
-            appNameLabel.TabIndex = 1;
-            appNameLabel.Text = "Application Name";
-            // 
-            // pathLabel
-            // 
-            pathLabel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            pathLabel.BackColor = SystemColors.Control;
-            pathLabel.BorderStyle = BorderStyle.None;
-            pathLabel.Font = new Font("Segoe UI", 8F);
-            pathLabel.Location = new Point(4, 64);
-            pathLabel.Margin = new Padding(4, 3, 4, 3);
-            pathLabel.Multiline = true;
-            pathLabel.Name = "pathLabel";
-            pathLabel.ReadOnly = true;
-            pathLabel.ScrollBars = ScrollBars.Vertical;
-            pathLabel.Size = new Size(330, 58);
-            pathLabel.TabIndex = 2;
-            pathLabel.Text = "C:\\Path\\To\\Application.exe";
-            // 
-            // trustPublisherCheckBox
-            // 
-            trustPublisherCheckBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            trustPublisherCheckBox.AutoSize = true;
-            trustPublisherCheckBox.Location = new Point(72, 137);
-            trustPublisherCheckBox.Margin = new Padding(4, 3, 4, 3);
-            trustPublisherCheckBox.Name = "trustPublisherCheckBox";
-            trustPublisherCheckBox.Size = new Size(180, 20);
-            trustPublisherCheckBox.TabIndex = 3;
-            trustPublisherCheckBox.Text = "Always trust publisher";
-            trustPublisherCheckBox.UseVisualStyleBackColor = true;
-            trustPublisherCheckBox.Visible = false;
-            // 
-            // createWildcardButton
-            // 
-            createWildcardButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            createWildcardButton.FlatStyle = FlatStyle.Flat;
-            createWildcardButton.Location = new Point(8, 217);
-            createWildcardButton.Margin = new Padding(4, 3, 4, 3);
-            createWildcardButton.Name = "createWildcardButton";
-            createWildcardButton.Size = new Size(165, 37);
-            createWildcardButton.TabIndex = 4;
-            createWildcardButton.Text = "Create Wildcard Rule...";
-            createWildcardButton.UseVisualStyleBackColor = true;
-            createWildcardButton.Click += CreateWildcardButton_Click;
-            // 
-            // copyDetailsButton
-            // 
-            copyDetailsButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            copyDetailsButton.Location = new Point(18, 128);
-            copyDetailsButton.Margin = new Padding(4, 3, 4, 3);
-            copyDetailsButton.Name = "copyDetailsButton";
-            copyDetailsButton.Size = new Size(46, 34);
-            copyDetailsButton.TabIndex = 5;
-            copyDetailsButton.Text = "📋";
-            copyDetailsButton.TextImageRelation = TextImageRelation.TextAboveImage;
-            toolTip1.SetToolTip(copyDetailsButton, "Copy Details");
-            copyDetailsButton.UseVisualStyleBackColor = true;
-            copyDetailsButton.Click += CopyDetailsButton_Click;
-            // 
-            // allowButton
-            // 
-            allowButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            allowButton.FlatStyle = FlatStyle.Flat;
-            allowButton.Location = new Point(8, 169);
-            allowButton.Margin = new Padding(4, 3, 4, 3);
-            allowButton.Name = "allowButton";
-            allowButton.Size = new Size(98, 37);
-            allowButton.TabIndex = 6;
-            allowButton.Text = "Allow";
-            allowButton.UseVisualStyleBackColor = true;
+            Font = SystemFonts.MessageBoxFont;
+            infoLabel = new DarkModeForms.ThemedLabel { Name = "infoLabel", AutoSize = true, Dock = DockStyle.Fill, Text = "Blocked a connection for:", Margin = new Padding(0, 0, 0, 4) };
+            appNameLabel = new DarkModeForms.ThemedLabel { Name = "appNameLabel", AutoSize = true, Dock = DockStyle.Fill, UseMnemonic = false, Margin = Padding.Empty };
+            subtitleLabel = new DarkModeForms.ThemedLabel { Name = "subtitleLabel", AutoSize = true, Dock = DockStyle.Fill, UseMnemonic = false, Margin = new Padding(0, 2, 0, 0), Visible = false };
+            detailsGrid = new TableLayoutPanel { Name = "detailsGrid", ColumnCount = 2, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, Margin = Padding.Empty };
+            detailsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            detailsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            detailsPanel = new Panel { Name = "detailsPanel", Dock = DockStyle.Fill, AutoScroll = true, Margin = new Padding(0, 12, 0, 8) };
+            detailsPanel.Controls.Add(detailsGrid);
+            trustPublisherCheckBox = new CheckBox { Name = "trustPublisherCheckBox", AutoSize = true, Text = "Always trust publisher", Visible = false, Margin = new Padding(0, 4, 0, 0) };
+            allowButton = new DarkModeForms.ThemedButton { Name = "allowButton", Text = "Allow" };
+            tempAllowButton = new DarkModeForms.ThemedButton { Name = "tempAllowButton", Text = "Allow temporarily " + (char)0x25BE };
+            blockButton = new DarkModeForms.ThemedButton { Name = "blockButton", Text = "Block" };
+            ignoreButton = new DarkModeForms.ThemedButton { Name = "ignoreButton", Text = "Ignore" };
+            searchOnlineButton = new LinkLabel { Name = "searchOnlineButton", Text = "Search online", AutoSize = true, Margin = new Padding(0, 0, 16, 0) };
+            copyDetailsButton = new LinkLabel { Name = "copyDetailsButton", Text = "Copy details", AutoSize = true, Margin = new Padding(0, 0, 16, 0) };
+            createWildcardButton = new LinkLabel { Name = "createWildcardButton", Text = "Create wildcard rule...", AutoSize = true, Margin = Padding.Empty };
             allowButton.Click += AllowButton_Click;
-            // 
-            // tempAllowButton
-            // 
-            tempAllowButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            tempAllowButton.FlatStyle = FlatStyle.Flat;
-            tempAllowButton.Location = new Point(192, 217);
-            tempAllowButton.Margin = new Padding(4, 3, 4, 3);
-            tempAllowButton.Name = "tempAllowButton";
-            tempAllowButton.Size = new Size(165, 37);
-            tempAllowButton.TabIndex = 7;
-            tempAllowButton.Text = "Allow Temporarily ▼";
-            tempAllowButton.UseVisualStyleBackColor = true;
-            tempAllowButton.Click += TempAllowButton_Click;
-            // 
-            // blockButton
-            // 
-            blockButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            blockButton.FlatStyle = FlatStyle.Flat;
-            blockButton.Location = new Point(114, 169);
-            blockButton.Margin = new Padding(4, 3, 4, 3);
-            blockButton.Name = "blockButton";
-            blockButton.Size = new Size(98, 37);
-            blockButton.TabIndex = 8;
-            blockButton.Text = "Block";
-            blockButton.UseVisualStyleBackColor = true;
             blockButton.Click += BlockButton_Click;
-            // 
-            // ignoreButton
-            // 
-            ignoreButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            ignoreButton.FlatStyle = FlatStyle.Flat;
-            ignoreButton.Location = new Point(259, 169);
-            ignoreButton.Margin = new Padding(4, 3, 4, 3);
-            ignoreButton.Name = "ignoreButton";
-            ignoreButton.Size = new Size(98, 37);
-            ignoreButton.TabIndex = 9;
-            ignoreButton.Text = "Ignore";
-            ignoreButton.UseVisualStyleBackColor = true;
             ignoreButton.Click += IgnoreButton_Click;
-            // 
-            // tempAllowContextMenu
-            // 
-            tempAllowContextMenu.Name = "tempAllowContextMenu";
-            tempAllowContextMenu.Size = new Size(61, 4);
-            // 
-            // toolTip1
-            // 
-            toolTip1.IsBalloon = true;
-            // 
-            // NotifierForm
-            // 
-            AutoScaleDimensions = new SizeF(7F, 16F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(365, 272);
-            Controls.Add(ignoreButton);
-            Controls.Add(blockButton);
-            Controls.Add(tempAllowButton);
-            Controls.Add(allowButton);
-            Controls.Add(copyDetailsButton);
-            Controls.Add(createWildcardButton);
-            Controls.Add(trustPublisherCheckBox);
-            Controls.Add(pathLabel);
-            Controls.Add(appNameLabel);
-            Controls.Add(infoLabel);
-            Font = new Font("Roboto Mono", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            Margin = new Padding(4, 3, 4, 3);
+            tempAllowButton.Click += TempAllowButton_Click;
+            createWildcardButton.LinkClicked += (s, e) => CreateWildcardButton_Click(s!, e);
+            copyDetailsButton.LinkClicked += (s, e) => CopyDetailsButton_Click(s!, e);
+            searchOnlineButton.LinkClicked += SearchOnlineButton_Click;
+
+            FlowLayoutPanel Flow(params Control[] controls)
+            {
+                var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, Margin = Padding.Empty };
+                flow.Controls.AddRange(controls);
+                return flow;
+            }
+            foreach (var button in new Button[] { allowButton, tempAllowButton, blockButton, ignoreButton })
+            {
+                button.AutoSize = true;
+                button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                button.MinimumSize = new Size(84, 32);
+                button.Padding = new Padding(8, 4, 8, 4);
+                button.Margin = new Padding(0, 8, 8, 0);
+            }
+
+            _notificationLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, Padding = new Padding(16) };
+            _notificationLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            Control[] rows = [infoLabel, appNameLabel, subtitleLabel, detailsPanel,
+                Flow(searchOnlineButton, copyDetailsButton, createWildcardButton), trustPublisherCheckBox,
+                Flow(allowButton, tempAllowButton, blockButton, ignoreButton)];
+            _notificationLayout.RowCount = rows.Length;
+            for (int i = 0; i < rows.Length; i++)
+            {
+                _notificationLayout.RowStyles.Add(rows[i] == detailsPanel ? new RowStyle(SizeType.Percent, 100) : new RowStyle(SizeType.AutoSize));
+                // Explicit row: auto-placement skips hidden controls and would shift rows onto the wrong style.
+                _notificationLayout.Controls.Add(rows[i], 0, i);
+            }
+            _notificationLayout.Layout += (_, _) =>
+            {
+                if (IsHandleCreated && !_fittingLayout) BeginInvoke((Action)FitToWorkingArea);
+            };
+            Controls.Add(_notificationLayout);
+            OnFontChanged(EventArgs.Empty);
+            AutoScaleDimensions = new SizeF(96, 96);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            ClientSize = new Size(500, 400);
+            MinimumSize = new Size(360, 300);
             MaximizeBox = false;
             MinimizeBox = false;
-            MinimumSize = new Size(365, 269);
             Name = "NotifierForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Connection Blocked";
-            ResumeLayout(false);
-            PerformLayout();
-
         }
 
         #endregion
