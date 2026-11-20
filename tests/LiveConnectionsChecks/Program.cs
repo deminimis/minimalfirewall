@@ -52,6 +52,7 @@ using (var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0))
     using var server = listener.AcceptTcpClient();
     var local = (IPEndPoint)client.Client.LocalEndPoint!;
     var row = TcpTrafficTracker.GetConnections().Single(r => !r.IsUdp && r.LocalEndPoint.Equals(local));
+    Check(TcpTrafficTracker.GetCreationTime(row) is { } created && Math.Abs((DateTime.Now - created).TotalMinutes) < 2, "TCP creation time is read from the owner-module table.");
     Check(TcpTrafficTracker.CanClose(row), "An established IPv4 connection can be closed.");
     uint error = TcpTrafficTracker.CloseConnection(row);
     Check(error is 0 or 317, $"Unexpected SetTcpEntry error {error}.");
@@ -61,6 +62,27 @@ using (var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0))
     }
     Console.WriteLine($"Close connection: SetTcpEntry returned {error}.");
 }
+
+// Properties lookups: creation time for UDP (IPv4 and IPv6), process user, reverse DNS.
+foreach (var address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
+{
+    using var udp = new System.Net.Sockets.UdpClient(new IPEndPoint(address, 0));
+    var local = (IPEndPoint)udp.Client.LocalEndPoint!;
+    var row = TcpTrafficTracker.GetConnections().Single(r => r.IsUdp && r.LocalEndPoint.Equals(local));
+    Check(TcpTrafficTracker.GetCreationTime(row) is { } created && Math.Abs((DateTime.Now - created).TotalMinutes) < 2, $"UDP creation time for {address}.");
+}
+using (var listener6 = new System.Net.Sockets.TcpListener(IPAddress.IPv6Loopback, 0))
+{
+    listener6.Start();
+    using var client6 = new System.Net.Sockets.TcpClient(System.Net.Sockets.AddressFamily.InterNetworkV6);
+    client6.Connect((IPEndPoint)listener6.LocalEndpoint);
+    var local6 = (IPEndPoint)client6.Client.LocalEndPoint!;
+    var row6 = TcpTrafficTracker.GetConnections().Single(r => !r.IsUdp && r.LocalEndPoint.Equals(local6));
+    Check(TcpTrafficTracker.GetCreationTime(row6) is { } created6 && Math.Abs((DateTime.Now - created6).TotalMinutes) < 2, "TCPv6 creation time.");
+}
+Check(ConnectionPropertiesForm.GetProcessUser((uint)Environment.ProcessId) == System.Security.Principal.WindowsIdentity.GetCurrent().Name, "Process user of the current process.");
+Check(ConnectionPropertiesForm.GetProcessUser(uint.MaxValue - 1) == "Unavailable", "Unknown PID has no user.");
+Check(!string.IsNullOrEmpty(ConnectionPropertiesForm.ResolveHostAsync(IPAddress.Loopback).GetAwaiter().GetResult()), "Reverse DNS returns a name or a placeholder.");
 
 // The filter bar must sit above the grid, not under it. WinForms needs an STA thread.
 Exception? uiFailure = null;

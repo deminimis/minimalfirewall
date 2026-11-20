@@ -58,6 +58,77 @@ namespace Firewall.Traffic
             return SetTcpEntry(ref native);
         }
 
+        // Reads the creation time of one connection from the owner-module tables, on demand only.
+        // Returns null when the connection is gone or Windows did not record a time.
+        public static DateTime? GetCreationTime(TcpTrafficRow row)
+        {
+            bool v6 = row.LocalEndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+            uint family = v6 ? AF_INET6 : AF_INET;
+            int addressLength = v6 ? 16 : 4;
+            // Offsets in MIB_{TCP,TCP6,UDP,UDP6}ROW_OWNER_MODULE: local address, local port, remote address, remote port, PID, create timestamp.
+            (int size, int localAddr, int localPort, int remoteAddr, int remotePort, int pid, int timestamp) layout = (row.IsUdp, v6) switch
+            {
+                (false, false) => (160, 4, 8, 12, 16, 20, 24),
+                (false, true) => (192, 0, 20, 24, 44, 52, 56),
+                (true, false) => (160, 0, 4, -1, -1, 8, 16),
+                (true, true) => (176, 0, 20, -1, -1, 24, 32),
+            };
+            byte[] localBytes = row.LocalEndPoint.Address.GetAddressBytes();
+            byte[] remoteBytes = row.RemoteEndPoint.Address.GetAddressBytes();
+
+            bool BytesEqual(IntPtr pointer, byte[] expected)
+            {
+                var actual = new byte[addressLength];
+                Marshal.Copy(pointer, actual, 0, addressLength);
+                return actual.AsSpan().SequenceEqual(expected);
+            }
+            int Port(IntPtr pointer) => (ushort)IPAddress.NetworkToHostOrder((short)Marshal.ReadInt32(pointer));
+
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                uint size = 0;
+                // TCP_TABLE_OWNER_MODULE_ALL = 8, UDP_TABLE_OWNER_MODULE = 2
+                uint Query(IntPtr table) => row.IsUdp
+                    ? GetExtendedUdpTable(table, ref size, false, family, 2, 0)
+                    : GetExtendedTcpTable(table, ref size, false, family, 8, 0);
+                Query(IntPtr.Zero);
+                if (size == 0) return null;
+
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                try
+                {
+                    uint result = Query(buffer);
+                    if (result == ERROR_INSUFFICIENT_BUFFER) continue;
+                    if (result != 0) return null;
+
+                    int count = Marshal.ReadInt32(buffer);
+                    // The rows hold 64-bit fields, so the array starts 8-byte aligned after dwNumEntries.
+                    for (int i = 0; i < count; i++)
+                    {
+                        IntPtr r = buffer + 8 + i * layout.size;
+                        if ((uint)Marshal.ReadInt32(r + layout.pid) != row.ProcessId
+                            || Port(r + layout.localPort) != row.LocalEndPoint.Port
+                            || !BytesEqual(r + layout.localAddr, localBytes))
+                        {
+                            continue;
+                        }
+                        if (!row.IsUdp && (Port(r + layout.remotePort) != row.RemoteEndPoint.Port || !BytesEqual(r + layout.remoteAddr, remoteBytes)))
+                        {
+                            continue;
+                        }
+                        long fileTime = Marshal.ReadInt64(r + layout.timestamp);
+                        return fileTime > 0 ? DateTime.FromFileTime(fileTime) : null;
+                    }
+                    return null;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+            return null;
+        }
+
         public static string GetStateString(uint state)
         {
             return state switch

@@ -42,6 +42,7 @@ namespace MinimalFirewall
             onlyRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
             hideRemoteAddressToolStripMenuItem = new ToolStripMenuItem();
             clearFilterToolStripMenuItem = new ToolStripMenuItem();
+            propertiesToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
             createAdvancedRuleToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
@@ -89,6 +90,7 @@ namespace MinimalFirewall
             liveConnectionsDataGridView.CellMouseEnter += LiveConnectionsDataGridView_CellMouseEnter;
             liveConnectionsDataGridView.CellMouseLeave += LiveConnectionsDataGridView_CellMouseLeave;
             liveConnectionsDataGridView.RowPostPaint += LiveConnectionsDataGridView_RowPostPaint;
+            liveConnectionsDataGridView.CellDoubleClick += LiveConnectionsDataGridView_CellDoubleClick;
             // 
             // connIconColumn
             // 
@@ -178,7 +180,7 @@ namespace MinimalFirewall
             // liveConnectionsContextMenu
             //
             liveConnectionsContextMenu.ImageScalingSize = new Size(20, 20);
-            liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, closeConnectionToolStripMenuItem, blockRemoteIPToolStripMenuItem, filterToolStripMenuItem, toolStripSeparator1, createAdvancedRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem });
+            liveConnectionsContextMenu.Items.AddRange(new ToolStripItem[] { killProcessToolStripMenuItem, closeConnectionToolStripMenuItem, blockRemoteIPToolStripMenuItem, filterToolStripMenuItem, toolStripSeparator1, createAdvancedRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, copyDetailsToolStripMenuItem, propertiesToolStripMenuItem });
             liveConnectionsContextMenu.Name = "liveConnectionsContextMenu";
             liveConnectionsContextMenu.Size = new Size(200, 126);
             liveConnectionsContextMenu.Opening += LiveConnectionsContextMenu_Opening;
@@ -276,6 +278,14 @@ namespace MinimalFirewall
             copyDetailsToolStripMenuItem.Size = new Size(199, 22);
             copyDetailsToolStripMenuItem.Text = "Copy Details";
             copyDetailsToolStripMenuItem.Click += CopyDetailsToolStripMenuItem_Click;
+            //
+            // propertiesToolStripMenuItem
+            //
+            propertiesToolStripMenuItem.Font = new Font(propertiesToolStripMenuItem.Font, FontStyle.Bold);
+            propertiesToolStripMenuItem.Name = "propertiesToolStripMenuItem";
+            propertiesToolStripMenuItem.Size = new Size(199, 22);
+            propertiesToolStripMenuItem.Text = "Properties...";
+            propertiesToolStripMenuItem.Click += PropertiesToolStripMenuItem_Click;
             // 
             // disabledPanel
             // 
@@ -343,5 +353,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem onlyRemoteAddressToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem hideRemoteAddressToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clearFilterToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
     }
 }

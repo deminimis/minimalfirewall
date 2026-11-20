@@ -48,8 +48,12 @@ namespace MinimalFirewall
 
         // New-connection marking: keys of the previous scan and the rows that appeared since.
         private object? _lastSnapshot;
-        private HashSet<string>? _previousKeys;
+        private List<TcpConnectionViewModel>? _previousConnections;
         private HashSet<string> _newKeys = [];
+        // Closed-connection marking (auto-refresh only): rows of the previous scan that are gone.
+        private List<TcpConnectionViewModel> _closedConnections = [];
+        private HashSet<string> _closedKeys = [];
+        private Font? _closedRowFont;
         private Font? _newRowFont;
 
         // Raised when the view needs a silent rescan (auto-refresh tick or a closed connection).
@@ -91,7 +95,7 @@ namespace MinimalFirewall
                 "With include filters, only matching connections are shown; exclude filters always hide.");
             _toolTip.SetToolTip(_showListening, "Show TCP ports in the Listen state.");
             _toolTip.SetToolTip(_showLoopback, "Show connections bound to 127.0.0.1 or ::1.");
-            _toolTip.SetToolTip(_autoRefresh, "Rescan every 2 seconds while this tab is visible. New connections are shown in bold.");
+            _toolTip.SetToolTip(_autoRefresh, "Rescan every 2 seconds while this tab is visible. New connections are shown in bold; closed ones stay one cycle, greyed out and struck through.");
 
             _refreshTimer.Tick += (_, _) => RefreshRequested?.Invoke();
             VisibleChanged += (_, _) => UpdateRefreshTimer();
@@ -101,6 +105,7 @@ namespace MinimalFirewall
                 _refreshTimer.Dispose();
                 _toolTip.Dispose();
                 _newRowFont?.Dispose();
+                _closedRowFont?.Dispose();
             };
         }
 
@@ -129,7 +134,7 @@ namespace MinimalFirewall
             Bind(_showLoopback, _appSettings.LiveConnectionsShowLoopback, v => _appSettings.LiveConnectionsShowLoopback = v);
 
             _autoRefresh.Checked = _appSettings.LiveConnectionsAutoRefresh;
-            _autoRefresh.CheckedChanged += (_, _) => { _appSettings.LiveConnectionsAutoRefresh = _autoRefresh.Checked; UpdateRefreshTimer(); };
+            _autoRefresh.CheckedChanged += (_, _) => { _appSettings.LiveConnectionsAutoRefresh = _autoRefresh.Checked; UpdateRefreshTimer(); UpdateLiveConnectionsView(); };
         }
 
         private void UpdateRefreshTimer()
@@ -211,8 +216,9 @@ namespace MinimalFirewall
             UnsubscribeEvents();
             _viewModel?.StopMonitoring();
             // Coming back to the tab must not mark every connection as new.
-            _previousKeys = null;
+            _previousConnections = null;
             _newKeys = [];
+            _closedConnections = [];
             UpdateEnabledState();
         }
 
@@ -263,13 +269,21 @@ namespace MinimalFirewall
             {
                 // Only a new scan updates the marking; filter changes reuse it.
                 var keys = active.Select(c => c.Key).ToHashSet();
-                _newKeys = _previousKeys == null ? [] : [.. keys.Except(_previousKeys)];
-                _previousKeys = keys.Count == 0 ? null : keys;
+                // An empty scan (monitoring stopped) must not report everything as closed.
+                var previous = active.Count == 0 ? null : _previousConnections;
+                _newKeys = previous == null ? [] : [.. keys.Except(previous.Select(c => c.Key))];
+                _closedConnections = previous == null ? [] : [.. previous.Where(c => !keys.Contains(c.Key))];
+                _previousConnections = keys.Count == 0 ? null : [.. active];
                 _lastSnapshot = active;
             }
 
+            var closed = _autoRefresh.Checked ? _closedConnections : [];
+            _closedKeys = [.. closed.Select(c => c.Key)];
             var newList = active.Where(IsShown).ToList();
-            _countLabel.Text = $"{newList.Count} of {active.Count} shown" +
+            int shownActive = newList.Count;
+            newList.AddRange(closed.Where(IsShown));
+            _countLabel.Text = $"{shownActive} of {active.Count} shown" +
+                (newList.Count > shownActive ? $" (+{newList.Count - shownActive} closed)" : "") +
                 (_filter.InvalidFilters.Count > 0 ? $"  |  ignored filter: {string.Join(" ", _filter.InvalidFilters)}" : "");
 
             // apply sorting
@@ -381,8 +395,14 @@ namespace MinimalFirewall
                 e.CellStyle.Font = _newRowFont ??= new Font(e.CellStyle.Font ?? liveConnectionsDataGridView.Font, FontStyle.Bold);
             }
 
+            if (_closedKeys.Contains(conn.Key))
+            {
+                // Gone since the previous auto-refresh scan: kept one cycle, greyed out and struck through.
+                e.CellStyle.Font = _closedRowFont ??= new Font(e.CellStyle.Font ?? liveConnectionsDataGridView.Font, FontStyle.Strikeout);
+                e.CellStyle.ForeColor = Color.Gray;
+            }
             // Dynamic theme assignment based on active state criteria
-            if (conn.State != null)
+            else if (conn.State != null)
             {
                 if (conn.State.Equals("Established", StringComparison.OrdinalIgnoreCase))
                 {
@@ -512,7 +532,7 @@ namespace MinimalFirewall
 
             killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
             blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
-            closeConnectionToolStripMenuItem.Enabled = TcpTrafficTracker.CanClose(connection.Connection);
+            closeConnectionToolStripMenuItem.Enabled = TcpTrafficTracker.CanClose(connection.Connection) && !_closedKeys.Contains(connection.Key);
             onlyRemoteAddressToolStripMenuItem.Enabled = connection.HasRemoteAddress;
             hideRemoteAddressToolStripMenuItem.Enabled = connection.HasRemoteAddress;
             clearFilterToolStripMenuItem.Enabled = _filterBox.TextLength > 0;
@@ -669,6 +689,23 @@ namespace MinimalFirewall
             else
             {
                 Messenger.MessageBox("The path for this item is not available or does not exist.", "Path Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void PropertiesToolStripMenuItem_Click(object? sender, EventArgs e)
+        {
+            if (TryGetSelectedConnection(out var connection) && connection != null)
+            {
+                using var dialog = new ConnectionPropertiesForm(connection);
+                dialog.ShowDialog(FindForm());
+            }
+        }
+
+        private void LiveConnectionsDataGridView_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                PropertiesToolStripMenuItem_Click(sender, e);
             }
         }
 
