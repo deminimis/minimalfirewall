@@ -22,6 +22,7 @@ namespace MinimalFirewall
         private FirewallActionsService _actionsService = null!;
         private BackgroundFirewallTaskService _backgroundTaskService = null!;
         private BindingSource _bindingSource = null!;
+        private DashboardOverview _overview = null!;
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "dashboard_layout.json");
 
         public DashboardControl()
@@ -55,6 +56,12 @@ namespace MinimalFirewall
 
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
+
+            // Added after the split container so it docks first and takes the top edge.
+            _overview = new DashboardOverview(_viewModel, _wildcardRuleService);
+            Controls.Add(_overview);
+            _actionsService.PendingConnectionProcessed += ActionsService_PendingConnectionProcessed;
+            _viewModel.SystemChangesUpdated += ViewModel_SystemChangesUpdated;
 
             try
             {
@@ -218,13 +225,36 @@ namespace MinimalFirewall
                 return;
             }
 
+            int added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 0 : 0;
+            void update()
+            {
+                _overview.AddAlerts(added);
+                LoadDashboardItems();
+            }
+
             if (InvokeRequired)
             {
-                BeginInvoke(new Action(LoadDashboardItems));
+                BeginInvoke(new Action(update));
             }
             else
             {
-                LoadDashboardItems();
+                update();
+            }
+        }
+
+        private void ActionsService_PendingConnectionProcessed(PendingConnectionViewModel pending, string decision)
+        {
+            if (!Disposing && !IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(() => _overview.AddDecision(pending, decision)));
+            }
+        }
+
+        private void ViewModel_SystemChangesUpdated()
+        {
+            if (!Disposing && !IsDisposed && IsHandleCreated)
+            {
+                BeginInvoke(new Action(_overview.Invalidate));
             }
         }
 
