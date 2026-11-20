@@ -686,6 +686,17 @@ namespace MinimalFirewall
                         {
                             return true;
                         }
+
+                        // Same rule but disabled: enable it instead of adding a second copy.
+                        if (candidateSnapshot.Enabled && !existingSnapshot.Enabled &&
+                            AreRulesExactlyEqual(
+                                existingSnapshot,
+                                candidateSnapshot with { Enabled = false }))
+                        {
+                            existingRule.Enabled = true;
+                            Debug.WriteLine($"[INFO] RuleAlreadyExists: Re-enabled disabled duplicate '{existingRule.Name}'.");
+                            return true;
+                        }
                     }
                     catch (COMException ex)
                     {
