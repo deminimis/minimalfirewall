@@ -77,6 +77,12 @@ public class AggregatedRuleViewModel : AdvancedRuleViewModel
     public string InboundStatus { get; set; } = string.Empty;
     public string OutboundStatus { get; set; } = string.Empty;
     public List<AdvancedRuleViewModel> UnderlyingRules { get; set; } = [];
+
+ // Where the rule is enforced; empty for Windows Firewall rules, "WSL (<distro>)" for OpenSnitch rules.
+ public string Attributes { get; set; } = string.Empty;
+ // OpenSnitch rule name; set only for WSL rules.
+ public string WslRuleName { get; set; } = string.Empty;
+ public bool IsWsl => WslRuleName.Length > 0;
 }
 
 public class AdvancedRuleViewModel

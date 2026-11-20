@@ -10,7 +10,7 @@ namespace MinimalFirewall
     public sealed class WslOpenSnitchBridge : IDisposable
     {
         private const string BridgeScript = """
-import base64, os, sys, threading
+import base64, os, queue, sys, threading
 try:
     import grpc
     from concurrent import futures
@@ -56,11 +56,32 @@ def ask(req, ctx):
         ctx.abort(grpc.StatusCode.DEADLINE_EXCEEDED, 'no decision')
     return rule
 
+def subscribe(req, ctx):
+    # The daemon's ClientConfig lists every rule it holds.
+    out('RULES ' + base64.b64encode(req).decode())
+    return req
+
+streams = []
+
 def notifications(requests, ctx):
-    for _ in requests:
-        pass
-    return
-    yield
+    # Rule changes from Minimal Firewall are pushed to the daemon on this stream.
+    q = queue.Queue()
+    with lock:
+        streams.append(q)
+    def drain():
+        for _ in requests:
+            pass
+        q.put(None)
+    threading.Thread(target=drain, daemon=True).start()
+    try:
+        while True:
+            item = q.get()
+            if item is None:
+                return
+            yield item
+    finally:
+        with lock:
+            streams.remove(q)
 
 def reader():
     for line in sys.stdin:
@@ -71,12 +92,16 @@ def reader():
                 if entry:
                     entry[1] = base64.b64decode(parts[2])
                     entry[0].set()
+        elif len(parts) == 2 and parts[0] == 'NOTIFY':
+            with lock:
+                for q in streams:
+                    q.put(base64.b64decode(parts[1]))
     os._exit(0)
 
 handlers = grpc.method_handlers_generic_handler('protocol.UI', {
     'Ping': grpc.unary_unary_rpc_method_handler(ping),
     'AskRule': grpc.unary_unary_rpc_method_handler(ask),
-    'Subscribe': grpc.unary_unary_rpc_method_handler(lambda req, ctx: req),
+    'Subscribe': grpc.unary_unary_rpc_method_handler(subscribe),
     'Notifications': grpc.stream_stream_rpc_method_handler(notifications),
 })
 server = grpc.server(futures.ThreadPoolExecutor(max_workers=16), handlers=(handlers,))
@@ -97,7 +122,71 @@ reader()
         private Process? _process;
         private string _distro = "WSL";
 
+        // Persistent daemon rules by name, shown in the Rules tab.
+        private Dictionary<string, WslRule> _rules = [];
+        private ulong _notificationId;
+
         public event Action<PendingConnectionViewModel>? ConnectionAsked;
+
+        // Raised (on any thread) when the persistent rule list changed.
+        public event Action? RulesChanged;
+
+        public string Distro => _distro;
+
+        public string ToWindowsPath(string linuxPath) => $@"\\wsl.localhost\{_distro}{linuxPath.Replace('/', '\\')}";
+
+        public List<WslRule> GetRules()
+        {
+            lock (_lock) return [.. _rules.Values];
+        }
+
+        public void SetAction(string ruleName, bool allow)
+        {
+            WslRule? rule;
+            lock (_lock)
+            {
+                if (!_rules.TryGetValue(ruleName, out rule)) return;
+                rule = rule with { Action = allow ? "allow" : "deny" };
+                _rules[ruleName] = rule;
+            }
+            Notify(OpenSnitchProtocol.ChangeRuleAction, rule);
+        }
+
+        public void Delete(string ruleName)
+        {
+            WslRule? rule;
+            lock (_lock)
+            {
+                if (!_rules.Remove(ruleName, out rule)) return;
+            }
+            Notify(OpenSnitchProtocol.DeleteRuleAction, rule);
+        }
+
+        private void Notify(int action, WslRule rule)
+        {
+            _log($"[WSL] {(action == OpenSnitchProtocol.DeleteRuleAction ? "delete" : "change")} rule {rule.Name}");
+            byte[] message = OpenSnitchProtocol.WriteNotification(Interlocked.Increment(ref _notificationId), action, rule);
+            Send($"NOTIFY {Convert.ToBase64String(message)}");
+            RulesChanged?.Invoke();
+        }
+
+        private void Send(params string[] lines)
+        {
+            try
+            {
+                var input = _process?.StandardInput;
+                if (input == null) return;
+                lock (_lock)
+                {
+                    foreach (string line in lines) input.WriteLine(line);
+                    input.Flush();
+                }
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
+            {
+                _log($"[WSL] Could not send to the bridge: {ex.Message}");
+            }
+        }
 
         // Raised with a user-facing message when a prerequisite is missing.
         public event Action<string>? Failed;
@@ -159,7 +248,12 @@ reader()
             {
             }
             process.Dispose();
-            lock (_lock) _waiting.Clear();
+            lock (_lock)
+            {
+                _waiting.Clear();
+                _rules = [];
+            }
+            RulesChanged?.Invoke();
         }
 
         public void Dispose() => Stop();
@@ -182,6 +276,16 @@ reader()
                     else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
                     {
                         OnAsk(id, Convert.FromBase64String(parts[2]));
+                    }
+                    else if (parts[0] == "RULES" && parts.Length == 2)
+                    {
+                        // Temporary rules expire inside the daemon without notice, so only persistent ones are listed.
+                        var rules = OpenSnitchProtocol.ReadClientConfigRules(Convert.FromBase64String(parts[1]))
+                            .Where(r => r.Duration == "always")
+                            .ToDictionary(r => r.Name);
+                        lock (_lock) _rules = rules;
+                        _log($"[WSL] {rules.Count} OpenSnitch rules loaded.");
+                        RulesChanged?.Invoke();
                     }
                     else if (parts[0] == "ERROR")
                     {
@@ -225,7 +329,7 @@ reader()
 
             var pending = new PendingConnectionViewModel
             {
-                AppPath = $@"\\wsl.localhost\{_distro}{con.ProcessPath.Replace('/', '\\')}",
+                AppPath = ToWindowsPath(con.ProcessPath),
                 Direction = "Outgoing",
                 Protocol = con.Protocol.StartsWith("tcp") ? "6" : con.Protocol.StartsWith("udp") ? "17" : con.Protocol,
                 RemoteAddress = con.DstIp,
@@ -248,65 +352,80 @@ reader()
             }
 
             var (action, ruleDuration) = OpenSnitchProtocol.MapDecision(decision, duration);
-            string rule = Convert.ToBase64String(OpenSnitchProtocol.WriteRule(processPath, action, ruleDuration));
+            var rule = new WslRule(OpenSnitchProtocol.RuleName(processPath), true, action, ruleDuration, "simple", "process.path", processPath);
+            string encoded = Convert.ToBase64String(OpenSnitchProtocol.WriteRule(rule));
             _log($"[WSL] {action} {ruleDuration} {processPath}");
+            Send([.. ids.Select(id => $"REPLY {id} {encoded}")]);
 
-            try
+            if (ruleDuration == "always")
             {
-                var input = _process?.StandardInput;
-                if (input == null) return;
-                lock (_lock)
-                {
-                    foreach (long id in ids) input.WriteLine($"REPLY {id} {rule}");
-                    input.Flush();
-                }
-            }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
-            {
-                _log($"[WSL] Could not send decision: {ex.Message}");
+                lock (_lock) _rules[rule.Name] = rule;
+                RulesChanged?.Invoke();
             }
         }
     }
 
-    // Minimal protobuf codec for the two opensnitch ui.proto (v1.5) messages the bridge needs.
+    // A persistent opensnitch rule as the daemon reports it.
+    public sealed record WslRule(string Name, bool Enabled, string Action, string Duration, string OperatorType, string Operand, string Data);
+
+    // Minimal protobuf codec for the opensnitch ui.proto (v1.5) messages the bridge needs.
     public static class OpenSnitchProtocol
     {
         public sealed record Connection(string Protocol, string DstIp, uint DstPort,
             uint UserId, uint ProcessId, string ProcessPath, List<string> ProcessArgs);
+
+        // ui.proto Action values used in Notification.type.
+        public const int DeleteRuleAction = 6;
+        public const int ChangeRuleAction = 7;
 
         public static Connection ReadConnection(byte[] data)
         {
             string protocol = "", dstIp = "", path = "";
             uint dstPort = 0, uid = 0, pid = 0;
             var args = new List<string>();
-            int pos = 0;
-            while (pos < data.Length)
+            foreach (var (field, value, bytes) in ReadFields(data))
             {
-                ulong tag = ReadVarint(data, ref pos);
-                int field = (int)(tag >> 3);
-                switch ((int)(tag & 7))
+                switch (field)
                 {
-                    case 0:
-                        uint value = (uint)ReadVarint(data, ref pos);
-                        if (field == 6) dstPort = value;
-                        else if (field == 7) uid = value;
-                        else if (field == 8) pid = value;
-                        break;
-                    case 2:
-                        int length = (int)ReadVarint(data, ref pos);
-                        string text = Encoding.UTF8.GetString(data, pos, length);
-                        pos += length;
-                        if (field == 1) protocol = text;
-                        else if (field == 4) dstIp = text;
-                        else if (field == 9) path = text;
-                        else if (field == 11) args.Add(text);
-                        break;
-                    case 1: pos += 8; break;
-                    case 5: pos += 4; break;
-                    default: throw new FormatException($"Unsupported wire type in field {field}.");
+                    case 1: protocol = Text(bytes); break;
+                    case 4: dstIp = Text(bytes); break;
+                    case 6: dstPort = (uint)value; break;
+                    case 7: uid = (uint)value; break;
+                    case 8: pid = (uint)value; break;
+                    case 9: path = Text(bytes); break;
+                    case 11: args.Add(Text(bytes)); break;
                 }
             }
             return new Connection(protocol, dstIp, dstPort, uid, pid, path, args);
+        }
+
+        // Reads the rules (field 7) of the ClientConfig sent by the daemon on Subscribe.
+        public static List<WslRule> ReadClientConfigRules(byte[] data) =>
+            [.. ReadFields(data).Where(f => f.Field == 7 && f.Bytes != null).Select(f => ReadRule(f.Bytes!))];
+
+        public static WslRule ReadRule(byte[] data)
+        {
+            string name = "", action = "", duration = "", opType = "", operand = "", opData = "";
+            bool enabled = false;
+            foreach (var (field, value, bytes) in ReadFields(data))
+            {
+                switch (field)
+                {
+                    case 1: name = Text(bytes); break;
+                    case 2: enabled = value != 0; break;
+                    case 4: action = Text(bytes); break;
+                    case 5: duration = Text(bytes); break;
+                    case 6:
+                        foreach (var (opField, _, opBytes) in ReadFields(bytes ?? []))
+                        {
+                            if (opField == 1) opType = Text(opBytes);
+                            else if (opField == 2) operand = Text(opBytes);
+                            else if (opField == 3) opData = Text(opBytes);
+                        }
+                        break;
+                }
+            }
+            return new WslRule(name, enabled, action, duration, opType, operand, opData);
         }
 
         // Maps a Minimal Firewall decision to an opensnitch rule action and duration.
@@ -318,24 +437,69 @@ reader()
             _ => ("deny", "once"),
         };
 
-        public static byte[] WriteRule(string processPath, string action, string duration)
+        // One rule per program: a later decision replaces the earlier one.
+        public static string RuleName(string processPath) =>
+            "mfw-" + new string(processPath.ToLowerInvariant()
+                .Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+
+        public static byte[] WriteRule(WslRule rule)
         {
             var op = new List<byte>();
-            WriteString(op, 1, "simple");
-            WriteString(op, 2, "process.path");
-            WriteString(op, 3, processPath);
+            WriteString(op, 1, rule.OperatorType);
+            WriteString(op, 2, rule.Operand);
+            WriteString(op, 3, rule.Data);
 
-            // One rule per program: a later decision replaces the earlier one.
-            string name = "mfw-" + new string(processPath.ToLowerInvariant()
-                .Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
-            var rule = new List<byte>();
-            WriteString(rule, 1, name);
-            rule.Add(2 << 3); rule.Add(1); // enabled = true
-            WriteString(rule, 4, action);
-            WriteString(rule, 5, duration);
-            WriteBytes(rule, 6, op);
-            return [.. rule];
+            var buffer = new List<byte>();
+            WriteString(buffer, 1, rule.Name);
+            if (rule.Enabled)
+            {
+                buffer.Add(2 << 3);
+                buffer.Add(1);
+            }
+            WriteString(buffer, 4, rule.Action);
+            WriteString(buffer, 5, rule.Duration);
+            WriteBytes(buffer, 6, op);
+            return [.. buffer];
         }
+
+        public static byte[] WriteNotification(ulong id, int action, WslRule rule)
+        {
+            var buffer = new List<byte>();
+            WriteVarint(buffer, 1 << 3);
+            WriteVarint(buffer, id);
+            WriteVarint(buffer, 4 << 3);
+            WriteVarint(buffer, (ulong)action);
+            WriteBytes(buffer, 6, WriteRule(rule));
+            return [.. buffer];
+        }
+
+        private static List<(int Field, ulong Value, byte[]? Bytes)> ReadFields(byte[] data)
+        {
+            var fields = new List<(int, ulong, byte[]?)>();
+            int pos = 0;
+            while (pos < data.Length)
+            {
+                ulong tag = ReadVarint(data, ref pos);
+                int field = (int)(tag >> 3);
+                switch ((int)(tag & 7))
+                {
+                    case 0:
+                        fields.Add((field, ReadVarint(data, ref pos), null));
+                        break;
+                    case 2:
+                        int length = (int)ReadVarint(data, ref pos);
+                        fields.Add((field, 0, data[pos..(pos + length)]));
+                        pos += length;
+                        break;
+                    case 1: pos += 8; break;
+                    case 5: pos += 4; break;
+                    default: throw new FormatException($"Unsupported wire type in field {field}.");
+                }
+            }
+            return fields;
+        }
+
+        private static string Text(byte[]? bytes) => bytes == null ? "" : Encoding.UTF8.GetString(bytes);
 
         private static ulong ReadVarint(byte[] data, ref int pos)
         {

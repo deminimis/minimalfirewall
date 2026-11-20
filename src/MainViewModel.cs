@@ -108,7 +108,48 @@ namespace MinimalFirewall
 
         public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
         {
-            AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
+            // New list: the data service may return its cached list.
+            AllAggregatedRules = [.. await _dataService.GetAggregatedRulesAsync(token, progress), .. GetWslRules()];
+        }
+
+        public WslOpenSnitchBridge? WslBridge { get; set; }
+
+        // Replaces the WSL rows after the bridge reported a rule change.
+        public void MergeWslRules()
+        {
+            AllAggregatedRules = [.. AllAggregatedRules.Where(r => !r.IsWsl), .. GetWslRules()];
+        }
+
+        private IEnumerable<AggregatedRuleViewModel> GetWslRules()
+        {
+            var bridge = WslBridge;
+            if (bridge == null) return [];
+
+            return bridge.GetRules().Select(r =>
+            {
+                bool isPath = r.Operand == "process.path";
+                return new AggregatedRuleViewModel
+                {
+                    Name = "WSL - " + (isPath ? Path.GetFileName(r.Data) : r.Name),
+                    ApplicationName = isPath ? bridge.ToWindowsPath(r.Data) : string.Empty,
+                    InboundStatus = "N/A",
+                    OutboundStatus = r.Action == "allow" ? Actions.Allow.ToString() : Actions.Block.ToString(),
+                    IsEnabled = r.Enabled,
+                    Type = RuleType.Program,
+                    // Rules created from Minimal Firewall popups count as its own rules.
+                    Grouping = r.Name.StartsWith("mfw-", StringComparison.Ordinal) ? "OpenSnitch (WSL)" + MFWConstants.MfwRuleSuffix : "OpenSnitch (WSL)",
+                    Profiles = "All",
+                    ProtocolName = "Any",
+                    LocalPorts = "Any",
+                    RemotePorts = "Any",
+                    LocalAddresses = "Any",
+                    RemoteAddresses = "Any",
+                    ServiceName = "N/A",
+                    Description = isPath ? $"OpenSnitch rule {r.Name}" : $"OpenSnitch rule {r.Name}: {r.Operand} {r.Data}",
+                    Attributes = $"WSL ({bridge.Distro})",
+                    WslRuleName = r.Name,
+                };
+            });
         }
 
         public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
@@ -378,6 +419,7 @@ namespace MinimalFirewall
                 13 => rule => rule.Description,
                 14 => rule => rule.DateAdded ?? DateTime.MinValue,
                 15 => rule => rule.AutoAllowedPublisher,
+                16 => rule => rule.Attributes,
                 _ => rule => rule.Name,
             };
         }
@@ -661,6 +703,17 @@ namespace MinimalFirewall
 
         public void ApplyRuleChange(AggregatedRuleViewModel item, string action)
         {
+            if (item.IsWsl)
+            {
+                // OpenSnitch filters outbound connections only; the bridge refreshes the row.
+                FirewallActionsService.ParseActionString(action, out Actions wslAction, out Directions wslDirection);
+                if (wslDirection.HasFlag(Directions.Outgoing))
+                {
+                    WslBridge?.SetAction(item.WslRuleName, wslAction == Actions.Allow);
+                }
+                return;
+            }
+
             var firstRule = item.UnderlyingRules.FirstOrDefault();
             if (firstRule == null)
             {
@@ -738,6 +791,10 @@ namespace MinimalFirewall
                 .Where(i => i.Type != RuleType.Wildcard)
                 .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
                 .ToList();
+            foreach (var wslRule in rulesToDelete.Where(r => r.IsWsl))
+            {
+                WslBridge?.Delete(wslRule.WslRuleName);
+            }
             foreach (var wildcardRule in wildcardRulesToDelete)
             {
                 var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };

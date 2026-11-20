@@ -165,6 +165,16 @@ namespace MinimalFirewall
 
             _wslBridge = new WslOpenSnitchBridge(msg => _activityLogger.LogDebug(msg));
             _wslBridge.ConnectionAsked += _mainViewModel.AddWslPendingConnection;
+            _mainViewModel.WslBridge = _wslBridge;
+            // Deferred so a change made from the Rules tab finishes before the list is rebuilt.
+            _wslBridge.RulesChanged += () =>
+            {
+                if (IsHandleCreated && !IsDisposed) BeginInvoke(() =>
+                {
+                    _mainViewModel.MergeWslRules();
+                    rulesControl1.ApplyRulesFilters();
+                });
+            };
             _wslBridge.Failed += msg => SafeInvoke(() => MessageBox.Show(this,
                 $"WSL filtering is not active: {msg}.\n\nPrerequisites in the default WSL 2 distro:\n" +
                 "  sudo apt install opensnitch python3-grpcio\n  sudo systemctl enable --now opensnitch\n" +
