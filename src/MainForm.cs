@@ -58,6 +58,7 @@ namespace MinimalFirewall
         private bool _isRefreshingData = false;
         private bool _isSentryServiceStarted = false;
         private readonly bool _startMinimized;
+        private bool _lockdownExitConfirmed;
         private StatusForm? _auditStatusForm = null;
         private CancellationTokenSource? _scanCts = null;
         private System.Windows.Forms.Timer? _trayBlinkTimer;
@@ -1000,6 +1001,12 @@ namespace MinimalFirewall
             }
             else
             {
+                if (!ConfirmExitWithLockdown(e.CloseReason))
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
                 _scanCts?.Cancel();
                 foreach (var timer in _tabUnloadTimers.Values)
                 {
@@ -1013,6 +1020,40 @@ namespace MinimalFirewall
                 _backgroundTaskService.WildcardRulesChanged -= OnWildcardRulesChanged;
                 Application.Exit();
             }
+        }
+
+        // Lockdown sets Windows' default outbound action to Block, which persists after exit.
+        // Without the app no prompt appears, so unknown apps lose network access silently.
+        private bool ConfirmExitWithLockdown(CloseReason reason)
+        {
+            if (_lockdownExitConfirmed ||
+                (reason != CloseReason.UserClosing && reason != CloseReason.ApplicationExitCall) ||
+                !MainViewModel.IsLockedDown)
+            {
+                return true;
+            }
+
+            var result = Messenger.MessageBox(
+                "Lockdown Mode is still active.\n\n" +
+                "After exit, Windows keeps blocking outbound connections for apps without an allow rule, " +
+                "and no prompt will appear.\n\n" +
+                "Yes: disable Lockdown and exit.\nNo: keep Lockdown and exit.\nCancel: keep Minimal Firewall running.",
+                "Exit Minimal Firewall",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Cancel)
+            {
+                return false;
+            }
+
+            if (result == DialogResult.Yes)
+            {
+                _mainViewModel.ToggleLockdownMode();
+            }
+
+            _lockdownExitConfirmed = true;
+            return true;
         }
 
         private async void OnTrafficMonitorSettingChanged()
