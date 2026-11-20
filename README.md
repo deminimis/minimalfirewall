@@ -101,6 +101,17 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
    - Yes. Minimal Firewall is designed to be compatible with other security products. It does not install any kernel drivers or low-level services. It exclusively uses the official `NetFwTypeLib` COM library, which is the standard Microsoft API for managing the built-in Windows Firewall. This prevents the types of conflicts that can occur with firewalls that use their own filtering drivers.
 
+4. **Can I filter programs running inside WSL?**
+
+   - Windows Firewall cannot see processes inside a WSL 2 virtual machine, so allowing WSL allows every Linux program. Minimal Firewall can instead act as the user interface for [OpenSnitch](https://github.com/evilsocket/opensnitch) running in your default WSL distro. Prerequisites, inside that distro:
+      - WSL 2 with systemd enabled (`[boot]` `systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`).
+      - `sudo apt install opensnitch python3-grpcio` (tested with OpenSnitch 1.5.8 on Ubuntu 24.04).
+      - `sudo systemctl enable --now opensnitch`, and keep its `Server.Address` at the default `unix:///tmp/osui.sock`.
+
+     Then enable "Filter WSL programs (OpenSnitch)" in Settings. If a prerequisite is missing, Minimal Firewall says which one. Each new Linux program that connects out then appears in the normal popup and dashboard list; Allow and Block save an OpenSnitch rule in `/etc/opensnitchd/rules`. Nothing listens on a Windows port: the bridge talks to Minimal Firewall through `wsl.exe`. While the setting is on, the WSL VM stays running. When Minimal Firewall is closed, OpenSnitch applies its own `DefaultAction` (allow by default). Anyone with root inside the distro can stop OpenSnitch, so this is not a security boundary.
+
+     Only the default distro is bridged. All WSL 2 distros run in one virtual machine and share its network, so OpenSnitch in the default distro also sees connections from other running distros but cannot identify their programs; with the default `InterceptUnknown: false` those connections are allowed without a prompt. Run `opensnitchd` in one distro only, because a second daemon cannot take the same NFQUEUE.
+
 ## Security by Default
 
 By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing the wheel. It uses documented Microsoft APIs to ensure stability and security.
