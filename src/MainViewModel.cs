@@ -514,14 +514,19 @@ namespace MinimalFirewall
             {
                 _eventListenerService.Stop();
 
-                // Clear pending notifications when unlocked
+                // Clear pending notifications when unlocked. WSL questions do not depend on
+                // Lockdown and opensnitchd still waits for them, so they stay.
+                void clearWindowsPending()
+                {
+                    foreach (var p in PendingConnections.Where(p => !p.IsWsl).ToList()) PendingConnections.Remove(p);
+                }
                 if (_uiContext != null)
                 {
-                    _uiContext.Post(_ => PendingConnections.Clear(), null);
+                    _uiContext.Post(_ => clearWindowsPending(), null);
                 }
                 else
                 {
-                    PendingConnections.Clear();
+                    clearWindowsPending();
                 }
             }
         }
@@ -915,7 +920,18 @@ namespace MinimalFirewall
             }
         }
 
-        public void AddWslPendingConnection(PendingConnectionViewModel pending) => OnPendingConnectionDetected(pending);
+        public void AddWslPendingConnection(PendingConnectionViewModel pending)
+        {
+            // Wildcard rules also match \\wsl.localhost paths; answer opensnitchd instead of
+            // creating a Windows rule, which would leave the daemon waiting and then allow.
+            var wildcard = _wildcardRuleService.Match(pending.AppPath);
+            if (wildcard != null)
+            {
+                pending.WslReply!(wildcard.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow", default);
+                return;
+            }
+            OnPendingConnectionDetected(pending);
+        }
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
