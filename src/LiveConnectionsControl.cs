@@ -369,6 +369,7 @@ namespace MinimalFirewall
                 case "connPathColumn": e.Value = conn.ProcessPath; break;
                 case "connProtocolColumn": e.Value = conn.Protocol; break;
                 case "connPidColumn": e.Value = conn.ProcessId; break;
+                case "connAttributesColumn": e.Value = conn.Attributes; break;
             }
         }
 
@@ -532,13 +533,14 @@ namespace MinimalFirewall
 
             killProcessToolStripMenuItem.Enabled = connection.KillProcessCommand.CanExecute(null);
             blockRemoteIPToolStripMenuItem.Enabled = connection.BlockRemoteIpCommand.CanExecute(null);
-            closeConnectionToolStripMenuItem.Enabled = TcpTrafficTracker.CanClose(connection.Connection) && !_closedKeys.Contains(connection.Key);
+            // WSL sockets are not in the Windows TCP table, and Windows rules on their \\wsl.localhost path filter nothing.
+            closeConnectionToolStripMenuItem.Enabled = !connection.IsWsl && TcpTrafficTracker.CanClose(connection.Connection) && !_closedKeys.Contains(connection.Key);
             onlyRemoteAddressToolStripMenuItem.Enabled = connection.HasRemoteAddress;
             hideRemoteAddressToolStripMenuItem.Enabled = connection.HasRemoteAddress;
             clearFilterToolStripMenuItem.Enabled = _filterBox.TextLength > 0;
             bool pathExists = !string.IsNullOrEmpty(connection.ProcessPath) && (File.Exists(connection.ProcessPath) || connection.ProcessPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) || connection.ProcessPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase));
             openFileLocationToolStripMenuItem.Enabled = pathExists;
-            createAdvancedRuleToolStripMenuItem.Enabled = pathExists;
+            createAdvancedRuleToolStripMenuItem.Enabled = pathExists && !connection.IsWsl;
         }
 
         private void KillProcessToolStripMenuItem_Click(object sender, EventArgs e)

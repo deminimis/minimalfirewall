@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Net;
 using System.Text;
+using System.Text.Json;
 
 namespace MinimalFirewall
 {
@@ -10,7 +12,7 @@ namespace MinimalFirewall
     public sealed class WslOpenSnitchBridge : IDisposable
     {
         private const string BridgeScript = """
-import base64, os, queue, sys, threading
+import base64, json, os, queue, socket, sys, threading
 try:
     import grpc
     from concurrent import futures
@@ -83,6 +85,46 @@ def notifications(requests, ctx):
         with lock:
             streams.remove(q)
 
+def addr(text):
+    # /proc/net addresses are hex, little-endian per 32-bit word.
+    host, port = text.split(':')
+    raw = bytes.fromhex(host)
+    raw = b''.join(raw[i:i + 4][::-1] for i in range(0, len(raw), 4))
+    return socket.inet_ntop(socket.AF_INET if len(raw) == 4 else socket.AF_INET6, raw), int(port, 16)
+
+def connections():
+    # Socket owners are visible only for processes of the bridge's user.
+    owners = {}
+    for pid in os.listdir('/proc'):
+        if not pid.isdigit():
+            continue
+        try:
+            exe = os.readlink('/proc/%s/exe' % pid)
+            fds = os.listdir('/proc/%s/fd' % pid)
+        except OSError:
+            continue
+        for fd in fds:
+            try:
+                link = os.readlink('/proc/%s/fd/%s' % (pid, fd))
+            except OSError:
+                continue
+            if link.startswith('socket:['):
+                owners[link[8:-1]] = (int(pid), exe)
+    rows = []
+    for proto in ('tcp', 'tcp6', 'udp', 'udp6'):
+        try:
+            with open('/proc/net/' + proto) as f:
+                lines = f.read().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            c = line.split()
+            local_ip, local_port = addr(c[1])
+            remote_ip, remote_port = addr(c[2])
+            pid, exe = owners.get(c[9], (0, ''))
+            rows.append([proto, local_ip, local_port, remote_ip, remote_port, int(c[3], 16), pid, int(c[7]), exe])
+    return rows
+
 def reader():
     for line in sys.stdin:
         parts = line.split()
@@ -92,6 +134,8 @@ def reader():
                 if entry:
                     entry[1] = base64.b64decode(parts[2])
                     entry[0].set()
+        elif len(parts) == 2 and parts[0] == 'CONNS':
+            out('CONNS %s %s' % (parts[1], base64.b64encode(json.dumps(connections()).encode()).decode()))
         elif len(parts) == 2 and parts[0] == 'NOTIFY':
             with lock:
                 for q in streams:
@@ -138,6 +182,48 @@ reader()
         public List<WslRule> GetRules()
         {
             lock (_lock) return [.. _rules.Values];
+        }
+
+        private readonly Dictionary<long, TaskCompletionSource<List<WslConnection>>> _connectionRequests = [];
+        private long _connectionRequestId;
+
+        // Sockets inside the distro (read from /proc/net), or an empty list if the bridge does not answer.
+        public async Task<List<WslConnection>> GetConnectionsAsync(CancellationToken token)
+        {
+            if (_process == null) return [];
+
+            long id = Interlocked.Increment(ref _connectionRequestId);
+            var request = new TaskCompletionSource<List<WslConnection>>(TaskCreationOptions.RunContinuationsAsynchronously);
+            lock (_lock) _connectionRequests[id] = request;
+            Send($"CONNS {id}");
+            try
+            {
+                return await request.Task.WaitAsync(TimeSpan.FromSeconds(3), token);
+            }
+            catch (TimeoutException)
+            {
+                return [];
+            }
+            finally
+            {
+                lock (_lock) _connectionRequests.Remove(id);
+            }
+        }
+
+        // Linux TCP states (include/net/tcp_states.h) to the MIB_TCP_STATE values the Live Connections tab shows.
+        public static uint ToWindowsTcpState(int linuxState) => linuxState switch
+        {
+            1 => 5, 2 => 3, 3 => 4, 4 => 6, 5 => 7, 6 => 11, 7 => 1, 8 => 8, 9 => 10, 10 => 2, 11 => 9, _ => 0,
+        };
+
+        private static List<WslConnection> ParseConnections(byte[] json)
+        {
+            using var document = JsonDocument.Parse(json);
+            return [.. document.RootElement.EnumerateArray().Select(row => new WslConnection(
+                row[0].GetString() ?? "",
+                IPAddress.Parse(row[1].GetString() ?? "0.0.0.0"), row[2].GetInt32(),
+                IPAddress.Parse(row[3].GetString() ?? "0.0.0.0"), row[4].GetInt32(),
+                row[5].GetInt32(), row[6].GetUInt32(), row[7].GetUInt32(), row[8].GetString() ?? ""))];
         }
 
         public void SetAction(string ruleName, bool allow)
@@ -277,6 +363,12 @@ reader()
                     {
                         OnAsk(id, Convert.FromBase64String(parts[2]));
                     }
+                    else if (parts[0] == "CONNS" && parts.Length == 3 && long.TryParse(parts[1], out long requestId))
+                    {
+                        TaskCompletionSource<List<WslConnection>>? request;
+                        lock (_lock) _connectionRequests.TryGetValue(requestId, out request);
+                        request?.TrySetResult(ParseConnections(Convert.FromBase64String(parts[2])));
+                    }
                     else if (parts[0] == "RULES" && parts.Length == 2)
                     {
                         // Temporary rules expire inside the daemon without notice, so only persistent ones are listed.
@@ -364,6 +456,10 @@ reader()
             }
         }
     }
+
+    // A socket inside the WSL distro. ProcessId is 0 and ProcessPath empty when another user owns it.
+    public sealed record WslConnection(string Protocol, IPAddress LocalAddress, int LocalPort, IPAddress RemoteAddress, int RemotePort,
+        int State, uint ProcessId, uint UserId, string ProcessPath);
 
     // A persistent opensnitch rule as the daemon reports it.
     public sealed record WslRule(string Name, bool Enabled, string Action, string Duration, string OperatorType, string Operand, string Data);

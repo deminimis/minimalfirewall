@@ -32,6 +32,7 @@ namespace MinimalFirewall
             connPathColumn = new DataGridViewTextBoxColumn();
             connProtocolColumn = new DataGridViewTextBoxColumn();
             connPidColumn = new DataGridViewTextBoxColumn();
+            connAttributesColumn = new DataGridViewTextBoxColumn();
             liveConnectionsContextMenu = new ContextMenuStrip(components);
             killProcessToolStripMenuItem = new ToolStripMenuItem();
             closeConnectionToolStripMenuItem = new ToolStripMenuItem();
@@ -71,7 +72,7 @@ namespace MinimalFirewall
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             liveConnectionsDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             liveConnectionsDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            liveConnectionsDataGridView.Columns.AddRange(new DataGridViewColumn[] { connIconColumn, connNameColumn, connStateColumn, connLocalAddrColumn, connLocalPortColumn, connRemoteAddrColumn, connRemotePortColumn, connPathColumn, connProtocolColumn, connPidColumn });
+            liveConnectionsDataGridView.Columns.AddRange(new DataGridViewColumn[] { connIconColumn, connNameColumn, connStateColumn, connLocalAddrColumn, connLocalPortColumn, connRemoteAddrColumn, connRemotePortColumn, connPathColumn, connProtocolColumn, connPidColumn, connAttributesColumn });
             liveConnectionsDataGridView.ContextMenuStrip = liveConnectionsContextMenu;
             liveConnectionsDataGridView.Dock = DockStyle.Fill;
             liveConnectionsDataGridView.GridColor = SystemColors.Control;
@@ -176,6 +177,14 @@ namespace MinimalFirewall
             connPidColumn.HeaderText = "PID";
             connPidColumn.Name = "connPidColumn";
             connPidColumn.ReadOnly = true;
+            //
+            // connAttributesColumn
+            //
+            connAttributesColumn.DataPropertyName = "Attributes";
+            connAttributesColumn.FillWeight = 10F;
+            connAttributesColumn.HeaderText = "Attributes";
+            connAttributesColumn.Name = "connAttributesColumn";
+            connAttributesColumn.ReadOnly = true;
             //
             // liveConnectionsContextMenu
             //
@@ -346,6 +355,7 @@ namespace MinimalFirewall
         private System.Windows.Forms.DataGridViewTextBoxColumn connPathColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn connProtocolColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn connPidColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn connAttributesColumn;
         private System.Windows.Forms.ToolStripMenuItem closeConnectionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem filterToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem onlyProcessToolStripMenuItem;

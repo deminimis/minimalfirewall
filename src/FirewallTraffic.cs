@@ -264,6 +264,16 @@ namespace Firewall.Traffic
                 State = row.state;
             }
 
+            // Connections that do not come from the Windows tables (WSL).
+            public TcpTrafficRow(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, uint processId, uint state, bool isUdp)
+            {
+                LocalEndPoint = localEndPoint;
+                RemoteEndPoint = remoteEndPoint;
+                ProcessId = processId;
+                State = state;
+                IsUdp = isUdp;
+            }
+
             // UDP endpoints have no remote side and no state.
             public TcpTrafficRow(MIB_UDPROW_OWNER_PID row)
             {
@@ -381,6 +391,11 @@ namespace Firewall.Traffic.ViewModels
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
 
+        // "WSL (<distro>)" for connections inside WSL; Windows process and firewall actions do not apply to them.
+        public string Attributes { get; init; } = string.Empty;
+        public uint WslUserId { get; init; }
+        public bool IsWsl => Attributes.Length > 0;
+
         public TcpConnectionViewModel(TcpTrafficTracker.TcpTrafficRow connection, (string Name, string Path, string ServiceName) processInfo, BackgroundFirewallTaskService backgroundTaskService)
         {
             Connection = connection;
@@ -399,7 +414,7 @@ namespace Firewall.Traffic.ViewModels
             Key = $"{Protocol}|{connection.LocalEndPoint}|{connection.RemoteEndPoint}|{connection.ProcessId}";
 
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
-            BlockRemoteIpCommand = new RelayCommand(BlockIp, () => HasRemoteAddress);
+            BlockRemoteIpCommand = new RelayCommand(BlockIp, () => HasRemoteAddress && !IsWsl);
         }
 
         private void KillProcess()
@@ -415,7 +430,7 @@ namespace Firewall.Traffic.ViewModels
             }
         }
 
-        private bool CanKillProcess() => !ProcessName.Equals("System", StringComparison.OrdinalIgnoreCase);
+        private bool CanKillProcess() => !IsWsl && !ProcessName.Equals("System", StringComparison.OrdinalIgnoreCase);
 
         private void BlockIp()
         {

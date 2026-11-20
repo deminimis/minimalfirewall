@@ -214,12 +214,43 @@ namespace MinimalFirewall
                 return viewModels;
             }, token);
 
+            var wslConnections = await GetWslConnectionsAsync(token);
+
             if (token.IsCancellationRequested)
             {
                 return;
             }
 
-            TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>(vms);
+            TrafficMonitorViewModel.ActiveConnections = new ObservableCollection<TcpConnectionViewModel>([.. vms, .. wslConnections]);
+        }
+
+        // WSL 2 sockets live in the VM's Linux kernel, so the Windows tables never list them.
+        private async Task<List<TcpConnectionViewModel>> GetWslConnectionsAsync(CancellationToken token)
+        {
+            var bridge = WslBridge;
+            if (bridge == null) return [];
+
+            List<WslConnection> rows;
+            try
+            {
+                rows = await bridge.GetConnectionsAsync(token);
+            }
+            catch (OperationCanceledException)
+            {
+                return [];
+            }
+
+            string attributes = $"WSL ({bridge.Distro})";
+            return [.. rows.Select(r =>
+            {
+                bool known = r.ProcessPath.Length > 0;
+                bool isUdp = r.Protocol.StartsWith("udp", StringComparison.Ordinal);
+                var row = new Firewall.Traffic.TcpTrafficTracker.TcpTrafficRow(
+                    new System.Net.IPEndPoint(r.LocalAddress, r.LocalPort), new System.Net.IPEndPoint(r.RemoteAddress, r.RemotePort),
+                    r.ProcessId, isUdp ? 0 : WslOpenSnitchBridge.ToWindowsTcpState(r.State), isUdp);
+                var info = (known ? Path.GetFileName(r.ProcessPath) : $"(uid {r.UserId})", known ? bridge.ToWindowsPath(r.ProcessPath) : string.Empty, string.Empty);
+                return new TcpConnectionViewModel(row, info, _backgroundTaskService) { Attributes = attributes, WslUserId = r.UserId };
+            })];
         }
 
         private static (string Name, string Path, string ServiceName) ResolveProcessInfo(uint pid)

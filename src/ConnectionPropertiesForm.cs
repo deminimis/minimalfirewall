@@ -71,8 +71,9 @@ namespace MinimalFirewall
             _copy.Click += (_, _) => Clipboard.SetText(_details.Text);
 
             uint pid = connection.Connection.ProcessId;
-            _user = GetProcessUser(pid);
-            _processStarted = GetProcessStartTime(pid);
+            // A WSL PID is a Linux PID; looking it up on Windows would show an unrelated process.
+            _user = connection.IsWsl ? $"uid {connection.WslUserId}, {connection.Attributes}" : GetProcessUser(pid);
+            _processStarted = connection.IsWsl ? "Unavailable" : GetProcessStartTime(pid);
             _created = TcpTrafficTracker.GetCreationTime(connection.Connection)?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Not recorded";
             _remoteHost = connection.HasRemoteAddress ? "Resolving..." : "-";
             _details.Text = BuildText();
