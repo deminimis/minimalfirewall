@@ -93,7 +93,7 @@ def addr(text):
     return socket.inet_ntop(socket.AF_INET if len(raw) == 4 else socket.AF_INET6, raw), int(port, 16)
 
 def connections():
-    # Socket owners are visible only for processes of the bridge's user.
+    # Runs as root, so every process's sockets are visible; TIME_WAIT sockets have no owner.
     owners = {}
     for pid in os.listdir('/proc'):
         if not pid.isdigit():
@@ -295,7 +295,9 @@ reader()
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
             };
-            foreach (var arg in new[] { "-e", "python3", "-u", "-c", $"import base64;exec(base64.b64decode('{code}'))" })
+            // Root so /proc/<pid>/fd of every user's process can be read for Live Connections.
+            // Minimal Firewall runs as administrator, which can already run wsl.exe -u root without a password.
+            foreach (var arg in new[] { "-u", "root", "-e", "python3", "-u", "-c", $"import base64;exec(base64.b64decode('{code}'))" })
             {
                 psi.ArgumentList.Add(arg);
             }
@@ -457,7 +459,7 @@ reader()
         }
     }
 
-    // A socket inside the WSL distro. ProcessId is 0 and ProcessPath empty when another user owns it.
+    // A socket inside the WSL distro. ProcessId is 0 and ProcessPath empty when no process owns it (TIME_WAIT).
     public sealed record WslConnection(string Protocol, IPAddress LocalAddress, int LocalPort, IPAddress RemoteAddress, int RemotePort,
         int State, uint ProcessId, uint UserId, string ProcessPath);
 

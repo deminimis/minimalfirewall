@@ -248,7 +248,8 @@ namespace MinimalFirewall
                 var row = new Firewall.Traffic.TcpTrafficTracker.TcpTrafficRow(
                     new System.Net.IPEndPoint(r.LocalAddress, r.LocalPort), new System.Net.IPEndPoint(r.RemoteAddress, r.RemotePort),
                     r.ProcessId, isUdp ? 0 : WslOpenSnitchBridge.ToWindowsTcpState(r.State), isUdp);
-                var info = (known ? Path.GetFileName(r.ProcessPath) : $"(uid {r.UserId})", known ? bridge.ToWindowsPath(r.ProcessPath) : string.Empty, string.Empty);
+                // Sockets without an owner (TIME_WAIT, inode 0) belong to no process.
+                var info = (known ? Path.GetFileName(r.ProcessPath) : "(no process)", known ? bridge.ToWindowsPath(r.ProcessPath) : string.Empty, string.Empty);
                 return new TcpConnectionViewModel(row, info, _backgroundTaskService) { Attributes = attributes, WslUserId = r.UserId };
             })];
         }
