@@ -153,6 +153,17 @@ Contributions are welcome! Please submit an issue, a discussion, or a pull reque
 * Visual Studio Community 2026
   * When installing Visual Studio, make sure you select the ".NET desktop development" workload (which includes Windows Forms).
 
+#### Build with mise (Windows)
+Install [mise](https://mise.jdx.dev/) and Visual Studio 2026 or Build Tools with the .NET desktop development workload. From the repository root, run:
+
+```powershell
+mise trust
+mise install
+mise run build
+```
+
+This installs the .NET 10 SDK and builds Release/x64. The task finds Visual Studio MSBuild on PATH or through `vswhere`. Full-framework MSBuild is required to generate the Windows Firewall COM reference; `dotnet build` cannot perform that step.
+
 #### Step 1: Clone this repo
 * When you open up Visual Studio, click clone the repo if you haven't already.
 
