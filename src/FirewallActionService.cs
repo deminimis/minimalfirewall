@@ -43,6 +43,8 @@ namespace MinimalFirewall
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
 
+        public LockdownGuard LockdownGuard { get; } = new(activityLogger);
+
         public void Dispose()
         {
             Dispose(true);
@@ -60,6 +62,7 @@ namespace MinimalFirewall
                         timer.Dispose();
                     }
                     _temporaryRuleTimers.Clear();
+                    LockdownGuard.Dispose();
                 }
                 _disposed = true;
             }
@@ -506,6 +509,7 @@ namespace MinimalFirewall
             var isCurrentlyLocked = FirewallRuleService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
             activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
+            LockdownGuard.Expect(newLockdownState);
             try
             {
                 AdminTaskService.SetAuditPolicy(newLockdownState);
@@ -531,6 +535,7 @@ namespace MinimalFirewall
                     "2. Other security software is blocking this action.\n\n" +
                     "The firewall's default policy will be set back to 'Allow' for safety.",
                      "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                LockdownGuard.Expect(false);
                 try
                 {
                     FirewallRuleService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
@@ -558,9 +563,25 @@ namespace MinimalFirewall
             catch (COMException ex)
             {
                 activityLogger.LogException("SetDefaultOutboundAction", ex);
+                LockdownGuard.Expect(isCurrentlyLocked);
                 SafeShowMessageBox("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
                 "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
+            }
+
+            // SetDefaultOutboundAction ignores per-profile failures, and a Group Policy can
+            // override the local value: read the result back instead of assuming success.
+            var mismatched = FirewallRuleService.GetProfilesNotMatchingOutbound(
+                newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            if (mismatched.Count > 0)
+            {
+                string profiles = string.Join(", ", mismatched);
+                activityLogger.LogDebug($"Lockdown verification failed. Profiles not set to {(newLockdownState ? "Block" : "Allow")}: {profiles}");
+                SafeShowMessageBox(
+                    $"The default outbound policy was not applied to these profiles: {profiles}.\n\n" +
+                    "A Group Policy or other security software may be overriding it, " +
+                    $"so Lockdown Mode is not fully {(newLockdownState ? "enabled" : "disabled")}.",
+                    "Lockdown Mode Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
 
             if (newLockdownState)
