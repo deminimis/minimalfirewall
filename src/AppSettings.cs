@@ -36,6 +36,7 @@ namespace MinimalFirewall
         private bool _autoAllowWhitelistedPublishers = false;
         private bool _autoAllowSystemSignedApps = false;
         private bool _alertOnForeignRules = true;
+        private bool _wslOpenSnitchEnabled = false;
         private bool _filterPrograms = true;
         private bool _filterServices = true;
         private bool _filterUwp = true;
@@ -49,6 +50,14 @@ namespace MinimalFirewall
         private int _auditSortOrder = 0;
         private int _liveConnectionsSortColumn = -1;
         private int _liveConnectionsSortOrder = 0;
+        private string _liveConnectionsSearchText = "";
+        private string _liveConnectionsFilter = "";
+        private bool _liveConnectionsShowTcp = true;
+        private bool _liveConnectionsShowUdp = true;
+        private bool _liveConnectionsShowIPv6 = true;
+        private bool _liveConnectionsShowListening = true;
+        private bool _liveConnectionsShowLoopback = true;
+        private bool _liveConnectionsAutoRefresh = false;
 
         private System.Collections.Generic.Dictionary<string, ColumnState>? _dashboardColumns = [];
         private System.Collections.Generic.Dictionary<string, ColumnState>? _rulesColumns = [];
@@ -88,6 +97,7 @@ namespace MinimalFirewall
         {
             get => _alertOnForeignRules; set => SetField(ref _alertOnForeignRules, value);
         }
+        public bool WslOpenSnitchEnabled { get => _wslOpenSnitchEnabled; set => SetField(ref _wslOpenSnitchEnabled, value); }
         public bool FilterPrograms { get => _filterPrograms; set => SetField(ref _filterPrograms, value); }
         public bool FilterServices { get => _filterServices; set => SetField(ref _filterServices, value); }
         public bool FilterUwp { get => _filterUwp; set => SetField(ref _filterUwp, value); }
@@ -101,6 +111,14 @@ namespace MinimalFirewall
         public int AuditSortOrder { get => _auditSortOrder; set => SetField(ref _auditSortOrder, value); }
         public int LiveConnectionsSortColumn { get => _liveConnectionsSortColumn; set => SetField(ref _liveConnectionsSortColumn, value); }
         public int LiveConnectionsSortOrder { get => _liveConnectionsSortOrder; set => SetField(ref _liveConnectionsSortOrder, value); }
+        public string LiveConnectionsSearchText { get => _liveConnectionsSearchText; set => SetField(ref _liveConnectionsSearchText, value); }
+        public string LiveConnectionsFilter { get => _liveConnectionsFilter; set => SetField(ref _liveConnectionsFilter, value); }
+        public bool LiveConnectionsShowTcp { get => _liveConnectionsShowTcp; set => SetField(ref _liveConnectionsShowTcp, value); }
+        public bool LiveConnectionsShowUdp { get => _liveConnectionsShowUdp; set => SetField(ref _liveConnectionsShowUdp, value); }
+        public bool LiveConnectionsShowIPv6 { get => _liveConnectionsShowIPv6; set => SetField(ref _liveConnectionsShowIPv6, value); }
+        public bool LiveConnectionsShowListening { get => _liveConnectionsShowListening; set => SetField(ref _liveConnectionsShowListening, value); }
+        public bool LiveConnectionsShowLoopback { get => _liveConnectionsShowLoopback; set => SetField(ref _liveConnectionsShowLoopback, value); }
+        public bool LiveConnectionsAutoRefresh { get => _liveConnectionsAutoRefresh; set => SetField(ref _liveConnectionsAutoRefresh, value); }
 
         public System.Collections.Generic.Dictionary<string, ColumnState> DashboardColumns { get => _dashboardColumns ??= []; set => SetField(ref _dashboardColumns, value); }
         public System.Collections.Generic.Dictionary<string, ColumnState> RulesColumns { get => _rulesColumns ??= []; set => SetField(ref _rulesColumns, value); }

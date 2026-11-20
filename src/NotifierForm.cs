@@ -88,6 +88,15 @@ namespace MinimalFirewall
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
+
+            if (pending.IsWsl)
+            {
+                // opensnitchd holds the connection until a decision; Windows publisher and wildcard rules do not apply.
+                Text = "WSL Connection";
+                infoLabel.Text = $"WSL program waiting for a {pending.Direction} connection to {pending.RemoteAddress}:{pending.RemotePort}:";
+                createWildcardButton.Visible = false;
+                trustPublisherCheckBox.Visible = false;
+            }
         }
 
         // Restore window position
