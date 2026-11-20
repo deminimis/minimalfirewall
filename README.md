@@ -110,6 +110,8 @@ Minimal Firewall offers a secure and integrated approach by managing the native 
 
      Then enable "Filter WSL programs (OpenSnitch)" in Settings. If a prerequisite is missing, Minimal Firewall says which one. Each new Linux program that connects out then appears in the normal popup and dashboard list; Allow and Block save an OpenSnitch rule in `/etc/opensnitchd/rules`. Nothing listens on a Windows port: the bridge talks to Minimal Firewall through `wsl.exe`. While the setting is on, the WSL VM stays running. When Minimal Firewall is closed, OpenSnitch applies its own `DefaultAction` (allow by default). Anyone with root inside the distro can stop OpenSnitch, so this is not a security boundary.
 
+     Only the default distro is bridged. All WSL 2 distros run in one virtual machine and share its network, so OpenSnitch in the default distro also sees connections from other running distros but cannot identify their programs; with the default `InterceptUnknown: false` those connections are allowed without a prompt. Run `opensnitchd` in one distro only, because a second daemon cannot take the same NFQUEUE.
+
 ## Security by Default
 
 By leveraging the battle-tested Windows Defender Firewall, Minimal Firewall avoids reinventing the wheel. It uses documented Microsoft APIs to ensure stability and security.
