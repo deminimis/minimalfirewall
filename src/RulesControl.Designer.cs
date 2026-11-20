@@ -98,6 +98,7 @@ namespace MinimalFirewall
             advDescColumn = new DataGridViewTextBoxColumn();
             dateAddedColumn = new DataGridViewTextBoxColumn();
             autoAllowedColumn = new DataGridViewTextBoxColumn();
+            attributesColumn = new DataGridViewTextBoxColumn();
             rulesContextMenu.SuspendLayout();
             filterPanel.SuspendLayout();
             topPanel.SuspendLayout();
@@ -503,7 +504,17 @@ namespace MinimalFirewall
             autoAllowedColumn.Name = "autoAllowedColumn";
             autoAllowedColumn.ReadOnly = true;
             autoAllowedColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
-            // 
+            //
+            // attributesColumn
+            //
+            attributesColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            attributesColumn.DataPropertyName = "Attributes";
+            attributesColumn.FillWeight = 8F;
+            attributesColumn.HeaderText = "Attributes";
+            attributesColumn.Name = "attributesColumn";
+            attributesColumn.ReadOnly = true;
+            attributesColumn.SortMode = DataGridViewColumnSortMode.Programmatic;
+            //
             // rulesDataGridView
             // 
             rulesDataGridView.AllowUserToAddRows = false;
@@ -511,7 +522,7 @@ namespace MinimalFirewall
             rulesDataGridView.AllowUserToResizeRows = false;
             rulesDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             rulesDataGridView.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDomainsColumn, advDescColumn, dateAddedColumn, autoAllowedColumn });
+            rulesDataGridView.Columns.AddRange(new DataGridViewColumn[] { advIconColumn, advNameColumn, inboundStatusColumn, outboundStatusColumn, advProtocolColumn, advLocalPortsColumn, advRemotePortsColumn, advLocalAddressColumn, advRemoteAddressColumn, advProgramColumn, advServiceColumn, advProfilesColumn, advGroupingColumn, advDomainsColumn, advDescColumn, dateAddedColumn, autoAllowedColumn, attributesColumn });
             rulesDataGridView.ContextMenuStrip = rulesContextMenu;
             rulesDataGridView.Dock = DockStyle.Fill;
             rulesDataGridView.Location = new Point(0, 60);
@@ -562,5 +573,6 @@ namespace MinimalFirewall
         private DataGridViewTextBoxColumn advDomainsColumn;
         private DataGridViewTextBoxColumn dateAddedColumn;
         private DataGridViewTextBoxColumn autoAllowedColumn;
+        private DataGridViewTextBoxColumn attributesColumn;
     }
 }

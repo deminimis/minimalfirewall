@@ -129,7 +129,7 @@ namespace MinimalFirewall
             await Task.CompletedTask;
         }
 
-        private void ApplyRulesFilters()
+        public void ApplyRulesFilters()
         {
             var enabledTypes = new HashSet<RuleType>();
             if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
@@ -289,9 +289,14 @@ namespace MinimalFirewall
         {
             if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action) return;
 
-            foreach (var item in GetSelectedRules())
+            var selected = GetSelectedRules();
+            foreach (var item in selected)
             {
                 _mainViewModel.ApplyRuleChange(item, action);
+            }
+            if (action.Contains("(Inbound)", StringComparison.Ordinal) && selected.Any(r => r.IsWsl))
+            {
+                Messenger.MessageBox("OpenSnitch filters outbound connections only, so the selected WSL rules were not changed.", "WSL rules", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -314,7 +319,8 @@ namespace MinimalFirewall
                              ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
                               !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
             editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
-            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType;
+            // OpenSnitch rules have no Windows rule definition to edit.
+            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && !rule.IsWsl;
         }
 
         private async void ManageDomainsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -649,6 +655,7 @@ namespace MinimalFirewall
                 _ when col == advDescColumn => CleanDescription(rule.Description),
                 _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
                 _ when col == autoAllowedColumn => string.IsNullOrEmpty(rule.AutoAllowedPublisher) ? "" : "Auto",
+                _ when col == attributesColumn => rule.Attributes,
                 _ => e.Value
             };
         }
