@@ -30,6 +30,8 @@ namespace MinimalFirewall
         {
             InitializeComponent();
 
+            ConfigureResponsiveLayout();
+
             _appSettings = appSettings;
             _actionsService = actionsService;
             _groupManager = new FirewallGroupManager();
@@ -84,12 +86,12 @@ namespace MinimalFirewall
 
         private void ApplyDynamicTheme()
         {
-            bool isDark = _appSettings.Theme == "Dark";
+            bool isDark = _appSettings.Theme == "Auto" ? Theme.IsSystemDarkMode() : _appSettings.Theme == "Dark";
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
             Theme.ApplyTitleBarTheme(Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             BackColor = Theme.Colors.Background;
             ForeColor = Theme.Colors.TextInactive;
-
+            MainForm.RefreshAllThemedControls(this);
         }
 
         private void BindDynamicUI()
@@ -111,11 +113,151 @@ namespace MinimalFirewall
         private void ApplyDynamicLayout()
         {
             var workingArea = Screen.FromControl(this).WorkingArea;
-            if (Height > workingArea.Height)
-            {
-                Height = workingArea.Height;
-            }
+            var available = new Size(workingArea.Width - 32, workingArea.Height - 32);
+            MinimumSize = new Size(Math.Min(MinimumSize.Width, available.Width), Math.Min(MinimumSize.Height, available.Height));
+            Size = new Size(Math.Min(Width, available.Width), Math.Min(Height, available.Height));
             CenterToParent();
+            Location = new Point(Math.Clamp(Left, workingArea.Left, workingArea.Right - Width),
+                Math.Clamp(Top, workingArea.Top, workingArea.Bottom - Height));
+        }
+
+        private void ConfigureResponsiveLayout()
+        {
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96, 96);
+            Font = SystemFonts.MessageBoxFont;
+            mainPanel.Controls.Clear();
+            bottomPanel.Controls.Clear();
+            var content = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1, Padding = new Padding(12)
+            };
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+            TableLayoutPanel Fields()
+            {
+                var table = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 3, Margin = Padding.Empty };
+                table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                return table;
+            }
+            void Field(TableLayoutPanel table, Label label, Control input, Button? browse = null)
+            {
+                int row = table.RowCount++;
+                table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                label.AutoSize = true;
+                label.Anchor = AnchorStyles.Left;
+                label.TabIndex = row * 3;
+                label.Margin = new Padding(0, 6, 12, 6);
+                input.Dock = DockStyle.Fill;
+                input.TabIndex = row * 3 + 1;
+                input.Margin = new Padding(0, 4, 0, 4);
+                table.Controls.Add(label, 0, row);
+                table.Controls.Add(input, 1, row);
+                if (browse == null) table.SetColumnSpan(input, 2);
+                else
+                {
+                    browse.AutoSize = true;
+                    browse.MinimumSize = new Size(80, 28);
+                    browse.TabIndex = row * 3 + 2;
+                    browse.Margin = new Padding(8, 2, 0, 2);
+                    table.Controls.Add(browse, 2, row);
+                }
+            }
+            void Add(Control control)
+            {
+                int row = content.RowCount++;
+                content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                control.Dock = DockStyle.Fill;
+                control.Margin = new Padding(0, 0, 0, 12);
+                content.Controls.Add(control, 0, row);
+            }
+            void Group(GroupBox group, Control child)
+            {
+                group.Controls.Clear();
+                group.AutoSize = true;
+                group.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                group.Padding = new Padding(12, 24, 12, 12);
+                group.Controls.Add(child);
+            child.SizeChanged += (_, _) =>
+                group.MinimumSize = new Size(0, child.Bottom + group.Padding.Bottom);
+            }
+            var heading = Fields();
+            Field(heading, labelName, ruleNameTextBox);
+            Field(heading, labelDescription, descriptionTextBox);
+            enabledCheckBox.AutoSize = true;
+            heading.Controls.Add(enabledCheckBox, 1, heading.RowCount++);
+            heading.SetColumnSpan(enabledCheckBox, 2);
+            Add(heading);
+
+            var options = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true };
+            foreach (var group in new[] { actionGroupBox, directionGroupBox, profilesGroupBox, interfaceTypesGroupBox })
+            {
+                var choices = group.Controls.Cast<Control>().OrderBy(c => c.TabIndex).ToArray();
+            var flow = new FlowLayoutPanel { Location = new Point(12, 24), AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.TopDown, WrapContents = false };
+                foreach (var choice in choices) { choice.AutoSize = true; choice.Margin = new Padding(0, 2, 8, 2); flow.Controls.Add(choice); }
+                Group(group, flow);
+                group.Margin = new Padding(0, 0, 8, 8);
+                options.Controls.Add(group);
+            }
+            Add(options);
+
+            var program = Fields();
+            Field(program, labelProgram, programPathTextBox, browseButton);
+            Field(program, labelService, serviceNameTextBox, browseServiceButton);
+            programPathNoteLabel.AutoSize = true;
+            programPathNoteLabel.Dock = DockStyle.Fill;
+            program.Controls.Add(programPathNoteLabel, 0, program.RowCount++);
+            program.SetColumnSpan(programPathNoteLabel, 3);
+            Group(programGroupBox, program);
+            Add(programGroupBox);
+
+            protocolComboBox.Dock = DockStyle.Top;
+            Group(protocolGroupBox, protocolComboBox);
+            Add(protocolGroupBox);
+            var ports = Fields();
+            Field(ports, labelLocalPorts, localPortsTextBox);
+            Field(ports, labelRemotePorts, remotePortsTextBox);
+            Group(portsGroupBox, ports);
+            Add(portsGroupBox);
+            var icmp = Fields();
+            Field(icmp, labelIcmpInfo, icmpTypesAndCodesTextBox);
+            labelIcmpExample.AutoSize = true;
+            labelIcmpExample.Dock = DockStyle.Fill;
+            icmp.Controls.Add(labelIcmpExample, 0, icmp.RowCount++);
+            icmp.SetColumnSpan(labelIcmpExample, 3);
+            Group(icmpGroupBox, icmp);
+            Add(icmpGroupBox);
+            var scope = Fields();
+            Field(scope, labelLocalAddress, localAddressTextBox);
+            Field(scope, labelRemoteAddress, remoteAddressTextBox);
+            labelScopeExample.AutoSize = true;
+            labelScopeExample.Dock = DockStyle.Fill;
+            scope.Controls.Add(labelScopeExample, 0, scope.RowCount++);
+            scope.SetColumnSpan(labelScopeExample, 3);
+            Group(scopeGroupBox, scope);
+            Add(scopeGroupBox);
+            mainPanel.Controls.Add(content);
+
+            var footer = Fields();
+            footer.Padding = new Padding(12);
+            Field(footer, labelGroup, groupComboBox, addGroupButton);
+            var commands = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.RightToLeft };
+            foreach (var button in new[] { cancelButton, okButton })
+            {
+                button.AutoSize = true;
+                button.MinimumSize = new Size(90, 32);
+                commands.Controls.Add(button);
+            }
+            footer.Controls.Add(commands, 0, footer.RowCount++);
+            footer.SetColumnSpan(commands, 3);
+            bottomPanel.AutoSize = true;
+            bottomPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            bottomPanel.Controls.Add(footer);
+            AcceptButton = okButton;
+            CancelButton = cancelButton;
         }
 
         private void PopulateFormFromRule(AdvancedRuleViewModel rule)

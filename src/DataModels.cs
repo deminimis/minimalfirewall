@@ -179,6 +179,7 @@ public class RuleFilterViewModel : INotifyPropertyChanged
 
 public class PendingConnectionViewModel
 {
+    public DateTime ObservedAt { get; set; } = DateTime.Now;
     public string ProcessId { get; set; } = string.Empty;
     public string CommandLine { get; set; } = string.Empty;
     public string ParentProcessId { get; set; } = string.Empty;

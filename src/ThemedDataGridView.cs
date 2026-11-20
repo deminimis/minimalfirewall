@@ -12,6 +12,8 @@ namespace DarkModeForms
             this.BorderStyle = BorderStyle.FixedSingle;
             this.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             this.RowHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            this.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCellsExceptHeaders;
+            this.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         }
 
         protected override void OnHandleCreated(EventArgs e)
