@@ -19,15 +19,114 @@ namespace Firewall.Traffic
         private const uint AF_INET6 = 23;
         private const uint ERROR_INSUFFICIENT_BUFFER = 122;
 
+        private const uint MIB_TCP_STATE_DELETE_TCB = 12;
+
         [LibraryImport("iphlpapi.dll", SetLastError = true)]
         private static partial uint GetExtendedTcpTable(IntPtr pTcpTable, ref uint pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, uint ulAf, int TableClass, uint Reserved);
+
+        [LibraryImport("iphlpapi.dll", SetLastError = true)]
+        private static partial uint GetExtendedUdpTable(IntPtr pUdpTable, ref uint pdwSize, [MarshalAs(UnmanagedType.Bool)] bool bOrder, uint ulAf, int TableClass, uint Reserved);
+
+        [LibraryImport("iphlpapi.dll")]
+        private static partial uint SetTcpEntry(ref MIB_TCPROW pTcpRow);
 
         public static List<TcpTrafficRow> GetConnections()
         {
             var connections = new List<TcpTrafficRow>();
-            connections.AddRange(GetConnectionsForFamily(AF_INET));
-            connections.AddRange(GetConnectionsForFamily(AF_INET6));
+            connections.AddRange(GetConnectionsForFamily(AF_INET, udp: false));
+            connections.AddRange(GetConnectionsForFamily(AF_INET6, udp: false));
+            connections.AddRange(GetConnectionsForFamily(AF_INET, udp: true));
+            connections.AddRange(GetConnectionsForFamily(AF_INET6, udp: true));
             return connections;
+        }
+
+        // Only IPv4 TCP connections can be closed: Windows has no SetTcpEntry equivalent for IPv6.
+        public static bool CanClose(TcpTrafficRow row) =>
+            !row.IsUdp && row.LocalEndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && row.State != 2 && row.State != 12;
+
+        // Returns 0 on success, otherwise the Win32 error code (317 usually means missing administrator rights).
+        public static uint CloseConnection(TcpTrafficRow row)
+        {
+            var native = new MIB_TCPROW
+            {
+                state = MIB_TCP_STATE_DELETE_TCB,
+                localAddr = BitConverter.ToUInt32(row.LocalEndPoint.Address.GetAddressBytes(), 0),
+                localPort = (ushort)IPAddress.HostToNetworkOrder((short)row.LocalEndPoint.Port),
+                remoteAddr = BitConverter.ToUInt32(row.RemoteEndPoint.Address.GetAddressBytes(), 0),
+                remotePort = (ushort)IPAddress.HostToNetworkOrder((short)row.RemoteEndPoint.Port),
+            };
+            return SetTcpEntry(ref native);
+        }
+
+        // Reads the creation time of one connection from the owner-module tables, on demand only.
+        // Returns null when the connection is gone or Windows did not record a time.
+        public static DateTime? GetCreationTime(TcpTrafficRow row)
+        {
+            bool v6 = row.LocalEndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+            uint family = v6 ? AF_INET6 : AF_INET;
+            int addressLength = v6 ? 16 : 4;
+            // Offsets in MIB_{TCP,TCP6,UDP,UDP6}ROW_OWNER_MODULE: local address, local port, remote address, remote port, PID, create timestamp.
+            (int size, int localAddr, int localPort, int remoteAddr, int remotePort, int pid, int timestamp) layout = (row.IsUdp, v6) switch
+            {
+                (false, false) => (160, 4, 8, 12, 16, 20, 24),
+                (false, true) => (192, 0, 20, 24, 44, 52, 56),
+                (true, false) => (160, 0, 4, -1, -1, 8, 16),
+                (true, true) => (176, 0, 20, -1, -1, 24, 32),
+            };
+            byte[] localBytes = row.LocalEndPoint.Address.GetAddressBytes();
+            byte[] remoteBytes = row.RemoteEndPoint.Address.GetAddressBytes();
+
+            bool BytesEqual(IntPtr pointer, byte[] expected)
+            {
+                var actual = new byte[addressLength];
+                Marshal.Copy(pointer, actual, 0, addressLength);
+                return actual.AsSpan().SequenceEqual(expected);
+            }
+            int Port(IntPtr pointer) => (ushort)IPAddress.NetworkToHostOrder((short)Marshal.ReadInt32(pointer));
+
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                uint size = 0;
+                // TCP_TABLE_OWNER_MODULE_ALL = 8, UDP_TABLE_OWNER_MODULE = 2
+                uint Query(IntPtr table) => row.IsUdp
+                    ? GetExtendedUdpTable(table, ref size, false, family, 2, 0)
+                    : GetExtendedTcpTable(table, ref size, false, family, 8, 0);
+                Query(IntPtr.Zero);
+                if (size == 0) return null;
+
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                try
+                {
+                    uint result = Query(buffer);
+                    if (result == ERROR_INSUFFICIENT_BUFFER) continue;
+                    if (result != 0) return null;
+
+                    int count = Marshal.ReadInt32(buffer);
+                    // The rows hold 64-bit fields, so the array starts 8-byte aligned after dwNumEntries.
+                    for (int i = 0; i < count; i++)
+                    {
+                        IntPtr r = buffer + 8 + i * layout.size;
+                        if ((uint)Marshal.ReadInt32(r + layout.pid) != row.ProcessId
+                            || Port(r + layout.localPort) != row.LocalEndPoint.Port
+                            || !BytesEqual(r + layout.localAddr, localBytes))
+                        {
+                            continue;
+                        }
+                        if (!row.IsUdp && (Port(r + layout.remotePort) != row.RemoteEndPoint.Port || !BytesEqual(r + layout.remoteAddr, remoteBytes)))
+                        {
+                            continue;
+                        }
+                        long fileTime = Marshal.ReadInt64(r + layout.timestamp);
+                        return fileTime > 0 ? DateTime.FromFileTime(fileTime) : null;
+                    }
+                    return null;
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+            return null;
         }
 
         public static string GetStateString(uint state)
@@ -50,16 +149,21 @@ namespace Firewall.Traffic
             };
         }
 
-        // Retrieves TCP table
-        private static List<TcpTrafficRow> GetConnectionsForFamily(uint family)
+        // Retrieves the TCP or UDP table
+        private static List<TcpTrafficRow> GetConnectionsForFamily(uint family, bool udp)
         {
+            // TCP_TABLE_OWNER_PID_ALL = 5, UDP_TABLE_OWNER_PID = 1
+            uint GetTable(IntPtr table, ref uint size) => udp
+                ? GetExtendedUdpTable(table, ref size, true, family, 1, 0)
+                : GetExtendedTcpTable(table, ref size, true, family, 5, 0);
+
             IntPtr pTcpTable = IntPtr.Zero;
             uint pdwSize = 0;
             uint retVal;
             int retryCount = 0;
 
             // determine necessary buffer size
-            retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+            retVal = GetTable(pTcpTable, ref pdwSize);
 
             if (retVal != 0 && retVal != ERROR_INSUFFICIENT_BUFFER)
             {
@@ -72,7 +176,7 @@ namespace Firewall.Traffic
                 try
                 {
                     pTcpTable = Marshal.AllocHGlobal((int)pdwSize);
-                    retVal = GetExtendedTcpTable(pTcpTable, ref pdwSize, true, family, 5, 0);
+                    retVal = GetTable(pTcpTable, ref pdwSize);
 
                     if (retVal == 0) // Success
                     {
@@ -82,7 +186,19 @@ namespace Firewall.Traffic
 
                         for (int i = 0; i < rowCount; i++)
                         {
-                            if (family == AF_INET)
+                            if (udp && family == AF_INET)
+                            {
+                                var row = Marshal.PtrToStructure<MIB_UDPROW_OWNER_PID>(rowPtr);
+                                connections.Add(new TcpTrafficRow(row));
+                                rowPtr += Marshal.SizeOf<MIB_UDPROW_OWNER_PID>();
+                            }
+                            else if (udp)
+                            {
+                                var row = Marshal.PtrToStructure<MIB_UDP6ROW_OWNER_PID>(rowPtr);
+                                connections.Add(new TcpTrafficRow(row));
+                                rowPtr += Marshal.SizeOf<MIB_UDP6ROW_OWNER_PID>();
+                            }
+                            else if (family == AF_INET)
                             {
                                 var row = Marshal.PtrToStructure<MIB_TCPROW_OWNER_PID>(rowPtr);
                                 connections.Add(new TcpTrafficRow(row));
@@ -130,6 +246,7 @@ namespace Firewall.Traffic
             public readonly IPEndPoint RemoteEndPoint;
             public readonly uint ProcessId;
             public readonly uint State;
+            public readonly bool IsUdp;
 
             public TcpTrafficRow(MIB_TCPROW_OWNER_PID row)
             {
@@ -147,16 +264,36 @@ namespace Firewall.Traffic
                 State = row.state;
             }
 
+            // UDP endpoints have no remote side and no state.
+            public TcpTrafficRow(MIB_UDPROW_OWNER_PID row)
+            {
+                LocalEndPoint = new IPEndPoint(row.localAddr, (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
+                RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                ProcessId = row.owningPid;
+                State = 0;
+                IsUdp = true;
+            }
+
+            public TcpTrafficRow(MIB_UDP6ROW_OWNER_PID row)
+            {
+                LocalEndPoint = new IPEndPoint(new IPAddress(row.localAddr, row.localScopeId), (ushort)IPAddress.NetworkToHostOrder((short)row.localPort));
+                RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+                ProcessId = row.owningPid;
+                State = 0;
+                IsUdp = true;
+            }
+
             public bool Equals(TcpTrafficRow other)
             {
                 return LocalEndPoint.Equals(other.LocalEndPoint) &&
                        RemoteEndPoint.Equals(other.RemoteEndPoint) &&
                        ProcessId == other.ProcessId &&
-                       State == other.State;
+                       State == other.State &&
+                       IsUdp == other.IsUdp;
             }
 
             public override bool Equals(object? obj) => obj is TcpTrafficRow other && Equals(other);
-            public override int GetHashCode() => HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State);
+            public override int GetHashCode() => HashCode.Combine(LocalEndPoint, RemoteEndPoint, ProcessId, State, IsUdp);
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -167,6 +304,34 @@ namespace Firewall.Traffic
             public uint localPort;
             public uint remoteAddr;
             public uint remotePort;
+            public uint owningPid;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_TCPROW
+        {
+            public uint state;
+            public uint localAddr;
+            public uint localPort;
+            public uint remoteAddr;
+            public uint remotePort;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_UDPROW_OWNER_PID
+        {
+            public uint localAddr;
+            public uint localPort;
+            public uint owningPid;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MIB_UDP6ROW_OWNER_PID
+        {
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            public byte[] localAddr;
+            public uint localScopeId;
+            public uint localPort;
             public uint owningPid;
         }
 
@@ -204,9 +369,14 @@ namespace Firewall.Traffic.ViewModels
         public string LocalAddress { get; }
         public string RemoteAddress { get; }
         public string State { get; }
+        public string Protocol { get; }
+        // Identity that survives state changes, used to keep the selection and to spot new rows.
+        public string Key { get; }
 
         public int LocalPort => Connection.LocalEndPoint.Port;
         public int RemotePort => Connection.RemoteEndPoint.Port;
+        public int ProcessId => (int)Connection.ProcessId;
+        public bool HasRemoteAddress => !Connection.RemoteEndPoint.Address.Equals(IPAddress.Any) && !Connection.RemoteEndPoint.Address.Equals(IPAddress.IPv6Any);
 
         public ICommand KillProcessCommand { get; }
         public ICommand BlockRemoteIpCommand { get; }
@@ -223,10 +393,13 @@ namespace Firewall.Traffic.ViewModels
             DisplayName = string.IsNullOrEmpty(ServiceName) ? ProcessName : $"{ProcessName} ({ServiceName})";
             LocalAddress = connection.LocalEndPoint.Address.ToString();
             RemoteAddress = connection.RemoteEndPoint.Address.ToString();
-            State = TcpTrafficTracker.GetStateString(Connection.State);
+            State = connection.IsUdp ? string.Empty : TcpTrafficTracker.GetStateString(Connection.State);
+            bool isV6 = connection.LocalEndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6;
+            Protocol = (connection.IsUdp ? "UDP" : "TCP") + (isV6 ? "v6" : "");
+            Key = $"{Protocol}|{connection.LocalEndPoint}|{connection.RemoteEndPoint}|{connection.ProcessId}";
 
             KillProcessCommand = new RelayCommand(KillProcess, CanKillProcess);
-            BlockRemoteIpCommand = new RelayCommand(BlockIp, () => true);
+            BlockRemoteIpCommand = new RelayCommand(BlockIp, () => HasRemoteAddress);
         }
 
         private void KillProcess()
