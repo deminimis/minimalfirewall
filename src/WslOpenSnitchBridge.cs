@@ -20,6 +20,11 @@ except ImportError:
 if not os.path.exists('/usr/bin/opensnitchd'):
     print('ERROR opensnitchd is not installed (sudo apt install opensnitch)', flush=True)
     sys.exit(1)
+# The ui.proto Action values used for rule changes differ in later OpenSnitch versions.
+version = os.popen('opensnitchd -version 2>&1').read().strip()
+if not version.startswith('1.5.'):
+    print('ERROR opensnitchd %s is not supported (the bridge speaks the OpenSnitch 1.5 UI protocol)' % version, flush=True)
+    sys.exit(1)
 if os.system('systemctl is-active --quiet opensnitch') != 0:
     print('ERROR the opensnitch service is not running (needs systemd=true in /etc/wsl.conf, then sudo systemctl enable --now opensnitch)', flush=True)
     sys.exit(1)
@@ -115,6 +120,8 @@ reader()
 
         // The daemon gives up on a question after 120 s; older entries are stale.
         private static readonly TimeSpan AskLifetime = TimeSpan.FromSeconds(115);
+        // The script stops waiting for a decision after this (ev.wait(110)); a later answer reaches nobody.
+        private static readonly TimeSpan AnswerTimeout = TimeSpan.FromSeconds(110);
 
         private readonly Action<string> _log;
         private readonly Lock _lock = new();
@@ -140,16 +147,16 @@ reader()
             lock (_lock) return [.. _rules.Values];
         }
 
-        public void SetAction(string ruleName, bool allow)
+        // Rule changes are applied to the list only once they reached the bridge, so the views never show
+        // a change that opensnitchd did not receive. False when the bridge is not running.
+        public bool SetAction(string ruleName, bool allow)
         {
             WslRule? rule;
             lock (_lock)
             {
-                if (!_rules.TryGetValue(ruleName, out rule)) return;
-                rule = rule with { Action = allow ? "allow" : "deny" };
-                _rules[ruleName] = rule;
+                if (!_rules.TryGetValue(ruleName, out rule)) return false;
             }
-            Notify(OpenSnitchProtocol.ChangeRuleAction, rule);
+            return Save(rule with { Action = allow ? "allow" : "deny" });
         }
 
         // Converts \\wsl.localhost\<distro>\usr\bin\curl back to /usr/bin/curl; null for other paths.
@@ -162,7 +169,8 @@ reader()
         }
 
         // Allows or blocks a program, reusing its existing process.path rule if there is one.
-        public void SetProgramAction(string linuxPath, bool allow)
+        // False when the change did not reach the bridge.
+        public bool SetProgramAction(string linuxPath, bool allow)
         {
             WslRule rule;
             lock (_lock)
@@ -170,44 +178,56 @@ reader()
                 var existing = _rules.Values.FirstOrDefault(r => r.Operand == "process.path" && r.Data == linuxPath);
                 rule = (existing ?? new WslRule(OpenSnitchProtocol.RuleName(linuxPath), true, "", "always", "simple", "process.path", linuxPath))
                     with { Action = allow ? "allow" : "deny" };
-                _rules[rule.Name] = rule;
             }
-            Notify(OpenSnitchProtocol.ChangeRuleAction, rule);
+            return Save(rule);
         }
 
-        public void Delete(string ruleName)
+        public bool Delete(string ruleName)
         {
             WslRule? rule;
             lock (_lock)
             {
-                if (!_rules.Remove(ruleName, out rule)) return;
+                if (!_rules.TryGetValue(ruleName, out rule)) return false;
             }
-            Notify(OpenSnitchProtocol.DeleteRuleAction, rule);
+            if (!Notify(OpenSnitchProtocol.DeleteRuleAction, rule)) return false;
+            lock (_lock) _rules.Remove(ruleName);
+            RulesChanged?.Invoke();
+            return true;
         }
 
-        private void Notify(int action, WslRule rule)
+        // Adds or replaces a persistent rule in opensnitchd and in the list.
+        private bool Save(WslRule rule)
+        {
+            if (!Notify(OpenSnitchProtocol.ChangeRuleAction, rule)) return false;
+            lock (_lock) _rules[rule.Name] = rule;
+            RulesChanged?.Invoke();
+            return true;
+        }
+
+        private bool Notify(int action, WslRule rule)
         {
             _log($"[WSL] {(action == OpenSnitchProtocol.DeleteRuleAction ? "delete" : "change")} rule {rule.Name}");
             byte[] message = OpenSnitchProtocol.WriteNotification(Interlocked.Increment(ref _notificationId), action, rule);
-            Send($"NOTIFY {Convert.ToBase64String(message)}");
-            RulesChanged?.Invoke();
+            return Send($"NOTIFY {Convert.ToBase64String(message)}");
         }
 
-        private void Send(params string[] lines)
+        private bool Send(params string[] lines)
         {
             try
             {
                 var input = _process?.StandardInput;
-                if (input == null) return;
+                if (input == null) return false;
                 lock (_lock)
                 {
                     foreach (string line in lines) input.WriteLine(line);
                     input.Flush();
                 }
+                return true;
             }
             catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
                 _log($"[WSL] Could not send to the bridge: {ex.Message}");
+                return false;
             }
         }
 
@@ -257,8 +277,8 @@ reader()
 
         public void Stop()
         {
-            var process = _process;
-            _process = null;
+            // Stop can run from the UI thread and from the reader when the bridge dies.
+            var process = Interlocked.Exchange(ref _process, null);
             if (process == null) return;
 
             try
@@ -289,48 +309,70 @@ reader()
                 string? line;
                 while ((line = process.StandardOutput.ReadLine()) != null)
                 {
-                    var parts = line.Split(' ', 3);
-                    if (parts[0] == "HELLO" && parts.Length > 1)
+                    // One bad line must not stop the loop: stdout would no longer be drained and every question would time out.
+                    try
                     {
-                        started = true;
-                        _distro = parts[1];
-                        _log($"[WSL] OpenSnitch bridge listening in {_distro}.");
+                        HandleLine(line, ref started, ref reported);
                     }
-                    else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
+                    catch (Exception ex)
                     {
-                        OnAsk(id, Convert.FromBase64String(parts[2]));
-                    }
-                    else if (parts[0] == "RULES" && parts.Length == 2)
-                    {
-                        // Temporary rules expire inside the daemon without notice, so only persistent ones are listed.
-                        var rules = OpenSnitchProtocol.ReadClientConfigRules(Convert.FromBase64String(parts[1]))
-                            .Where(r => r.Duration == "always")
-                            .ToDictionary(r => r.Name);
-                        lock (_lock) _rules = rules;
-                        _log($"[WSL] {rules.Count} OpenSnitch rules loaded.");
-                        RulesChanged?.Invoke();
-                    }
-                    else if (parts[0] == "ERROR")
-                    {
-                        _log($"[WSL] {line}");
-                        reported = true;
-                        Failed?.Invoke(line[6..]);
-                    }
-                    else
-                    {
-                        _log($"[WSL] {line}");
+                        _log($"[WSL] Ignored bridge message: {ex.Message}");
                     }
                 }
             }
-            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException or FormatException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
                 _log($"[WSL] Bridge stopped: {ex.Message}");
             }
 
-            // wsl.exe failed before the script ran (no WSL 2 distro, no python3) and the user did not stop it.
-            if (!started && !reported && ReferenceEquals(_process, process))
+            // The bridge ended without Stop() (wsl --shutdown, distro restart, python crash): release it so the
+            // setting can start it again, and tell the user.
+            if (ReferenceEquals(_process, process))
             {
-                Failed?.Invoke("wsl.exe exited before the bridge started (needs a default WSL 2 distro with python3)");
+                Stop();
+                if (!reported)
+                {
+                    Failed?.Invoke(started
+                        ? "the WSL bridge stopped (WSL was shut down or restarted); turn the setting off and on to reconnect"
+                        : "wsl.exe exited before the bridge started (needs a default WSL 2 distro with python3)");
+                }
+            }
+        }
+
+        private void HandleLine(string line, ref bool started, ref bool reported)
+        {
+            var parts = line.Split(' ', 3);
+            if (parts[0] == "HELLO" && parts.Length > 1)
+            {
+                started = true;
+                _distro = parts[1];
+                _log($"[WSL] OpenSnitch bridge listening in {_distro}.");
+            }
+            else if (parts[0] == "ASK" && parts.Length == 3 && long.TryParse(parts[1], out long id))
+            {
+                OnAsk(id, Convert.FromBase64String(parts[2]));
+            }
+            else if (parts[0] == "RULES" && parts.Length == 2)
+            {
+                // Temporary rules expire inside the daemon without notice, so only persistent ones are listed.
+                var rules = new Dictionary<string, WslRule>();
+                foreach (var rule in OpenSnitchProtocol.ReadClientConfigRules(Convert.FromBase64String(parts[1])).Where(r => r.Duration == "always"))
+                {
+                    rules[rule.Name] = rule;
+                }
+                lock (_lock) _rules = rules;
+                _log($"[WSL] {rules.Count} OpenSnitch rules loaded.");
+                RulesChanged?.Invoke();
+            }
+            else if (parts[0] == "ERROR")
+            {
+                _log($"[WSL] {line}");
+                reported = true;
+                Failed?.Invoke(line[6..]);
+            }
+            else
+            {
+                _log($"[WSL] {line}");
             }
         }
 
@@ -368,19 +410,29 @@ reader()
         private void Reply(string processPath, string decision, TimeSpan duration)
         {
             List<long> ids;
+            DateTime created;
             lock (_lock)
             {
                 if (!_waiting.Remove(processPath, out var entry)) return;
-                ids = entry.Ids;
+                (ids, created) = entry;
             }
-
             var (action, ruleDuration) = OpenSnitchProtocol.MapDecision(decision, duration);
             var rule = new WslRule(OpenSnitchProtocol.RuleName(processPath), true, action, ruleDuration, "simple", "process.path", processPath);
-            string encoded = Convert.ToBase64String(OpenSnitchProtocol.WriteRule(rule));
             _log($"[WSL] {action} {ruleDuration} {processPath}");
-            Send([.. ids.Select(id => $"REPLY {id} {encoded}")]);
 
-            if (ruleDuration == "always")
+            if (DateTime.UtcNow - created >= AnswerTimeout)
+            {
+                // The daemon already applied its default action; a permanent decision still goes through the
+                // rule channel, anything shorter only applied to the connection that is gone.
+                if (ruleDuration != "always" || !Save(rule))
+                {
+                    _log($"[WSL] Decision for {processPath} arrived after OpenSnitch stopped waiting; it was not applied.");
+                }
+                return;
+            }
+
+            string encoded = Convert.ToBase64String(OpenSnitchProtocol.WriteRule(rule));
+            if (Send([.. ids.Select(id => $"REPLY {id} {encoded}")]) && ruleDuration == "always")
             {
                 lock (_lock) _rules[rule.Name] = rule;
                 RulesChanged?.Invoke();
@@ -457,13 +509,21 @@ reader()
             "Allow" => ("allow", "always"),
             "Block" => ("deny", "always"),
             "TemporaryAllow" => ("allow", duration > TimeSpan.Zero ? $"{(long)duration.TotalSeconds}s" : "until restart"),
+            // Wildcard matches: valid for this connection only, so editing or deleting the wildcard takes effect.
+            "AllowOnce" => ("allow", "once"),
+            "BlockOnce" => ("deny", "once"),
             _ => ("deny", "once"),
         };
 
-        // One rule per program: a later decision replaces the earlier one.
-        public static string RuleName(string processPath) =>
-            "mfw-" + new string(processPath.ToLowerInvariant()
+        // One rule per program: a later decision replaces the earlier one. The readable part maps case and
+        // punctuation together (/opt/App/run and /opt/app/run), so a hash of the exact path keeps names unique.
+        public static string RuleName(string processPath)
+        {
+            string readable = new string(processPath.ToLowerInvariant()
                 .Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+            string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(processPath)))[..8];
+            return $"mfw-{readable}-{hash.ToLowerInvariant()}";
+        }
 
         public static byte[] WriteRule(WslRule rule)
         {

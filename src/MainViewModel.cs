@@ -940,10 +940,11 @@ namespace MinimalFirewall
         {
             // Wildcard rules also match \\wsl.localhost paths; answer opensnitchd instead of
             // creating a Windows rule, which would leave the daemon waiting and then allow.
+            // OpenSnitch only asks about outbound connections, so an inbound-only wildcard does not apply.
             var wildcard = _wildcardRuleService.Match(pending.AppPath);
-            if (wildcard != null)
+            if (wildcard != null && !(wildcard.Action.Contains("Inbound", StringComparison.OrdinalIgnoreCase)))
             {
-                pending.WslReply!(wildcard.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow", default);
+                pending.WslReply!(wildcard.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "BlockOnce" : "AllowOnce", default);
                 return;
             }
             OnPendingConnectionDetected(pending);
