@@ -103,13 +103,18 @@ namespace MinimalFirewall
             ClearRulesCache();
             AllAggregatedRules.Clear();
             VirtualRulesData.Clear();
+            _rulesLoaded = false;
             RulesListUpdated?.Invoke();
         }
+
+        // True while the rule lists hold the Windows rules; WSL rows are merged only then.
+        private bool _rulesLoaded;
 
         public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             // New list: the data service may return its cached list.
             AllAggregatedRules = [.. await _dataService.GetAggregatedRulesAsync(token, progress), .. GetWslRules()];
+            _rulesLoaded = true;
         }
 
         public WslOpenSnitchBridge? WslBridge { get; set; }
@@ -117,6 +122,9 @@ namespace MinimalFirewall
         // Replaces the WSL rows after the bridge reported a rule change.
         public void MergeWslRules()
         {
+            // Otherwise WSL rows alone would make unloaded lists look loaded (the bridge reports its
+            // rules at startup, before any tab loads the Windows rules); the next load adds them.
+            if (!_rulesLoaded) return;
             AllAggregatedRules = [.. AllAggregatedRules.Where(r => !r.IsWsl), .. GetWslRules()];
         }
 
