@@ -28,6 +28,7 @@ namespace MinimalFirewall
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
         private bool _fittingLayout;
+        private bool _grewToDetails;
         private bool _isDarkMode;
 
         private void ApplyThemeStyles(bool isDarkMode)
@@ -242,6 +243,13 @@ namespace MinimalFirewall
                 int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
                 MinimumSize = new Size(minimumWidth, minimumHeight);
                 Height = Math.Clamp(Height, minimumHeight, maximumHeight);
+                if (!_grewToDetails)
+                {
+                    // Once, open tall enough to show every detail row without a scroll bar.
+                    _grewToDetails = true;
+                    int detailsHeight = detailsGrid.GetPreferredSize(new Size(detailsPanel.ClientSize.Width, 0)).Height;
+                    Height = Math.Clamp(Math.Max(Height, minimumHeight - Font.Height * 3 + detailsHeight), minimumHeight, maximumHeight);
+                }
                 Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
                     Math.Clamp(Top, working.Top, working.Bottom - Height));
             }
