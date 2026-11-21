@@ -155,6 +155,23 @@ namespace MinimalFirewall
             dividerPanel2.Visible = false;
             coffeePanel.Visible = false;
 
+            // A setting added to the designer but not listed above would stay hidden behind the cards.
+            // Show it in a "More" card instead, keeping controls on the same designer line together.
+            var lines = new List<List<Control>>();
+            foreach (var control in mainSettingsPanel.Controls.Cast<Control>()
+                .Where(c => c != dividerPanel1 && c != dividerPanel2 && c != coffeePanel)
+                .OrderBy(c => c.Top).ThenBy(c => c.Left).ToList())
+            {
+                if (lines.Count > 0 && control.Top - lines[^1][0].Top < control.Height) lines[^1].Add(control);
+                else lines.Add([control]);
+            }
+            var cards = new List<Control> { general, protection, data };
+            if (lines.Count > 0)
+            {
+                cards.Add(Card("More", [.. lines.Select(line => Row([.. line.OrderBy(c => c.Left)]))]));
+            }
+            cards.Add(about);
+
             _cardFlow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -162,7 +179,7 @@ namespace MinimalFirewall
                 WrapContents = true,
                 Padding = new Padding(S(16)),
             };
-            _cardFlow.Controls.AddRange([general, protection, data, about]);
+            _cardFlow.Controls.AddRange([.. cards]);
             _cardFlow.Resize += (_, _) => SizeCards();
             mainSettingsPanel.AutoScroll = false;
             mainSettingsPanel.Controls.Add(_cardFlow);
