@@ -25,6 +25,7 @@ public sealed class ApplicationsControl : UserControl
     private readonly ThemedButton _block = new() { Text = "&Block…", AutoSize = true };
     private readonly ThemedButton _edit = new() { Text = "&Edit selected rule…", AutoSize = true };
     private readonly ThemedButton _searchOnline = new() { Text = "Search &online", AutoSize = true };
+    private readonly ThemedButton _virusTotal = new() { Text = "Check on &VirusTotal", AutoSize = true };
     private MainViewModel _viewModel = null!;
     private FirewallActionsService _actions = null!;
     private BackgroundFirewallTaskService _background = null!;
@@ -84,15 +85,17 @@ public sealed class ApplicationsControl : UserControl
         actions.Controls.Add(new ThemedLabel { Text = "&Direction:", AutoSize = true, Margin = new Padding(3, 8, 3, 3) });
         actions.Controls.AddRange([_direction, _allow, _block, _edit]);
 
-        var identity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 2, Margin = new Padding(0, 8, 0, 8) };
+        var identity = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 3, Margin = new Padding(0, 8, 0, 8) };
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.Controls.Add(_identity, 0, 0);
         identity.Controls.Add(_searchOnline, 1, 0);
+        identity.Controls.Add(_virusTotal, 2, 0);
         identity.Controls.Add(_publisher, 0, 1);
         identity.Controls.Add(_signature, 0, 2);
-        identity.SetColumnSpan(_publisher, 2);
-        identity.SetColumnSpan(_signature, 2);
+        identity.SetColumnSpan(_publisher, 3);
+        identity.SetColumnSpan(_signature, 3);
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -137,6 +140,7 @@ public sealed class ApplicationsControl : UserControl
         _block.Click += async (_, _) => await ApplyAsync("Block");
         _edit.Click += async (_, _) => await EditAsync();
         _searchOnline.Click += (_, _) => SearchOnline();
+        _virusTotal.Click += async (_, _) => await CheckVirusTotalAsync();
         UpdateScope();
         UpdateActions();
     }
@@ -263,8 +267,35 @@ public sealed class ApplicationsControl : UserControl
     {
         _allow.Enabled = _block.Enabled = !_busy && SelectedApplication != null;
         _edit.Enabled = !_busy && SelectedRule != null;
-        _searchOnline.Enabled = SelectedApplication != null;
+        _searchOnline.Enabled = _virusTotal.Enabled = SelectedApplication != null;
         _direction.Enabled = !_busy;
+    }
+
+    // Sends only the SHA-256 hash; VirusTotal offers an upload when the file is unknown.
+    private async Task CheckVirusTotalAsync()
+    {
+        if (SelectedApplication is not { } entry) return;
+        if (!File.Exists(entry.AppPath))
+        {
+            Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+        _virusTotal.Enabled = false;
+        string hash = await SystemDiscoveryService.CalculateSHA256Async(entry.AppPath);
+        UpdateActions();
+        if (string.IsNullOrEmpty(hash))
+        {
+            Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+        try
+        {
+            Process.Start(new ProcessStartInfo($"https://www.virustotal.com/gui/file/{hash}") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WARN] ApplicationsControl.CheckVirusTotalAsync failed: {ex.Message}");
+        }
     }
 
     // Same query as the connection popup; only sent on explicit click.

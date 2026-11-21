@@ -28,8 +28,9 @@ internal static class PopupChecks
             Capture(real, $"notification-real-{(dark ? "dark" : "light")}.png", Path.Combine(Environment.CurrentDirectory, "artifacts", "applications"));
         }
         var searchUrl = NotifierForm.BuildSearchUrl(cmd, "Google");
-        Check(searchUrl == "https://www.google.com/search?q=%22cmd.exe%22%20Microsoft%20Corporation", $"Unexpected search URL: {searchUrl}");
-        Check(NotifierForm.BuildSearchUrl(@"C:\Missing\app.exe", "DuckDuckGo") == "https://duckduckgo.com/?q=%22app.exe%22", "Search must fall back to the file name.");
+        const string purpose = "%20what%20is%20it%20used%20for%2C%20is%20it%20safe%20or%20malware";
+        Check(searchUrl == "https://www.google.com/search?q=%22cmd.exe%22%20Microsoft%20Corporation" + purpose, $"Unexpected search URL: {searchUrl}");
+        Check(NotifierForm.BuildSearchUrl(@"C:\Missing\app.exe", "DuckDuckGo") == "https://duckduckgo.com/?q=%22app.exe%22" + purpose, "Search must fall back to the file name.");
 
         var directory = Path.Combine(Environment.CurrentDirectory, "artifacts", "applications");
         Directory.CreateDirectory(directory);

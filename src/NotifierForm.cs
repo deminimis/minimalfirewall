@@ -395,6 +395,8 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[WARN] NotifierForm could not read company name: {ex.Message}");
             }
+            // Steer results toward pages that explain the program's purpose and whether it is risky.
+            query += " what is it used for, is it safe or malware";
             return prefix + Uri.EscapeDataString(query);
         }
 
