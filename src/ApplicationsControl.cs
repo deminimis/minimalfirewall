@@ -26,6 +26,7 @@ public sealed class ApplicationsControl : UserControl
     private readonly ThemedButton _edit = new() { Text = "&Edit selected rule…", AutoSize = true };
     private readonly ThemedButton _searchOnline = new() { Text = "Search &online", AutoSize = true };
     private readonly ThemedButton _virusTotal = new() { Text = "Check on &VirusTotal", AutoSize = true };
+    private bool _selectedFileExists;
     private MainViewModel _viewModel = null!;
     private FirewallActionsService _actions = null!;
     private BackgroundFirewallTaskService _background = null!;
@@ -258,6 +259,8 @@ public sealed class ApplicationsControl : UserControl
             }
         }
         _attempts.DataSource = new BindingList<PendingConnectionViewModel>(entry?.Attempts.OrderByDescending(a => a.ObservedAt).ToList() ?? []);
+        // Checked once per selection: rules can target executables that no longer exist.
+        _selectedFileExists = entry != null && File.Exists(entry.AppPath);
         UpdateActions();
     }
 
@@ -267,19 +270,15 @@ public sealed class ApplicationsControl : UserControl
     {
         _allow.Enabled = _block.Enabled = !_busy && SelectedApplication != null;
         _edit.Enabled = !_busy && SelectedRule != null;
-        _searchOnline.Enabled = _virusTotal.Enabled = SelectedApplication != null;
+        _searchOnline.Enabled = SelectedApplication != null;
+        _virusTotal.Enabled = _selectedFileExists && SelectedApplication != null;
         _direction.Enabled = !_busy;
     }
 
     // Sends only the SHA-256 hash; VirusTotal offers an upload when the file is unknown.
     private async Task CheckVirusTotalAsync()
     {
-        if (SelectedApplication is not { } entry) return;
-        if (!File.Exists(entry.AppPath))
-        {
-            Messenger.MessageBox("File not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return;
-        }
+        if (SelectedApplication is not { } entry || !_selectedFileExists) return;
         _virusTotal.Enabled = false;
         string hash = await SystemDiscoveryService.CalculateSHA256Async(entry.AppPath);
         UpdateActions();
