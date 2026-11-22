@@ -241,387 +241,363 @@ namespace MinimalFirewall
         }
 
         public static bool TryEditExactRule(
-    AdvancedRuleViewModel originalRule,
-    AdvancedRuleViewModel updatedRule,
-    out string errorMessage)
-        {
-            errorMessage = string.Empty;
-
-            if (originalRule == null || updatedRule == null)
-            {
-                errorMessage = "The original or edited rule definition was missing.";
-                return false;
-            }
-
-            string originalName = NormalizeRuleText(originalRule.Name);
-            string updatedName = NormalizeRuleText(updatedRule.Name);
-
-            if (string.IsNullOrWhiteSpace(originalName))
-            {
-                errorMessage = "The selected rule has no name and cannot be edited safely.";
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(updatedName))
-            {
-                errorMessage = "The edited rule must have a name.";
-                return false;
-            }
-
-            if (originalRule.Direction is not
-                (Directions.Incoming or Directions.Outgoing))
-            {
-                errorMessage =
-                    "The selected row does not represent exactly one inbound or " +
-                    "outbound firewall rule. Refresh the rule list and select one " +
-                    "individual rule.";
-                return false;
-            }
-
-            if (updatedRule.Direction is not
-                (Directions.Incoming or Directions.Outgoing))
-            {
-                errorMessage =
-                    "Editing one existing rule cannot change it to both directions. " +
-                    "Choose Inbound or Outbound. To create both directions, create " +
-                    "a new rule instead.";
-                return false;
-            }
-
-            INetFwPolicy2? firewallPolicy = null;
-            INetFwRules? rulesCollection = null;
-            INetFwRule2? matchedRule = null;
-            INetFwRule2? validationRule = null;
-
-            try
-            {
-                firewallPolicy = GetLocalPolicy();
-                rulesCollection = firewallPolicy.Rules;
-
-                int originalNameCount = 0;
-                int updatedNameCount = 0;
-
-                foreach (INetFwRule2 rule in rulesCollection)
+            AdvancedRuleViewModel originalRule,
+            AdvancedRuleViewModel updatedRule,
+            out string errorMessage)
                 {
-                    bool keepRule = false;
+                    errorMessage = string.Empty;
+
+                    if (originalRule == null || updatedRule == null)
+                    {
+                        errorMessage =
+                            "The original or edited rule definition was missing.";
+                        return false;
+                    }
+
+                    string originalName = NormalizeRuleText(originalRule.Name);
+                    string updatedName = NormalizeRuleText(updatedRule.Name);
+
+                    if (string.IsNullOrWhiteSpace(originalName))
+                    {
+                        errorMessage =
+                            "The selected rule has no name and cannot be edited safely.";
+                        return false;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(updatedName))
+                    {
+                        errorMessage = "The edited rule must have a name.";
+                        return false;
+                    }
+
+                    if (originalRule.Direction is not
+                        (Directions.Incoming or Directions.Outgoing))
+                    {
+                        errorMessage =
+                            "The selected row does not represent exactly one inbound or " +
+                            "outbound firewall rule. Refresh the rule list and select one " +
+                            "individual rule.";
+                        return false;
+                    }
+
+                    if (updatedRule.Direction is not
+                        (Directions.Incoming or Directions.Outgoing))
+                    {
+                        errorMessage =
+                            "Editing one existing rule cannot change it to both directions. " +
+                            "Choose Inbound or Outbound. To create both directions, create " +
+                            "a new rule instead.";
+                        return false;
+                    }
+
+                    INetFwPolicy2? firewallPolicy = null;
+                    INetFwRules? rulesCollection = null;
+                    INetFwRule2? matchedRule = null;
+                    INetFwRule2? validationRule = null;
 
                     try
                     {
-                        string existingName = ReadOptionalString(() => rule.Name);
+                        firewallPolicy = GetLocalPolicy();
+                        rulesCollection = firewallPolicy.Rules;
 
-                        if (string.Equals(
-                                existingName,
-                                originalName,
-                                StringComparison.OrdinalIgnoreCase))
+                        int matchingNameCount = 0;
+                        int matchingFingerprintCount = 0;
+                        int updatedNameConflictCount = 0;
+
+                        foreach (INetFwRule2 rule in rulesCollection)
                         {
-                            originalNameCount++;
+                            bool keepRule = false;
 
-                            if (originalNameCount == 1)
+                            try
                             {
-                                matchedRule = rule;
-                                keepRule = true;
+                                string existingName =
+                                    ReadOptionalString(() => rule.Name);
+
+                                if (string.Equals(
+                                        existingName,
+                                        originalName,
+                                        StringComparison.OrdinalIgnoreCase))
+                                {
+                                    matchingNameCount++;
+
+                                    FirewallRuleSnapshot snapshot =
+                                        CreateRuleSnapshot(rule);
+
+                                    if (SnapshotMatchesViewModel(
+                                            snapshot,
+                                            originalRule))
+                                    {
+                                        matchingFingerprintCount++;
+
+                                        if (matchingFingerprintCount == 1)
+                                        {
+                                            matchedRule = rule;
+                                            keepRule = true;
+                                        }
+                                    }
+                                }
+
+                                if (!string.Equals(
+                                        updatedName,
+                                        originalName,
+                                        StringComparison.OrdinalIgnoreCase) &&
+                                    string.Equals(
+                                        existingName,
+                                        updatedName,
+                                        StringComparison.OrdinalIgnoreCase))
+                                {
+                                    updatedNameConflictCount++;
+                                }
+                            }
+                            finally
+                            {
+                                if (!keepRule && rule != null)
+                                {
+                                    Marshal.ReleaseComObject(rule);
+                                }
                             }
                         }
 
-                        if (!string.Equals(
-                                updatedName,
-                                originalName,
-                                StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(
-                                existingName,
-                                updatedName,
-                                StringComparison.OrdinalIgnoreCase))
+                        if (matchingNameCount == 0)
                         {
-                            updatedNameCount++;
+                            errorMessage =
+                                $"The rule '{originalName}' no longer exists. Refresh the " +
+                                "rule list before trying again.";
+                            return false;
                         }
+
+                        if (matchingFingerprintCount == 0 || matchedRule == null)
+                        {
+                            errorMessage =
+                                $"No current Windows Firewall rule named '{originalName}' " +
+                                "still has the settings that were originally loaded. No " +
+                                "changes were applied. Refresh the rule list and try again.";
+                            return false;
+                        }
+
+                        if (matchingFingerprintCount > 1)
+                        {
+                            errorMessage =
+                                $"Windows Firewall contains {matchingFingerprintCount} " +
+                                $"indistinguishable rules named '{originalName}'. Their " +
+                                "complete firewall settings are identical, so Minimal " +
+                                "Firewall cannot safely determine which object was selected. " +
+                                "No changes were applied.";
+                            return false;
+                        }
+
+                        if (updatedNameConflictCount > 0)
+                        {
+                            errorMessage =
+                                $"Another firewall rule is already named '{updatedName}'. " +
+                                "Choose a different rule name and try again.";
+                            return false;
+                        }
+
+                        FirewallRuleSnapshot currentSnapshot =
+                            CreateRuleSnapshot(matchedRule);
+
+                        if (!SnapshotMatchesViewModel(
+                                currentSnapshot,
+                                originalRule))
+                        {
+                            errorMessage =
+                                $"The rule '{originalName}' changed after it was selected. " +
+                                "No changes were applied. Refresh the rule list, review the " +
+                                "current settings, and try again.";
+                            return false;
+                        }
+
+                        Type? firewallRuleType =
+                            Type.GetTypeFromProgID("HNetCfg.FWRule");
+
+                        if (firewallRuleType == null)
+                        {
+                            errorMessage =
+                                "The Windows Firewall rule COM type is unavailable.";
+                            return false;
+                        }
+
+                        validationRule =
+                            (INetFwRule2)Activator.CreateInstance(firewallRuleType)!;
+
+                        ApplyViewModelToComRule(validationRule, updatedRule);
+
+                        FirewallRuleSnapshot expectedSnapshot =
+                            CreateRuleSnapshot(validationRule);
+
+                        // matchedRule is the exact COM object found by enumerating the live collection. Do not remove and recreate it by name.
+
+                        ApplyViewModelToComRule(matchedRule, updatedRule);
+
+                        FirewallRuleSnapshot actualSnapshot =
+                            CreateRuleSnapshot(matchedRule);
+
+                        if (!AreRulesExactlyEqual(
+                                expectedSnapshot,
+                                actualSnapshot))
+                        {
+                            // Restore the original object in place before reporting failure.
+                            try
+                            {
+                                ApplySnapshotToComRule(
+                                    matchedRule,
+                                    currentSnapshot);
+
+                                FirewallRuleSnapshot restoredSnapshot =
+                                    CreateRuleSnapshot(matchedRule);
+
+                                if (!AreRulesExactlyEqual(
+                                        currentSnapshot,
+                                        restoredSnapshot))
+                                {
+                                    errorMessage =
+                                        "Windows Firewall did not preserve every requested " +
+                                        "setting, and the original rule could not be fully " +
+                                        "restored. Refresh the rule list immediately and " +
+                                        "review the rule.";
+                                    return false;
+                                }
+                            }
+                            catch (Exception rollbackException)
+                            {
+                                errorMessage =
+                                    "Windows Firewall did not preserve every requested " +
+                                    "setting, and restoring the original rule failed: " +
+                                    rollbackException.Message;
+                                return false;
+                            }
+
+                            errorMessage =
+                                "Windows Firewall did not preserve every requested setting. " +
+                                "The original rule was restored.";
+                            return false;
+                        }
+
+                        return true;
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        errorMessage =
+                            "Windows denied the rule edit. Run Minimal Firewall as " +
+                            "administrator and try again.";
+                        return false;
+                    }
+                    catch (COMException ex)
+                    {
+                        errorMessage =
+                            $"Windows Firewall rejected the rule edit " +
+                            $"(0x{ex.HResult:X8}): {ex.Message}";
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        errorMessage =
+                            $"The rule could not be edited safely: {ex.Message}";
+                        return false;
                     }
                     finally
                     {
-                        if (!keepRule && rule != null)
+                        if (validationRule != null)
                         {
-                            Marshal.ReleaseComObject(rule);
+                            Marshal.ReleaseComObject(validationRule);
+                        }
+
+                        if (matchedRule != null)
+                        {
+                            Marshal.ReleaseComObject(matchedRule);
+                        }
+
+                        if (rulesCollection != null)
+                        {
+                            Marshal.ReleaseComObject(rulesCollection);
+                        }
+
+                        if (firewallPolicy != null)
+                        {
+                            Marshal.ReleaseComObject(firewallPolicy);
                         }
                     }
                 }
-
-                if (originalNameCount == 0 || matchedRule == null)
-                {
-                    errorMessage =
-                        $"The rule '{originalName}' no longer exists. Refresh the " +
-                        "rule list before trying again.";
-                    return false;
-                }
-
-                if (originalNameCount > 1)
-                {
-                    errorMessage =
-                        $"Windows Firewall contains {originalNameCount} rules named " +
-                        $"'{originalName}'. Windows exposes name-only removal and " +
-                        "lookup behavior, so Minimal Firewall cannot determine which " +
-                        "duplicate should be edited. Rename or remove the duplicate " +
-                        "rules in Windows Defender Firewall with Advanced Security, " +
-                        "refresh, and try again.";
-                    return false;
-                }
-
-                if (updatedNameCount > 0)
-                {
-                    errorMessage =
-                        $"Another firewall rule is already named '{updatedName}'. " +
-                        "Choose a unique rule name and try again.";
-                    return false;
-                }
-
-                FirewallRuleSnapshot currentSnapshot =
-                    CreateRuleSnapshot(matchedRule);
-
-                if (!SnapshotMatchesViewModel(
-                        currentSnapshot,
-                        originalRule))
-                {
-                    errorMessage =
-                        $"The rule '{originalName}' changed after it was loaded. " +
-                        "No changes were applied. Refresh the rule list, review the " +
-                        "current settings, and try again.";
-                    return false;
-                }
-
-                Type? firewallRuleType =
-                    Type.GetTypeFromProgID("HNetCfg.FWRule");
-
-                if (firewallRuleType == null)
-                {
-                    errorMessage =
-                        "The Windows Firewall rule COM type is unavailable.";
-                    return false;
-                }
-
-                validationRule =
-                    (INetFwRule2)Activator.CreateInstance(firewallRuleType)!;
-
-                ApplyViewModelToComRule(validationRule, updatedRule);
-
-                FirewallRuleSnapshot expectedSnapshot =
-                    CreateRuleSnapshot(validationRule);
-
-                ApplyViewModelToComRule(matchedRule, updatedRule);
-
-                FirewallRuleSnapshot actualSnapshot =
-                    CreateRuleSnapshot(matchedRule);
-
-                if (!AreRulesExactlyEqual(
-                        expectedSnapshot,
-                        actualSnapshot))
-                {
-                    errorMessage =
-                        "Windows Firewall accepted the edit but did not preserve all " +
-                        "requested settings. Refresh the rule list and review the " +
-                        "rule before making further changes.";
-                    return false;
-                }
-
-                return true;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                errorMessage =
-                    "Windows denied the rule edit. Run Minimal Firewall as " +
-                    "administrator and try again.";
-                return false;
-            }
-            catch (COMException ex)
-            {
-                errorMessage =
-                    $"Windows Firewall rejected the rule edit " +
-                    $"(0x{ex.HResult:X8}): {ex.Message}";
-                return false;
-            }
-            catch (Exception ex)
-            {
-                errorMessage =
-                    $"The rule could not be edited safely: {ex.Message}";
-                return false;
-            }
-            finally
-            {
-                if (validationRule != null)
-                {
-                    Marshal.ReleaseComObject(validationRule);
-                }
-
-                if (matchedRule != null)
-                {
-                    Marshal.ReleaseComObject(matchedRule);
-                }
-
-                if (rulesCollection != null)
-                {
-                    Marshal.ReleaseComObject(rulesCollection);
-                }
-
-                if (firewallPolicy != null)
-                {
-                    Marshal.ReleaseComObject(firewallPolicy);
-                }
-            }
-        }
 
         public static bool TryDeleteExactRule(
-    AdvancedRuleViewModel selectedRule,
-    out string errorMessage)
-        {
-            errorMessage = string.Empty;
-
-            if (selectedRule == null)
-            {
-                errorMessage = "The selected rule definition was missing.";
-                return false;
-            }
-
-            string selectedName = NormalizeRuleText(selectedRule.Name);
-            if (string.IsNullOrWhiteSpace(selectedName))
-            {
-                errorMessage =
-                    "The selected rule has no usable name and cannot be deleted safely.";
-                return false;
-            }
-
-            if (selectedRule.Direction is not
-                (Directions.Incoming or Directions.Outgoing))
-            {
-                errorMessage =
-                    "The selected row does not identify exactly one inbound or " +
-                    "outbound Windows Firewall rule. Refresh the rule list and " +
-                    "select one individual rule.";
-                return false;
-            }
-
-            INetFwPolicy2? firewallPolicy = null;
-            INetFwRules? rulesCollection = null;
-            INetFwRule2? matchedRule = null;
-
-            try
-            {
-                firewallPolicy = GetLocalPolicy();
-                rulesCollection = firewallPolicy.Rules;
-
-                int matchingNameCount = 0;
-
-                foreach (INetFwRule2 rule in rulesCollection)
+            AdvancedRuleViewModel selectedRule,
+            out string errorMessage)
                 {
-                    bool keepRule = false;
+                    errorMessage = string.Empty;
+
+                    if (selectedRule == null)
+                    {
+                        errorMessage = "The selected rule definition was missing.";
+                        return false;
+                    }
+
+                    if (selectedRule.Direction is not
+                        (Directions.Incoming or Directions.Outgoing))
+                    {
+                        errorMessage =
+                            "The selected row does not identify exactly one inbound or " +
+                            "outbound Windows Firewall rule.";
+                        return false;
+                    }
 
                     try
                     {
-                        string existingName =
-                            ReadOptionalString(() => rule.Name);
+                        List<FirewallRuleSnapshot> matches =
+                            GetAllRulesMapped(CreateRuleSnapshot)
+                                .Where(snapshot =>
+                                    SnapshotMatchesViewModel(
+                                        snapshot,
+                                        selectedRule))
+                                .ToList();
 
-                        if (string.Equals(
-                                existingName,
-                                selectedName,
-                                StringComparison.OrdinalIgnoreCase))
+                        if (matches.Count == 0)
                         {
-                            matchingNameCount++;
-
-                            if (matchingNameCount == 1)
-                            {
-                                matchedRule = rule;
-                                keepRule = true;
-                            }
+                            errorMessage =
+                                $"No current Windows Firewall rule named " +
+                                $"'{selectedRule.Name}' still matches the selected rule. " +
+                                "Refresh the rule list and try again.";
+                            return false;
                         }
+
+                        if (matches.Count > 1)
+                        {
+                            errorMessage =
+                                $"Windows Firewall contains {matches.Count} completely " +
+                                $"indistinguishable copies of '{selectedRule.Name}'. Minimal " +
+                                "Firewall cannot determine which copy was selected. No rule " +
+                                "was deleted.";
+                            return false;
+                        }
+
+                        RemoveSnapshotsTransactionally(
+                            matches,
+                            "DeleteSelectedRule");
+
+                        List<FirewallRuleSnapshot> remaining =
+                            GetAllRulesMapped(CreateRuleSnapshot)
+                                .Where(snapshot =>
+                                    AreRulesExactlyEqual(
+                                        snapshot,
+                                        matches[0]))
+                                .ToList();
+
+                        if (remaining.Count > 0)
+                        {
+                            errorMessage =
+                                "The selected firewall rule remained after deletion.";
+                            return false;
+                        }
+
+                        return true;
                     }
-                    finally
+                    catch (Exception ex)
                     {
-                        if (!keepRule && rule != null)
-                        {
-                            Marshal.ReleaseComObject(rule);
-                        }
+                        errorMessage =
+                            $"The selected rule could not be deleted safely: {ex.Message}";
+                        return false;
                     }
                 }
-
-                if (matchingNameCount == 0 || matchedRule == null)
-                {
-                    errorMessage =
-                        $"The rule '{selectedName}' no longer exists. Refresh " +
-                        "the rule list before trying again.";
-                    return false;
-                }
-
-                if (matchingNameCount > 1)
-                {
-                    errorMessage =
-                        $"Windows Firewall contains {matchingNameCount} rules " +
-                        $"named '{selectedName}'. Windows exposes name-only " +
-                        "removal through INetFwRules.Remove, so Minimal Firewall " +
-                        "cannot safely determine which duplicate would be deleted. " +
-                        "No rules were changed. Rename or remove the duplicates " +
-                        "in Windows Defender Firewall with Advanced Security, " +
-                        "refresh, and try again.";
-                    return false;
-                }
-
-                FirewallRuleSnapshot currentSnapshot =
-                    CreateRuleSnapshot(matchedRule);
-
-                if (!SnapshotMatchesViewModel(
-                        currentSnapshot,
-                        selectedRule))
-                {
-                    errorMessage =
-                        $"The rule '{selectedName}' changed after it was loaded. " +
-                        "No rule was deleted. Refresh the rule list, review the " +
-                        "current settings, and try again.";
-                    return false;
-                }
-
-                rulesCollection.Remove(selectedName);
-                return true;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                errorMessage =
-                    "Windows denied the rule deletion. Run Minimal Firewall as " +
-                    "administrator and try again.";
-                return false;
-            }
-            catch (FileNotFoundException)
-            {
-                errorMessage =
-                    $"The rule '{selectedName}' no longer exists. Refresh the " +
-                    "rule list before trying again.";
-                return false;
-            }
-            catch (COMException ex)
-            {
-                errorMessage =
-                    $"Windows Firewall rejected the rule deletion " +
-                    $"(0x{ex.HResult:X8}): {ex.Message}";
-                return false;
-            }
-            catch (Exception ex)
-            {
-                errorMessage =
-                    $"The selected rule could not be deleted safely: {ex.Message}";
-                return false;
-            }
-            finally
-            {
-                if (matchedRule != null)
-                {
-                    Marshal.ReleaseComObject(matchedRule);
-                }
-
-                if (rulesCollection != null)
-                {
-                    Marshal.ReleaseComObject(rulesCollection);
-                }
-
-                if (firewallPolicy != null)
-                {
-                    Marshal.ReleaseComObject(firewallPolicy);
-                }
-            }
-        }
 
         private static bool SnapshotMatchesViewModel(
             FirewallRuleSnapshot snapshot,
@@ -837,45 +813,11 @@ namespace MinimalFirewall
                     "No rules were deleted.");
             }
 
-            List<FirewallRuleSnapshot> allRules =
-                GetAllRulesMapped(CreateRuleSnapshot);
 
-            var targetNames = plan.ExistingRules
-                .Select(rule => rule.Name)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            List<string> ambiguousNames = allRules
-                .Where(rule => targetNames.Contains(rule.Name))
-                .GroupBy(
-                    rule => rule.Name,
-                    StringComparer.OrdinalIgnoreCase)
-                .Where(group => group.Count() != 1)
-                .Select(group => group.Key)
-                .OrderBy(
-                    name => name,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (ambiguousNames.Count > 0)
-            {
-                throw new InvalidOperationException(
-                    "Application-wide deletion was stopped before deleting " +
-                    "anything because Windows Firewall contains duplicate rule " +
-                    "names: " +
-                    string.Join(", ", ambiguousNames.Take(5)) +
-                    (ambiguousNames.Count > 5
-                        ? $" and {ambiguousNames.Count - 5} more."
-                        : string.Empty) +
-                    " INetFwRules.Remove deletes by name, so Minimal Firewall " +
-                    "cannot safely guarantee which duplicate would be removed.");
-            }
-
-            List<string> namesToDelete = plan.ExistingRules
-                .Select(rule => rule.Name)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            DeleteRulesByName(namesToDelete);
+            RemoveSnapshotsTransactionally(
+                plan.ExistingRules,
+                "DeleteApplicationRules");
 
             ApplicationDeletionPlan remaining =
                 BuildApplicationDeletionPlan(plan.AppPath);
@@ -999,133 +941,186 @@ namespace MinimalFirewall
             string appPath,
             Directions directions,
             string action)
-        {
-            ApplicationReplacementPlan plan =
-                BuildApplicationReplacementPlan(appPath, directions, action);
-
-            ValidateApplicationReplacement(plan);
-
-            List<FirewallRuleSnapshot> replacements =
-                BuildReplacementSnapshots(plan);
-
-            // Validate every replacement COM rule before deleting anything.
-            foreach (FirewallRuleSnapshot replacement in replacements)
-            {
-                ValidateSnapshotCanBeCreated(replacement);
-            }
-
-            List<FirewallRuleSnapshot> allRules =
-                GetAllRulesMapped(CreateRuleSnapshot);
-
-                        HashSet<string> targetNames = plan.ExistingRules
-                            .Select(rule => rule.Name)
-                            .Where(name => !string.IsNullOrWhiteSpace(name))
-                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                        List<string> duplicateNames = allRules
-                            .Where(rule => targetNames.Contains(rule.Name))
-                            .GroupBy(
-                                rule => rule.Name,
-                                StringComparer.OrdinalIgnoreCase)
-                            .Where(group => group.Count() != 1)
-                            .Select(group => group.Key)
-                            .OrderBy(
-                                name => name,
-                                StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-
-            if (duplicateNames.Count > 0)
-            {
-                throw new InvalidOperationException(
-                    "Replacement was stopped before deleting anything because " +
-                    "Windows Firewall contains duplicate matching rule names: " +
-                    string.Join(", ", duplicateNames.Take(5)) +
-                    (duplicateNames.Count > 5
-                        ? $" and {duplicateNames.Count - 5} more."
-                        : string.Empty) +
-                    " Windows Firewall removes rules by name, so these rules " +
-                    "cannot be snapshotted and restored safely.");
-            }
-
-            List<string> existingNames = plan.ExistingRules
-                .Select(r => r.Name)
-                .Where(n => !string.IsNullOrWhiteSpace(n))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var createdNames = new List<string>();
-
-            try
-            {
-                DeleteRulesByName(existingNames);
-
-                // Confirm that deletion really completed before adding replacements.
-                ApplicationReplacementPlan afterDelete =
-                    BuildApplicationReplacementPlan(
-                        plan.AppPath,
-                        plan.Directions,
-                        plan.Action);
-
-                if (afterDelete.ExistingRules.Count != 0)
                 {
-                    throw new InvalidOperationException(
-                        $"{afterDelete.ExistingRules.Count} matching firewall " +
-                        "rule(s) remained after deletion. Replacement was stopped.");
-                }
+                    ApplicationReplacementPlan plan =
+                        BuildApplicationReplacementPlan(
+                            appPath,
+                            directions,
+                            action);
 
-                foreach (FirewallRuleSnapshot replacement in replacements)
-                {
-                    CreateRuleFromSnapshot(replacement);
-                    createdNames.Add(replacement.Name);
-                }
+                    ValidateApplicationReplacement(plan);
 
-                VerifyReplacement(plan, replacements);
-            }
-            catch (Exception replacementError)
-            {
-                var rollbackErrors = new List<string>();
+                    List<FirewallRuleSnapshot> replacements =
+                        BuildReplacementSnapshots(plan);
 
-                try
-                {
-                    DeleteRulesByName(
-                        createdNames
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToList());
-                }
-                catch (Exception ex)
-                {
-                    rollbackErrors.Add(
-                        $"Could not remove replacement rules: {ex.Message}");
-                }
+                    // Validate every replacement object before changing existing rules.
 
-                foreach (FirewallRuleSnapshot original in plan.ExistingRules)
-                {
+                    foreach (FirewallRuleSnapshot replacement in replacements)
+                    {
+                        ValidateSnapshotCanBeCreated(replacement);
+                    }
+
+                    //  Re-read immediately before mutation so a stale preview cannot delete newly changed rules.
+
+                    ApplicationReplacementPlan preMutationPlan =
+                        BuildApplicationReplacementPlan(
+                            plan.AppPath,
+                            plan.Directions,
+                            plan.Action);
+
+                    if (!SnapshotCollectionsMatchExactly(
+                            plan.ExistingRules,
+                            preMutationPlan.ExistingRules))
+                    {
+                        throw new InvalidOperationException(
+                            "The matching Windows Firewall rules changed after the " +
+                            "replacement preview was created. Nothing was deleted. " +
+                            "Refresh the rule list and try again.");
+                    }
+
+                    var createdReplacementSnapshots =
+                        new List<FirewallRuleSnapshot>();
+
+                    bool originalsRemoved = false;
+
                     try
                     {
-                        CreateRuleFromSnapshot(original);
+                        RemoveExactRulesTransactionally(plan);
+                        originalsRemoved = true;
+
+                        ApplicationReplacementPlan afterDelete =
+                            BuildApplicationReplacementPlan(
+                                plan.AppPath,
+                                plan.Directions,
+                                plan.Action);
+
+                        if (afterDelete.ExistingRules.Count != 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"{afterDelete.ExistingRules.Count} matching firewall " +
+                                "rule(s) remained after transactional deletion.");
+                        }
+
+                        // Every newly created rule must have a unique name so verification and rollback remain deterministic.
+
+                        List<FirewallRuleSnapshot> allRemainingRules =
+                            GetAllRulesMapped(CreateRuleSnapshot);
+
+                        for (int index = 0; index < replacements.Count; index++)
+                        {
+                            FirewallRuleSnapshot requested = replacements[index];
+
+                            string uniqueName = requested.Name;
+                            int suffix = 2;
+
+                            while (allRemainingRules.Any(existing =>
+                                       string.Equals(
+                                           existing.Name,
+                                           uniqueName,
+                                           StringComparison.OrdinalIgnoreCase)) ||
+                                   createdReplacementSnapshots.Any(existing =>
+                                       string.Equals(
+                                           existing.Name,
+                                           uniqueName,
+                                           StringComparison.OrdinalIgnoreCase)))
+                            {
+                                uniqueName = $"{requested.Name} ({suffix})";
+                                suffix++;
+                            }
+
+                            FirewallRuleSnapshot uniqueReplacement =
+                                requested with
+                                {
+                                    Name = uniqueName
+                                };
+
+                            ValidateSnapshotCanBeCreated(uniqueReplacement);
+                            CreateRuleFromSnapshot(uniqueReplacement);
+
+                            createdReplacementSnapshots.Add(uniqueReplacement);
+                        }
+
+                        VerifyReplacement(
+                            plan,
+                            createdReplacementSnapshots);
                     }
-                    catch (Exception ex)
+                    catch (Exception replacementError)
                     {
-                        rollbackErrors.Add(
-                            $"Could not restore '{original.Name}': {ex.Message}");
+                        var rollbackErrors = new List<string>();
+
+                        foreach (FirewallRuleSnapshot created in
+                                 createdReplacementSnapshots)
+                        {
+                            try
+                            {
+                                DeleteRulesByName([created.Name]);
+                            }
+                            catch (Exception ex)
+                            {
+                                rollbackErrors.Add(
+                                    $"Could not remove replacement rule " +
+                                    $"'{created.Name}': {ex.Message}");
+                            }
+                        }
+
+                        if (originalsRemoved)
+                        {
+                            foreach (FirewallRuleSnapshot original in
+                                     plan.ExistingRules)
+                            {
+                                try
+                                {
+                                    CreateRuleFromSnapshot(original);
+                                }
+                                catch (Exception ex)
+                                {
+                                    rollbackErrors.Add(
+                                        $"Could not restore '{original.Name}': " +
+                                        ex.Message);
+                                }
+                            }
+
+                            try
+                            {
+                                ApplicationReplacementPlan restoredPlan =
+                                    BuildApplicationReplacementPlan(
+                                        plan.AppPath,
+                                        plan.Directions,
+                                        plan.Action);
+
+                                if (!SnapshotCollectionsMatchExactly(
+                                        plan.ExistingRules,
+                                        restoredPlan.ExistingRules))
+                                {
+                                    rollbackErrors.Add(
+                                        "The restored firewall rules did not exactly match " +
+                                        "the original snapshots.");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                rollbackErrors.Add(
+                                    "Could not verify restoration: " + ex.Message);
+                            }
+                        }
+
+                        if (rollbackErrors.Count == 0)
+                        {
+                            throw new InvalidOperationException(
+                                "The replacement failed. The original firewall rules " +
+                                $"were restored. Details: {replacementError.Message}",
+                                replacementError);
+                        }
+
+                        throw new InvalidOperationException(
+                            "The replacement failed and rollback was incomplete. " +
+                            $"Original error: {replacementError.Message}\r\n\r\n" +
+                            string.Join(
+                                "\r\n",
+                                rollbackErrors.Take(5)),
+                            replacementError);
                     }
                 }
-
-                if (rollbackErrors.Count == 0)
-                {
-                    throw new InvalidOperationException(
-                        "The replacement failed. The original firewall rules " +
-                        $"were restored. Details: {replacementError.Message}",
-                        replacementError);
-                }
-
-                throw new InvalidOperationException(
-                    "The replacement failed and rollback was incomplete. " +
-                    $"Original error: {replacementError.Message}\r\n\r\n" +
-                    string.Join("\r\n", rollbackErrors.Take(5)),
-                    replacementError);
-            }
-        }
 
         private static ApplicationReplacementPlan BuildApplicationReplacementPlan(
             string appPath,
@@ -1698,71 +1693,47 @@ namespace MinimalFirewall
 
         public static void DeleteRulesByName(List<string> ruleNames)
         {
-            if (ruleNames.Count == 0)
+            if (ruleNames == null || ruleNames.Count == 0)
             {
                 return;
             }
 
-            INetFwPolicy2? firewallPolicy = null;
-            INetFwRules? rulesCollection = null;
-            var failures = new List<string>();
+            var requestedNames = ruleNames
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(NormalizeRuleText)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            try
+            if (requestedNames.Count == 0)
             {
-                firewallPolicy = GetLocalPolicy();
-                rulesCollection = firewallPolicy.Rules;
-
-                foreach (string name in ruleNames
-                    .Where(value => !string.IsNullOrWhiteSpace(value))
-                    .Distinct(StringComparer.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        rulesCollection.Remove(name);
-                    }
-                    catch (FileNotFoundException)
-                    {
-                        // Deletion is already satisfied.
-                    }
-                    catch (COMException ex)
-                        when (ex.HResult ==
-                              HRESULT_FROM_WIN32_ERROR_FILE_NOT_FOUND)
-                    {
-                        // Deletion is already satisfied.
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(
-                            $"[ERROR] DeleteRulesByName ('{name}'): " +
-                            $"{ex.GetType().Name}: {ex.Message}");
-
-                        failures.Add($"'{name}': {ex.Message}");
-                    }
-                }
-            }
-            finally
-            {
-                if (rulesCollection != null)
-                {
-                    Marshal.ReleaseComObject(rulesCollection);
-                }
-
-                if (firewallPolicy != null)
-                {
-                    Marshal.ReleaseComObject(firewallPolicy);
-                }
+                return;
             }
 
-            if (failures.Count > 0)
+            List<FirewallRuleSnapshot> targets =
+                GetAllRulesMapped(CreateRuleSnapshot)
+                    .Where(snapshot =>
+                        requestedNames.Contains(snapshot.Name))
+                    .ToList();
+
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            RemoveSnapshotsTransactionally(
+                targets,
+                "DeleteByName");
+
+            List<FirewallRuleSnapshot> remaining =
+                GetAllRulesMapped(CreateRuleSnapshot)
+                    .Where(snapshot =>
+                        requestedNames.Contains(snapshot.Name))
+                    .ToList();
+
+            if (remaining.Count > 0)
             {
                 throw new InvalidOperationException(
-                    "One or more firewall rules could not be deleted:\r\n" +
-                    string.Join(
-                        "\r\n",
-                        failures.Take(5)) +
-                    (failures.Count > 5
-                        ? $"\r\n...and {failures.Count - 5} more."
-                        : string.Empty));
+                    $"{remaining.Count} requested firewall rule(s) remained after " +
+                    "deletion. Refresh the rule list and review the remaining rules.");
             }
         }
 
@@ -1906,6 +1877,508 @@ namespace MinimalFirewall
                 left.EdgeTraversal == right.EdgeTraversal;
         }
 
+        private static bool AreRulesDuplicateSettingsEqual(
+            FirewallRuleSnapshot left,
+            FirewallRuleSnapshot right)
+        {
+            static bool EqualText(string? first, string? second) =>
+                string.Equals(
+                    NormalizeRuleText(first),
+                    NormalizeRuleText(second),
+                    StringComparison.OrdinalIgnoreCase);
+
+            return
+                EqualText(left.Description, right.Description) &&
+                string.Equals(
+                    NormalizeRulePath(left.ApplicationName),
+                    NormalizeRulePath(right.ApplicationName),
+                    StringComparison.OrdinalIgnoreCase) &&
+                EqualText(left.ServiceName, right.ServiceName) &&
+                left.Protocol == right.Protocol &&
+                EqualText(left.LocalPorts, right.LocalPorts) &&
+                EqualText(left.RemotePorts, right.RemotePorts) &&
+                EqualText(
+                    left.IcmpTypesAndCodes,
+                    right.IcmpTypesAndCodes) &&
+                EqualText(left.LocalAddresses, right.LocalAddresses) &&
+                EqualText(left.RemoteAddresses, right.RemoteAddresses) &&
+                left.Direction == right.Direction &&
+                left.Action == right.Action &&
+                left.Enabled == right.Enabled &&
+                left.Profiles == right.Profiles &&
+                EqualText(left.Grouping, right.Grouping) &&
+                EqualText(left.InterfaceTypes, right.InterfaceTypes) &&
+                left.EdgeTraversal == right.EdgeTraversal;
+        }
+
+        private static bool SnapshotCollectionsMatchExactly(
+            IReadOnlyCollection<FirewallRuleSnapshot> expected,
+            IReadOnlyCollection<FirewallRuleSnapshot> actual)
+                {
+                    if (expected.Count != actual.Count)
+                    {
+                        return false;
+                    }
+
+                    var unmatched =
+                        new List<FirewallRuleSnapshot>(actual);
+
+                    foreach (FirewallRuleSnapshot expectedRule in expected)
+                    {
+                        int matchingIndex = unmatched.FindIndex(actualRule =>
+                            AreRulesExactlyEqual(expectedRule, actualRule));
+
+                        if (matchingIndex < 0)
+                        {
+                            return false;
+                        }
+
+                        unmatched.RemoveAt(matchingIndex);
+                    }
+
+                    return unmatched.Count == 0;
+                }
+
+        private static void RemoveSnapshotsTransactionally(
+            IReadOnlyCollection<FirewallRuleSnapshot> requestedSnapshots,
+            string operation)
+                {
+                    if (requestedSnapshots.Count == 0)
+                    {
+                        return;
+                    }
+
+                    if (requestedSnapshots.Any(snapshot =>
+                        string.IsNullOrWhiteSpace(snapshot.Name)))
+                    {
+                        throw new InvalidOperationException(
+                            "At least one target firewall rule has no usable name. " +
+                            "Nothing was deleted.");
+                    }
+
+                    INetFwPolicy2? firewallPolicy = null;
+                    INetFwRules? rulesCollection = null;
+                    var liveTargets = new List<(
+                        INetFwRule2 Rule,
+                        FirewallRuleSnapshot Snapshot,
+                        string TransactionName)>();
+
+                    bool liveInterfacesReleased = false;
+
+                    try
+                    {
+                        firewallPolicy = GetLocalPolicy();
+                        rulesCollection = firewallPolicy.Rules;
+
+                        foreach (INetFwRule2 rule in rulesCollection)
+                        {
+                            bool keepRule = false;
+
+                            try
+                            {
+                                FirewallRuleSnapshot liveSnapshot =
+                                    CreateRuleSnapshot(rule);
+
+                                int requestedMatchIndex = requestedSnapshots
+                                    .Select((snapshot, index) => new
+                                    {
+                                        Snapshot = snapshot,
+                                        Index = index
+                                    })
+                                    .Where(item =>
+                                        !liveTargets.Any(existing =>
+                                            AreRulesExactlyEqual(
+                                                existing.Snapshot,
+                                                item.Snapshot)) ||
+                                        requestedSnapshots.Count(candidate =>
+                                            AreRulesExactlyEqual(
+                                                candidate,
+                                                item.Snapshot)) >
+                                        liveTargets.Count(existing =>
+                                            AreRulesExactlyEqual(
+                                                existing.Snapshot,
+                                                item.Snapshot)))
+                                    .Where(item =>
+                                        AreRulesExactlyEqual(
+                                            item.Snapshot,
+                                            liveSnapshot))
+                                    .Select(item => item.Index)
+                                    .DefaultIfEmpty(-1)
+                                    .First();
+
+                                if (requestedMatchIndex >= 0)
+                                {
+                                    string transactionName =
+                                        CreateTransactionRuleName(
+                                            operation,
+                                            liveTargets.Count);
+
+                                    liveTargets.Add((
+                                        rule,
+                                        liveSnapshot,
+                                        transactionName));
+                                    keepRule = true;
+                                }
+                            }
+                            finally
+                            {
+                                if (!keepRule && rule != null)
+                                {
+                                    Marshal.ReleaseComObject(rule);
+                                }
+                            }
+                        }
+
+                        List<FirewallRuleSnapshot> liveSnapshots =
+                            liveTargets
+                                .Select(target => target.Snapshot)
+                                .ToList();
+
+                        if (!SnapshotCollectionsMatchExactly(
+                                requestedSnapshots,
+                                liveSnapshots))
+                        {
+                            throw new InvalidOperationException(
+                                "The target Windows Firewall rules changed before the " +
+                                "operation began. Nothing was deleted. Refresh the rule " +
+                                "list and try again.");
+                        }
+
+                        foreach (var target in liveTargets)
+                        {
+                            target.Rule.Name = target.TransactionName;
+
+                            string actualName =
+                                ReadOptionalString(() => target.Rule.Name);
+
+                            if (!string.Equals(
+                                    actualName,
+                                    target.TransactionName,
+                                    StringComparison.Ordinal))
+                            {
+                                throw new InvalidOperationException(
+                                    "Windows Firewall did not preserve a transaction-unique " +
+                                    "temporary rule name. Nothing was deleted.");
+                            }
+
+                            FirewallRuleSnapshot renamedSnapshot =
+                                CreateRuleSnapshot(target.Rule);
+
+                            FirewallRuleSnapshot expectedRenamedSnapshot =
+                                target.Snapshot with
+                                {
+                                    Name = target.TransactionName
+                                };
+
+                            if (!AreRulesExactlyEqual(
+                                    expectedRenamedSnapshot,
+                                    renamedSnapshot))
+                            {
+                                throw new InvalidOperationException(
+                                    "A firewall rule changed unexpectedly while it was " +
+                                    "being prepared for deletion. Nothing was deleted.");
+                            }
+                        }
+
+                        List<FirewallRuleSnapshot> afterRename =
+                            GetAllRulesMapped(CreateRuleSnapshot);
+
+                        foreach (var target in liveTargets)
+                        {
+                            int transactionNameCount = afterRename.Count(snapshot =>
+                                string.Equals(
+                                    snapshot.Name,
+                                    target.TransactionName,
+                                    StringComparison.OrdinalIgnoreCase));
+
+                            if (transactionNameCount != 1)
+                            {
+                                throw new InvalidOperationException(
+                                    "A temporary firewall transaction name was not unique. " +
+                                    "Nothing was deleted.");
+                            }
+                        }
+
+                        foreach (var target in liveTargets)
+                        {
+                            Marshal.ReleaseComObject(target.Rule);
+                        }
+
+                        liveInterfacesReleased = true;
+
+                        foreach (var target in liveTargets)
+                        {
+                            rulesCollection.Remove(target.TransactionName);
+                        }
+
+                        List<FirewallRuleSnapshot> remaining =
+                            GetAllRulesMapped(CreateRuleSnapshot);
+
+                        foreach (var target in liveTargets)
+                        {
+                            if (remaining.Any(snapshot =>
+                                string.Equals(
+                                    snapshot.Name,
+                                    target.TransactionName,
+                                    StringComparison.OrdinalIgnoreCase)))
+                            {
+                                throw new InvalidOperationException(
+                                    $"Temporary rule '{target.TransactionName}' remained " +
+                                    "after deletion.");
+                            }
+                        }
+                    }
+                    catch (Exception removalError)
+                    {
+                        var rollbackErrors = new List<string>();
+
+                        if (!liveInterfacesReleased)
+                        {
+                            foreach (var target in liveTargets)
+                            {
+                                try
+                                {
+                                    ApplySnapshotToComRule(
+                                        target.Rule,
+                                        target.Snapshot);
+
+                                    FirewallRuleSnapshot restored =
+                                        CreateRuleSnapshot(target.Rule);
+
+                                    if (!AreRulesExactlyEqual(
+                                            target.Snapshot,
+                                            restored))
+                                    {
+                                        rollbackErrors.Add(
+                                            $"Rule '{target.Snapshot.Name}' did not exactly " +
+                                            "match its original snapshot after rollback.");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    rollbackErrors.Add(
+                                        $"Could not restore '{target.Snapshot.Name}': " +
+                                        ex.Message);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            List<FirewallRuleSnapshot> currentRules;
+
+                            try
+                            {
+                                currentRules =
+                                    GetAllRulesMapped(CreateRuleSnapshot);
+                            }
+                            catch (Exception ex)
+                            {
+                                currentRules = [];
+                                rollbackErrors.Add(
+                                    "Could not inspect firewall rules during rollback: " +
+                                    ex.Message);
+                            }
+
+                            foreach (var target in liveTargets)
+                            {
+                                try
+                                {
+                                    bool transactionRuleStillExists =
+                                        currentRules.Any(snapshot =>
+                                            string.Equals(
+                                                snapshot.Name,
+                                                target.TransactionName,
+                                                StringComparison.OrdinalIgnoreCase));
+
+                                    if (transactionRuleStillExists)
+                                    {
+                                        INetFwPolicy2? rollbackPolicy = null;
+                                        INetFwRules? rollbackRules = null;
+                                        INetFwRule2? rollbackTarget = null;
+
+                                        try
+                                        {
+                                            rollbackPolicy = GetLocalPolicy();
+                                            rollbackRules = rollbackPolicy.Rules;
+
+                                            foreach (INetFwRule2 candidate in rollbackRules)
+                                            {
+                                                bool keepCandidate = false;
+
+                                                try
+                                                {
+                                                    FirewallRuleSnapshot candidateSnapshot =
+                                                        CreateRuleSnapshot(candidate);
+
+                                                    if (string.Equals(
+                                                            candidateSnapshot.Name,
+                                                            target.TransactionName,
+                                                            StringComparison.OrdinalIgnoreCase))
+                                                    {
+                                                        if (rollbackTarget != null)
+                                                        {
+                                                            throw new InvalidOperationException(
+                                                                "The transaction name was no " +
+                                                                "longer unique during rollback.");
+                                                        }
+
+                                                        rollbackTarget = candidate;
+                                                        keepCandidate = true;
+                                                    }
+                                                }
+                                                finally
+                                                {
+                                                    if (!keepCandidate && candidate != null)
+                                                    {
+                                                        Marshal.ReleaseComObject(candidate);
+                                                    }
+                                                }
+                                            }
+
+                                            if (rollbackTarget == null)
+                                            {
+                                                CreateRuleFromSnapshot(target.Snapshot);
+                                            }
+                                            else
+                                            {
+                                                ApplySnapshotToComRule(
+                                                    rollbackTarget,
+                                                    target.Snapshot);
+
+                                                FirewallRuleSnapshot restored =
+                                                    CreateRuleSnapshot(rollbackTarget);
+
+                                                if (!AreRulesExactlyEqual(
+                                                        target.Snapshot,
+                                                        restored))
+                                                {
+                                                    rollbackErrors.Add(
+                                                        $"Rule '{target.Snapshot.Name}' did " +
+                                                        "not exactly match its original " +
+                                                        "snapshot after rollback.");
+                                                }
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            if (rollbackTarget != null)
+                                            {
+                                                Marshal.ReleaseComObject(rollbackTarget);
+                                            }
+
+                                            if (rollbackRules != null)
+                                            {
+                                                Marshal.ReleaseComObject(rollbackRules);
+                                            }
+
+                                            if (rollbackPolicy != null)
+                                            {
+                                                Marshal.ReleaseComObject(rollbackPolicy);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        CreateRuleFromSnapshot(target.Snapshot);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    rollbackErrors.Add(
+                                        $"Could not restore '{target.Snapshot.Name}': " +
+                                        ex.Message);
+                                }
+                            }
+                        }
+
+                        try
+                        {
+                            List<FirewallRuleSnapshot> restoredRules =
+                                GetAllRulesMapped(CreateRuleSnapshot);
+
+                            foreach (FirewallRuleSnapshot requested in requestedSnapshots)
+                            {
+                                int expectedCount = requestedSnapshots.Count(candidate =>
+                                    AreRulesExactlyEqual(candidate, requested));
+
+                                int actualCount = restoredRules.Count(candidate =>
+                                    AreRulesExactlyEqual(candidate, requested));
+
+                                if (actualCount < expectedCount)
+                                {
+                                    rollbackErrors.Add(
+                                        $"Rollback did not restore every copy of " +
+                                        $"'{requested.Name}'.");
+                                    break;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            rollbackErrors.Add(
+                                "Rollback verification failed: " + ex.Message);
+                        }
+
+                        if (rollbackErrors.Count == 0)
+                        {
+                            throw new InvalidOperationException(
+                                "Firewall rule deletion failed. The original rules were " +
+                                "restored. Details: " + removalError.Message,
+                                removalError);
+                        }
+
+                        throw new InvalidOperationException(
+                            "Firewall rule deletion failed and rollback was incomplete. " +
+                            $"Original error: {removalError.Message}\r\n\r\n" +
+                            string.Join("\r\n", rollbackErrors.Take(5)),
+                            removalError);
+                    }
+                    finally
+                    {
+                        if (!liveInterfacesReleased)
+                        {
+                            foreach (var target in liveTargets)
+                            {
+                                try
+                                {
+                                    Marshal.ReleaseComObject(target.Rule);
+                                }
+                                catch (InvalidComObjectException)
+                                {
+                                    // Already released.
+                                }
+                            }
+                        }
+
+                        if (rulesCollection != null)
+                        {
+                            Marshal.ReleaseComObject(rulesCollection);
+                        }
+
+                        if (firewallPolicy != null)
+                        {
+                            Marshal.ReleaseComObject(firewallPolicy);
+                        }
+                    }
+                }
+
+        private static string CreateTransactionRuleName(
+            string operation,
+            int index)
+        {
+            return
+                $"Minimal Firewall Transaction - {operation} - " +
+                $"{Guid.NewGuid():N} - {index}";
+        }
+
+        private static void RemoveExactRulesTransactionally(
+    ApplicationReplacementPlan validatedPlan)
+        {
+            RemoveSnapshotsTransactionally(
+                validatedPlan.ExistingRules,
+                "ApplicationReplacement");
+        }
+
         private static bool IsMinimalFirewallRule(
             FirewallRuleSnapshot rule)
         {
@@ -1920,6 +2393,10 @@ namespace MinimalFirewall
                 string.Equals(
                     rule.Grouping,
                     MFWConstants.WildcardRuleGroup,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    rule.Grouping,
+                    "Minimal Firewall",
                     StringComparison.OrdinalIgnoreCase);
         }
 
@@ -2086,148 +2563,219 @@ namespace MinimalFirewall
 
         public static int DeleteExactDuplicatefirewallRules()
         {
-            INetFwPolicy2? firewallPolicy = null;
-            INetFwRules? rulesCollection = null;
+            List<FirewallRuleSnapshot> snapshots =
+                GetAllRulesMapped(CreateRuleSnapshot)
+                    .Where(IsMinimalFirewallRule)
+                    .ToList();
 
-            try
+            var duplicateGroups =
+                new List<List<FirewallRuleSnapshot>>();
+
+            foreach (FirewallRuleSnapshot snapshot in snapshots)
             {
-                firewallPolicy = GetLocalPolicy();
-                rulesCollection = firewallPolicy.Rules;
+                List<FirewallRuleSnapshot>? matchingGroup =
+                    duplicateGroups.FirstOrDefault(group =>
+                        AreRulesDuplicateSettingsEqual(
+                            group[0],
+                            snapshot));
 
-                var snapshots =
-                    new List<FirewallRuleSnapshot>();
-
-                foreach (INetFwRule2 rule in rulesCollection)
+                if (matchingGroup == null)
                 {
+                    duplicateGroups.Add([snapshot]);
+                }
+                else
+                {
+                    matchingGroup.Add(snapshot);
+                }
+            }
+
+            List<FirewallRuleSnapshot> duplicatesToRemove =
+                duplicateGroups
+                    .Where(group => group.Count > 1)
+                    .SelectMany(group => group.Skip(1))
+                    .ToList();
+
+            if (duplicatesToRemove.Count == 0)
+            {
+                return 0;
+            }
+
+            RemoveSnapshotsTransactionally(
+                duplicatesToRemove,
+                "ExactDuplicateCleanup");
+
+            List<FirewallRuleSnapshot> remaining =
+                GetAllRulesMapped(CreateRuleSnapshot)
+                    .Where(IsMinimalFirewallRule)
+                    .ToList();
+
+            foreach (List<FirewallRuleSnapshot> originalGroup in
+                     duplicateGroups.Where(group => group.Count > 1))
+            {
+                FirewallRuleSnapshot fingerprint = originalGroup[0];
+
+                int actualRemainingCount = remaining.Count(snapshot =>
+                    AreRulesDuplicateSettingsEqual(
+                        snapshot,
+                        fingerprint));
+
+                if (actualRemainingCount != 1)
+                {
+                    throw new InvalidOperationException(
+                        "Exact duplicate cleanup could not be verified. " +
+                        $"Rule '{fingerprint.Name}' expected exactly one remaining " +
+                        $"copy, but Windows Firewall returned " +
+                        $"{actualRemainingCount}.");
+                }
+            }
+
+            return duplicatesToRemove.Count;
+        }
+
+        public static bool UpdateRuleRemoteAddresses(
+            AdvancedRuleViewModel originalRule,
+            string newRemoteAddresses,
+            out string errorMessage)
+                {
+                    errorMessage = string.Empty;
+
+                    if (originalRule == null)
+                    {
+                        errorMessage = "The original firewall rule definition was missing.";
+                        return false;
+                    }
+
+                    string normalizedAddresses =
+                        NormalizeRuleText(newRemoteAddresses);
+
+                    if (string.IsNullOrWhiteSpace(normalizedAddresses))
+                    {
+                        errorMessage = "The new remote address list was empty.";
+                        return false;
+                    }
+
+                    INetFwPolicy2? firewallPolicy = null;
+                    INetFwRules? rulesCollection = null;
+                    INetFwRule2? matchedRule = null;
+
                     try
                     {
-                        FirewallRuleSnapshot snapshot =
-                            CreateRuleSnapshot(rule);
+                        firewallPolicy = GetLocalPolicy();
+                        rulesCollection = firewallPolicy.Rules;
 
-                        if (IsMinimalFirewallRule(snapshot))
+                        int fingerprintMatches = 0;
+
+                        foreach (INetFwRule2 rule in rulesCollection)
                         {
-                            snapshots.Add(snapshot);
+                            bool keepRule = false;
+
+                            try
+                            {
+                                FirewallRuleSnapshot snapshot =
+                                    CreateRuleSnapshot(rule);
+
+                                if (SnapshotMatchesViewModel(
+                                        snapshot,
+                                        originalRule))
+                                {
+                                    fingerprintMatches++;
+
+                                    if (fingerprintMatches == 1)
+                                    {
+                                        matchedRule = rule;
+                                        keepRule = true;
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                if (!keepRule && rule != null)
+                                {
+                                    Marshal.ReleaseComObject(rule);
+                                }
+                            }
                         }
+
+                        if (fingerprintMatches == 0 || matchedRule == null)
+                        {
+                            errorMessage =
+                                $"No current Windows Firewall rule named " +
+                                $"'{originalRule.Name}' still matches the rule that was " +
+                                "loaded. Refresh the rule list before trying again.";
+                            return false;
+                        }
+
+                        if (fingerprintMatches > 1)
+                        {
+                            errorMessage =
+                                $"Windows Firewall contains {fingerprintMatches} completely " +
+                                $"indistinguishable copies of '{originalRule.Name}'. Minimal " +
+                                "Firewall cannot safely choose one rule to update.";
+                            return false;
+                        }
+
+                        FirewallRuleSnapshot before =
+                            CreateRuleSnapshot(matchedRule);
+
+                        matchedRule.RemoteAddresses = normalizedAddresses;
+
+                        FirewallRuleSnapshot after =
+                            CreateRuleSnapshot(matchedRule);
+
+                        FirewallRuleSnapshot expected =
+                            before with
+                            {
+                                RemoteAddresses = normalizedAddresses
+                            };
+
+                        if (!AreRulesExactlyEqual(expected, after))
+                        {
+                            ApplySnapshotToComRule(matchedRule, before);
+
+                            FirewallRuleSnapshot restored =
+                                CreateRuleSnapshot(matchedRule);
+
+                            if (!AreRulesExactlyEqual(before, restored))
+                            {
+                                errorMessage =
+                                    "Windows Firewall did not preserve the requested remote " +
+                                    "addresses, and the original rule could not be fully " +
+                                    "restored.";
+                                return false;
+                            }
+
+                            errorMessage =
+                                "Windows Firewall did not preserve the requested remote " +
+                                "addresses. The original rule was restored.";
+                            return false;
+                        }
+
+                        return true;
                     }
-                    catch (COMException ex)
+                    catch (Exception ex)
                     {
-                        Debug.WriteLine(
-                            $"[WARN] Duplicate cleanup could not inspect " +
-                            $"a rule. HResult: 0x{ex.HResult:X8}. " +
-                            $"Message: {ex.Message}");
+                        errorMessage =
+                            $"The remote addresses could not be updated safely: {ex.Message}";
+                        return false;
                     }
                     finally
                     {
-                        if (rule != null)
+                        if (matchedRule != null)
                         {
-                            Marshal.ReleaseComObject(rule);
+                            Marshal.ReleaseComObject(matchedRule);
+                        }
+
+                        if (rulesCollection != null)
+                        {
+                            Marshal.ReleaseComObject(rulesCollection);
+                        }
+
+                        if (firewallPolicy != null)
+                        {
+                            Marshal.ReleaseComObject(firewallPolicy);
                         }
                     }
                 }
-
-                var duplicateGroups =
-                    new List<List<FirewallRuleSnapshot>>();
-
-                foreach (FirewallRuleSnapshot snapshot in snapshots)
-                {
-                    List<FirewallRuleSnapshot>? matchingGroup =
-                        duplicateGroups.FirstOrDefault(group =>
-                            AreRulesExactlyEqual(group[0], snapshot));
-
-                    if (matchingGroup == null)
-                    {
-                        duplicateGroups.Add([snapshot]);
-                    }
-                    else
-                    {
-                        matchingGroup.Add(snapshot);
-                    }
-                }
-
-                int removedCount = 0;
-
-                foreach (List<FirewallRuleSnapshot> group in
-                         duplicateGroups.Where(g => g.Count > 1))
-                {
-                    // Keep the first copy and remove only the extras.
-                    for (int index = 1; index < group.Count; index++)
-                    {
-                        string duplicateName = group[index].Name;
-
-                        if (string.IsNullOrWhiteSpace(duplicateName))
-                        {
-                            continue;
-                        }
-
-                        try
-                        {
-                            rulesCollection.Remove(duplicateName);
-                            removedCount++;
-
-                            Debug.WriteLine(
-                                $"[INFO] Removed exact duplicate rule: " +
-                                $"'{duplicateName}'.");
-                        }
-                        catch (FileNotFoundException)
-                        {
-                            Debug.WriteLine(
-                                $"[WARN] Duplicate rule '{duplicateName}' " +
-                                "was already removed.");
-                        }
-                        catch (COMException ex)
-                        {
-                            Debug.WriteLine(
-                                $"[ERROR] Failed to remove duplicate rule " +
-                                $"'{duplicateName}'. " +
-                                $"HResult: 0x{ex.HResult:X8}. " +
-                                $"Message: {ex.Message}");
-                        }
-                    }
-                }
-
-                return removedCount;
-            }
-            finally
-            {
-                if (rulesCollection != null)
-                {
-                    Marshal.ReleaseComObject(rulesCollection);
-                }
-
-                if (firewallPolicy != null)
-                {
-                    Marshal.ReleaseComObject(firewallPolicy);
-                }
-            }
-        }
-
-        public static void UpdateRuleRemoteAddresses(string ruleName, string newRemoteAddresses)
-        {
-            if (string.IsNullOrEmpty(ruleName) || string.IsNullOrEmpty(newRemoteAddresses)) return;
-
-            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy?.Rules == null) return;
-
-            INetFwRules? rulesCollection = null;
-            try
-            {
-                rulesCollection = firewallPolicy.Rules;
-                if (rulesCollection.Item(ruleName) is INetFwRule2 rule)
-                {
-                    rule.RemoteAddresses = newRemoteAddresses;
-                    Marshal.ReleaseComObject(rule);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[ERROR] UpdateRuleRemoteAddresses ('{ruleName}'): Failed. {ex.Message}");
-            }
-            finally
-            {
-                if (rulesCollection != null) Marshal.ReleaseComObject(rulesCollection);
-                if (firewallPolicy != null) Marshal.ReleaseComObject(firewallPolicy);
-            }
-        }
 
         public static List<string> DeleteRulesByDescription(string description)
         {
@@ -2267,58 +2815,167 @@ namespace MinimalFirewall
             }
         }
 
-        private static void SetRuleEnabledState(string ruleName, bool isEnabled, string callerName)
-        {
-            if (string.IsNullOrEmpty(ruleName))
-            {
-                return;
-            }
-
-            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null)
-            {
-                return;
-            }
-
-            INetFwRules? rulesCollection = null;
-            try
-            {
-                rulesCollection = firewallPolicy.Rules;
-                if (rulesCollection == null)
+        private static bool SetRuleEnabledState(
+            AdvancedRuleViewModel originalRule,
+            bool isEnabled,
+            string callerName,
+            out string errorMessage)
                 {
-                    return;
+                    errorMessage = string.Empty;
+
+                    if (originalRule == null)
+                    {
+                        errorMessage = "The original firewall rule definition was missing.";
+                        return false;
+                    }
+
+                    INetFwPolicy2? firewallPolicy = null;
+                    INetFwRules? rulesCollection = null;
+                    INetFwRule2? matchedRule = null;
+
+                    try
+                    {
+                        firewallPolicy = GetLocalPolicy();
+                        rulesCollection = firewallPolicy.Rules;
+
+                        int fingerprintMatches = 0;
+
+                        foreach (INetFwRule2 rule in rulesCollection)
+                        {
+                            bool keepRule = false;
+
+                            try
+                            {
+                                FirewallRuleSnapshot snapshot =
+                                    CreateRuleSnapshot(rule);
+
+                                if (SnapshotMatchesViewModel(
+                                        snapshot,
+                                        originalRule))
+                                {
+                                    fingerprintMatches++;
+
+                                    if (fingerprintMatches == 1)
+                                    {
+                                        matchedRule = rule;
+                                        keepRule = true;
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                if (!keepRule && rule != null)
+                                {
+                                    Marshal.ReleaseComObject(rule);
+                                }
+                            }
+                        }
+
+                        if (fingerprintMatches == 0 || matchedRule == null)
+                        {
+                            errorMessage =
+                                $"No current Windows Firewall rule named " +
+                                $"'{originalRule.Name}' still matches the rule that was " +
+                                "loaded. Refresh and try again.";
+                            return false;
+                        }
+
+                        if (fingerprintMatches > 1)
+                        {
+                            errorMessage =
+                                $"Windows Firewall contains {fingerprintMatches} completely " +
+                                $"indistinguishable copies of '{originalRule.Name}'. Minimal " +
+                                "Firewall cannot safely choose one rule.";
+                            return false;
+                        }
+
+                        FirewallRuleSnapshot before =
+                            CreateRuleSnapshot(matchedRule);
+
+                        if (before.Enabled == isEnabled)
+                        {
+                            return true;
+                        }
+
+                        matchedRule.Enabled = isEnabled;
+
+                        FirewallRuleSnapshot after =
+                            CreateRuleSnapshot(matchedRule);
+
+                        FirewallRuleSnapshot expected =
+                            before with
+                            {
+                                Enabled = isEnabled
+                            };
+
+                        if (!AreRulesExactlyEqual(expected, after))
+                        {
+                            ApplySnapshotToComRule(matchedRule, before);
+
+                            FirewallRuleSnapshot restored =
+                                CreateRuleSnapshot(matchedRule);
+
+                            if (!AreRulesExactlyEqual(before, restored))
+                            {
+                                errorMessage =
+                                    "Windows Firewall did not preserve the enabled-state " +
+                                    "change, and the original rule could not be fully restored.";
+                                return false;
+                            }
+
+                            errorMessage =
+                                "Windows Firewall did not preserve the enabled-state change. " +
+                                "The original rule was restored.";
+                            return false;
+                        }
+
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(
+                            $"[ERROR] {callerName} ('{originalRule.Name}'): " +
+                            $"{ex.GetType().Name}: {ex.Message}");
+
+                        errorMessage =
+                            $"The enabled state could not be changed safely: {ex.Message}";
+                        return false;
+                    }
+                    finally
+                    {
+                        if (matchedRule != null)
+                        {
+                            Marshal.ReleaseComObject(matchedRule);
+                        }
+
+                        if (rulesCollection != null)
+                        {
+                            Marshal.ReleaseComObject(rulesCollection);
+                        }
+
+                        if (firewallPolicy != null)
+                        {
+                            Marshal.ReleaseComObject(firewallPolicy);
+                        }
+                    }
                 }
 
-                if (rulesCollection.Item(ruleName) is INetFwRule2 rule)
-                {
-                    rule.Enabled = isEnabled;
-                    Marshal.ReleaseComObject(rule);
-                }
-            }
-            catch (FileNotFoundException)
-            {
-                Debug.WriteLine($"[WARN] {callerName}: Rule '{ruleName}' not found.");
-            }
-            catch (COMException ex)
-            {
-                Debug.WriteLine($"[ERROR] {callerName} ('{ruleName}'): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-            }
-            finally
-            {
-                if (rulesCollection != null)
-                {
-                    Marshal.ReleaseComObject(rulesCollection);
-                }
+                public bool DisableRule(
+                    AdvancedRuleViewModel rule,
+                    out string errorMessage) =>
+                    SetRuleEnabledState(
+                        rule,
+                        false,
+                        nameof(DisableRule),
+                        out errorMessage);
 
-                if (firewallPolicy != null)
-                {
-                    Marshal.ReleaseComObject(firewallPolicy);
-                }
-            }
-        }
-
-        public void DisableRuleByName(string ruleName) => SetRuleEnabledState(ruleName, false, nameof(DisableRuleByName));
-
-        public void EnableRuleByName(string ruleName) => SetRuleEnabledState(ruleName, true, nameof(EnableRuleByName));
+                public bool EnableRule(
+                    AdvancedRuleViewModel rule,
+                    out string errorMessage) =>
+                    SetRuleEnabledState(
+                        rule,
+                        true,
+                        nameof(EnableRule),
+                        out errorMessage);
     }
 }

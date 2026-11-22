@@ -89,17 +89,31 @@ namespace MinimalFirewall
 
         private static bool IsMfwRule(INetFwRule2 rule)
         {
-            // Optimize: Read COM property once
             string grouping = rule.Grouping;
             if (string.IsNullOrEmpty(grouping))
             {
                 return false;
             }
 
-            // Optimize: Use safe casing comparison
-            return grouping.EndsWith(MFWConstants.firewallRulesuffix, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(grouping, MFWConstants.MainRuleGroup, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(grouping, MFWConstants.WildcardRuleGroup, StringComparison.OrdinalIgnoreCase);
+            return grouping.EndsWith(
+                   MFWConstants.firewallRulesuffix,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   MFWConstants.MainRuleGroup,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   MFWConstants.WildcardRuleGroup,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   "Minimal Firewall",
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   "Minimal Firewall (Wildcard)",
+                   StringComparison.OrdinalIgnoreCase);
         }
 
         private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
@@ -933,23 +947,39 @@ namespace MinimalFirewall
             }
         }
 
-        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction)
-        {
-            if (change.Rule is { Name: string ruleName })
-            {
-                if (enable)
+        private void ProcessForeignRule(
+            FirewallRuleChange change,
+            bool enable,
+            string logAction)
                 {
-                    firewallService.EnableRuleByName(ruleName);
-                }
-                else
-                {
-                    firewallService.DisableRuleByName(ruleName);
-                }
+                    AdvancedRuleViewModel? rule = change?.Rule;
 
-                activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
-                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}'");
-            }
-        }
+                    if (rule == null || string.IsNullOrWhiteSpace(rule.Name))
+                    {
+                        throw new InvalidOperationException(
+                            "The foreign firewall rule definition was missing.");
+                    }
+
+                    bool changed = enable
+                        ? firewallService.EnableRule(
+                            rule,
+                            out string errorMessage)
+                        : firewallService.DisableRule(
+                            rule,
+                            out errorMessage);
+
+                    if (!changed)
+                    {
+                        throw new InvalidOperationException(errorMessage);
+                    }
+
+                    activityLogger.LogChange(
+                        $"Foreign Rule {logAction}",
+                        rule.Name);
+
+                    activityLogger.LogDebug(
+                        $"Sentry: {logAction} foreign rule '{rule.Name}'");
+                }
 
         public void AcceptForeignRule(FirewallRuleChange change) =>
             ProcessForeignRule(change, true, "Accepted");

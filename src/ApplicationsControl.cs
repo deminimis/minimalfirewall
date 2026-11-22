@@ -881,9 +881,9 @@ public sealed class ApplicationsControl : UserControl
             $"Direction: {rule.Direction}\r\n" +
             $"Action: {rule.Status}\r\n" +
             $"Protocol: {rule.ProtocolName}\r\n\r\n" +
-            "Only this individual rule will be requested for deletion. " +
-            "If another Windows Firewall rule has the same name, deletion " +
-            "will be refused before INetFwRules.Remove is called.\r\n\r\n" +
+            "Only this individual rule will be deleted. Rules with the same " +
+            "name but different settings will not be affected. Deletion is " +
+            "stopped if the selected rule cannot be identified uniquely.\r\n\r\n" +
             "Continue?",
             "Delete selected rule",
             MsgIcon.Warning,
