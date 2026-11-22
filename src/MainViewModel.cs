@@ -304,9 +304,20 @@ namespace MinimalFirewall
                             if (!string.Equals(rule.RemoteAddresses, newRemoteAddresses, StringComparison.OrdinalIgnoreCase))
                             {
                                 _activityLogger.LogDebug($"DNS Refresh: IPs changed for '{rule.Name}'. Updating Windows Firewall.");
-                                FirewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
-                                rule.RemoteAddresses = newRemoteAddresses; // Update local cache
-                                rulesUpdated = true;
+                                if (FirewallRuleService.UpdateRuleRemoteAddresses(
+                                        rule,
+                                        newRemoteAddresses,
+                                        out string updateError))
+                                        {
+                                            rule.RemoteAddresses = newRemoteAddresses;
+                                            rulesUpdated = true;
+                                        }
+                                        else
+                                        {
+                                            _activityLogger.LogDebug(
+                                                $"DNS Refresh: Rule '{rule.Name}' was not updated: " +
+                                                updateError);
+                                        }
                             }
                         }
                     }
@@ -978,90 +989,56 @@ namespace MinimalFirewall
 
         public async Task CleanUpOrphanedRulesAsync()
         {
-            using var statusForm =
-                new StatusForm(
-                    "Scanning for orphaned and duplicate rules...",
-                    _appSettings);
-
-            statusForm.Show(Form.ActiveForm);
-
-            var progress = new Progress<int>(
-                percentage => statusForm.UpdateProgress(percentage));
-
-            using var cts = new CancellationTokenSource();
-
-            statusForm.FormClosing += (_, e) =>
-            {
-                if (e.CloseReason == CloseReason.UserClosing)
-                {
-                    cts.Cancel();
-                }
-            };
-
             try
             {
-                var deletedOrphanedRules =
+                StatusTextChanged?.Invoke(
+                    "Scanning for orphaned firewall rules...");
+
+                List<string> deletedOrphanedRules =
                     await _actionsService.CleanUpOrphanedRulesAsync(
-                        cts.Token,
-                        progress);
+                        CancellationToken.None,
+                        progress: null);
 
-                if (cts.IsCancellationRequested)
-                {
-                    return;
-                }
+                StatusTextChanged?.Invoke(
+                    "Scanning for exact duplicate firewall rules...");
 
-                statusForm.UpdateStatus(
-                    "Scanning for exact duplicate rules...");
+                int deletedDuplicateCount =
+                     FirewallRuleService.DeleteExactDuplicatefirewallRules();
 
-                int deletedDuplicateCount = await Task.Run(
-                    FirewallRuleService.DeleteExactDuplicatefirewallRules,
-                    cts.Token);
-
-                if (cts.IsCancellationRequested)
-                {
-                    return;
-                }
+                StatusTextChanged?.Invoke(
+                    "Refreshing firewall rules...");
 
                 ClearRulesCache();
 
                 await RefreshRulesDataAsync(
-                    CancellationToken.None);
+                    CancellationToken.None,
+                    progress: null);
 
                 ApplyRulesFilters(
                     _appSettings.RulesSearchText,
                     GetCurrentRuleTypeFilters(),
                     _appSettings.FilterSystem);
 
-                statusForm.Close();
+                StatusTextChanged?.Invoke("Cleanup complete.");
 
                 Messenger.MessageBox(
-                    $"{deletedOrphanedRules.Count} orphaned rule(s) deleted.\n" +
+                    $"{deletedOrphanedRules.Count} orphaned rule(s) deleted.\r\n" +
                     $"{deletedDuplicateCount} exact duplicate rule(s) deleted.",
                     "Cleanup Complete",
                     MessageBoxButtons.OK,
                     MsgIcon.None);
             }
-            catch (OperationCanceledException)
-            {
-                if (!statusForm.IsDisposed)
-                {
-                    statusForm.Close();
-                }
-            }
             catch (Exception ex)
             {
+                StatusTextChanged?.Invoke("Cleanup failed.");
+
                 _activityLogger.LogException(
                     "CleanUpOrphanedRulesAsync",
                     ex);
 
-                if (!statusForm.IsDisposed)
-                {
-                    statusForm.Close();
-                }
-
                 Messenger.MessageBox(
-                    "An error occurred during cleanup. " +
-                    "Please check the debug log for details.",
+                    "Cleanup did not complete.\r\n\r\n" +
+                    $"{ex.GetType().Name}: {ex.Message}",
                     "Cleanup Error",
                     MessageBoxButtons.OK,
                     MsgIcon.Error);
