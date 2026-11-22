@@ -1,14 +1,12 @@
 using DarkModeForms;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace MinimalFirewall
 {
     // Small code-only dialog listing running programs, used to allow one without browsing for its file.
     public partial class ProcessPickerForm : Form
     {
-        private const uint ProcessQueryLimitedInformation = 0x1000;
-
         private readonly ListBox _list = new() { Dock = DockStyle.Fill, IntegralHeight = false, BorderStyle = BorderStyle.None };
         private readonly Button _okButton = new() { Text = "Allow", DialogResult = DialogResult.OK, Enabled = false, AutoSize = true };
         private readonly Button _cancelButton = new() { Text = "Cancel", DialogResult = DialogResult.Cancel, AutoSize = true };
@@ -82,7 +80,7 @@ namespace MinimalFirewall
             return [.. byPath.Values.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)];
         }
 
-        // QueryFullProcessImageName needs only limited query rights and avoids loading the module list.
+        // Same lookup as MainViewModel.ResolveProcessInfo; protected and exited processes return null.
         public static string? GetProcessPath(int processId)
         {
             if (processId <= 4)
@@ -90,21 +88,14 @@ namespace MinimalFirewall
                 return null;
             }
 
-            IntPtr handle = OpenProcess(ProcessQueryLimitedInformation, false, processId);
-            if (handle == IntPtr.Zero)
-            {
-                return null;
-            }
-
             try
             {
-                var buffer = new System.Text.StringBuilder(1024);
-                int size = buffer.Capacity;
-                return QueryFullProcessImageNameW(handle, 0, buffer, ref size) ? buffer.ToString(0, size) : null;
+                using var process = Process.GetProcessById(processId);
+                return process.MainModule?.FileName;
             }
-            finally
+            catch (Exception ex) when (ex is ArgumentException or Win32Exception or InvalidOperationException)
             {
-                CloseHandle(handle);
+                return null;
             }
         }
 
@@ -112,16 +103,5 @@ namespace MinimalFirewall
         {
             public override string ToString() => $"{Name}  —  {Path}";
         }
-
-        [LibraryImport("kernel32.dll", SetLastError = true)]
-        private static partial IntPtr OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool QueryFullProcessImageNameW(IntPtr process, uint flags, System.Text.StringBuilder exeName, ref int size);
-
-        [LibraryImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool CloseHandle(IntPtr handle);
     }
 }
