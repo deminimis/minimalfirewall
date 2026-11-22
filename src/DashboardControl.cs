@@ -534,8 +534,7 @@ namespace MinimalFirewall
                 if (dialog.ShowDialog(FindForm()) == DialogResult.OK && dialog.RuleVm != null)
                 {
                     // The dialog only returns the rule: create it, as the other callers do.
-                    var payload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
-                    _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, payload));
+                    _viewModel.CreateAdvancedRule(dialog.RuleVm, dialog.RuleVm.InterfaceTypes, dialog.RuleVm.IcmpTypesAndCodes);
 
                     // Clean up the alert from dashboard
                     _viewModel.ProcessDashboardAction(pending, "Ignore");

@@ -770,8 +770,7 @@ namespace MinimalFirewall
                         using var dialog = new CreateAdvancedRuleForm(_actionsService, pending, _appSettings);
                         if (dialog.ShowDialog(this) == DialogResult.OK && dialog.RuleVm != null)
                         {
-                            var rulePayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, rulePayload));
+                            _mainViewModel.CreateAdvancedRule(dialog.RuleVm, dialog.RuleVm.InterfaceTypes, dialog.RuleVm.IcmpTypesAndCodes);
                             // The rule decides from now on: only clear the pending notification.
                             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection,
                                 new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Ignore" }));
