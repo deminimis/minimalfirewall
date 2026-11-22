@@ -120,8 +120,7 @@ namespace MinimalFirewall
             try
             {
                 string json = JsonSerializer.Serialize(apps, UwpAppJsonContext.Default.ListUwpApp);
-                File.WriteAllText(_cachePath + ".tmp", json);
-                File.Move(_cachePath + ".tmp", _cachePath, overwrite: true);
+                FileUtility.WriteAllTextAtomic(_cachePath, json);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
