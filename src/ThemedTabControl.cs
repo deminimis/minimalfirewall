@@ -182,8 +182,6 @@ namespace DarkModeForms
 
             // Reference the global theme palette
             var colors = Theme.Colors;
-            // Check the active palette rather than the system setting
-            bool isDarkMode = colors.Surface.R < 128;
 
             // Draw the background for this specific tab ONLY
             using (var tabBackColor = new SolidBrush(isSelected ? colors.Surface : (Parent?.BackColor ?? colors.Background)))
@@ -232,24 +230,7 @@ namespace DarkModeForms
                     float dpiScale = e.Graphics.DpiY / 96f;
                     int iconWidth = ImageList.ImageSize.Width;
                     int iconX = tabRect.X + (tabRect.Width - iconWidth) / 2;
-                    Image imageToDraw = icon;
-
-                    // Skip recoloring for items explicitly tagged or specific icons
-                    bool skipRecolor = tabPage.ImageKey == "locked.png" ||
-                        (tabPage.Tag?.ToString() == "NoRecolor");
-
-                    if (isDarkMode && !skipRecolor)
-                    {
-                        // Safely create a unique cache key based on Index or Key
-                        string cacheKey = (string.IsNullOrEmpty(tabPage.ImageKey) ? tabPage.ImageIndex.ToString() : tabPage.ImageKey) + "_dark";
-
-                        if (!_darkIconCache.TryGetValue(cacheKey, out Image? cachedImage))
-                        {
-                            cachedImage = RecolorImage(icon, Color.White);
-                            _darkIconCache[cacheKey] = cachedImage;
-                        }
-                        imageToDraw = cachedImage ?? icon;
-                    }
+                    Image imageToDraw = GetThemedIcon(tabPage, icon);
 
                     int iconHeight = ImageList.ImageSize.Height;
 
