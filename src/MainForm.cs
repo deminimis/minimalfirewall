@@ -105,9 +105,8 @@ namespace MinimalFirewall
             _mainViewModel.PopupRequired += OnPopupRequired;
             _mainViewModel.RulePopupRequired += OnRulePopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
-            _mainViewModel.SystemChangesUpdated += () => {
-                UpdateUiWithChangesCount();
-            };
+            _mainViewModel.SystemChangesUpdated +=
+                OnSystemChangesUpdated;
 
             settingsControl1.ThemeChanged += UpdateThemeAndColors;
             settingsControl1.IconVisibilityChanged += UpdateIconColumnVisibility;
@@ -115,11 +114,6 @@ namespace MinimalFirewall
             settingsControl1.AutoRefreshTimerChanged += SetupAutoRefreshTimer;
             settingsControl1.TrafficMonitorSettingChanged += OnTrafficMonitorSettingChanged;
             rulesControl1.DataRefreshRequested += async () => await ForceDataRefreshAsync(false, false);
-            applicationsControl1.DataRefreshRequested += async () =>
-            {
-                _mainViewModel.ClearRulesCache();
-                await ForceDataRefreshAsync(false, false);
-            };
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
             SetupTrayIcon();
 
@@ -160,10 +154,17 @@ namespace MinimalFirewall
             // Initialize UI Controls with Services
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, _wildcardRuleService, _actionsService, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList);
-            applicationsControl1.Initialize(_mainViewModel, _actionsService, _backgroundTaskService, _appSettings, _iconService);
+            applicationsControl1.Initialize(
+                _mainViewModel,
+                _appSettings,
+                _iconService,
+                _actionsService,
+                _backgroundTaskService);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService, _appSettings);
+            groupsControl1.Initialize(
+                _groupManager,
+                _backgroundTaskService);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
@@ -280,7 +281,7 @@ namespace MinimalFirewall
 
             UpdateTrayStatus();
 
-            await Task.Run(_actionsService.ReenableMfwRules);
+            await Task.Run(_actionsService.ReenablefirewallRules);
 
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _activityLogger.LogDebug("Application Started: " + versionInfo);
@@ -568,6 +569,11 @@ namespace MinimalFirewall
                     notifyIcon.Icon = _unlockedTrayIcon;
                 }
             }
+        }
+
+        private void OnSystemChangesUpdated()
+        {
+            UpdateUiWithChangesCount();
         }
 
         private void UpdateUiWithChangesCount()
@@ -1017,6 +1023,10 @@ namespace MinimalFirewall
                 _mainViewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
                 _mainViewModel.PopupRequired -= OnPopupRequired;
                 _mainViewModel.RulePopupRequired -= OnRulePopupRequired;
+                _mainViewModel.DashboardActionProcessed -=
+                    OnDashboardActionProcessed;
+                _mainViewModel.SystemChangesUpdated -=
+                    OnSystemChangesUpdated;
                 _backgroundTaskService.QueueCountChanged -= OnQueueCountChanged;
                 _backgroundTaskService.WildcardRulesChanged -= OnWildcardRulesChanged;
                 Application.Exit();

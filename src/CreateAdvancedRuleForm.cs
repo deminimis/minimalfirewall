@@ -63,11 +63,18 @@ namespace MinimalFirewall
             }
         }
 
-        public CreateAdvancedRuleForm(FirewallActionsService actionsService, AdvancedRuleViewModel ruleToEdit, AppSettings appSettings)
-            : this(actionsService, appSettings)
+        public CreateAdvancedRuleForm(
+    FirewallActionsService actionsService,
+    AdvancedRuleViewModel ruleToEdit,
+    AppSettings appSettings)
+    : this(actionsService, appSettings)
         {
             _originalRuleVm = ruleToEdit;
             Text = "Edit Advanced Rule";
+
+            bothDirRadioButton.Enabled = false;
+            bothDirRadioButton.Text = "Both (create a new rule to use both directions)";
+
             PopulateFormFromRule(ruleToEdit);
         }
 
@@ -640,9 +647,9 @@ namespace MinimalFirewall
         private void AddGroupButton_Click(object sender, EventArgs e)
         {
             string newGroupName = groupComboBox.Text.Trim();
-            if (!string.IsNullOrWhiteSpace(newGroupName) && !newGroupName.EndsWith(MFWConstants.MfwRuleSuffix))
+            if (!string.IsNullOrWhiteSpace(newGroupName) && !newGroupName.EndsWith(MFWConstants.firewallRulesuffix))
             {
-                newGroupName += MFWConstants.MfwRuleSuffix;
+                newGroupName += MFWConstants.firewallRulesuffix;
             }
 
             if (!string.IsNullOrWhiteSpace(newGroupName) && !groupComboBox.Items.Contains(newGroupName))

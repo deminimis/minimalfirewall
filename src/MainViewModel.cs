@@ -109,11 +109,18 @@ namespace MinimalFirewall
             RulesListUpdated?.Invoke();
         }
 
-        public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
-        {
-            ApplicationRules = await _dataService.GetMfwRulesAsync(token);
-            AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
-        }
+        public async Task RefreshRulesDataAsync(
+            CancellationToken token,
+            IProgress<int>? progress = null)
+                {
+                    ApplicationRules =
+                        await _dataService.GetAllFirewallRulesAsync(token);
+
+                    token.ThrowIfCancellationRequested();
+
+                    AllAggregatedRules =
+                        await _dataService.GetAggregatedRulesAsync(token, progress);
+                }
 
         public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
         {
@@ -255,10 +262,10 @@ namespace MinimalFirewall
             try
             {
                 _activityLogger.LogDebug("DNS Refresh: Starting background check for domain rules.");
-                var mfwRules = await _dataService.GetMfwRulesAsync(CancellationToken.None);
+                var firewallRules = await _dataService.GetAllFirewallRulesAsync(CancellationToken.None);
 
                 // Find all rules containing our hidden domain tag
-                var domainRules = mfwRules.Where(r => r.Description != null && r.Description.Contains("[MFW-Domain:")).ToList();
+                var domainRules = firewallRules.Where(r => r.Description != null && r.Description.Contains("[MFW-Domain:")).ToList();
 
                 if (domainRules.Count == 0) return;
 
@@ -297,9 +304,20 @@ namespace MinimalFirewall
                             if (!string.Equals(rule.RemoteAddresses, newRemoteAddresses, StringComparison.OrdinalIgnoreCase))
                             {
                                 _activityLogger.LogDebug($"DNS Refresh: IPs changed for '{rule.Name}'. Updating Windows Firewall.");
-                                FirewallRuleService.UpdateRuleRemoteAddresses(rule.Name, newRemoteAddresses);
-                                rule.RemoteAddresses = newRemoteAddresses; // Update local cache
-                                rulesUpdated = true;
+                                if (FirewallRuleService.UpdateRuleRemoteAddresses(
+                                        rule,
+                                        newRemoteAddresses,
+                                        out string updateError))
+                                        {
+                                            rule.RemoteAddresses = newRemoteAddresses;
+                                            rulesUpdated = true;
+                                        }
+                                        else
+                                        {
+                                            _activityLogger.LogDebug(
+                                                $"DNS Refresh: Rule '{rule.Name}' was not updated: " +
+                                                updateError);
+                                        }
                             }
                         }
                     }
@@ -364,27 +382,7 @@ namespace MinimalFirewall
             ApplyRulesFilters(string.Empty, [], false);
         }
 
-        private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
-        {
-            return columnIndex switch
-            {
-                2 => rule => rule.InboundStatus,
-                3 => rule => rule.OutboundStatus,
-                4 => rule => rule.ProtocolName,
-                5 => rule => rule.LocalPorts,
-                6 => rule => rule.RemotePorts,
-                7 => rule => rule.LocalAddresses,
-                8 => rule => rule.RemoteAddresses,
-                9 => rule => rule.ApplicationName,
-                10 => rule => rule.ServiceName,
-                11 => rule => rule.Profiles,
-                12 => rule => rule.Grouping,
-                13 => rule => rule.Description,
-                14 => rule => rule.DateAdded ?? DateTime.MinValue,
-                15 => rule => rule.AutoAllowedPublisher,
-                _ => rule => rule.Name,
-            };
-        }
+       
 
         public void AddPendingConnection(PendingConnectionViewModel pending)
         {
@@ -732,31 +730,9 @@ namespace MinimalFirewall
             RulesListUpdated?.Invoke();
         }
 
-        public void DeleteRules(List<AggregatedRuleViewModel> rulesToDelete)
-        {
-            var wildcardRulesToDelete = rulesToDelete
-                .Where(i => i.Type == RuleType.Wildcard && i.WildcardDefinition != null)
-                .Select(i => i.WildcardDefinition!)
-                .ToList();
-            var standardRuleNamesToDelete = rulesToDelete
-                .Where(i => i.Type != RuleType.Wildcard)
-                .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
-                .ToList();
-            foreach (var wildcardRule in wildcardRulesToDelete)
-            {
-                var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload, "Deleting wildcard rule..."));
-                _wildcardRuleService.RemoveRule(wildcardRule);
-            }
+        
 
-            if (standardRuleNamesToDelete.Count > 0)
-            {
-                var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload, $"Deleting {standardRuleNamesToDelete.Count} rules..."));
-            }
-
-            AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
-        }
+        
 
         public static AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
         {
@@ -864,28 +840,51 @@ namespace MinimalFirewall
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
-            void processDetection()
+            void ProcessDetection()
             {
-                // Keep reported observations after a dashboard decision, bounded to this session.
-                // A blocked app retries many times; record each endpoint once so retries neither rebuild the
-                // Applications view on every event nor push other apps out of the bounded history.
-                bool alreadyReported = ReportedBlockedAttempts.Any(a =>
-                    a.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                    a.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase) &&
-                    a.RemoteAddress == pending.RemoteAddress && a.RemotePort == pending.RemotePort);
+                static bool Same(string? left, string? right) =>
+                    string.Equals(
+                        left ?? string.Empty,
+                        right ?? string.Empty,
+                        StringComparison.OrdinalIgnoreCase);
+
+                // Session history for each distinct application, direction, protocol, service, and remote endpoint.
+                bool alreadyReported = ReportedBlockedAttempts.Any(attempt =>
+                    Same(attempt.Protocol, pending.Protocol) &&
+                    Same(attempt.ServiceName, pending.ServiceName) &&
+                    Same(attempt.AppPath, pending.AppPath) &&
+                    Same(attempt.Direction, pending.Direction) &&
+                    Same(attempt.RemoteAddress, pending.RemoteAddress) &&
+                    Same(attempt.RemotePort, pending.RemotePort));
+
                 if (!alreadyReported)
                 {
-                    if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
+                    while (ReportedBlockedAttempts.Count >= 500)
+                    {
+                        ReportedBlockedAttempts.RemoveAt(0);
+                    }
+
                     ReportedBlockedAttempts.Add(pending);
                 }
-                bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+
+                bool alreadyPending = PendingConnections.Any(existing =>
+                    existing.AppPath.Equals(
+                        pending.AppPath,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    existing.Direction.Equals(
+                        pending.Direction,
+                        StringComparison.OrdinalIgnoreCase));
+
                 if (alreadyPending)
                 {
-                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (already in dashboard list)");
+                    _activityLogger.LogDebug(
+                        $"Ignoring duplicate pending connection for " +
+                        $"{pending.AppPath} (already in dashboard list)");
                     return;
                 }
 
                 AddPendingConnection(pending);
+
                 if (_appSettings.IsPopupsEnabled)
                 {
                     PopupRequired?.Invoke(pending);
@@ -894,11 +893,11 @@ namespace MinimalFirewall
 
             if (_uiContext != null)
             {
-                _uiContext.Post(_ => processDetection(), null);
+                _uiContext.Post(_ => ProcessDetection(), null);
             }
             else
             {
-                processDetection();
+                ProcessDetection();
             }
         }
 
@@ -990,90 +989,56 @@ namespace MinimalFirewall
 
         public async Task CleanUpOrphanedRulesAsync()
         {
-            using var statusForm =
-                new StatusForm(
-                    "Scanning for orphaned and duplicate rules...",
-                    _appSettings);
-
-            statusForm.Show(Form.ActiveForm);
-
-            var progress = new Progress<int>(
-                percentage => statusForm.UpdateProgress(percentage));
-
-            using var cts = new CancellationTokenSource();
-
-            statusForm.FormClosing += (_, e) =>
-            {
-                if (e.CloseReason == CloseReason.UserClosing)
-                {
-                    cts.Cancel();
-                }
-            };
-
             try
             {
-                var deletedOrphanedRules =
+                StatusTextChanged?.Invoke(
+                    "Scanning for orphaned firewall rules...");
+
+                List<string> deletedOrphanedRules =
                     await _actionsService.CleanUpOrphanedRulesAsync(
-                        cts.Token,
-                        progress);
+                        CancellationToken.None,
+                        progress: null);
 
-                if (cts.IsCancellationRequested)
-                {
-                    return;
-                }
+                StatusTextChanged?.Invoke(
+                    "Scanning for exact duplicate firewall rules...");
 
-                statusForm.UpdateStatus(
-                    "Scanning for exact duplicate rules...");
+                int deletedDuplicateCount =
+                     FirewallRuleService.DeleteExactDuplicatefirewallRules();
 
-                int deletedDuplicateCount = await Task.Run(
-                    FirewallRuleService.DeleteExactDuplicateMfwRules,
-                    cts.Token);
-
-                if (cts.IsCancellationRequested)
-                {
-                    return;
-                }
+                StatusTextChanged?.Invoke(
+                    "Refreshing firewall rules...");
 
                 ClearRulesCache();
 
                 await RefreshRulesDataAsync(
-                    CancellationToken.None);
+                    CancellationToken.None,
+                    progress: null);
 
                 ApplyRulesFilters(
                     _appSettings.RulesSearchText,
                     GetCurrentRuleTypeFilters(),
                     _appSettings.FilterSystem);
 
-                statusForm.Close();
+                StatusTextChanged?.Invoke("Cleanup complete.");
 
                 Messenger.MessageBox(
-                    $"{deletedOrphanedRules.Count} orphaned rule(s) deleted.\n" +
+                    $"{deletedOrphanedRules.Count} orphaned rule(s) deleted.\r\n" +
                     $"{deletedDuplicateCount} exact duplicate rule(s) deleted.",
                     "Cleanup Complete",
                     MessageBoxButtons.OK,
                     MsgIcon.None);
             }
-            catch (OperationCanceledException)
-            {
-                if (!statusForm.IsDisposed)
-                {
-                    statusForm.Close();
-                }
-            }
             catch (Exception ex)
             {
+                StatusTextChanged?.Invoke("Cleanup failed.");
+
                 _activityLogger.LogException(
                     "CleanUpOrphanedRulesAsync",
                     ex);
 
-                if (!statusForm.IsDisposed)
-                {
-                    statusForm.Close();
-                }
-
                 Messenger.MessageBox(
-                    "An error occurred during cleanup. " +
-                    "Please check the debug log for details.",
+                    "Cleanup did not complete.\r\n\r\n" +
+                    $"{ex.GetType().Name}: {ex.Message}",
                     "Cleanup Error",
                     MessageBoxButtons.OK,
                     MsgIcon.Error);
