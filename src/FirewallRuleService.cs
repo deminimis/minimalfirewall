@@ -233,12 +233,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            foreach (NET_FW_PROFILE_TYPE2_ profile in new[]
-            {
-                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN,
-                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE,
-                NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC
-            })
+            foreach (var (profile, _, _) in _profiles)
             {
                 try
                 {
