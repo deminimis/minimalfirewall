@@ -387,7 +387,8 @@ namespace MinimalFirewall
 
 
         // Consolidated helper for System Rules (Crypto/DHCP)
-        private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
+        private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable,
+            NET_FW_RULE_DIRECTION_ direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_ action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW)
         {
             INetFwRule2? rule = null;
             try
@@ -406,8 +407,8 @@ namespace MinimalFirewall
 
                         newRule.Name = ruleName;
                         newRule.Description = description;
-                        newRule.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT;
-                        newRule.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+                        newRule.Direction = direction;
+                        newRule.Action = action;
                         newRule.Grouping = MFWConstants.MainRuleGroup;
                         newRule.Enabled = true;
                         newRule.InterfaceTypes = "All"; 
@@ -482,59 +483,25 @@ namespace MinimalFirewall
 
         public void SetBlockAllTraffic(bool enable)
         {
-            try
-            {
-                if (enable)
-                {
-                    CreateBlockAllRule(BlockAllOutboundRuleName, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT);
-                    CreateBlockAllRule(BlockAllInboundRuleName, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN);
-                }
-                else
-                {
-                    FirewallRuleService.DeleteRulesByName([BlockAllOutboundRuleName, BlockAllInboundRuleName]);
-                }
+            const string description = "Blocks all network traffic, including allowed programs, until turned off from the Minimal Firewall tray menu.";
+            ManageSystemRule(BlockAllOutboundRuleName, description, "", "", ProtocolTypes.Any.Value, "*", "*", enable,
+                NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
+            ManageSystemRule(BlockAllInboundRuleName, description, "", "", ProtocolTypes.Any.Value, "*", "*", enable,
+                NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
 
-                activityLogger.LogChange("Block All Traffic", enable ? "Enabled" : "Disabled");
-            }
-            catch (Exception ex) when (ex is COMException or InvalidOperationException)
+            // ManageSystemRule only logs failures: read the state back so the user is told when nothing changed.
+            if (IsBlockAllTrafficEnabled() != enable)
             {
-                activityLogger.LogException($"SetBlockAllTraffic (enable: {enable})", ex);
                 SafeShowMessageBox("Failed to change the Block All Traffic rules.\nCheck debug_log.txt for details.",
                     "Block All Traffic", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
+
+            activityLogger.LogChange("Block All Traffic", enable ? "Enabled" : "Disabled");
         }
 
         private static bool IsBlockAllRuleName(string name) =>
             name == BlockAllOutboundRuleName || name == BlockAllInboundRuleName;
-
-        private static void CreateBlockAllRule(string ruleName, NET_FW_RULE_DIRECTION_ direction)
-        {
-            // Replace any stale or disabled copy so the rule always ends up enabled.
-            FirewallRuleService.DeleteRulesByName([ruleName]);
-
-            if (FwRuleType == null)
-            {
-                throw new InvalidOperationException("Could not load HNetCfg.FWRule type.");
-            }
-
-            var rule = (INetFwRule2)Activator.CreateInstance(FwRuleType)!;
-            try
-            {
-                rule.Name = ruleName;
-                rule.Description = "Blocks all network traffic, including allowed programs, until turned off from the Minimal Firewall tray menu.";
-                rule.Direction = direction;
-                rule.Action = NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-                rule.Grouping = MFWConstants.MainRuleGroup;
-                rule.InterfaceTypes = "All";
-                rule.Protocol = ProtocolTypes.Any.Value;
-                rule.Enabled = true;
-                FirewallRuleService.CreateRule(rule);
-            }
-            finally
-            {
-                Marshal.ReleaseComObject(rule);
-            }
-        }
 
         private void ManageCryptoServiceRule(bool enable)
         {
