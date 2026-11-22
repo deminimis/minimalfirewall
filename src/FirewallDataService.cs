@@ -490,60 +490,14 @@ namespace MinimalFirewall
                     continue;
                 }
 
-                // Conservative port matching
-                // * ports match all
-                // Specific ports must match (event port must be in rule's port list)
-                // If rule has specific ports but event value is empty, rule does NOT match
-                if (!string.IsNullOrEmpty(rule.RemotePorts) && rule.RemotePorts != "*")
+                // Conservative port and address matching: "*" matches all, a specific list must contain
+                // the event value, and a specific list never matches an event without that value.
+                if (!Covers(rule.RemotePorts, pending.RemotePort, PortMatches) ||
+                    !Covers(rule.LocalPorts, pending.LocalPort, PortMatches) ||
+                    !Covers(rule.RemoteAddresses, pending.RemoteAddress, AddressMatches) ||
+                    !Covers(rule.LocalAddresses, pending.LocalAddress, AddressMatches))
                 {
-                    if (string.IsNullOrEmpty(pending.RemotePort) || pending.RemotePort == "*")
-                    {
-                        // Rule has specific ports but event doesn't - cannot confirm match
-                        continue;
-                    }
-                    bool portMatch = rule.RemotePorts.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
-                        .Any(p => PortMatches(p.Trim(), pending.RemotePort));
-                    if (!portMatch) continue;
-                }
-
-                if (!string.IsNullOrEmpty(rule.LocalPorts) && rule.LocalPorts != "*")
-                {
-                    if (string.IsNullOrEmpty(pending.LocalPort) || pending.LocalPort == "*")
-                    {
-                        // Rule has specific ports but event doesn't - cannot confirm match
-                        continue;
-                    }
-                    bool portMatch = rule.LocalPorts.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
-                        .Any(p => PortMatches(p.Trim(), pending.LocalPort));
-                    if (!portMatch) continue;
-                }
-
-                // Conservative address matching
-                // * addresses match all
-                // Specific addresses must match (event address must be in rule's address list)
-                // If rule has specific addresses but event value is empty, rule does NOT match
-                if (!string.IsNullOrEmpty(rule.RemoteAddresses) && rule.RemoteAddresses != "*")
-                {
-                    if (string.IsNullOrEmpty(pending.RemoteAddress) || pending.RemoteAddress == "*")
-                    {
-                        // Rule has specific addresses but event doesn't - cannot confirm match
-                        continue;
-                    }
-                    bool addressMatch = rule.RemoteAddresses.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
-                        .Any(a => AddressMatches(a.Trim(), pending.RemoteAddress));
-                    if (!addressMatch) continue;
-                }
-
-                if (!string.IsNullOrEmpty(rule.LocalAddresses) && rule.LocalAddresses != "*")
-                {
-                    if (string.IsNullOrEmpty(pending.LocalAddress) || pending.LocalAddress == "*")
-                    {
-                        // Rule has specific addresses but event doesn't - cannot confirm match
-                        continue;
-                    }
-                    bool addressMatch = rule.LocalAddresses.Split(_separators, StringSplitOptions.RemoveEmptyEntries)
-                        .Any(a => AddressMatches(a.Trim(), pending.LocalAddress));
-                    if (!addressMatch) continue;
+                    continue;
                 }
 
                 // Conservative profile matching: the rule must cover every active profile.
@@ -585,6 +539,17 @@ namespace MinimalFirewall
 
             Debug.WriteLine($"[CheckMfwRuleStatus] No conservative match found for {pending.AppPath} - returning None to allow popup");
             return MfwRuleStatus.None;
+        }
+
+        private static bool Covers(string? ruleValues, string eventValue, Func<string, string, bool> matches)
+        {
+            if (string.IsNullOrEmpty(ruleValues) || ruleValues == "*")
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(eventValue) && eventValue != "*" &&
+                ruleValues.Split(_separators, StringSplitOptions.RemoveEmptyEntries).Any(v => matches(v.Trim(), eventValue));
         }
 
         private static bool PortMatches(string rulePort, string eventPort)
