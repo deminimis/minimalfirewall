@@ -109,11 +109,18 @@ namespace MinimalFirewall
             RulesListUpdated?.Invoke();
         }
 
-        public async Task RefreshRulesDataAsync(CancellationToken token, IProgress<int>? progress = null)
-        {
-            ApplicationRules = await _dataService.GetMfwRulesAsync(token);
-            AllAggregatedRules = await _dataService.GetAggregatedRulesAsync(token, progress);
-        }
+        public async Task RefreshRulesDataAsync(
+            CancellationToken token,
+            IProgress<int>? progress = null)
+                {
+                    ApplicationRules =
+                        await _dataService.GetAllFirewallRulesAsync(token);
+
+                    token.ThrowIfCancellationRequested();
+
+                    AllAggregatedRules =
+                        await _dataService.GetAggregatedRulesAsync(token, progress);
+                }
 
         public async Task RefreshLiveConnectionsAsync(CancellationToken token, IProgress<int>? progress = null)
         {
@@ -255,10 +262,10 @@ namespace MinimalFirewall
             try
             {
                 _activityLogger.LogDebug("DNS Refresh: Starting background check for domain rules.");
-                var mfwRules = await _dataService.GetMfwRulesAsync(CancellationToken.None);
+                var firewallRules = await _dataService.GetAllFirewallRulesAsync(CancellationToken.None);
 
                 // Find all rules containing our hidden domain tag
-                var domainRules = mfwRules.Where(r => r.Description != null && r.Description.Contains("[MFW-Domain:")).ToList();
+                var domainRules = firewallRules.Where(r => r.Description != null && r.Description.Contains("[MFW-Domain:")).ToList();
 
                 if (domainRules.Count == 0) return;
 
@@ -364,27 +371,7 @@ namespace MinimalFirewall
             ApplyRulesFilters(string.Empty, [], false);
         }
 
-        private static Func<AggregatedRuleViewModel, object> GetRuleKeySelector(int columnIndex)
-        {
-            return columnIndex switch
-            {
-                2 => rule => rule.InboundStatus,
-                3 => rule => rule.OutboundStatus,
-                4 => rule => rule.ProtocolName,
-                5 => rule => rule.LocalPorts,
-                6 => rule => rule.RemotePorts,
-                7 => rule => rule.LocalAddresses,
-                8 => rule => rule.RemoteAddresses,
-                9 => rule => rule.ApplicationName,
-                10 => rule => rule.ServiceName,
-                11 => rule => rule.Profiles,
-                12 => rule => rule.Grouping,
-                13 => rule => rule.Description,
-                14 => rule => rule.DateAdded ?? DateTime.MinValue,
-                15 => rule => rule.AutoAllowedPublisher,
-                _ => rule => rule.Name,
-            };
-        }
+       
 
         public void AddPendingConnection(PendingConnectionViewModel pending)
         {
@@ -732,31 +719,9 @@ namespace MinimalFirewall
             RulesListUpdated?.Invoke();
         }
 
-        public void DeleteRules(List<AggregatedRuleViewModel> rulesToDelete)
-        {
-            var wildcardRulesToDelete = rulesToDelete
-                .Where(i => i.Type == RuleType.Wildcard && i.WildcardDefinition != null)
-                .Select(i => i.WildcardDefinition!)
-                .ToList();
-            var standardRuleNamesToDelete = rulesToDelete
-                .Where(i => i.Type != RuleType.Wildcard)
-                .SelectMany(i => i.UnderlyingRules.Select(r => r.Name))
-                .ToList();
-            foreach (var wildcardRule in wildcardRulesToDelete)
-            {
-                var payload = new DeleteWildcardRulePayload { Wildcard = wildcardRule };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteWildcardRules, payload, "Deleting wildcard rule..."));
-                _wildcardRuleService.RemoveRule(wildcardRule);
-            }
+        
 
-            if (standardRuleNamesToDelete.Count > 0)
-            {
-                var payload = new DeleteRulesPayload { RuleIdentifiers = standardRuleNamesToDelete };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, payload, $"Deleting {standardRuleNamesToDelete.Count} rules..."));
-            }
-
-            AllAggregatedRules.RemoveAll(rulesToDelete.Contains);
-        }
+        
 
         public static AggregatedRuleViewModel CreateAggregatedRuleFromAdvancedRule(AdvancedRuleViewModel advancedRule)
         {
@@ -864,28 +829,51 @@ namespace MinimalFirewall
 
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
-            void processDetection()
+            void ProcessDetection()
             {
-                // Keep reported observations after a dashboard decision, bounded to this session.
-                // A blocked app retries many times; record each endpoint once so retries neither rebuild the
-                // Applications view on every event nor push other apps out of the bounded history.
-                bool alreadyReported = ReportedBlockedAttempts.Any(a =>
-                    a.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) &&
-                    a.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase) &&
-                    a.RemoteAddress == pending.RemoteAddress && a.RemotePort == pending.RemotePort);
+                static bool Same(string? left, string? right) =>
+                    string.Equals(
+                        left ?? string.Empty,
+                        right ?? string.Empty,
+                        StringComparison.OrdinalIgnoreCase);
+
+                // Session history for each distinct application, direction, protocol, service, and remote endpoint.
+                bool alreadyReported = ReportedBlockedAttempts.Any(attempt =>
+                    Same(attempt.Protocol, pending.Protocol) &&
+                    Same(attempt.ServiceName, pending.ServiceName) &&
+                    Same(attempt.AppPath, pending.AppPath) &&
+                    Same(attempt.Direction, pending.Direction) &&
+                    Same(attempt.RemoteAddress, pending.RemoteAddress) &&
+                    Same(attempt.RemotePort, pending.RemotePort));
+
                 if (!alreadyReported)
                 {
-                    if (ReportedBlockedAttempts.Count == 500) ReportedBlockedAttempts.RemoveAt(0);
+                    while (ReportedBlockedAttempts.Count >= 500)
+                    {
+                        ReportedBlockedAttempts.RemoveAt(0);
+                    }
+
                     ReportedBlockedAttempts.Add(pending);
                 }
-                bool alreadyPending = PendingConnections.Any(p => p.AppPath.Equals(pending.AppPath, StringComparison.OrdinalIgnoreCase) && p.Direction.Equals(pending.Direction, StringComparison.OrdinalIgnoreCase));
+
+                bool alreadyPending = PendingConnections.Any(existing =>
+                    existing.AppPath.Equals(
+                        pending.AppPath,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    existing.Direction.Equals(
+                        pending.Direction,
+                        StringComparison.OrdinalIgnoreCase));
+
                 if (alreadyPending)
                 {
-                    _activityLogger.LogDebug($"Ignoring duplicate pending connection for {pending.AppPath} (already in dashboard list)");
+                    _activityLogger.LogDebug(
+                        $"Ignoring duplicate pending connection for " +
+                        $"{pending.AppPath} (already in dashboard list)");
                     return;
                 }
 
                 AddPendingConnection(pending);
+
                 if (_appSettings.IsPopupsEnabled)
                 {
                     PopupRequired?.Invoke(pending);
@@ -894,11 +882,11 @@ namespace MinimalFirewall
 
             if (_uiContext != null)
             {
-                _uiContext.Post(_ => processDetection(), null);
+                _uiContext.Post(_ => ProcessDetection(), null);
             }
             else
             {
-                processDetection();
+                ProcessDetection();
             }
         }
 
@@ -1026,7 +1014,7 @@ namespace MinimalFirewall
                     "Scanning for exact duplicate rules...");
 
                 int deletedDuplicateCount = await Task.Run(
-                    FirewallRuleService.DeleteExactDuplicateMfwRules,
+                    FirewallRuleService.DeleteExactDuplicatefirewallRules,
                     cts.Token);
 
                 if (cts.IsCancellationRequested)

@@ -297,7 +297,7 @@ namespace MinimalFirewall
             dashboardDataGridView.AllowUserToAddRows = false;
             dashboardDataGridView.AllowUserToDeleteRows = false;
             dashboardDataGridView.AllowUserToResizeRows = false;
-            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             // Borders and background color inherited from ThemedDataGridView
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
