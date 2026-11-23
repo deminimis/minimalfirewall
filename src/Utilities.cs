@@ -146,6 +146,17 @@ namespace MinimalFirewall
     }
 
 
+    public static class FileUtility
+    {
+        // Write to a temporary file, then replace the target, so a crash mid-write never leaves a truncated file.
+        public static void WriteAllTextAtomic(string path, string contents)
+        {
+            string tempPath = path + ".tmp";
+            File.WriteAllText(tempPath, contents);
+            File.Move(tempPath, path, overwrite: true);
+        }
+    }
+
     public static partial class PathResolver
     {
         private static readonly Dictionary<string, string> _deviceMap = [];

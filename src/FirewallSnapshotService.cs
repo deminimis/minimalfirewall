@@ -53,10 +53,7 @@ namespace MinimalFirewall
                     var data = new HashSet<string>(ruleNames, StringComparer.OrdinalIgnoreCase);
                     string json = JsonSerializer.Serialize(data, SnapshotContext.Default.HashSetString);
 
-                    string tempPath = _snapshotPath + ".tmp";
-                    File.WriteAllText(tempPath, json);
-
-                    File.Move(tempPath, _snapshotPath, overwrite: true);
+                    FileUtility.WriteAllTextAtomic(_snapshotPath, json);
                 }
                 catch (Exception ex)
                 {

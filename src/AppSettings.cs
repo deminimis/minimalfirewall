@@ -194,7 +194,7 @@ namespace MinimalFirewall
                     ConfigPathManager.EnsureStorageDirectoryExists();
 
                     string json = JsonSerializer.Serialize(this, AppSettingsJsonContext.Default.AppSettings);
-                    File.WriteAllText(_configPath, json);
+                    FileUtility.WriteAllTextAtomic(_configPath, json);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
