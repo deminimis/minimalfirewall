@@ -1392,14 +1392,22 @@ namespace MinimalFirewall
         // Called from thread-pool timers: the form may be closing or already disposed.
         private void BeginInvokeIfAlive(Action action)
         {
-            if (IsDisposed || !IsHandleCreated)
+            if (Disposing || IsDisposed || !IsHandleCreated)
             {
                 return;
             }
 
             try
             {
-                BeginInvoke(action);
+                BeginInvoke(new Action(() =>
+                {
+                    if (Disposing || IsDisposed)
+                    {
+                        return;
+                    }
+
+                    action();
+                }));
             }
             catch (InvalidOperationException)
             {
