@@ -104,10 +104,7 @@ namespace MinimalFirewall
                 {
                     string json = JsonSerializer.Serialize(_trustedPublishers, WhitelistJsonContext.Default.HashSetString);
 
-                    string tempPath = _configPath + ".tmp";
-                    File.WriteAllText(tempPath, json);
-
-                    File.Move(tempPath, _configPath, overwrite: true);
+                    FileUtility.WriteAllTextAtomic(_configPath, json);
                 }
                 catch (Exception ex)
                 {

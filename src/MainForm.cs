@@ -105,9 +105,8 @@ namespace MinimalFirewall
             _mainViewModel.PopupRequired += OnPopupRequired;
             _mainViewModel.RulePopupRequired += OnRulePopupRequired;
             _mainViewModel.DashboardActionProcessed += OnDashboardActionProcessed;
-            _mainViewModel.SystemChangesUpdated += () => {
-                UpdateUiWithChangesCount();
-            };
+            _mainViewModel.SystemChangesUpdated +=
+                OnSystemChangesUpdated;
 
             settingsControl1.ThemeChanged += UpdateThemeAndColors;
             settingsControl1.IconVisibilityChanged += UpdateIconColumnVisibility;
@@ -155,9 +154,17 @@ namespace MinimalFirewall
             // Initialize UI Controls with Services
             dashboardControl1.Initialize(_mainViewModel, _appSettings, _iconService, _wildcardRuleService, _actionsService, _backgroundTaskService);
             rulesControl1.Initialize(_mainViewModel, _actionsService, _wildcardRuleService, _backgroundTaskService, _iconService, _appSettings, appIconList);
+            applicationsControl1.Initialize(
+                _mainViewModel,
+                _appSettings,
+                _iconService,
+                _actionsService,
+                _backgroundTaskService);
             wildcardRulesControl1.Initialize(_wildcardRuleService, _backgroundTaskService, _appSettings);
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
-            groupsControl1.Initialize(_groupManager, _backgroundTaskService);
+            groupsControl1.Initialize(
+                _groupManager,
+                _backgroundTaskService);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
 
             settingsControl1.Initialize(_appSettings, _startupService, _whitelistService, _actionsService, _activityLogger, _mainViewModel, appImageList, "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3));
@@ -274,7 +281,7 @@ namespace MinimalFirewall
 
             UpdateTrayStatus();
 
-            await Task.Run(_actionsService.ReenableMfwRules);
+            await Task.Run(_actionsService.ReenablefirewallRules);
 
             string versionInfo = "Version " + Assembly.GetExecutingAssembly().GetName()?.Version?.ToString(3);
             _activityLogger.LogDebug("Application Started: " + versionInfo);
@@ -423,6 +430,7 @@ namespace MinimalFirewall
             RefreshAllThemedControls(this);
 
             rulesControl1.ApplyThemeFixes();
+            applicationsControl1.ApplyThemeFixes();
             auditControl1.ApplyThemeFixes();
             settingsControl1.ApplyTheme(isDark);
             settingsControl1.ApplyThemeFixes();
@@ -437,7 +445,7 @@ namespace MinimalFirewall
             rescanButton.BringToFront();
         }
 
-        private static void RefreshAllThemedControls(Control parent)
+        internal static void RefreshAllThemedControls(Control parent)
         {
             foreach (Control control in parent.Controls)
             {
@@ -475,6 +483,7 @@ namespace MinimalFirewall
         private void UpdateIconColumnVisibility()
         {
             rulesControl1.UpdateIconColumnVisibility();
+            applicationsControl1.RefreshApplications();
             dashboardControl1.SetIconColumnVisibility(_appSettings.ShowAppIcons);
             liveConnectionsControl1.UpdateIconColumnVisibility();
         }
@@ -560,6 +569,11 @@ namespace MinimalFirewall
                     notifyIcon.Icon = _unlockedTrayIcon;
                 }
             }
+        }
+
+        private void OnSystemChangesUpdated()
+        {
+            UpdateUiWithChangesCount();
         }
 
         private void UpdateUiWithChangesCount()
@@ -911,11 +925,12 @@ namespace MinimalFirewall
 
                     try
                     {
-                        BeginInvoke(new Action(async () =>
+                        BeginInvokeIfAlive(new Action(async () =>
                         {
                             try
                             {
-                                if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage"))
+                                if (Visible &&
+                                    mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage")
                                 {
                                     await ForceDataRefreshAsync();
                                 }
@@ -925,11 +940,6 @@ namespace MinimalFirewall
                                 _activityLogger.LogException("AutoRefresh", ex);
                             }
                         }));
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Handle destroyed during shutdown (includes ObjectDisposedException).
-                    }
                 }, null, interval, interval);
                 _activityLogger.LogDebug($"Auto-refresh timer set to {_appSettings.AutoRefreshIntervalMinutes} minutes.");
             }
@@ -1017,6 +1027,10 @@ namespace MinimalFirewall
                 _mainViewModel.PendingConnections.CollectionChanged -= PendingConnections_CollectionChanged;
                 _mainViewModel.PopupRequired -= OnPopupRequired;
                 _mainViewModel.RulePopupRequired -= OnRulePopupRequired;
+                _mainViewModel.DashboardActionProcessed -=
+                    OnDashboardActionProcessed;
+                _mainViewModel.SystemChangesUpdated -=
+                    OnSystemChangesUpdated;
                 _backgroundTaskService.QueueCountChanged -= OnQueueCountChanged;
                 _backgroundTaskService.WildcardRulesChanged -= OnWildcardRulesChanged;
                 Application.Exit();
@@ -1089,6 +1103,17 @@ namespace MinimalFirewall
                     case "rulesTabPage":
                         await ForceDataRefreshAsync(true);
                         break;
+                    case "applicationsTabPage":
+                        // The view only needs the MFW rule list: reuse it when loaded, and never force a UWP rescan.
+                        if (_mainViewModel.ApplicationRules.Count > 0)
+                        {
+                            applicationsControl1.RefreshApplications();
+                        }
+                        else
+                        {
+                            await ForceDataRefreshAsync(false);
+                        }
+                        break;
                     case "wildcardRulesTabPage":
                         wildcardRulesControl1.LoadRules();
                         break;
@@ -1138,6 +1163,7 @@ namespace MinimalFirewall
                 _iconService.ClearCache();
 
                 await rulesControl1.RefreshDataAsync(forceUwpScan, progress, token);
+                applicationsControl1.RefreshApplications();
 
                 if (token.IsCancellationRequested)
                 {
@@ -1321,7 +1347,7 @@ namespace MinimalFirewall
                 return;
             }
 
-            BeginInvoke(new Action(() =>
+            BeginInvokeIfAlive(new Action(() =>
             {
                 if (mainTabControl.SelectedTab != null && mainTabControl.SelectedTab.Name == tabName)
                 {
@@ -1331,6 +1357,7 @@ namespace MinimalFirewall
                 switch (tabName)
                 {
                     case "rulesTabPage":
+                        if (mainTabControl.SelectedTab == applicationsTabPage) break;
                         _mainViewModel.ClearRulesData();
                         break;
                     case "wildcardRulesTabPage":
@@ -1364,6 +1391,32 @@ namespace MinimalFirewall
                     _tabUnloadTimers.Remove(tabName);
                 }
             }));
+        }
+
+        // Called from thread-pool timers: the form may be closing or already disposed.
+        private void BeginInvokeIfAlive(Action action)
+        {
+            if (Disposing || IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    if (Disposing || IsDisposed)
+                    {
+                        return;
+                    }
+
+                    action();
+                }));
+            }
+            catch (InvalidOperationException)
+            {
+                // Handle destroyed between the check and the call (includes ObjectDisposedException).
+            }
         }
 
 

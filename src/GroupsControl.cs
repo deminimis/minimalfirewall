@@ -30,16 +30,17 @@ namespace MinimalFirewall
 
         }
 
-        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService)
-        {
-            _groupManager = groupManager;
-            _backgroundTaskService = backgroundTaskService;
+        public void Initialize(
+            FirewallGroupManager groupManager,
+            BackgroundFirewallTaskService backgroundTaskService)
+                {
+                    _groupManager = groupManager;
+                    _backgroundTaskService = backgroundTaskService;
+                    groupsDataGridView.AutoGenerateColumns = false;
+                    groupsDataGridView.DataSource = _bindingSource;
+                }
 
-            groupsDataGridView.AutoGenerateColumns = false;
-            groupsDataGridView.DataSource = _bindingSource;
-        }
 
-        
 
         public void ClearGroups()
         {
@@ -188,7 +189,7 @@ namespace MinimalFirewall
 
         private void GroupsDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0)
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0)
             {
                 return;
             }

@@ -239,14 +239,14 @@ namespace MinimalFirewall
                     return;
                 }
 
-                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(appPath, serviceName, direction);
-                if (existingRuleStatus == MfwRuleStatus.MfwBlock)
+                firewallRulestatus existingRuleStatus = await _dataService.CheckfirewallRulestatusAsync(appPath, serviceName, direction);
+                if (existingRuleStatus == firewallRulestatus.MfwBlock)
                 {
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                if (existingRuleStatus == MfwRuleStatus.MfwAllow)
+                if (existingRuleStatus == firewallRulestatus.MfwAllow)
                 {
                     if (filterId == "0")
                     {

@@ -392,7 +392,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    _actionsService.DeleteAllMfwRules();
+                    _actionsService.DeleteallFirewallRules();
                     await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
                     Messenger.MessageBox("All Minimal Firewall rules have been deleted.", "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
                 }
@@ -484,7 +484,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    string jsonContent = await _actionsService.ExportAllMfwRulesAsync();
+                    string jsonContent = await _actionsService.ExportallFirewallRulesAsync();
                     await File.WriteAllTextAsync(saveDialog.FileName, jsonContent);
                     Messenger.MessageBox("All rules have been successfully exported.", "Export Complete", MessageBoxButtons.OK, MsgIcon.Success);
                 }
@@ -629,7 +629,7 @@ namespace MinimalFirewall
                         statusForm.UpdateProgress(40);
 
                         statusForm.UpdateStatus("Exporting current rules...");
-                        string rulesJson = await _actionsService.ExportAllMfwRulesAsync();
+                        string rulesJson = await _actionsService.ExportallFirewallRulesAsync();
                         var rulesEntry = archive.CreateEntry("current_mfw_rules.json");
                         using (var writer = new StreamWriter(rulesEntry.Open()))
                         {

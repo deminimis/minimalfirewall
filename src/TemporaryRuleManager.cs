@@ -54,7 +54,7 @@ namespace MinimalFirewall
 
                     var rulesToSave = new Dictionary<string, DateTime>(_temporaryRules, StringComparer.OrdinalIgnoreCase);
                     string json = JsonSerializer.Serialize(rulesToSave, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                    File.WriteAllText(_storagePath, json);
+                    FileUtility.WriteAllTextAtomic(_storagePath, json);
                 }
                 catch (Exception ex)
                 {
