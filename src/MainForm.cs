@@ -913,36 +913,39 @@ namespace MinimalFirewall
         private void SetupAutoRefreshTimer()
         {
             _autoRefreshTimer?.Dispose();
-            if (_appSettings.AutoRefreshIntervalMinutes > 0)
-            {
-                var interval = TimeSpan.FromMinutes(_appSettings.AutoRefreshIntervalMinutes);
-                _autoRefreshTimer = new System.Threading.Timer(_ =>
-                {
-                    if (IsDisposed || !IsHandleCreated)
-                    {
-                        return;
-                    }
+            _autoRefreshTimer = null;
 
+            if (_appSettings.AutoRefreshIntervalMinutes <= 0)
+            {
+                return;
+            }
+
+            var interval =
+                TimeSpan.FromMinutes(_appSettings.AutoRefreshIntervalMinutes);
+
+            _autoRefreshTimer = new System.Threading.Timer(_ =>
+            {
+                BeginInvokeIfAlive(new Action(async () =>
+                {
                     try
                     {
-                        BeginInvokeIfAlive(new Action(async () =>
+                        if (Visible &&
+                            mainTabControl.SelectedTab?.Name is
+                                "rulesTabPage" or "applicationsTabPage")
                         {
-                            try
-                            {
-                                if (Visible &&
-                                    mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage")
-                                {
-                                    await ForceDataRefreshAsync();
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _activityLogger.LogException("AutoRefresh", ex);
-                            }
-                        }));
-                }, null, interval, interval);
-                _activityLogger.LogDebug($"Auto-refresh timer set to {_appSettings.AutoRefreshIntervalMinutes} minutes.");
-            }
+                            await ForceDataRefreshAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _activityLogger.LogException("AutoRefresh", ex);
+                    }
+                }));
+            }, null, interval, interval);
+
+            _activityLogger.LogDebug(
+                $"Auto-refresh timer set to " +
+                $"{_appSettings.AutoRefreshIntervalMinutes} minutes.");
         }
 
         private void ApplyLastWindowState()
@@ -1018,6 +1021,9 @@ namespace MinimalFirewall
             }
             else
             {
+                _autoRefreshTimer?.Dispose();
+                _autoRefreshTimer = null;
+
                 _scanCts?.Cancel();
                 foreach (var timer in _tabUnloadTimers.Values)
                 {
@@ -1052,6 +1058,7 @@ namespace MinimalFirewall
             _firewallSentryService.Stop();
             _mainViewModel.TrafficMonitorViewModel.StopMonitoring();
             _autoRefreshTimer?.Dispose();
+            _autoRefreshTimer = null;
 
             _mainViewModel.ClearRulesData();
             _mainViewModel.PendingConnections.Clear();
@@ -1405,7 +1412,7 @@ namespace MinimalFirewall
             {
                 BeginInvoke(new Action(() =>
                 {
-                    if (Disposing || IsDisposed)
+                    if (Disposing || IsDisposed || !IsHandleCreated)
                     {
                         return;
                     }
