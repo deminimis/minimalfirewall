@@ -925,17 +925,21 @@ namespace MinimalFirewall
 
                     try
                     {
-                        Invoke(new Action(async () =>
+                        BeginInvokeIfAlive(new Action(async () =>
                         {
-                            if (Visible && (mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage"))
+                            try
                             {
-                                await ForceDataRefreshAsync();
+                                if (Visible &&
+                                    mainTabControl.SelectedTab?.Name is "rulesTabPage" or "applicationsTabPage")
+                                {
+                                    await ForceDataRefreshAsync();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _activityLogger.LogException("AutoRefresh", ex);
                             }
                         }));
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                    }
                 }, null, interval, interval);
                 _activityLogger.LogDebug($"Auto-refresh timer set to {_appSettings.AutoRefreshIntervalMinutes} minutes.");
             }
