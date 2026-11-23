@@ -1391,7 +1391,6 @@ namespace MinimalFirewall
                         break;
                 }
 
-                GC.Collect();
                 if (_tabUnloadTimers.TryGetValue(tabName, out var timer))
                 {
                     timer.Dispose();
