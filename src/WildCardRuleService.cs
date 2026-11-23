@@ -229,12 +229,21 @@ namespace MinimalFirewall
         }
 
         // A folder prefix only matches on a separator boundary: "C:\Tools" must not match "C:\ToolsEvil\x.exe".
-        public static bool IsInFolder(string path, string folder)
+        public static bool IsInFolder(string? path, string? folder)
         {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(folder))
+            {
+                return false;
+            }
+
             string root = folder.TrimEnd('\\', '/');
-            return root.Length > 0
-                && path.Length > root.Length
-                && path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+
+            if (root.Length == 0 || path.Length <= root.Length)
+            {
+                return false;
+            }
+
+            return path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
                 && (path[root.Length] == '\\' || path[root.Length] == '/');
         }
 
