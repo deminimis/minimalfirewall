@@ -29,6 +29,7 @@ namespace MinimalFirewall
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
         private bool _fittingLayout;
         private bool _isDarkMode;
+        private System.Windows.Forms.Timer? _allowDelayTimer;
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
@@ -180,27 +181,31 @@ namespace MinimalFirewall
 
         private void DelayAllowButtons()
         {
-            Button[] allowing = [allowButton, tempAllowButton];
-            foreach (var button in allowing)
-            {
-                button.Enabled = false;
-            }
+            allowButton.Enabled = false;
+            tempAllowButton.Enabled = false;
 
-            var timer = new System.Windows.Forms.Timer { Interval = AllowDelayMs };
-            timer.Tick += (_, _) =>
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = new System.Windows.Forms.Timer
             {
-                timer.Stop();
-                timer.Dispose();
-                if (IsDisposed)
+                Interval = AllowDelayMs
+            };
+
+            _allowDelayTimer.Tick += (_, _) =>
+            {
+                _allowDelayTimer?.Stop();
+                _allowDelayTimer?.Dispose();
+                _allowDelayTimer = null;
+
+                if (Disposing || IsDisposed)
                 {
                     return;
                 }
-                foreach (var button in allowing)
-                {
-                    button.Enabled = true;
-                }
+
+                allowButton.Enabled = true;
+                tempAllowButton.Enabled = true;
             };
-            timer.Start();
+
+            _allowDelayTimer.Start();
         }
 
         protected override async void OnShown(EventArgs e)
@@ -243,6 +248,10 @@ namespace MinimalFirewall
         // Window Closing: Save position
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            _allowDelayTimer?.Stop();
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = null;
+
             try
             {
                 if (WindowState == FormWindowState.Normal)
