@@ -1628,6 +1628,18 @@ namespace MinimalFirewall
             return rulesToRemove;
         }
 
+        public static List<string> GetRuleNamesByPrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                return [];
+            }
+
+            return GetRuleNamesAndRelease(rule =>
+                !string.IsNullOrWhiteSpace(rule.Name) &&
+                rule.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        }
+
         public static List<string> DeleteRulesByPath(List<string> appPaths)
         {
             if (appPaths.Count == 0)

@@ -69,98 +69,259 @@ namespace MinimalFirewall
 
         public void CleanupTemporaryRulesOnStartup()
         {
-            // An allow-all rule left by a crash belongs to the previous session; never carry it over.
-            RemoveTemporaryAllowAllRules();
+            // An allow-all rule belongs only to the process session that created it
+            try
+            {
+                RemoveTemporaryAllowAllRules();
+            }
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException)
+            {
+                activityLogger.LogException(
+                    "CleanupTemporaryAllowAllRulesOnStartup",
+                    ex);
+            }
 
             var expiredRules = _temporaryRuleManager.GetExpiredRules();
+
             if (expiredRules.Count != 0)
             {
                 var ruleNamesToRemove = expiredRules.Keys.ToList();
+
                 try
                 {
                     FirewallRuleService.DeleteRulesByName(ruleNamesToRemove);
+
                     foreach (var ruleName in ruleNamesToRemove)
                     {
                         _temporaryRuleManager.Remove(ruleName);
+
+                        if (_temporaryRuleTimers.TryRemove(
+                                ruleName,
+                                out var timer))
+                        {
+                            timer.Dispose();
+                        }
                     }
-                    activityLogger.LogDebug($"Cleaned up {ruleNamesToRemove.Count} expired temporary rules on startup.");
+
+                    activityLogger.LogDebug(
+                        $"Cleaned up {ruleNamesToRemove.Count} " +
+                        "expired temporary rules on startup.");
                 }
-                catch (COMException ex)
+                catch (Exception ex) when (
+                    ex is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
                 {
-                    activityLogger.LogException("CleanupTemporaryRulesOnStartup", ex);
+                    // Keep the tracking records so cleanup can retry next startup
+                    activityLogger.LogException(
+                        "CleanupTemporaryRulesOnStartup",
+                        ex);
                 }
             }
 
-            // Re-arm rules that outlived a restart; otherwise they stay until the next startup after expiry.
-            foreach (var (ruleName, expiryUtc) in _temporaryRuleManager.GetActiveRules())
+            // Re-arm temporary rules that remain active after an application restart
+            foreach (var (ruleName, expiryUtc) in
+                     _temporaryRuleManager.GetActiveRules())
             {
-                if (!_temporaryRuleTimers.ContainsKey(ruleName))
+                if (_temporaryRuleTimers.ContainsKey(ruleName))
                 {
-                    SetupRuleTimer(ruleName, TimeSpan.FromTicks(Math.Max(0, (expiryUtc - DateTime.UtcNow).Ticks)));
+                    continue;
+                }
+
+                TimeSpan remaining = expiryUtc - DateTime.UtcNow;
+
+                if (remaining < TimeSpan.Zero)
+                {
+                    remaining = TimeSpan.Zero;
+                }
+
+                try
+                {
+                    SetupRuleTimer(ruleName, remaining);
+                }
+                catch (Exception ex) when (
+                    ex is ArgumentException or
+                    ArgumentOutOfRangeException or
+                    InvalidOperationException)
+                {
+                    activityLogger.LogException(
+                        $"Re-arm temporary rule timer '{ruleName}'",
+                        ex);
                 }
             }
         }
 
-        // The allow-all rule disables lockdown for every program, so it must not outlive the app:
-        // the removal timer only runs while the app does. Remove any active one when the app exits.
+        // The allow-all rule disables lockdown for every program, so it must not
+        // survive an application exit or a restart.
         private int _allowAllExitHookInstalled;
+        private int _allowAllOperationInProgress;
 
         private void EnsureAllowAllRemovedOnExit()
         {
             if (Interlocked.Exchange(ref _allowAllExitHookInstalled, 1) == 0)
             {
-                Application.ApplicationExit += (_, _) => RemoveTemporaryAllowAllRules();
+                Application.ApplicationExit += (_, _) =>
+                {
+                    try
+                    {
+                        RemoveTemporaryAllowAllRules();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Application shutdown must continue even if firewall cleanup fails.
+                        activityLogger.LogException(
+                            "RemoveTemporaryAllowAllRules on application exit",
+                            ex);
+                    }
+                };
             }
         }
 
         public void RemoveTemporaryAllowAllRules()
         {
-            var names = _temporaryRuleManager.GetActiveRules().Keys
-                .Where(name => name.StartsWith(TemporaryAllowAllRulePrefix, StringComparison.Ordinal))
+            // Inspect the actual Windows Firewall collection. The tracking file may be
+            // missing, corrupt, stale, or may not have been written after rule creation.
+            var firewallRuleNames =
+                FirewallRuleService.GetRuleNamesByPrefix(
+                    TemporaryAllowAllRulePrefix);
+
+            // Also include tracked names so stale manager entries and timers are
+            // cleaned even when their firewall rules are already gone.
+            var trackedRuleNames = _temporaryRuleManager
+                .GetRulesByPrefix(TemporaryAllowAllRulePrefix)
+                .Keys;
+
+            var names = firewallRuleNames
+                .Concat(trackedRuleNames)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
             if (names.Count == 0)
             {
                 return;
             }
 
-            try
+            // Delete actual firewall rules first. Do not remove tracking information
+            // if deletion fails, because a later startup must be able to retry.
+            if (firewallRuleNames.Count != 0)
             {
-                FirewallRuleService.DeleteRulesByName(names);
-                foreach (var name in names)
+                FirewallRuleService.DeleteRulesByName(firewallRuleNames);
+            }
+
+            foreach (var name in names)
+            {
+                _temporaryRuleManager.Remove(name);
+
+                if (_temporaryRuleTimers.TryRemove(name, out var timer))
                 {
-                    _temporaryRuleManager.Remove(name);
-                    if (_temporaryRuleTimers.TryRemove(name, out var timer))
-                    {
-                        timer.Dispose();
-                    }
+                    timer.Dispose();
                 }
-                activityLogger.LogChange("Temporary Rule Removed", "Allow all outbound traffic ended because the app is closing.");
             }
-            catch (COMException ex)
-            {
-                activityLogger.LogException("RemoveTemporaryAllowAllRules", ex);
-            }
+
+            activityLogger.LogChange(
+                "Temporary Rule Removed",
+                $"Removed {firewallRuleNames.Count} temporary allow-all outbound rule(s).");
         }
 
         public void CreateTemporaryAllowAllOutbound(TimeSpan duration)
         {
-            // A program-less allow rule lets everything through the lockdown default block;
-            // explicit block rules (including Block All Traffic) still take precedence.
-            string ruleName = $"{TemporaryAllowAllRulePrefix}{Guid.NewGuid()}";
+            if (duration <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(duration),
+                    "The temporary allow duration must be greater than zero.");
+            }
+
+            // Prevent repeated tray clicks from leaving overlapping allow-all rules.
+            if (Interlocked.Exchange(ref _allowAllOperationInProgress, 1) != 0)
+            {
+                return;
+            }
+
+            string ruleName =
+                $"{TemporaryAllowAllRulePrefix}{Guid.NewGuid():N}";
+
+            bool firewallRuleCreated = false;
+
             try
             {
-                BuildAndCreateRule(ruleName, "Temporarily allows all outbound traffic.", MFWConstants.MainRuleGroup,
-                    Directions.Outgoing, Actions.Allow, ProtocolTypes.Any.Value, "", "", RuleType.Program);
-                _temporaryRuleManager.Add(ruleName, DateTime.UtcNow.Add(duration));
+                // Replace an existing allowance instead of stacking 
+                RemoveTemporaryAllowAllRules();
+
+                BuildAndCreateRule(
+                    ruleName,
+                    "Temporarily allows all outbound traffic.",
+                    MFWConstants.MainRuleGroup,
+                    Directions.Outgoing,
+                    Actions.Allow,
+                    ProtocolTypes.Any.Value,
+                    "",
+                    "",
+                    RuleType.Program);
+
+                firewallRuleCreated = true;
+
+                DateTime expiryUtc = DateTime.UtcNow.Add(duration);
+                _temporaryRuleManager.Add(ruleName, expiryUtc);
+
                 SetupRuleTimer(ruleName, duration);
-                activityLogger.LogChange("Temporary Rule Created", $"Allowed all outbound traffic for {duration.TotalMinutes} minutes.");
                 EnsureAllowAllRemovedOnExit();
+
+                activityLogger.LogChange(
+                    "Temporary Rule Created",
+                    $"Allowed all outbound traffic for " +
+                    $"{duration.TotalMinutes:0.##} minutes.");
             }
-            catch (Exception ex) when (ex is COMException or InvalidOperationException)
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException or
+                IOException or
+                ArgumentOutOfRangeException)
             {
-                activityLogger.LogException("CreateTemporaryAllowAllOutbound", ex);
-                SafeShowMessageBox("Failed to allow all outbound traffic.\nCheck debug_log.txt for details.",
-                    "Allow All Outbound", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // Roll back every part of a partial creation
+                try
+                {
+                    if (firewallRuleCreated)
+                    {
+                        FirewallRuleService.DeleteRulesByName([ruleName]);
+                    }
+                }
+                catch (Exception rollbackEx) when (
+                    rollbackEx is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
+                {
+                    activityLogger.LogException(
+                        $"Rollback temporary allow-all rule '{ruleName}'",
+                        rollbackEx);
+                }
+
+                _temporaryRuleManager.Remove(ruleName);
+
+                if (_temporaryRuleTimers.TryRemove(ruleName, out var timer))
+                {
+                    timer.Dispose();
+                }
+
+                activityLogger.LogException(
+                    "CreateTemporaryAllowAllOutbound",
+                    ex);
+
+                SafeShowMessageBox(
+                    "Failed to allow all outbound traffic.\n" +
+                    "Any partially created rule was scheduled for cleanup.\n" +
+                    "Check debug_log.txt for details.",
+                    "Allow All Outbound",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Volatile.Write(ref _allowAllOperationInProgress, 0);
             }
         }
 
@@ -967,24 +1128,82 @@ namespace MinimalFirewall
 
         private void SetupRuleTimer(string ruleName, TimeSpan duration)
         {
-            var timer = new System.Threading.Timer(_ =>
+            if (string.IsNullOrWhiteSpace(ruleName))
             {
-                try
+                throw new ArgumentException(
+                    "A temporary firewall rule name is required.",
+                    nameof(ruleName));
+            }
+
+            if (duration < TimeSpan.Zero)
+            {
+                duration = TimeSpan.Zero;
+            }
+
+            System.Threading.Timer? newTimer = null;
+
+            newTimer = new System.Threading.Timer(
+                _ =>
                 {
-                    FirewallRuleService.DeleteRulesByName([ruleName]);
-                    _temporaryRuleManager.Remove(ruleName);
-                    if (_temporaryRuleTimers.TryRemove(ruleName, out var t))
+                    bool ruleRemoved = false;
+
+                    try
                     {
-                        t.Dispose();
+                        FirewallRuleService.DeleteRulesByName([ruleName]);
+                        ruleRemoved = true;
+
+                        _temporaryRuleManager.Remove(ruleName);
+
+                        activityLogger.LogDebug(
+                            $"Temporary rule {ruleName} expired and was removed.");
                     }
-                    activityLogger.LogDebug($"Temporary rule {ruleName} expired and was removed.");
-                }
-                catch (COMException ex)
+                    catch (Exception ex) when (
+                        ex is COMException or
+                        InvalidOperationException or
+                        UnauthorizedAccessException)
+                    {
+                        // Keep the manager entry when firewall deletion fails to retry
+                        activityLogger.LogException(
+                            $"Deleting temporary rule {ruleName}",
+                            ex);
+                    }
+                    finally
+                    {
+                        if (_temporaryRuleTimers.TryGetValue(
+                                ruleName,
+                                out var registeredTimer) &&
+                            ReferenceEquals(registeredTimer, newTimer) &&
+                            _temporaryRuleTimers.TryRemove(
+                                ruleName,
+                                out var removedTimer))
+                        {
+                            removedTimer.Dispose();
+                        }
+                        else
+                        {
+                            newTimer?.Dispose();
+                        }
+
+                        if (!ruleRemoved)
+                        {
+                            activityLogger.LogDebug(
+                                $"Temporary rule '{ruleName}' remains tracked " +
+                                "because its firewall deletion was not confirmed.");
+                        }
+                    }
+                },
+                null,
+                duration,
+                Timeout.InfiniteTimeSpan);
+
+            _temporaryRuleTimers.AddOrUpdate(
+                ruleName,
+                newTimer,
+                (_, previousTimer) =>
                 {
-                    activityLogger.LogException($"Deleting temporary rule {ruleName}", ex);
-                }
-            }, null, duration, Timeout.InfiniteTimeSpan);
-            _temporaryRuleTimers[ruleName] = timer;
+                    previousTimer.Dispose();
+                    return newTimer;
+                });
         }
 
         private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)

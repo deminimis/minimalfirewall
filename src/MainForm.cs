@@ -52,6 +52,7 @@ namespace MinimalFirewall
         private Image? _unlockedWhiteIcon;
         private Image? _refreshWhiteIcon;
         private ToolStripMenuItem? lockdownTrayMenuItem;
+        private ToolStripMenuItem? allowAllOutboundTrayMenuItem;
         private Icon? _defaultTrayIcon;
         private Icon? _unlockedTrayIcon;
         private Icon? _alertTrayIcon;
@@ -883,13 +884,27 @@ namespace MinimalFirewall
         #region System Tray & Lifecycle
         private void SetupTrayIcon()
         {
-            lockdownTrayMenuItem = new ToolStripMenuItem("Toggle Lockdown", null, ToggleLockdownTrayMenuItem_Click);
+            lockdownTrayMenuItem = new ToolStripMenuItem(
+                "Toggle Lockdown",
+                null,
+                ToggleLockdownTrayMenuItem_Click);
+
+            allowAllOutboundTrayMenuItem = new ToolStripMenuItem(
+                "Allow All Outbound for 5 Minutes",
+                null,
+                AllowAllOutboundTrayMenuItem_Click);
+
             var contextMenu = new ContextMenuStrip();
             contextMenu.Items.Add(lockdownTrayMenuItem);
-            contextMenu.Items.Add(new ToolStripMenuItem("Allow All Outbound for 5 Minutes", null, AllowAllOutboundTrayMenuItem_Click));
-            contextMenu.Items.Add(new ToolStripMenuItem("Show", null, ShowWindow));
-            contextMenu.Items.Add(new ToolStripMenuItem("Exit", null, ExitApplication));
+            contextMenu.Items.Add(allowAllOutboundTrayMenuItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(
+                new ToolStripMenuItem("Show", null, ShowWindow));
+            contextMenu.Items.Add(
+                new ToolStripMenuItem("Exit", null, ExitApplication));
+
             contextMenu.Opening += TrayContextMenu_Opening;
+
             notifyIcon = new NotifyIcon(components)
             {
                 Icon = Icon,
@@ -897,6 +912,7 @@ namespace MinimalFirewall
                 Visible = true,
                 ContextMenuStrip = contextMenu
             };
+
             notifyIcon.DoubleClick += ShowWindow;
         }
 
@@ -907,14 +923,47 @@ namespace MinimalFirewall
         }
 
         // For installers and updaters: the temporary rule removes itself, so lockdown comes back on its own.
-        private void AllowAllOutboundTrayMenuItem_Click(object? sender, EventArgs e)
+        private void AllowAllOutboundTrayMenuItem_Click(
+            object? sender,
+            EventArgs e)
         {
-            _actionsService.CreateTemporaryAllowAllOutbound(TimeSpan.FromMinutes(5));
+            if (!MainViewModel.IsLockedDown)
+            {
+                MessageBox.Show(
+                    this,
+                    "Lockdown is already disabled, so outbound traffic is not " +
+                    "being blocked by the default outbound policy.",
+                    "Allow All Outbound",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+
+                return;
+            }
+
+            _actionsService.CreateTemporaryAllowAllOutbound(
+                TimeSpan.FromMinutes(5));
         }
 
-        private void TrayContextMenu_Opening(object? sender, System.ComponentModel.CancelEventArgs e)
+        private void TrayContextMenu_Opening(
+            object? sender,
+            System.ComponentModel.CancelEventArgs e)
         {
-            lockdownTrayMenuItem?.Text = MainViewModel.IsLockedDown ? "Disable Lockdown" : "Enable Lockdown";
+            bool lockedDown = MainViewModel.IsLockedDown;
+
+            if (lockdownTrayMenuItem != null)
+            {
+                lockdownTrayMenuItem.Text =
+                    lockedDown ? "Disable Lockdown" : "Enable Lockdown";
+            }
+
+            if (allowAllOutboundTrayMenuItem != null)
+            {
+                allowAllOutboundTrayMenuItem.Enabled = lockedDown;
+                allowAllOutboundTrayMenuItem.ToolTipText = lockedDown
+                    ? "Temporarily allows outbound traffic while leaving " +
+                      "explicit block rules in effect."
+                    : "Lockdown is already disabled.";
+            }
         }
 
         private void SetupAutoRefreshTimer()

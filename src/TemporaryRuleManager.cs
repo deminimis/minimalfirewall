@@ -85,6 +85,25 @@ namespace MinimalFirewall
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
 
+        public Dictionary<string, DateTime> GetRulesByPrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                return new Dictionary<string, DateTime>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            return _temporaryRules
+                .Where(kvp =>
+                    kvp.Key.StartsWith(
+                        prefix,
+                        StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value,
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
         public Dictionary<string, DateTime> GetActiveRules()
         {
             var now = DateTime.UtcNow;
