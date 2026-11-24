@@ -231,7 +231,9 @@ namespace MinimalFirewall
         // Version folders (app-1.0.9015, 120.0.6099.71) change on every update, so a wildcard on them stops
         // matching. Suggest the stable parent instead, but never a drive root or a shared system folder,
         // where a wildcard would cover unrelated programs.
-        private static readonly Regex VersionFolder = new(@"\d+[._-]\d+", RegexOptions.CultureInvariant);
+        private static readonly Regex VersionFolder = new(
+            @"^(?:.*[-_])?\d+(?:[._-]\d+)+$",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly string[] BroadFolders =
         [
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
@@ -243,19 +245,35 @@ namespace MinimalFirewall
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
         ];
 
-        public static string? SuggestFolder(string exePath)
+        public static string? SuggestFolder(string? exePath)
         {
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                return null;
+            }
+
             string? folder = Path.GetDirectoryName(exePath);
-            for (int level = 0; level < 3 && folder != null && VersionFolder.IsMatch(Path.GetFileName(folder)); level++)
+
+            for (int level = 0;
+                 level < 3 && folder != null && VersionFolder.IsMatch(Path.GetFileName(folder));
+                 level++)
             {
                 string? parent = Path.GetDirectoryName(folder);
-                if (parent == null || Path.GetPathRoot(parent) == parent
-                    || BroadFolders.Any(broad => broad.Length > 0 && parent.TrimEnd('\\').Equals(broad.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)))
+                if (parent == null
+                    || string.Equals(Path.GetPathRoot(parent), parent, StringComparison.OrdinalIgnoreCase)
+                    || BroadFolders.Any(broad =>
+                        !string.IsNullOrEmpty(broad)
+                        && string.Equals(
+                            Path.TrimEndingDirectorySeparator(parent),
+                            Path.TrimEndingDirectorySeparator(broad),
+                            StringComparison.OrdinalIgnoreCase)))
                 {
                     break;
                 }
+
                 folder = parent;
             }
+
             return folder;
         }
 
