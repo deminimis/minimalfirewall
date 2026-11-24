@@ -16,7 +16,7 @@ namespace MinimalFirewall
         {
         }
 
-        private static INetFwPolicy2 GetLocalPolicy()
+        internal static INetFwPolicy2 GetLocalPolicy()
         {
             if (_firewallPolicyType.Value == null)
             {
