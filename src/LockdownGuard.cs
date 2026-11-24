@@ -143,6 +143,7 @@ namespace MinimalFirewall
         private void Check()
         {
             string? message = null;
+
             lock (_sync)
             {
                 if (!_locked || _gaveUp || _disposed)
@@ -151,15 +152,22 @@ namespace MinimalFirewall
                 }
 
                 INetFwPolicy2? policy = null;
+
                 try
                 {
                     policy = FirewallRuleService.GetLocalPolicy();
+
                     var drifted = new List<int>();
+
                     for (int i = 0; i < Profiles.Length; i++)
                     {
                         var type = Profiles[i].Type;
-                        bool wasEnabled = i < _enabledBaseline.Length && _enabledBaseline[i];
-                        if (policy.DefaultOutboundAction[type] != NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
+                        bool wasEnabled =
+                            i < _enabledBaseline.Length &&
+                            _enabledBaseline[i];
+
+                        if (policy.DefaultOutboundAction[type] !=
+                                NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
                             (wasEnabled && !policy.FirewallEnabled[type]))
                         {
                             drifted.Add(i);
@@ -171,36 +179,95 @@ namespace MinimalFirewall
                         return;
                     }
 
-                    while (_recentRestores.Count > 0 && DateTime.UtcNow - _recentRestores.Peek() > TimeSpan.FromMinutes(1))
+                    while (_recentRestores.Count > 0 &&
+                           DateTime.UtcNow - _recentRestores.Peek() >
+                               TimeSpan.FromMinutes(1))
                     {
                         _recentRestores.Dequeue();
                     }
 
-                    string names = string.Join(", ", drifted.Select(i => Profiles[i].Name));
+                    string names = string.Join(
+                        ", ",
+                        drifted.Select(i => Profiles[i].Name));
+
                     if (_recentRestores.Count >= MaxRestoresPerMinute)
                     {
-                        // Another program keeps changing the policy back: stop instead of fighting it.
                         _gaveUp = true;
-                        message = $"Another program keeps changing the firewall profile ({names}). Secure Profile stopped restoring it until Lockdown Mode is toggled.";
-                        _logger.LogChange("Secure Profile", "Stopped: profile changed repeatedly by another program");
+
+                        message =
+                            "Another program keeps changing the firewall profile " +
+                            $"({names}). Secure Profile stopped restoring it until " +
+                            "Lockdown Mode is toggled.";
+
+                        _logger.LogChange(
+                            "Secure Profile",
+                            "Stopped: profile changed repeatedly by another program");
+
+                        return;
                     }
-                    else
+
+                    foreach (int i in drifted)
                     {
-                        foreach (int i in drifted)
+                        var type = Profiles[i].Type;
+
+                        if (i < _enabledBaseline.Length &&
+                            _enabledBaseline[i])
                         {
-                            var type = Profiles[i].Type;
-                            if (i < _enabledBaseline.Length && _enabledBaseline[i])
-                            {
-                                policy.FirewallEnabled[type] = true;
-                            }
-                            policy.DefaultOutboundAction[type] = NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+                            policy.FirewallEnabled[type] = true;
                         }
-                        _recentRestores.Enqueue(DateTime.UtcNow);
-                        message = $"Another program changed the firewall profile ({names}). Lockdown Mode was restored.";
-                        _logger.LogChange("Secure Profile", $"Restored Lockdown on {names}");
+
+                        policy.DefaultOutboundAction[type] =
+                            NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
                     }
+
+                    var failed = drifted.Where(i =>
+                    {
+                        var type = Profiles[i].Type;
+                        bool shouldBeEnabled =
+                            i < _enabledBaseline.Length &&
+                            _enabledBaseline[i];
+
+                        return
+                            policy.DefaultOutboundAction[type] !=
+                                NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
+                            (shouldBeEnabled && !policy.FirewallEnabled[type]);
+                    }).ToList();
+
+                    if (failed.Count > 0)
+                    {
+                        _gaveUp = true;
+
+                        string failedNames = string.Join(
+                            ", ",
+                            failed.Select(i => Profiles[i].Name));
+
+                        message =
+                            "Secure Profile could not restore the firewall profile " +
+                            $"({failedNames}). A Group Policy or another security " +
+                            "program may be overriding it. Secure Profile stopped " +
+                            "until Lockdown Mode is toggled.";
+
+                        _logger.LogChange(
+                            "Secure Profile",
+                            $"Stopped: restoration failed on {failedNames}");
+
+                        return;
+                    }
+
+                    _recentRestores.Enqueue(DateTime.UtcNow);
+
+                    message =
+                        "Another program changed the firewall profile " +
+                        $"({names}). Lockdown Mode was restored.";
+
+                    _logger.LogChange(
+                        "Secure Profile",
+                        $"Restored Lockdown on {names}");
                 }
-                catch (Exception ex) when (ex is COMException or InvalidOperationException or UnauthorizedAccessException)
+                catch (Exception ex) when (
+                    ex is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
                 {
                     _logger.LogException("LockdownGuard.Check", ex);
                 }
@@ -221,21 +288,36 @@ namespace MinimalFirewall
 
         public void Dispose()
         {
+            List<(RegistryKey Key, AutoResetEvent Signal,
+                RegisteredWaitHandle Wait)> watches;
+
             lock (_sync)
             {
                 if (_disposed)
                 {
                     return;
                 }
+
                 _disposed = true;
-                foreach (var (key, signal, wait) in _watches)
-                {
-                    wait.Unregister(null);
-                    key.Dispose();
-                    signal.Dispose();
-                }
+                _debounce.Change(Timeout.Infinite, Timeout.Infinite);
+
+                watches = [.. _watches];
                 _watches.Clear();
             }
+
+            foreach (var (key, signal, wait) in watches)
+            {
+                using var completed = new ManualResetEvent(false);
+
+                if (wait.Unregister(completed))
+                {
+                    completed.WaitOne();
+                }
+
+                key.Dispose();
+                signal.Dispose();
+            }
+
             _debounce.Dispose();
         }
     }

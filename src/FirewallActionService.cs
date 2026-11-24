@@ -817,94 +817,143 @@ namespace MinimalFirewall
 
         public bool ToggleLockdown()
         {
-            var isCurrentlyLocked = FirewallRuleService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-            bool newLockdownState = !isCurrentlyLocked;
-            activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
-            LockdownGuard.Expect(newLockdownState);
+            bool wasLocked =
+                FirewallRuleService.GetDefaultOutboundAction() ==
+                NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+
+            bool lockDown = !wasLocked;
+            var requestedAction = lockDown
+                ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
+                : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+
+            var previousAction = wasLocked
+                ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
+                : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+
+            activityLogger.LogDebug(
+                $"Toggling Lockdown. Current state: " +
+                $"{(wasLocked ? "Locked" : "Unlocked")}. New state: " +
+                $"{(lockDown ? "Locked" : "Unlocked")}.");
+
+            LockdownGuard.Expect(lockDown);
+
+            void RestorePreviousState()
+            {
+                LockdownGuard.Expect(wasLocked);
+
+                try
+                {
+                    FirewallRuleService.SetDefaultOutboundAction(previousAction);
+                }
+                catch (Exception ex) when (
+                    ex is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
+                {
+                    activityLogger.LogException(
+                        "Restore previous outbound policy",
+                        ex);
+                }
+
+                try
+                {
+                    AdminTaskService.SetAuditPolicy(wasLocked);
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    activityLogger.LogException(
+                        "Restore previous audit policy",
+                        ex);
+                }
+
+                ManageCryptoServiceRule(wasLocked);
+                ManageDhcpClientRule(wasLocked);
+                ManageWslRules(wasLocked);
+            }
+
             try
             {
-                AdminTaskService.SetAuditPolicy(newLockdownState);
+                AdminTaskService.SetAuditPolicy(lockDown);
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
                 activityLogger.LogException("SetAuditPolicy", ex);
             }
 
-            ManageCryptoServiceRule(newLockdownState);
-            ManageDhcpClientRule(newLockdownState);
+            ManageCryptoServiceRule(lockDown);
+            ManageDhcpClientRule(lockDown);
+            ManageWslRules(lockDown);
 
-
-            ManageWslRules(newLockdownState);
-
-            if (newLockdownState && !AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
+            if (lockDown &&
+                !AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
             {
+                RestorePreviousState();
+
                 SafeShowMessageBox(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
-                     "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
+                    "The Lockdown dashboard will not be able to detect blocked " +
+                    "connections.\n\n" +
                     "Potential Causes:\n" +
                     "1. A local or domain Group Policy is preventing this change.\n" +
                     "2. Other security software is blocking this action.\n\n" +
-                    "The firewall's default policy will be set back to 'Allow' for safety.",
-                     "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                LockdownGuard.Expect(false);
-                try
-                {
-                    FirewallRuleService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
-                }
-                catch (COMException ex)
-                {
-                    activityLogger.LogException("SetDefaultOutboundAction(Allow) after audit failure", ex);
-                }
-                ManageCryptoServiceRule(false);
-                ManageDhcpClientRule(false);
-                ManageWslRules(false);
+                    "The previous firewall state was restored.",
+                    "Lockdown Mode Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
 
                 activityLogger.LogDebug(
-                    "Lockdown Mode Failed: Could not enable audit policy. " +
-                    "Temporary system and WSL rules were removed.");
+                    "Lockdown Mode failed because the audit policy could not " +
+                    "be verified. The previous state was restored.");
 
                 return false;
             }
 
             try
             {
-                FirewallRuleService.SetDefaultOutboundAction(
-                    newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                FirewallRuleService.SetDefaultOutboundAction(requestedAction);
             }
-            catch (COMException ex)
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException)
             {
-                activityLogger.LogException("SetDefaultOutboundAction", ex);
-            LockdownGuard.Expect(isCurrentlyLocked);
+                activityLogger.LogException(
+                    "SetDefaultOutboundAction",
+                    ex);
 
-            SafeShowMessageBox(
-                "Failed to change the default outbound policy.\n" +
-                "Check debug_log.txt for details.",
-                "Lockdown Error",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+                RestorePreviousState();
 
-            return false;
+                SafeShowMessageBox(
+                    "Failed to change the default outbound policy.\n" +
+                    "The previous firewall state was restored.\n\n" +
+                    "Check debug_log.txt for details.",
+                    "Lockdown Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return false;
             }
 
-            // SetDefaultOutboundAction ignores per-profile failures, and a Group Policy can
-            // override the local value: read the result back instead of assuming success.
-            var mismatched = FirewallRuleService.GetProfilesNotMatchingOutbound(
-                newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            var mismatched =
+                FirewallRuleService.GetProfilesNotMatchingOutbound(
+                    requestedAction);
+
             if (mismatched.Count > 0)
             {
                 string profiles = string.Join(", ", mismatched);
-                string requestedState = newLockdownState ? "Block" : "Allow";
 
                 activityLogger.LogDebug(
                     $"Lockdown verification failed. Profiles not set to " +
-                    $"{requestedState}: {profiles}");
+                    $"{(lockDown ? "Block" : "Allow")}: {profiles}");
+
+                RestorePreviousState();
 
                 SafeShowMessageBox(
-                    $"The default outbound policy was not applied to these " +
+                    "The default outbound policy was not applied to these " +
                     $"profiles: {profiles}.\n\n" +
                     "A Group Policy, insufficient permissions, or other " +
-                    "security software may be overriding it. Minimal Firewall " +
-                    "will not report the Lockdown toggle as successful.",
+                    "security software may be overriding it.\n\n" +
+                    "The previous firewall state was restored.",
                     "Lockdown Mode Warning",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -912,21 +961,23 @@ namespace MinimalFirewall
                 return false;
             }
 
-            if (newLockdownState)
+            if (lockDown)
             {
                 eventListenerService.Start();
             }
             else
             {
                 eventListenerService.Stop();
+                ReenablefirewallRules();
+
+                activityLogger.LogDebug(
+                    "All MFW rules re-enabled upon disabling Lockdown mode.");
             }
 
-            activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
-            if (!newLockdownState)
-            {
-                ReenablefirewallRules();
-                activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
-            }
+            activityLogger.LogChange(
+                "Lockdown Mode",
+                lockDown ? "Enabled" : "Disabled");
+
             return true;
         }
 
