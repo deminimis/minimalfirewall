@@ -1,4 +1,4 @@
-<img width="4032" height="307" alt="image" src="https://github.com/user-attachments/assets/30db9c77-861f-4e24-a990-4fdaad525e7b" /><h1>
+<h1>
   Minimal Firewall
   <a href="https://github.com/deminimis/minimalfirewall">
     <img src="https://github.com/deminimis/minimalfirewall/blob/main/assets/logo1.png" alt="Logo" width="100" height="100">
@@ -152,6 +152,17 @@ Contributions are welcome! Please submit an issue, a discussion, or a pull reque
 #### Prerequisites
 * Visual Studio Community 2026
   * When installing Visual Studio, make sure you select the ".NET desktop development" workload (which includes Windows Forms).
+
+#### Build with mise (Windows)
+Install [mise](https://mise.jdx.dev/) and Visual Studio 2026 or Build Tools with the .NET desktop development workload. From the repository root, run:
+
+```powershell
+mise trust
+mise install
+mise run build
+```
+
+This installs the .NET 10 SDK and builds Release/x64. The task finds Visual Studio MSBuild on PATH or through `vswhere`. Full-framework MSBuild is required to generate the Windows Firewall COM reference; `dotnet build` cannot perform that step.
 
 #### Step 1: Clone this repo
 * When you open up Visual Studio, click clone the repo if you haven't already.

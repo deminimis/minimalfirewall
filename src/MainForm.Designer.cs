@@ -8,6 +8,8 @@ namespace MinimalFirewall
         private DarkModeForms.ThemedTabControl mainTabControl;
         private System.Windows.Forms.TabPage dashboardTabPage;
         private System.Windows.Forms.TabPage rulesTabPage;
+        private System.Windows.Forms.TabPage applicationsTabPage;
+        private ApplicationsControl applicationsControl1;
         private System.Windows.Forms.TabPage systemChangesTabPage;
         private System.Windows.Forms.TabPage settingsTabPage;
         private System.Windows.Forms.TabPage groupsTabPage;
@@ -35,6 +37,7 @@ namespace MinimalFirewall
             if (disposing)
             {
                 _trayBlinkTimer?.Dispose();
+                _fadeTimer?.Dispose();
                 _autoRefreshTimer?.Dispose();
                 // Order matters: view model -> producers -> consumer queue.
                 // In-flight watcher callbacks racing past this are guarded in EnqueueTask.
@@ -67,6 +70,8 @@ namespace MinimalFirewall
             dashboardControl1 = new DashboardControl();
             rulesTabPage = new TabPage();
             rulesControl1 = new RulesControl();
+            applicationsTabPage = new TabPage();
+            applicationsControl1 = new ApplicationsControl();
             wildcardRulesTabPage = new TabPage();
             wildcardRulesControl1 = new WildcardRulesControl();
             systemChangesTabPage = new TabPage();
@@ -99,6 +104,7 @@ namespace MinimalFirewall
             // 
             mainTabControl.Alignment = TabAlignment.Left;
             mainTabControl.Controls.Add(dashboardTabPage);
+            mainTabControl.Controls.Add(applicationsTabPage);
             mainTabControl.Controls.Add(rulesTabPage);
             mainTabControl.Controls.Add(wildcardRulesTabPage);
             mainTabControl.Controls.Add(systemChangesTabPage);
@@ -118,6 +124,14 @@ namespace MinimalFirewall
             mainTabControl.TabIndex = 0;
             mainTabControl.SelectedIndexChanged += MainTabControl_SelectedIndexChanged;
             mainTabControl.Deselecting += MainTabControl_Deselecting;
+            //
+            // applicationsTabPage
+            //
+            applicationsTabPage.Name = "applicationsTabPage";
+            applicationsTabPage.Text = "Applications";
+            applicationsTabPage.ImageIndex = 3;
+            applicationsTabPage.Padding = new Padding(3);
+            applicationsTabPage.Controls.Add(applicationsControl1);
             // 
             // dashboardTabPage
             // 
@@ -168,7 +182,7 @@ namespace MinimalFirewall
             instructionLabel.Name = "instructionLabel";
             instructionLabel.Size = new Size(241, 15);
             instructionLabel.TabIndex = 2;
-            instructionLabel.Text = "Press the lock key to initiate firewall defense.";
+            instructionLabel.Text = "Lockdown is off: all outbound traffic is allowed. Press the lock key to block unknown programs and review them here.";
             // 
             // dashboardControl1
             // 
@@ -388,6 +402,7 @@ namespace MinimalFirewall
             AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1000, 747);
+            MinimumSize = new Size(820, 560);
             Controls.Add(rescanButton);
             Controls.Add(lockdownButton);
             Controls.Add(mainTabControl);

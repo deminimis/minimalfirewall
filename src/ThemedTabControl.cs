@@ -135,6 +135,10 @@ namespace DarkModeForms
             }
 
             TextRenderer.DrawText(e.Graphics, tabPage.Text, tabPage.Font, textBounds, textColor, textFlags);
+            if (Focused && isSelected && ShowFocusCues)
+            {
+                ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(tabRect, -3, -3), textColor, colors.Surface);
+            }
         }
 
         private static Bitmap RecolorImage(Image sourceImage, Color newColor)
