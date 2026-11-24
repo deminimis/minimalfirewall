@@ -50,9 +50,8 @@ namespace MinimalFirewall
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
             dashboardDataGridView.DataSource = _bindingSource;
             dashboardDataGridView.Paint += DashboardDataGridView_PaintEmptyState;
-            // Centered text must be redrawn in full when the grid resizes.
-            dashboardDataGridView.Resize += (_, _) => { if (dashboardDataGridView.Rows.Count == 0) dashboardDataGridView.Invalidate(); };
-
+            dashboardDataGridView.Resize += DashboardDataGridView_Resize;
+            _appSettings.PropertyChanged += AppSettings_PropertyChanged;
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
 
@@ -225,10 +224,25 @@ namespace MinimalFirewall
             }
         }
 
-        // An empty grid looked broken; explain what the Dashboard is for until something is pending.
+        // Explain the Dashboard while no blocked connections are pending.
         private void DashboardDataGridView_PaintEmptyState(object? sender, PaintEventArgs e)
         {
-            if (dashboardDataGridView.Rows.Count > 0)
+            if (dashboardDataGridView.Rows.Count != 0)
+            {
+                return;
+            }
+
+            int top = dashboardDataGridView.ColumnHeadersVisible
+                ? dashboardDataGridView.ColumnHeadersHeight
+                : 0;
+
+            var bounds = new Rectangle(
+                16,
+                top + 16,
+                dashboardDataGridView.ClientSize.Width - 32,
+                dashboardDataGridView.ClientSize.Height - top - 32);
+
+            if (bounds.Width <= 0 || bounds.Height <= 0)
             {
                 return;
             }
@@ -238,10 +252,32 @@ namespace MinimalFirewall
                     ? "Blocked programs get a popup. Popups you close without choosing are listed here."
                     : "Popups are off: every blocked program is listed here to allow, block or ignore.");
 
-            int top = dashboardDataGridView.ColumnHeadersVisible ? dashboardDataGridView.ColumnHeadersHeight : 0;
-            var bounds = new Rectangle(16, top + 16, dashboardDataGridView.ClientSize.Width - 32, dashboardDataGridView.ClientSize.Height - top - 32);
-            TextRenderer.DrawText(e.Graphics, message, dashboardDataGridView.Font, bounds, Theme.Colors.TextInactive,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak);
+            TextRenderer.DrawText(
+                e.Graphics,
+                message,
+                dashboardDataGridView.Font,
+                bounds,
+                Theme.Colors.TextInactive,
+                TextFormatFlags.HorizontalCenter |
+                TextFormatFlags.VerticalCenter |
+                TextFormatFlags.WordBreak);
+        }
+
+        private void DashboardDataGridView_Resize(object? sender, EventArgs e)
+        {
+            if (dashboardDataGridView.Rows.Count == 0)
+            {
+                dashboardDataGridView.Invalidate();
+            }
+        }
+
+        private void AppSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AppSettings.IsPopupsEnabled) &&
+                dashboardDataGridView.Rows.Count == 0)
+            {
+                dashboardDataGridView.Invalidate();
+            }
         }
 
         private void LoadDashboardItems()
