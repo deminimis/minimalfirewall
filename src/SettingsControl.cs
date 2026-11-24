@@ -47,6 +47,7 @@ namespace MinimalFirewall
         // titled cards that flow two per row on wide windows and one per row on narrow ones.
         private readonly List<Control> _cards = [];
         private FlowLayoutPanel? _cardFlow;
+        private int _cardWidth;
 
         private void BuildCardLayout()
         {
@@ -176,6 +177,7 @@ namespace MinimalFirewall
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
+                FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = true,
                 Padding = new Padding(S(16)),
             };
@@ -209,25 +211,60 @@ namespace MinimalFirewall
 
             float dpi = DeviceDpi / 96f;
             int gap = (int)Math.Round(16 * dpi);
-            int available = _cardFlow.ClientSize.Width - _cardFlow.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth;
+            int available = _cardFlow.ClientSize.Width
+                - _cardFlow.Padding.Horizontal
+                - SystemInformation.VerticalScrollBarWidth;
+
             int columns = available >= 2 * (int)Math.Round(380 * dpi) + gap ? 2 : 1;
-            int width = Math.Max((int)Math.Round(300 * dpi), (available - gap * columns) / columns);
+            int width = Math.Max(
+                (int)Math.Round(300 * dpi),
+                (available - gap * (columns - 1)) / columns);
 
             _cardFlow.SuspendLayout();
-            foreach (var card in _cards)
+
+            for (int i = 0; i < _cards.Count; i++)
             {
+                var card = _cards[i];
+                int contentWidth = Math.Max(0, width - card.Padding.Horizontal);
+
                 card.MinimumSize = new Size(width, 0);
                 card.MaximumSize = new Size(width, 0);
+
                 if (card.Controls.Count > 0)
                 {
-                    card.Controls[0].MaximumSize = new Size(width - card.Padding.Horizontal, 0);
+                    card.Controls[0].MaximumSize = new Size(contentWidth, 0);
+
                     foreach (Control row in card.Controls[0].Controls)
                     {
-                        row.MaximumSize = new Size(width - card.Padding.Horizontal, 0);
+                        row.MaximumSize = new Size(contentWidth, 0);
                     }
                 }
+
+                _cardFlow.SetFlowBreak(card, (i + 1) % columns == 0);
             }
+
             _cardFlow.ResumeLayout(true);
+            _cardFlow.PerformLayout();
+
+            int rows = (_cards.Count + columns - 1) / columns;
+            int contentHeight = _cardFlow.Padding.Vertical;
+
+            for (int row = 0; row < rows; row++)
+            {
+                contentHeight += _cards
+                    .Skip(row * columns)
+                    .Take(columns)
+                    .Max(card => card.Height + card.Margin.Vertical);
+            }
+
+            _cardFlow.AutoScrollMinSize = new Size(0, contentHeight);
+        }
+
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            _cardWidth = 0;
+            SizeCards();
         }
         #endregion
 
@@ -351,8 +388,8 @@ namespace MinimalFirewall
 
             IconVisibilityChanged?.Invoke();
             AutoRefreshTimerChanged?.Invoke();
-            _appSettings.Save();
             _appSettings.DnsRefreshIntervalMinutes = (int)dnsRefreshNumericUpDown.Value;
+            _appSettings.Save();
         }
 
         public void ApplyTheme(bool _isDark)
