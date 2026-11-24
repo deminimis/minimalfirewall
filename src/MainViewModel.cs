@@ -213,15 +213,28 @@ namespace MinimalFirewall
 
                 try
                 {
-                    if (p.MainModule != null)
-                    {
-                        path = p.MainModule.FileName;
-                    }
+                    ProcessModule? mainModule = p.MainModule;
+                    path = mainModule?.FileName ?? string.Empty;
                 }
-                catch (Win32Exception) { path = "N/A (Access Denied)"; }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == 5)
+                {
+                    path = "N/A (Access Denied)";
+                }
+                catch (InvalidOperationException)
+                {
+                    path = "N/A (Process Exited)";
+                }
+                catch (NotSupportedException)
+                {
+                    path = "N/A";
+                }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[WARN] ResolveProcessInfo failed to read main module for PID {pid}: {ex.Message}");
+                    Debug.WriteLine(
+                        $"[WARN] ResolveProcessInfo failed to read main module " +
+                        $"for PID {pid}: {ex.Message}");
+
+                    path = "N/A";
                 }
 
                 if (name.Equals("svchost", StringComparison.OrdinalIgnoreCase))

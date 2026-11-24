@@ -25,14 +25,23 @@ namespace MinimalFirewall
             if (_entries.TryGetValue(key, out var entry))
             {
                 long now = Environment.TickCount64;
-                if (!entry.IsExpired(now) && entry.Value is T typed)
+
+                if (entry.IsExpired(now))
+                {
+                    // Remove only this expired instance
+                    _entries.TryRemove(
+                        new KeyValuePair<string, Entry>(key, entry));
+
+                    value = null;
+                    return false;
+                }
+
+                if (entry.Value is T typed)
                 {
                     Interlocked.Exchange(ref entry.LastAccessMs, now);
                     value = typed;
                     return true;
                 }
-                // Remove only the expired instance; another thread may have just stored a fresh one.
-                _entries.TryRemove(new KeyValuePair<string, Entry>(key, entry));
             }
 
             value = null;
@@ -41,7 +50,7 @@ namespace MinimalFirewall
 
         public void Set(string key, object value, TimeSpan slidingExpiration)
         {
-            // Drop stale entries on write so per-process keys cannot accumulate forever.
+            // Drop stale entries on write so per-process keys cannot accumulate forever
             long now = Environment.TickCount64;
             foreach (var pair in _entries)
             {

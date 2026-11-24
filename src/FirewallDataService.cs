@@ -105,33 +105,29 @@ namespace MinimalFirewall
                 : "*";
         }
 
-        public async Task<List<AdvancedRuleViewModel>> GetMfwRulesAsync(CancellationToken token)
+        public async Task<List<AdvancedRuleViewModel>>
+            GetAllFirewallRulesAsync(CancellationToken token)
         {
-            if (_localCache.TryGetValue(MfwRulesCacheKey, out List<AdvancedRuleViewModel>? cached) && cached != null)
+            if (_localCache.TryGetValue(
+                AllFirewallRulesCacheKey,
+                out List<AdvancedRuleViewModel>? cached) &&
+                cached != null)
             {
                 return cached;
             }
 
-            var result = await FetchAllMfwRulesAsync(token);
+            var result = await FetchAllFirewallRulesAsync(token);
+
             if (!token.IsCancellationRequested)
             {
-                _localCache.Set(MfwRulesCacheKey, result, TimeSpan.FromMinutes(10));
+                _localCache.Set(
+                    AllFirewallRulesCacheKey,
+                    result,
+                    TimeSpan.FromMinutes(10));
             }
+
             return result;
         }
-        public async Task<List<AdvancedRuleViewModel>>
-            GetAllFirewallRulesAsync(CancellationToken token)
-                {
-                    var result = await _localCache.GetOrCreateAsync(
-                        AllFirewallRulesCacheKey,
-                        async entry =>
-                        {
-                            entry.SlidingExpiration = TimeSpan.FromMinutes(10);
-                            return await FetchAllFirewallRulesAsync(token);
-                        });
-
-                    return result ?? [];
-                }
 
         private static string NormalizeRuleKey(string? value)
         {
