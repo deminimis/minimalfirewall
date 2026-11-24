@@ -874,6 +874,21 @@ namespace MinimalFirewall
                 return;
             }
 
+            // SetDefaultOutboundAction ignores per-profile failures, and a Group Policy can
+            // override the local value: read the result back instead of assuming success.
+            var mismatched = FirewallRuleService.GetProfilesNotMatchingOutbound(
+                newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+            if (mismatched.Count > 0)
+            {
+                string profiles = string.Join(", ", mismatched);
+                activityLogger.LogDebug($"Lockdown verification failed. Profiles not set to {(newLockdownState ? "Block" : "Allow")}: {profiles}");
+                SafeShowMessageBox(
+                    $"The default outbound policy was not applied to these profiles: {profiles}.\n\n" +
+                    "A Group Policy or other security software may be overriding it, " +
+                    $"so Lockdown Mode is not fully {(newLockdownState ? "enabled" : "disabled")}.",
+                    "Lockdown Mode Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
             if (newLockdownState)
             {
                 eventListenerService.Start();
