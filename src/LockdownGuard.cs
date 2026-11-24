@@ -48,6 +48,7 @@ namespace MinimalFirewall
         public void Start(bool locked)
         {
             Expect(locked);
+
             lock (_sync)
             {
                 if (_watches.Count > 0 || _disposed)
@@ -57,36 +58,74 @@ namespace MinimalFirewall
 
                 foreach (var profile in Profiles)
                 {
-                    RegistryKey? key = Registry.LocalMachine.OpenSubKey(PolicyRoot + profile.Key);
+                    RegistryKey? key =
+                        Registry.LocalMachine.OpenSubKey(
+                            PolicyRoot + profile.Key);
+
                     if (key == null)
                     {
+                        _logger.LogDebug(
+                            $"Secure Profile could not open the " +
+                            $"{profile.Name} registry key.");
                         continue;
                     }
 
                     var signal = new AutoResetEvent(false);
+
                     if (!Arm(key, signal))
                     {
+                        _logger.LogDebug(
+                            $"Secure Profile could not start monitoring the " +
+                            $"{profile.Name} registry key.");
+
                         key.Dispose();
                         signal.Dispose();
                         continue;
                     }
 
-                    var wait = ThreadPool.RegisterWaitForSingleObject(signal, (_, _) =>
-                    {
-                        // Re-arm first so a change made during the check is not missed.
-                        if (Arm(key, signal))
+                    RegisteredWaitHandle? wait = null;
+
+                    wait = ThreadPool.RegisterWaitForSingleObject(
+                        signal,
+                        (_, _) =>
                         {
+                            if (!Arm(key, signal))
+                            {
+                                lock (_sync)
+                                {
+                                    if (!_disposed)
+                                    {
+                                        _gaveUp = true;
+                                    }
+                                }
+
+                                ReportWatcherFailure(profile.Name);
+                                return;
+                            }
+
                             try
                             {
-                                _debounce.Change(1000, Timeout.Infinite);
+                                _debounce.Change(
+                                    TimeSpan.FromSeconds(1),
+                                    Timeout.InfiniteTimeSpan);
                             }
                             catch (ObjectDisposedException)
                             {
-                                // Disposed while this callback was running.
+                                // Disposed while the callback was running
                             }
-                        }
-                    }, null, Timeout.Infinite, false);
+                        },
+                        null,
+                        Timeout.InfiniteTimeSpan,
+                        executeOnlyOnce: false);
+
                     _watches.Add((key, signal, wait));
+                }
+
+                if (_watches.Count != Profiles.Length)
+                {
+                    _logger.LogDebug(
+                        $"Secure Profile started only {_watches.Count} of " +
+                        $"{Profiles.Length} registry watchers.");
                 }
             }
         }
@@ -117,6 +156,19 @@ namespace MinimalFirewall
             {
                 return false;
             }
+        }
+
+        private void ReportWatcherFailure(string profileName)
+        {
+            string message =
+                $"Secure Profile could not monitor the {profileName} firewall " +
+                "profile. Toggle Lockdown Mode after resolving the error.";
+
+            _logger.LogChange(
+                "Secure Profile",
+                $"Stopped monitoring {profileName}");
+
+            Restored?.Invoke(message);
         }
 
         private static bool[] ReadEnabledProfiles()
@@ -157,31 +209,30 @@ namespace MinimalFirewall
                 {
                     policy = FirewallRuleService.GetLocalPolicy();
 
-                    var drifted = new List<int>();
-
-                    for (int i = 0; i < Profiles.Length; i++)
-                    {
-                        var type = Profiles[i].Type;
-                        bool wasEnabled =
-                            i < _enabledBaseline.Length &&
-                            _enabledBaseline[i];
-
-                        if (policy.DefaultOutboundAction[type] !=
-                                NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
-                            (wasEnabled && !policy.FirewallEnabled[type]))
+                    var drifted = Enumerable.Range(0, Profiles.Length)
+                        .Where(i =>
                         {
-                            drifted.Add(i);
-                        }
-                    }
+                            var type = Profiles[i].Type;
+                            bool shouldBeEnabled =
+                                i < _enabledBaseline.Length &&
+                                _enabledBaseline[i];
+
+                            return
+                                policy.DefaultOutboundAction[type] !=
+                                    NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
+                                (shouldBeEnabled && !policy.FirewallEnabled[type]);
+                        })
+                        .ToList();
 
                     if (drifted.Count == 0)
                     {
                         return;
                     }
 
+                    DateTime now = DateTime.UtcNow;
+
                     while (_recentRestores.Count > 0 &&
-                           DateTime.UtcNow - _recentRestores.Peek() >
-                               TimeSpan.FromMinutes(1))
+                           now - _recentRestores.Peek() >= TimeSpan.FromMinutes(1))
                     {
                         _recentRestores.Dequeue();
                     }
@@ -190,10 +241,9 @@ namespace MinimalFirewall
                         ", ",
                         drifted.Select(i => Profiles[i].Name));
 
-                    if (_recentRestores.Count >= MaxRestoresPerMinute)
+                    if (_recentRestores.Count >= MaxRestoresPerMinute - 1)
                     {
                         _gaveUp = true;
-
                         message =
                             "Another program keeps changing the firewall profile " +
                             $"({names}). Secure Profile stopped restoring it until " +
@@ -202,67 +252,67 @@ namespace MinimalFirewall
                         _logger.LogChange(
                             "Secure Profile",
                             "Stopped: profile changed repeatedly by another program");
-
-                        return;
                     }
-
-                    foreach (int i in drifted)
+                    else
                     {
-                        var type = Profiles[i].Type;
-
-                        if (i < _enabledBaseline.Length &&
-                            _enabledBaseline[i])
+                        foreach (int i in drifted)
                         {
-                            policy.FirewallEnabled[type] = true;
+                            var type = Profiles[i].Type;
+
+                            if (i < _enabledBaseline.Length &&
+                                _enabledBaseline[i])
+                            {
+                                policy.FirewallEnabled[type] = true;
+                            }
+
+                            policy.DefaultOutboundAction[type] =
+                                NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
                         }
 
-                        policy.DefaultOutboundAction[type] =
-                            NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+                        var failed = drifted.Where(i =>
+                        {
+                            var type = Profiles[i].Type;
+                            bool shouldBeEnabled =
+                                i < _enabledBaseline.Length &&
+                                _enabledBaseline[i];
+
+                            return
+                                policy.DefaultOutboundAction[type] !=
+                                    NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
+                                (shouldBeEnabled && !policy.FirewallEnabled[type]);
+                        }).ToList();
+
+                        if (failed.Count > 0)
+                        {
+                            _gaveUp = true;
+
+                            string failedNames = string.Join(
+                                ", ",
+                                failed.Select(i => Profiles[i].Name));
+
+                            message =
+                                "Secure Profile could not restore the firewall profile " +
+                                $"({failedNames}). A Group Policy or another security " +
+                                "program may be overriding it. Secure Profile stopped " +
+                                "until Lockdown Mode is toggled.";
+
+                            _logger.LogChange(
+                                "Secure Profile",
+                                $"Stopped: restoration failed on {failedNames}");
+                        }
+                        else
+                        {
+                            _recentRestores.Enqueue(now);
+
+                            message =
+                                "Another program changed the firewall profile " +
+                                $"({names}). Lockdown Mode was restored.";
+
+                            _logger.LogChange(
+                                "Secure Profile",
+                                $"Restored Lockdown on {names}");
+                        }
                     }
-
-                    var failed = drifted.Where(i =>
-                    {
-                        var type = Profiles[i].Type;
-                        bool shouldBeEnabled =
-                            i < _enabledBaseline.Length &&
-                            _enabledBaseline[i];
-
-                        return
-                            policy.DefaultOutboundAction[type] !=
-                                NET_FW_ACTION_.NET_FW_ACTION_BLOCK ||
-                            (shouldBeEnabled && !policy.FirewallEnabled[type]);
-                    }).ToList();
-
-                    if (failed.Count > 0)
-                    {
-                        _gaveUp = true;
-
-                        string failedNames = string.Join(
-                            ", ",
-                            failed.Select(i => Profiles[i].Name));
-
-                        message =
-                            "Secure Profile could not restore the firewall profile " +
-                            $"({failedNames}). A Group Policy or another security " +
-                            "program may be overriding it. Secure Profile stopped " +
-                            "until Lockdown Mode is toggled.";
-
-                        _logger.LogChange(
-                            "Secure Profile",
-                            $"Stopped: restoration failed on {failedNames}");
-
-                        return;
-                    }
-
-                    _recentRestores.Enqueue(DateTime.UtcNow);
-
-                    message =
-                        "Another program changed the firewall profile " +
-                        $"({names}). Lockdown Mode was restored.";
-
-                    _logger.LogChange(
-                        "Secure Profile",
-                        $"Restored Lockdown on {names}");
                 }
                 catch (Exception ex) when (
                     ex is COMException or
