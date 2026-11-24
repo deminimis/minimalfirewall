@@ -1473,30 +1473,32 @@ namespace MinimalFirewall
 
         public static void SetDefaultOutboundAction(NET_FW_ACTION_ action)
         {
-            INetFwPolicy2 firewallPolicy = GetLocalPolicy();
-            if (firewallPolicy == null)
-            {
-                return;
-            }
+            INetFwPolicy2? firewallPolicy = null;
 
-            foreach (var (profile, _, _) in _profiles)
+            try
             {
-                try
+                firewallPolicy = GetLocalPolicy();
+
+                foreach (var (profile, _, _) in _profiles)
                 {
-                    firewallPolicy.set_DefaultOutboundAction(profile, action);
-                }
-                catch (COMException ex)
-                {
-                    Debug.WriteLine($"[ERROR] SetDefaultOutboundAction ({profile}): Failed. HResult: 0x{ex.HResult:X8}. Message: {ex.Message}");
-                    if (ex.HResult == E_ACCESSDENIED)
+                    try
                     {
-                        Debug.WriteLine("[ERROR] SetDefaultOutboundAction: Access Denied. Ensure the application is running with administrator privileges.");
+                        firewallPolicy.set_DefaultOutboundAction(profile, action);
+                    }
+                    catch (COMException ex)
+                    {
+                        Debug.WriteLine(
+                            $"[ERROR] SetDefaultOutboundAction ({profile}): " +
+                            $"0x{ex.HResult:X8}. {ex.Message}");
                     }
                 }
             }
-            if (firewallPolicy != null)
+            finally
             {
-                Marshal.ReleaseComObject(firewallPolicy);
+                if (firewallPolicy != null)
+                {
+                    Marshal.ReleaseComObject(firewallPolicy);
+                }
             }
         }
 
@@ -1585,30 +1587,54 @@ namespace MinimalFirewall
 
         // Names of the profiles whose default outbound action is not 'expected', either in the
         // local policy (the write failed silently) or because a Group Policy value overrides it.
-        public static List<string> GetProfilesNotMatchingOutbound(NET_FW_ACTION_ expected)
+        public static List<string> GetProfilesNotMatchingOutbound(
+    NET_FW_ACTION_ expected)
         {
             var mismatched = new List<string>();
             INetFwPolicy2? firewallPolicy = null;
+
             try
             {
                 firewallPolicy = GetLocalPolicy();
+
                 foreach (var (type, name, policyKey) in _profiles)
                 {
-                    bool localMatches = firewallPolicy.DefaultOutboundAction[type] == expected;
-                    // Group Policy stores 1 for Block and 0 for Allow.
-                    using var gpo = Microsoft.Win32.Registry.LocalMachine.OpenSubKey($@"SOFTWARE\Policies\Microsoft\WindowsFirewall\{policyKey}");
-                    bool gpoOverrides = gpo?.GetValue("DefaultOutboundAction") is int gpoValue &&
-                                        (gpoValue == 1) != (expected == NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
-                    if (!localMatches || gpoOverrides)
+                    try
                     {
-                        mismatched.Add(gpoOverrides ? $"{name} (Group Policy)" : name);
+                        bool localMatches =
+                            firewallPolicy.DefaultOutboundAction[type] == expected;
+
+                        using var gpo =
+                            Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                                $@"SOFTWARE\Policies\Microsoft\WindowsFirewall\{policyKey}");
+
+                        bool gpoOverrides =
+                            gpo?.GetValue("DefaultOutboundAction") is int value &&
+                            (value == 1) !=
+                            (expected == NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
+
+                        if (!localMatches || gpoOverrides)
+                        {
+                            mismatched.Add(
+                                gpoOverrides
+                                    ? $"{name} (Group Policy)"
+                                    : name);
+                        }
+                    }
+                    catch (Exception ex) when (
+                        ex is COMException or
+                        InvalidOperationException or
+                        UnauthorizedAccessException or
+                        System.Security.SecurityException or
+                        IOException)
+                    {
+                        Debug.WriteLine(
+                            $"[ERROR] Could not verify {name} outbound policy: " +
+                            ex.Message);
+
+                        mismatched.Add($"{name} (policy could not be read)");
                     }
                 }
-            }
-            catch (Exception ex) when (ex is COMException or InvalidOperationException)
-            {
-                Debug.WriteLine($"[ERROR] GetProfilesNotMatchingOutbound: {ex.Message}");
-                mismatched.Add("unknown (policy could not be read)");
             }
             finally
             {
@@ -1617,6 +1643,7 @@ namespace MinimalFirewall
                     Marshal.ReleaseComObject(firewallPolicy);
                 }
             }
+
             return mismatched;
         }
 

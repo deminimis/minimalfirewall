@@ -933,10 +933,14 @@ namespace MinimalFirewall
             notifyIcon.DoubleClick += ShowWindow;
         }
 
-        private void ToggleLockdownTrayMenuItem_Click(object? sender, EventArgs e)
+        private void ToggleLockdownTrayMenuItem_Click(
+            object? sender,
+            EventArgs e)
         {
-            _mainViewModel.ToggleLockdownMode();
-            UpdateTrayStatus();
+            if (_mainViewModel.ToggleLockdownMode())
+            {
+                UpdateTrayStatus();
+            }
         }
 
         // For installers and updaters: the temporary rule removes itself, so lockdown comes back on its own.
@@ -1529,12 +1533,15 @@ namespace MinimalFirewall
         {
             bool wasLocked = MainViewModel.IsLockedDown;
 
-            _mainViewModel.ToggleLockdownMode();
+            if (!_mainViewModel.ToggleLockdownMode())
+            {
+                UpdateTrayStatus();
+                return;
+            }
 
             UpdateTrayStatus();
 
-            bool isNowLocked = MainViewModel.IsLockedDown;
-            if (wasLocked && !isNowLocked)
+            if (wasLocked && !MainViewModel.IsLockedDown)
             {
                 DismissAllPopups();
             }

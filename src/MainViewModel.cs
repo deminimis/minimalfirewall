@@ -475,9 +475,13 @@ namespace MinimalFirewall
             DashboardActionProcessed?.Invoke(pending);
         }
 
-        public void ToggleLockdownMode()
+        public bool ToggleLockdownMode()
         {
-            _actionsService.ToggleLockdown();
+            if (!_actionsService.ToggleLockdown())
+            {
+                return false;
+            }
+
             if (IsLockedDown)
             {
                 _eventListenerService.EnableAuditing();
@@ -487,7 +491,6 @@ namespace MinimalFirewall
             {
                 _eventListenerService.Stop();
 
-                // Clear pending notifications when unlocked
                 if (_uiContext != null)
                 {
                     _uiContext.Post(_ => PendingConnections.Clear(), null);
@@ -497,6 +500,8 @@ namespace MinimalFirewall
                     PendingConnections.Clear();
                 }
             }
+
+            return true;
         }
 
         public void ProcessTemporaryDashboardAction(PendingConnectionViewModel pending, string decision, TimeSpan duration)

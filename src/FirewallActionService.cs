@@ -812,7 +812,7 @@ namespace MinimalFirewall
             MessageBox.Show(text, caption, buttons, icon);
         }
 
-        public void ToggleLockdown()
+        public bool ToggleLockdown()
         {
             var isCurrentlyLocked = FirewallRuleService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
             bool newLockdownState = !isCurrentlyLocked;
@@ -858,7 +858,7 @@ namespace MinimalFirewall
                     "Lockdown Mode Failed: Could not enable audit policy. " +
                     "Temporary system and WSL rules were removed.");
 
-                return;
+                return false;
             }
 
             try
@@ -869,9 +869,14 @@ namespace MinimalFirewall
             catch (COMException ex)
             {
                 activityLogger.LogException("SetDefaultOutboundAction", ex);
-                SafeShowMessageBox("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
-                "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                SafeShowMessageBox(
+                    "Failed to change the default outbound policy.\n" +
+                    "Check debug_log.txt for details.",
+                    "Lockdown Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return false;
             }
 
             // SetDefaultOutboundAction ignores per-profile failures, and a Group Policy can
@@ -881,12 +886,23 @@ namespace MinimalFirewall
             if (mismatched.Count > 0)
             {
                 string profiles = string.Join(", ", mismatched);
-                activityLogger.LogDebug($"Lockdown verification failed. Profiles not set to {(newLockdownState ? "Block" : "Allow")}: {profiles}");
+                string requestedState = newLockdownState ? "Block" : "Allow";
+
+                activityLogger.LogDebug(
+                    $"Lockdown verification failed. Profiles not set to " +
+                    $"{requestedState}: {profiles}");
+
                 SafeShowMessageBox(
-                    $"The default outbound policy was not applied to these profiles: {profiles}.\n\n" +
-                    "A Group Policy or other security software may be overriding it, " +
-                    $"so Lockdown Mode is not fully {(newLockdownState ? "enabled" : "disabled")}.",
-                    "Lockdown Mode Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    $"The default outbound policy was not applied to these " +
+                    $"profiles: {profiles}.\n\n" +
+                    "A Group Policy, insufficient permissions, or other " +
+                    "security software may be overriding it. Minimal Firewall " +
+                    "will not report the Lockdown toggle as successful.",
+                    "Lockdown Mode Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return false;
             }
 
             if (newLockdownState)
@@ -904,6 +920,7 @@ namespace MinimalFirewall
                 ReenablefirewallRules();
                 activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
             }
+            return true;
         }
 
 
