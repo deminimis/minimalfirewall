@@ -28,11 +28,21 @@ namespace DarkModeForms
 
         protected override void OnHandleCreated(EventArgs e)
         {
-            base.OnHandleCreated(e);
             if (IsSidebar)
             {
-                SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+                SetStyle(
+                    ControlStyles.UserPaint |
+                    ControlStyles.AllPaintingInWmPaint |
+                    ControlStyles.OptimizedDoubleBuffer,
+                    true);
+
+                foreach (TabPage page in TabPages)
+                {
+                    page.BorderStyle = BorderStyle.None;
+                }
             }
+
+            base.OnHandleCreated(e);
         }
 
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -62,15 +72,30 @@ namespace DarkModeForms
             }
 
             var colors = Theme.Colors;
+            int sidebarWidth = ItemSize.Height;
+
             using (var strip = new SolidBrush(Parent?.BackColor ?? colors.Background))
             {
-                e.Graphics.FillRectangle(strip, ClientRectangle);
+                e.Graphics.FillRectangle(
+                    strip,
+                    new Rectangle(0, 0, sidebarWidth, Height));
             }
 
             for (int i = 0; i < TabPages.Count; i++)
             {
                 DrawSidebarItem(e.Graphics, i);
             }
+
+            // Separate the navigation strip from the active page.
+            using var separator = new Pen(
+                Color.FromArgb(110, colors.TextInactive));
+
+            e.Graphics.DrawLine(
+                separator,
+                sidebarWidth - 1,
+                0,
+                sidebarWidth - 1,
+                Height);
         }
 
         private void DrawSidebarItem(Graphics g, int index)
@@ -134,20 +159,24 @@ namespace DarkModeForms
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (!IsSidebar)
-            {
-                return;
-            }
 
             int hot = -1;
-            for (int i = 0; i < TabPages.Count; i++)
+
+            if (IsSidebar && e.X < ItemSize.Height)
             {
-                if (GetTabRect(i).Contains(e.Location))
+                for (int i = 0; i < TabPages.Count; i++)
                 {
-                    hot = i;
-                    break;
+                    Rectangle rect = GetTabRect(i);
+                    rect.Width = ItemSize.Height;
+
+                    if (rect.Contains(e.Location))
+                    {
+                        hot = i;
+                        break;
+                    }
                 }
             }
+
             if (hot != _hotIndex)
             {
                 _hotIndex = hot;
@@ -161,6 +190,16 @@ namespace DarkModeForms
             if (_hotIndex != -1)
             {
                 _hotIndex = -1;
+                Invalidate();
+            }
+        }
+
+        protected override void OnSelectedIndexChanged(EventArgs e)
+        {
+            base.OnSelectedIndexChanged(e);
+
+            if (IsSidebar)
+            {
                 Invalidate();
             }
         }
@@ -268,6 +307,21 @@ namespace DarkModeForms
             {
                 ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(tabRect, -3, -3), textColor, colors.Surface);
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (Image image in _darkIconCache.Values)
+                {
+                    image.Dispose();
+                }
+
+                _darkIconCache.Clear();
+            }
+
+            base.Dispose(disposing);
         }
 
         private static Bitmap RecolorImage(Image sourceImage, Color newColor)

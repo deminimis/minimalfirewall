@@ -135,7 +135,7 @@ namespace MinimalFirewall
             // 
             // dashboardTabPage
             // 
-            dashboardTabPage.BorderStyle = BorderStyle.FixedSingle;
+            dashboardTabPage.BorderStyle = BorderStyle.None;
             dashboardTabPage.Controls.Add(logoPictureBox);
             dashboardTabPage.Controls.Add(dashboardControl1);
             dashboardTabPage.ImageIndex = 3;
@@ -196,7 +196,7 @@ namespace MinimalFirewall
             // 
             // rulesTabPage
             // 
-            rulesTabPage.BorderStyle = BorderStyle.FixedSingle;
+            rulesTabPage.BorderStyle = BorderStyle.None;
             rulesTabPage.Controls.Add(rulesControl1);
             rulesTabPage.ImageIndex = 8;
             rulesTabPage.Location = new Point(124, 4);
@@ -220,7 +220,7 @@ namespace MinimalFirewall
             // 
             // wildcardRulesTabPage
             // 
-            wildcardRulesTabPage.BorderStyle = BorderStyle.FixedSingle;
+            wildcardRulesTabPage.BorderStyle = BorderStyle.None;
             wildcardRulesTabPage.Controls.Add(wildcardRulesControl1);
             wildcardRulesTabPage.ImageIndex = 11;
             wildcardRulesTabPage.Location = new Point(124, 4);
@@ -245,7 +245,7 @@ namespace MinimalFirewall
             // 
             // systemChangesTabPage
             // 
-            systemChangesTabPage.BorderStyle = BorderStyle.FixedSingle;
+            systemChangesTabPage.BorderStyle = BorderStyle.None;
             systemChangesTabPage.Controls.Add(auditControl1);
             systemChangesTabPage.ImageIndex = 1;
             systemChangesTabPage.Location = new Point(124, 4);
@@ -268,7 +268,7 @@ namespace MinimalFirewall
             // 
             // groupsTabPage
             // 
-            groupsTabPage.BorderStyle = BorderStyle.FixedSingle;
+            groupsTabPage.BorderStyle = BorderStyle.None;
             groupsTabPage.Controls.Add(groupsControl1);
             groupsTabPage.ImageIndex = 4;
             groupsTabPage.Location = new Point(124, 4);
@@ -292,7 +292,7 @@ namespace MinimalFirewall
             // 
             // liveConnectionsTabPage
             // 
-            liveConnectionsTabPage.BorderStyle = BorderStyle.FixedSingle;
+            liveConnectionsTabPage.BorderStyle = BorderStyle.None;
             liveConnectionsTabPage.Controls.Add(liveConnectionsControl1);
             liveConnectionsTabPage.ImageIndex = 0;
             liveConnectionsTabPage.Location = new Point(124, 4);
