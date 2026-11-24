@@ -84,6 +84,14 @@ namespace MinimalFirewall
                 .Where(kvp => kvp.Value <= now)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
+
+        public Dictionary<string, DateTime> GetActiveRules()
+        {
+            var now = DateTime.UtcNow;
+            return _temporaryRules
+                .Where(kvp => kvp.Value > now)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
     }
 
     [JsonSourceGenerationOptions(WriteIndented = true)]
