@@ -62,6 +62,7 @@ namespace MinimalFirewall
         private StatusForm? _auditStatusForm = null;
         private CancellationTokenSource? _scanCts = null;
         private System.Windows.Forms.Timer? _trayBlinkTimer;
+        private System.Windows.Forms.Timer? _fadeTimer;
         private bool _trayBlinkState = false;
         private const int BaseMainTabItemWidth = 85;
         private const int BaseMainTabItemHeight = 120;
@@ -195,6 +196,7 @@ namespace MinimalFirewall
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
+            StopFadeTimer();
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
             _appSettings?.PropertyChanged -= AppSettings_PropertyChanged;
@@ -226,29 +228,13 @@ namespace MinimalFirewall
 
                 ShowInTaskbar = true;
 
-                var fadeTimer = new System.Windows.Forms.Timer
+                _fadeTimer?.Dispose();
+                _fadeTimer = new System.Windows.Forms.Timer
                 {
                     Interval = 20
                 };
-                fadeTimer.Tick += (sender, args) =>
-                {
-                    // The window can be closed while fading in; touching Opacity then recreates a disposed handle.
-                    if (IsDisposed)
-                    {
-                        fadeTimer.Stop();
-                        fadeTimer.Dispose();
-                        return;
-                    }
-
-                    Opacity += 0.1;
-                    if (Opacity >= 1.0)
-                    {
-                        fadeTimer.Stop();
-                        fadeTimer.Dispose();
-                        Opacity = 1.0;
-                    }
-                };
-                fadeTimer.Start();
+                _fadeTimer.Tick += FadeTimer_Tick;
+                _fadeTimer.Start();
 
                 Activate();
             }
@@ -297,6 +283,29 @@ namespace MinimalFirewall
             settingsControl1.LoadSettingsToUI();
             SetupAutoRefreshTimer();
             UpdateIconColumnVisibility();
+        }
+
+        private void FadeTimer_Tick(object? sender, EventArgs e)
+        {
+            if (Disposing || IsDisposed)
+            {
+                StopFadeTimer();
+                return;
+            }
+
+            Opacity = Math.Min(1.0, Opacity + 0.1);
+
+            if (Opacity >= 1.0)
+            {
+                StopFadeTimer();
+            }
+        }
+
+        private void StopFadeTimer()
+        {
+            _fadeTimer?.Stop();
+            _fadeTimer?.Dispose();
+            _fadeTimer = null;
         }
 
         protected override void OnDpiChanged(DpiChangedEventArgs e)

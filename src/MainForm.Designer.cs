@@ -37,6 +37,7 @@ namespace MinimalFirewall
             if (disposing)
             {
                 _trayBlinkTimer?.Dispose();
+                _fadeTimer?.Dispose();
                 _autoRefreshTimer?.Dispose();
                 // Order matters: view model -> producers -> consumer queue.
                 // In-flight watcher callbacks racing past this are guarded in EnqueueTask.
