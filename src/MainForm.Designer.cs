@@ -181,7 +181,7 @@ namespace MinimalFirewall
             instructionLabel.Name = "instructionLabel";
             instructionLabel.Size = new Size(241, 15);
             instructionLabel.TabIndex = 2;
-            instructionLabel.Text = "Press the lock key to initiate firewall defense.";
+            instructionLabel.Text = "Lockdown is off: all outbound traffic is allowed. Press the lock key to block unknown programs and review them here.";
             // 
             // dashboardControl1
             // 
