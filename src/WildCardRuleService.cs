@@ -168,7 +168,7 @@ namespace MinimalFirewall
             try
             {
                 string json = JsonSerializer.Serialize(_rules, WildcardRuleJsonContext.Default.ListWildcardRule);
-                File.WriteAllText(_configPath, json);
+                FileUtility.WriteAllTextAtomic(_configPath, json);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -203,7 +203,7 @@ namespace MinimalFirewall
                                            .Replace("\\?", ".") + "$";
 
 
-                    folderRegex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                    folderRegex = new Regex(pattern, RegexOptions.IgnoreCase);
                 }
                 catch (Exception ex)
                 {
@@ -218,7 +218,7 @@ namespace MinimalFirewall
                                        .Replace("\\*", ".*")
                                        .Replace("\\?", ".") + "$";
 
-                exeRegex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                exeRegex = new Regex(regexPattern, RegexOptions.IgnoreCase);
             }
             catch (Exception ex)
             {
@@ -226,6 +226,25 @@ namespace MinimalFirewall
             }
 
             _regexCache[rule] = (folderRegex, exeRegex);
+        }
+
+        // A folder prefix only matches on a separator boundary: "C:\Tools" must not match "C:\ToolsEvil\x.exe".
+        public static bool IsInFolder(string? path, string? folder)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(folder))
+            {
+                return false;
+            }
+
+            string root = folder.TrimEnd('\\', '/');
+
+            if (root.Length == 0 || path.Length <= root.Length)
+            {
+                return false;
+            }
+
+            return path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                && (path[root.Length] == '\\' || path[root.Length] == '/');
         }
 
         public WildcardRule? Match(string path)
@@ -267,7 +286,7 @@ namespace MinimalFirewall
                     }
                     else
                     {
-                        if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                        if (IsInFolder(normalizedPath, expandedFolderPath))
                         {
                             isFolderMatch = true;
                         }
