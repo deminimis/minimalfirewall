@@ -470,6 +470,7 @@ namespace MinimalFirewall
             // 
             // detailsLabel
             // 
+            detailsLabel.AutoSize = true;
             detailsLabel.Dock = DockStyle.Top;
             detailsLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             detailsLabel.Location = new Point(0, 0);

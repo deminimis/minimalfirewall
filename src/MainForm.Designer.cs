@@ -401,6 +401,7 @@ namespace MinimalFirewall
             AutoScaleDimensions = new SizeF(7F, 16F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1000, 747);
+            MinimumSize = new Size(820, 560);
             Controls.Add(rescanButton);
             Controls.Add(lockdownButton);
             Controls.Add(mainTabControl);
