@@ -64,8 +64,8 @@ namespace MinimalFirewall
         private System.Windows.Forms.Timer? _trayBlinkTimer;
         private System.Windows.Forms.Timer? _fadeTimer;
         private bool _trayBlinkState = false;
-        private const int BaseMainTabItemWidth = 85;
-        private const int BaseMainTabItemHeight = 120;
+        private const int BaseMainTabItemWidth = 44;
+        private const int BaseMainTabItemHeight = 172;
         #endregion
 
         #region Native Methods
