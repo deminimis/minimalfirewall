@@ -14,45 +14,39 @@ namespace MinimalFirewall
 
         public WildcardRule NewRule { get; private set; } = new();
 
-        // The buttons have fixed designer sizes and clip their text when the display font is larger.
-        // Grow each to its preferred size and move the controls around it so nothing overlaps.
-        private void FitButtons()
+        ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta + dialogDelta);
+        }
+               // The instructions are taller than their designed box with the app font or a larger display font.
+        // Grow the box to fit and push the controls below it down, so nothing is cut or overlapped.
+        protected override void OnLoad(EventArgs e)
         {
-            static int Grow(Button button, int minimumHeight)
+            base.OnLoad(e);
+
+            int needed = instructionLabel.GetPreferredSize(
+                new Size(instructionLabel.Width, 0)).Height;
+            int delta = needed - instructionLabel.Height;
+
+            if (delta <= 0)
             {
-                var preferred = button.GetPreferredSize(Size.Empty);
-                int heightDelta = Math.Max(0, Math.Max(preferred.Height, minimumHeight) - button.Height);
-                button.Size = new Size(Math.Max(button.Width, preferred.Width), button.Height + heightDelta);
-                return heightDelta;
+                return;
             }
 
-            // Browse sits beside the folder box: match its height and take width from the box.
-            Grow(browseButton, folderPathTextBox.Height);
-            browseButton.Top = folderPathTextBox.Top;
-            browseButton.Left = exeNameTextBox.Right - browseButton.Width;
-            folderPathTextBox.Width = browseButton.Left - 6 - folderPathTextBox.Left;
+            int oldBottom = instructionLabel.Bottom;
+            instructionLabel.Height = needed;
 
-            // Advanced: push everything below it down by the extra height.
-            int oldBottom = advancedButton.Bottom;
-            int delta = Grow(advancedButton, 0);
-            if (delta > 0)
+            foreach (Control control in Controls)
             {
-                foreach (Control control in Controls)
+                if (control != instructionLabel &&
+                    control.Top >= oldBottom &&
+                    !control.Anchor.HasFlag(AnchorStyles.Bottom))
                 {
-                    if (control != advancedButton && control.Top >= oldBottom && !control.Anchor.HasFlag(AnchorStyles.Bottom))
-                    {
-                        control.Top += delta;
-                    }
+                    control.Top += delta;
                 }
             }
 
-            // OK and Cancel are anchored bottom-right: keep their right edges and bottom line.
-            int right = cancelButton.Right, bottom = cancelButton.Bottom;
-            int dialogDelta = Math.Max(Grow(okButton, 0), Grow(cancelButton, 0));
-            okButton.Height = cancelButton.Height = Math.Max(okButton.Height, cancelButton.Height);
-            cancelButton.Location = new Point(right - cancelButton.Width, bottom - cancelButton.Height);
-            okButton.Location = new Point(cancelButton.Left - 6 - okButton.Width, cancelButton.Top);
-            ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta + dialogDelta);
+            // Bottom-anchored controls (OK, Cancel) move down with the taller client area.
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta);
+
         }
 
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService, AppSettings appSettings, WildcardRule? ruleToEdit = null)
@@ -64,7 +58,7 @@ namespace MinimalFirewall
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
             Theme.ApplyTitleBarTheme(this.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             this.BackColor = Theme.Colors.Background;
-            this.ForeColor = Theme.Colors.TextInactive;;
+            ForeColor = Theme.Colors.TextInactive;
 
             // Force repaint of ComboBox controls to ensure correct colors
             directionCombo.Invalidate();
@@ -88,7 +82,7 @@ namespace MinimalFirewall
         {
             try
             {
-                string? dirPath = Path.GetDirectoryName(initialAppPath);
+                string? dirPath = WildcardRuleService.SuggestFolder(initialAppPath);
                 if (!string.IsNullOrEmpty(dirPath))
                 {
                     folderPathTextBox.Text = dirPath;

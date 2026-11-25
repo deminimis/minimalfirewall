@@ -327,7 +327,7 @@ namespace MinimalFirewall
                 return false;
             }
 
-            return grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+            return grouping.EndsWith(MFWConstants.firewallRulesuffix) ||
                    grouping == MFWConstants.MainRuleGroup ||
                    grouping == MFWConstants.WildcardRuleGroup;
         }

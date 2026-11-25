@@ -153,9 +153,7 @@ namespace MinimalFirewall
                 try
                 {
                     string json = JsonSerializer.Serialize(_timestamps, RuleTimestampJsonContext.Default.DictionaryStringDateTime);
-                    string tempPath = _path + ".tmp";
-                    File.WriteAllText(tempPath, json);
-                    File.Move(tempPath, _path, overwrite: true);
+                    FileUtility.WriteAllTextAtomic(_path, json);
                     _dirty = false;
                 }
                 catch (Exception ex)
