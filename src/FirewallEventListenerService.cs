@@ -616,7 +616,14 @@ namespace MinimalFirewall
 
         public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
-            _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
+            if (string.IsNullOrWhiteSpace(appPath) || duration <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            _snoozedApps[appPath] = duration == TimeSpan.MaxValue
+                ? DateTime.MaxValue
+                : DateTime.UtcNow.Add(duration);
         }
 
         public void ClearAllSnoozes()

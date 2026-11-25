@@ -294,10 +294,10 @@ namespace MinimalFirewall
         private void SetupIgnoreMenu()
         {
             _ignoreMenu = new ContextMenuStrip(components);
-            _ignoreMenu.Items.Add("For 2 minutes").Click += (s, e) => SetIgnore(TimeSpan.FromMinutes(2));
-            _ignoreMenu.Items.Add("For 1 hour").Click += (s, e) => SetIgnore(TimeSpan.FromHours(1));
-            _ignoreMenu.Items.Add("For 8 hours").Click += (s, e) => SetIgnore(TimeSpan.FromHours(8));
-            _ignoreMenu.Items.Add("Until Minimal Firewall restarts").Click += (s, e) => SetIgnore(TimeSpan.FromDays(3650));
+            _ignoreMenu.Items.Add("For 2 minutes").Click += (_, _) => SetIgnore(TimeSpan.FromMinutes(2));
+            _ignoreMenu.Items.Add("For 1 hour").Click += (_, _) => SetIgnore(TimeSpan.FromHours(1));
+            _ignoreMenu.Items.Add("For 8 hours").Click += (_, _) => SetIgnore(TimeSpan.FromHours(8));
+            _ignoreMenu.Items.Add("Until Minimal Firewall restarts").Click += (_, _) => SetIgnore(TimeSpan.MaxValue);
         }
 
         private void SetIgnore(TimeSpan duration)
