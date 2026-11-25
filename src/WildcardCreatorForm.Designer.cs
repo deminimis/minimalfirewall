@@ -325,6 +325,7 @@ namespace MinimalFirewall
             Name = "WildcardCreatorForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Create Wildcard Rule";
+            Load += (_, _) => FitButtons();
             actionGroupBox.ResumeLayout(false);
             actionGroupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider1).EndInit();
