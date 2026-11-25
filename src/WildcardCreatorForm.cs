@@ -12,7 +12,6 @@ namespace MinimalFirewall
     {
         
 
-        public WildcardRule NewRule { get; private set; } = new();
 
         public WildcardRule NewRule { get; private set; } = new();
 
