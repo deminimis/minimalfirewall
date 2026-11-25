@@ -350,6 +350,7 @@ namespace MinimalFirewall
             // 
             // diffLabel
             // 
+            diffLabel.AutoSize = true;
             diffLabel.Dock = DockStyle.Top;
             diffLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             diffLabel.Location = new Point(0, 0);
