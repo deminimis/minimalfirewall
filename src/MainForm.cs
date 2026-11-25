@@ -1163,9 +1163,10 @@ namespace MinimalFirewall
                 return false;
             }
 
-            if (result == DialogResult.Yes)
+            if (result == DialogResult.Yes &&
+                !_mainViewModel.ToggleLockdownMode())
             {
-                _mainViewModel.ToggleLockdownMode();
+                return false;
             }
 
             _lockdownExitConfirmed = true;
