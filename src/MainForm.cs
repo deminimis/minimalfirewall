@@ -1093,6 +1093,14 @@ namespace MinimalFirewall
 
         private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
         {
+            // Windows first queries every window; another application may still cancel shutdown.
+            // Do not save UI settings or re-enter Application.Exit during that query.
+            if (e.CloseReason == CloseReason.WindowsShutDown)
+            {
+                e.Cancel = false;
+                return;
+            }
+
             bool isNormal = WindowState == FormWindowState.Normal;
             _appSettings.WindowLocation = isNormal ? Location : RestoreBounds.Location;
             _appSettings.WindowSize = isNormal ? Size : RestoreBounds.Size;
