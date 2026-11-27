@@ -49,6 +49,12 @@ namespace MinimalFirewall
 
         private void InitialLoadTimer_Tick(object? sender, EventArgs e)
         {
+            if (IsDisposed || Disposing || !IsHandleCreated)
+            {
+                _initialLoadTimer.Stop();
+                return;
+            }
+
             if (_realProgressStarted)
             {
                 _initialLoadTimer.Stop();
@@ -86,39 +92,76 @@ namespace MinimalFirewall
             }
         }
 
-        public void UpdateStatus(string message)
+        private void RunOnUiThread(Action action)
         {
-            if (InvokeRequired)
+            if (IsDisposed || Disposing)
             {
-                Invoke(new Action(() => UpdateStatus(message)));
                 return;
             }
 
-            statusLabel.Text = message;
+            if (!IsHandleCreated)
+            {
+                return;
+            }
+
+            if (!InvokeRequired)
+            {
+                action();
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    if (!IsDisposed && !Disposing && IsHandleCreated)
+                    {
+                        action();
+                    }
+                }));
+            }
+            catch (InvalidOperationException)
+            {
+                // The form was disposed or its window handle was destroyed
+                // while the callback was being queued.
+            }
         }
 
+        public void UpdateStatus(string message)
+        {
+            RunOnUiThread(() =>
+            {
+                statusLabel.Text = message;
+            });
+        }
         public void UpdateProgress(int percentage)
         {
-            if (InvokeRequired)
+            RunOnUiThread(() =>
             {
-                Invoke(() => UpdateProgress(percentage));
-                return;
-            }
+                _realProgressStarted = true;
+                _initialLoadTimer.Stop();
 
+                int newProgress =
+                    Math.Max((int)_fakeProgress, percentage);
 
-            _realProgressStarted = true;
+                progressBar.Value =
+                    Math.Clamp(newProgress, 0, 100);
+
+                progressLabel.Text =
+                    $"{progressBar.Value}%";
+            });
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
             _initialLoadTimer.Stop();
-
-            // Ensure we don't jump backward if the fake progress got ahead of the real scan
-            int newProgress = Math.Max((int)_fakeProgress, percentage);
-
-            progressBar.Value = Math.Clamp(newProgress, 0, 100);
-            progressLabel.Text = $"{progressBar.Value}%";
+            base.OnFormClosing(e);
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            MaximumSize = Screen.FromControl(Owner ?? this).WorkingArea.Size;
             if (Owner != null)
             {
                 Location = new Point(Owner.Location.X + (Owner.Width - Width) / 2,
@@ -128,18 +171,16 @@ namespace MinimalFirewall
 
         public void Complete(string message)
         {
-            if (InvokeRequired)
+            RunOnUiThread(() =>
             {
-                Invoke(new Action(() => Complete(message)));
-                return;
-            }
-
-            statusLabel.Text = message;
-            progressBar.Visible = false;
-            progressLabel.Visible = false;
-            okButton.Visible = true;
-            Text = "Scan Complete";
-            okButton.Focus();
+                _initialLoadTimer.Stop();
+                statusLabel.Text = message;
+                progressBar.Visible = false;
+                progressLabel.Visible = false;
+                okButton.Visible = true;
+                Text = "Scan Complete";
+                okButton.Focus();
+            });
         }
 
         private void okButton_Click(object sender, EventArgs e)

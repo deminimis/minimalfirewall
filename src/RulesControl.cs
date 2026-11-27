@@ -31,10 +31,11 @@ namespace MinimalFirewall
         private int _rulesSortColumn = -1;
         private SortOrder _rulesSortOrder = SortOrder.None;
         private SortableBindingList<AggregatedRuleViewModel> _currentRuleList = [];
-        private readonly Dictionary<DataGridViewColumn, int> _rulesColumnMaximumWidths = [];
         private readonly System.Windows.Forms.Timer _searchDebounceTimer;
 
         public event Func<Task>? DataRefreshRequested;
+
+
         #endregion
 
         #region Initialization
@@ -99,16 +100,31 @@ namespace MinimalFirewall
             uwpFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
             wildcardFilterCheckBox.CheckedChanged += FilterCheckBox_CheckedChanged;
 
-            rulesDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(rulesDataGridView, _appSettings.RulesColumns);
-            ConfigureCompactRuleColumns();
-            DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
-
-            rulesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
-            rulesDataGridView.ColumnWidthChanged += RulesDataGridView_ColumnWidthChanged;
+            InitializeColumnSettings(appSettings);
         }
 
-       
+        internal void InitializeColumnSettings(AppSettings appSettings)
+        {
+            _appSettings = appSettings;
+            rulesDataGridView.AllowUserToOrderColumns = true;
+
+            ConfigureCompactRuleColumns();
+
+            DataGridViewHelper.RestoreColumnSettings(
+                rulesDataGridView,
+                _appSettings.RulesColumns);
+
+            rulesDataGridView.ColumnDisplayIndexChanged += (_, _) =>
+                DataGridViewHelper.SaveColumnSettings(
+                    rulesDataGridView,
+                    _appSettings.RulesColumns,
+                    _appSettings);
+
+            rulesDataGridView.ColumnWidthChanged +=
+                RulesDataGridView_ColumnWidthChanged;
+        }
+
+
         #endregion
 
         #region Data & Logic
@@ -216,10 +232,7 @@ namespace MinimalFirewall
                 if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
                 {
                     await _backgroundTaskService.WhenIdleAsync();
-                    if (DataRefreshRequested != null)
-                    {
-                        await DataRefreshRequested.Invoke();
-                    }
+                    
                 }
             }
             catch (Exception ex)
@@ -228,61 +241,368 @@ namespace MinimalFirewall
             }
         }
 
-        private async void EditRuleToolStripMenuItem_Click(object sender, EventArgs e)
+    private async void EditRuleToolStripMenuItem_Click(
+    object sender,
+    EventArgs e)
         {
             try
             {
-                if (rulesDataGridView.SelectedRows.Count == 1)
+                if (rulesDataGridView.SelectedRows.Count != 1)
                 {
-                    var aggRule = GetFirstSelectedRule();
-                    if (aggRule == null) return;
+                    return;
+                }
 
-                    var originalRule = aggRule.UnderlyingRules?.FirstOrDefault();
-                    if (originalRule == null)
-                    {
-                        Messenger.MessageBox("Cannot edit this rule as it has no underlying rule definition.", "Edit Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                var aggregatedRule = GetFirstSelectedRule();
+                if (aggregatedRule == null)
+                {
+                    return;
+                }
 
-                    using var dialog = new CreateAdvancedRuleForm(_actionsService, originalRule, _appSettings);
-                    if (dialog.ShowDialog(FindForm()) == DialogResult.OK)
-                    {
-                        if (dialog.RuleVm != null)
+                if (aggregatedRule.UnderlyingRules?.Count != 1)
+                {
+                    Messenger.MessageBox(
+                        "This row represents multiple Windows Firewall rules. " +
+                        "Minimal Firewall cannot safely determine which individual " +
+                        "rule should be edited. Refine the selection or edit an " +
+                        "individual rule after refreshing.",
+                        "Rule Edit Stopped",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                AdvancedRuleViewModel originalRule =
+                    aggregatedRule.UnderlyingRules[0];
+
+                using var dialog = new CreateAdvancedRuleForm(
+                    _actionsService,
+                    originalRule,
+                    _appSettings);
+
+                if (dialog.ShowDialog(FindForm()) != DialogResult.OK ||
+                    dialog.RuleVm == null)
+                {
+                    return;
+                }
+
+                if (originalRule.HasSameSettings(dialog.RuleVm))
+                {
+                    return;
+                }
+
+                var payload = new EditAdvancedRulePayload
+                {
+                    OriginalRule = originalRule,
+                    UpdatedRule = dialog.RuleVm
+                };
+
+                _backgroundTaskService.EnqueueTask(
+                    new FirewallTask(
+                        FirewallTaskType.EditAdvancedRule,
+                        payload,
+                        $"Editing firewall rule '{originalRule.Name}'..."));
+
+                await _backgroundTaskService.WhenIdleAsync();
+
+                
+            }
+            catch (Exception ex)
+            {
+                Messenger.MessageBox(
+                    $"An error occurred while editing the rule: {ex.Message}",
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        private async void DeleteSelectedRuleMenuItem_Click(
+     object sender,
+     EventArgs e)
+        {
+            if (rulesDataGridView.SelectedRows.Count != 1)
+            {
+                Messenger.MessageBox(
+                    "Select exactly one rule row. This command deletes one " +
+                    "individual Windows Firewall rule.",
+                    "Delete selected rule",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            AggregatedRuleViewModel? selected = GetFirstSelectedRule();
+            if (selected == null)
+            {
+                return;
+            }
+
+            if (selected.UnderlyingRules?.Count != 1)
+            {
+                Messenger.MessageBox(
+                    "This row represents multiple Windows Firewall rules. " +
+                    "Minimal Firewall cannot safely treat it as one selected " +
+                    "rule. Refine the selection or refresh until one individual " +
+                    "underlying rule is shown.\r\n\r\n" +
+                    "No rules were deleted.",
+                    "Delete selected rule stopped",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            AdvancedRuleViewModel rule =
+                selected.UnderlyingRules[0];
+
+            DialogResult confirmation = Messenger.MessageBox(
+                "Delete one selected rule\r\n\r\n" +
+                $"Rule name:\r\n{rule.Name}\r\n\r\n" +
+                $"Application:\r\n" +
+                $"{DisplayDeletionValue(rule.ApplicationName)}\r\n\r\n" +
+                $"Direction: {rule.Direction}\r\n" +
+                $"Action: {rule.Status}\r\n" +
+                $"Protocol: {DisplayDeletionValue(rule.ProtocolName)}\r\n\r\n" +
+                "Only this individual rule will be requested for deletion. " +
+                "If another Windows Firewall rule has the same name, deletion " +
+                "will be refused before INetFwRules.Remove is called.\r\n\r\n" +
+                "Continue?",
+                "Delete selected rule",
+                MsgIcon.Warning,
+                MessageBoxButtons.YesNo,
+                pIsDarkMode: Theme.Colors.Surface.R < 128,
+                defaultButton: MessageBoxDefaultButton.Button2,
+                owner: FindForm());
+
+            if (confirmation != DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _backgroundTaskService.TakeLastOperationFailure();
+
+                _backgroundTaskService.EnqueueTask(
+                    new FirewallTask(
+                        FirewallTaskType.DeleteSelectedRule,
+                        new DeleteSelectedRulePayload
                         {
-                            if (originalRule.HasSameSettings(dialog.RuleVm)) return;
+                            Rule = rule
+                        },
+                        $"Deleting selected rule '{rule.Name}'..."));
+                await _backgroundTaskService.WhenIdleAsync();
 
-                            var deletePayload = new DeleteRulesPayload { RuleIdentifiers = [.. aggRule.UnderlyingRules?.Select(r => r.Name) ?? []] };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
+                Exception? failure =
+                    _backgroundTaskService.TakeLastOperationFailure();
 
-                            var createPayload = new CreateAdvancedRulePayload { ViewModel = dialog.RuleVm, InterfaceTypes = dialog.RuleVm.InterfaceTypes, IcmpTypesAndCodes = dialog.RuleVm.IcmpTypesAndCodes };
-                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, createPayload));
+                if (failure != null)
+                {
+                    throw failure;
+                }
 
-                            await _backgroundTaskService.WhenIdleAsync();
-                            if (DataRefreshRequested != null)
-                            {
-                                await DataRefreshRequested.Invoke();
-                            }
-                        }
-                    }
+                if (DataRefreshRequested != null)
+                {
+                    await DataRefreshRequested.Invoke();
+                }
+                else
+                {
+                    await RefreshDataAsync();
                 }
             }
             catch (Exception ex)
             {
-                Messenger.MessageBox($"An error occurred while editing the rule: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Messenger.MessageBox(
+                    "The selected rule was not deleted.\r\n\r\n" +
+                    ex.Message,
+                    "Delete selected rule stopped",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
             }
         }
 
-        private void DeleteRuleMenuItem_Click(object _, EventArgs _1)
+        private async void DeleteAllApplicationRulesMenuItem_Click(
+            object sender,
+            EventArgs e)
         {
-            var items = GetSelectedRules();
-            if (items.Count > 0)
+            if (rulesDataGridView.SelectedRows.Count != 1)
             {
-                var result = Messenger.MessageBox($"Are you sure you want to delete the {items.Count} selected rule(s)?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (result == DialogResult.No) return;
-
-                _mainViewModel.DeleteRules(items);
-                ApplyRulesFilters();
+                Messenger.MessageBox(
+                    "Select exactly one application rule row before using " +
+                    "application-wide deletion.",
+                    "Delete all rules for this application",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
             }
+
+            AggregatedRuleViewModel? selected = GetFirstSelectedRule();
+            string appPath = selected?.ApplicationName?.Trim() ?? string.Empty;
+
+            if (!IsDeletableExecutablePath(appPath))
+            {
+                Messenger.MessageBox(
+                    "The selected row does not contain a fully qualified " +
+                    "executable path. Application-wide deletion is unavailable " +
+                    "for global, package, or pathless rules.",
+                    "Delete all rules for this application",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            ApplicationRuleDeletionPreview preview;
+
+            try
+            {
+                preview =
+                    FirewallRuleService.PreviewApplicationRuleDeletion(
+                        appPath);
+            }
+            catch (Exception ex)
+            {
+                Messenger.MessageBox(
+                    "The application-wide deletion preview could not be " +
+                    "created.\r\n\r\n" + ex.Message,
+                    "Delete all rules for this application",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+
+            if (preview.MatchingRuleCount == 0)
+            {
+                Messenger.MessageBox(
+                    "No firewall rules currently target this executable.",
+                    "Delete all rules for this application",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            DialogResult confirmation = Messenger.MessageBox(
+                BuildApplicationDeletionWarning(preview),
+                "Delete all rules for this application",
+                MsgIcon.Warning,
+                MessageBoxButtons.YesNo,
+                pIsDarkMode: Theme.Colors.Surface.R < 128,
+                defaultButton: MessageBoxDefaultButton.Button2,
+                owner: FindForm());
+
+            if (confirmation != DialogResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _backgroundTaskService.TakeLastOperationFailure();
+
+                _backgroundTaskService.EnqueueTask(
+                    new FirewallTask(
+                        FirewallTaskType.DeleteApplicationRules,
+                        new DeleteApplicationRulesPayload
+                        {
+                            AppPaths = [preview.AppPath]
+                        },
+                        "Deleting all firewall rules for " +
+                        $"{Path.GetFileName(preview.AppPath)}..."));
+
+                await _backgroundTaskService.WhenIdleAsync();
+
+                Exception? failure =
+                    _backgroundTaskService.TakeLastOperationFailure();
+
+                if (failure != null)
+                {
+                    throw failure;
+                }
+
+                if (DataRefreshRequested != null)
+                {
+                    await DataRefreshRequested.Invoke();
+                }
+                else
+                {
+                    await RefreshDataAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Messenger.MessageBox(
+                    "Application-wide deletion did not complete.\r\n\r\n" +
+                    ex.Message,
+                    "Delete all rules for this application stopped",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        }
+
+        private static bool IsDeletableExecutablePath(string? appPath)
+        {
+            if (string.IsNullOrWhiteSpace(appPath))
+            {
+                return false;
+            }
+
+            string value = appPath.Trim().Trim('"');
+
+            return value != "*" &&
+                   !value.StartsWith('@') &&
+                   Path.IsPathFullyQualified(value);
+        }
+
+        private static string DisplayDeletionValue(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? "(none)"
+                : value;
+        }
+
+        private static string BuildApplicationDeletionWarning(
+            ApplicationRuleDeletionPreview preview)
+        {
+            const int nameLimit = 10;
+
+            string displayedNames = string.Join(
+                "\r\n",
+                preview.RuleNames
+                    .Take(nameLimit)
+                    .Select(name => "• " + name));
+
+            if (preview.RuleNames.Count > nameLimit)
+            {
+                displayedNames +=
+                    $"\r\n• ...and " +
+                    $"{preview.RuleNames.Count - nameLimit} more";
+            }
+
+            string types = preview.RuleTypes.Count == 0
+                ? "(none)"
+                : string.Join(
+                    "\r\n",
+                    preview.RuleTypes.Select(type => "• " + type));
+
+            return
+                "Delete all rules for this application\r\n\r\n" +
+                $"Executable:\r\n{preview.AppPath}\r\n\r\n" +
+                $"Total rules: {preview.MatchingRuleCount}\r\n" +
+                $"Inbound: {preview.InboundRuleCount}\r\n" +
+                $"Outbound: {preview.OutboundRuleCount}\r\n" +
+                $"Allow: {preview.AllowRuleCount}\r\n" +
+                $"Block: {preview.BlockRuleCount}\r\n" +
+                $"Minimal Firewall rules: " +
+                $"{preview.MinimalFirewallRuleCount}\r\n" +
+                $"Windows, manual, or third-party rules: " +
+                $"{preview.OtherRuleCount}\r\n\r\n" +
+                "Affected rule types:\r\n" +
+                $"{types}\r\n\r\n" +
+                "Affected rule names:\r\n" +
+                $"{displayedNames}\r\n\r\n" +
+                "WARNING: This deletes every Windows Firewall rule whose " +
+                "application path matches this executable. Windows-created, " +
+                "manually created, and third-party rules may be included. " +
+                "This is not equivalent to deleting one selected rule.\r\n\r\n" +
+                "Continue?";
         }
 
         private void ApplyRuleMenuItem_Click(object sender, EventArgs e)
@@ -313,16 +633,53 @@ namespace MinimalFirewall
             bool hasTarget = firstUnderlyingRule != null &&
                              ((!string.IsNullOrEmpty(firstUnderlyingRule.ApplicationName) && firstUnderlyingRule.ApplicationName != "*") ||
                               !string.IsNullOrEmpty(firstUnderlyingRule.ServiceName));
-            editRuleToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType && hasTarget;
-            manageDomainsToolStripMenuItem.Enabled = rulesDataGridView.SelectedRows.Count == 1 && isEditableType;
+            bool hasSingleSelectedRow =
+    rulesDataGridView.SelectedRows.Count == 1;
+
+            bool hasOneUnderlyingRule =
+                rule.UnderlyingRules?.Count == 1;
+
+            editRuleToolStripMenuItem.Enabled =
+                hasSingleSelectedRow &&
+                isEditableType &&
+                hasTarget &&
+                hasOneUnderlyingRule;
+
+            deleteSelectedRuleToolStripMenuItem.Enabled =
+                hasSingleSelectedRow &&
+                hasOneUnderlyingRule;
+
+            deleteAllApplicationRulesToolStripMenuItem.Enabled =
+                hasSingleSelectedRow &&
+                IsDeletableExecutablePath(rule.ApplicationName);
+
+            manageDomainsToolStripMenuItem.Enabled =
+                hasSingleSelectedRow &&
+                isEditableType;
         }
 
         private async void ManageDomainsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (rulesDataGridView.SelectedRows.Count != 1) return;
             var aggRule = GetFirstSelectedRule();
-            if (aggRule == null) return;
-            var originalRule = aggRule.UnderlyingRules?.FirstOrDefault();
+            if (aggRule == null)
+            {
+                return;
+            }
+
+            if (aggRule.UnderlyingRules?.Count != 1)
+            {
+                Messenger.MessageBox(
+                    "This row represents multiple Windows Firewall rules. " +
+                    "Domains cannot be changed safely until one individual rule " +
+                    "can be selected.",
+                    "Domain Edit Stopped",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            var originalRule = aggRule.UnderlyingRules[0];
             if (originalRule == null) return;
 
             string currentDescription = originalRule.Description ?? "";
@@ -407,12 +764,17 @@ namespace MinimalFirewall
                     IcmpTypesAndCodes = originalRule.IcmpTypesAndCodes
                 };
 
-                // Queue the replacement via the background service
-                var deletePayload = new DeleteRulesPayload { RuleIdentifiers = [.. aggRule.UnderlyingRules?.Select(r => r.Name) ?? []] };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAdvancedRules, deletePayload));
+                var editPayload = new EditAdvancedRulePayload
+                {
+                    OriginalRule = originalRule,
+                    UpdatedRule = updatedRule
+                };
 
-                var createPayload = new CreateAdvancedRulePayload { ViewModel = updatedRule, InterfaceTypes = updatedRule.InterfaceTypes, IcmpTypesAndCodes = updatedRule.IcmpTypesAndCodes };
-                _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.CreateAdvancedRule, createPayload));
+                _backgroundTaskService.EnqueueTask(
+                    new FirewallTask(
+                        FirewallTaskType.EditAdvancedRule,
+                        editPayload,
+                        $"Updating domains for firewall rule '{originalRule.Name}'..."));
 
                 await _backgroundTaskService.WhenIdleAsync();
                 if (DataRefreshRequested != null)
@@ -522,7 +884,6 @@ namespace MinimalFirewall
                     maximumWidth = Math.Max(maximumWidth, statusWidth);
                 }
 
-                _rulesColumnMaximumWidths[column] = maximumWidth;
                 if (column.Width > maximumWidth)
                 {
                     column.Width = maximumWidth;
@@ -532,17 +893,12 @@ namespace MinimalFirewall
 
         private void RulesDataGridView_ColumnWidthChanged(object? sender, DataGridViewColumnEventArgs e)
         {
-            if (_rulesColumnMaximumWidths.TryGetValue(e.Column, out int maximumWidth) && e.Column.Width > maximumWidth)
-            {
-                e.Column.Width = maximumWidth;
-            }
-
             DataGridViewHelper.SaveColumnSettings(rulesDataGridView, _appSettings.RulesColumns, _appSettings);
         }
 
         private void RulesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0 || _appSettings == null) return;
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0 || _appSettings == null) return;
 
             if (_rulesSortColumn == e.ColumnIndex)
             {
