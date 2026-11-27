@@ -83,16 +83,72 @@ namespace DarkModeForms
             return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: MessageBoxDefaultButton.Button1, owner: pOwner);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool? pIsDarkMode = null, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
-        {
-            var previousColors = Theme.Colors;
-            try
+        public static DialogResult MessageBox(
+            string Message,
+            string title,
+            MsgIcon icon,
+            MessageBoxButtons buttons = MessageBoxButtons.OK,
+            bool? pIsDarkMode = null,
+            MessageBoxDefaultButton defaultButton =
+                MessageBoxDefaultButton.Button1,
+            Form? owner = null)
+                {
+                    var previousColors = Theme.Colors;
+
+                    try
+                    {
+                        using var form = CreateMessageDialog(
+                            Message,
+                            title,
+                            icon,
+                            buttons,
+                            pIsDarkMode ?? Theme.Colors.Surface.R < 128,
+                            defaultButton,
+                            owner);
+
+                        return owner == null || owner.IsDisposed
+                            ? form.ShowDialog()
+                            : form.ShowDialog(owner);
+                    }
+            catch (System.ComponentModel.Win32Exception ex)
+                when (ex.NativeErrorCode == 6 ||
+                  ex.NativeErrorCode == 8 ||
+                  ex.NativeErrorCode == 1400 ||
+                  ex.NativeErrorCode == 1158 ||
+                  ex.Message.Contains(
+                      "window handle",
+                      StringComparison.OrdinalIgnoreCase))
             {
-                using var form = CreateMessageDialog(Message, title, icon, buttons, pIsDarkMode ?? Theme.Colors.Surface.R < 128, defaultButton, owner);
-                return owner == null ? form.ShowDialog() : form.ShowDialog(owner);
-            }
-            finally { Theme.Colors = previousColors; }
-        }
+                        MessageBoxIcon fallbackIcon = icon switch
+                        {
+                            MsgIcon.Error => MessageBoxIcon.Error,
+                            MsgIcon.Warning => MessageBoxIcon.Warning,
+                            MsgIcon.Question => MessageBoxIcon.Question,
+                            MsgIcon.Info or MsgIcon.Success =>
+                                MessageBoxIcon.Information,
+                            _ => MessageBoxIcon.None
+                        };
+
+                        return owner == null || owner.IsDisposed
+                            ? System.Windows.Forms.MessageBox.Show(
+                                Message,
+                                title,
+                                buttons,
+                                fallbackIcon,
+                                defaultButton)
+                            : System.Windows.Forms.MessageBox.Show(
+                                owner,
+                                Message,
+                                title,
+                                buttons,
+                                fallbackIcon,
+                                defaultButton);
+                    }
+                    finally
+                    {
+                        Theme.Colors = previousColors;
+                    }
+                }
 
         internal static Form CreateMessageDialog(string message, string title, MsgIcon icon, MessageBoxButtons buttons,
             bool isDark, MessageBoxDefaultButton defaultButton, Form? owner = null)
@@ -111,7 +167,17 @@ namespace DarkModeForms
             };
             if (owner != null) form.Location = owner.Location;
             Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
-            Theme.ApplyTitleBarTheme(form.Handle, isDark ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
+            form.HandleCreated += (_, _) =>
+            {
+                if (!form.IsDisposed)
+                {
+                    Theme.ApplyTitleBarTheme(
+                        form.Handle,
+                        isDark
+                            ? Theme.DisplayMode.DarkMode
+                            : Theme.DisplayMode.ClearMode);
+                }
+            };
             form.BackColor = Theme.Colors.Background;
             form.ForeColor = Theme.Colors.TextActive;
 
@@ -160,17 +226,26 @@ namespace DarkModeForms
                 Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = true, Margin = new Padding(0, Scale(16), 0, 0)
             };
-            var commandButtons = GenerateDialogButtons(form, commands, buttons, GetButtonTranslations(GetCurrentLanguage()), form.Font.Height);
-            commands.Controls.Clear();
-            foreach (var button in commandButtons.AsEnumerable().Reverse())
+            var commandButtons = GenerateDialogButtons(
+                form,
+                commands,
+                buttons,
+                GetButtonTranslations(GetCurrentLanguage()),
+                form.Font.Height);
+
+            foreach (var button in commandButtons)
             {
                 button.AutoSize = true;
                 button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
                 button.MinimumSize = new Size(Scale(80), Scale(32));
-                button.Padding = new Padding(Scale(12), Scale(4), Scale(12), Scale(4));
+                button.Padding = new Padding(
+                    Scale(12),
+                    Scale(4),
+                    Scale(12),
+                    Scale(4));
                 button.Margin = new Padding(Scale(4), 0, 0, 0);
-                commands.Controls.Add(button);
             }
+
             int defaultIndex = Math.Clamp((int)defaultButton >> 8, 0, commandButtons.Count - 1);
             form.AcceptButton = commandButtons[defaultIndex];
             form.Shown += (_, _) => commandButtons[defaultIndex].Select();

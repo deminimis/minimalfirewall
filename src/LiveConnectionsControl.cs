@@ -61,10 +61,6 @@ namespace MinimalFirewall
             UpdateLiveConnectionsView();
 
             liveConnectionsDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
-
-            liveConnectionsDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
-            liveConnectionsDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
         }
 
         
@@ -217,7 +213,7 @@ namespace MinimalFirewall
         {
             if (connIconColumn != null && _appSettings != null)
             {
-                connIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.LiveConnectionsColumns, connIconColumn.Name);
+                connIconColumn.Visible = _appSettings.ShowAppIcons;
                 liveConnectionsDataGridView.InvalidateColumn(connIconColumn.Index);
             }
         }

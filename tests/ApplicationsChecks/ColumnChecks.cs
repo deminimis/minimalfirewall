@@ -214,6 +214,16 @@ internal static class ColumnChecks
         DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
         Check(columns["A"].Width == 140, "Saving from a zero-width grid must keep the stored width.");
         grid.Dock = DockStyle.Fill;
+
+        // The designer's fill column wins over a later text column that only holds a drawn toggle (Groups).
+        using var groups = new DataGridView { Dock = DockStyle.Fill };
+        groups.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+        groups.Columns.Add(new DataGridViewTextBoxColumn { Name = "Enabled", Width = 100 });
+        host.Controls.Add(groups);
+        DataGridViewHelper.RestoreColumnSettings(groups, [], settings);
+        Check(groups.Columns["Name"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.Fill
+            && groups.Columns["Enabled"]!.AutoSizeMode == DataGridViewAutoSizeColumnMode.None,
+            "The designer's fill column must keep filling.");
     }
 
     private static void CheckFilled(DataGridView grid)
