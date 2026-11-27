@@ -408,7 +408,7 @@ public sealed class ApplicationsControl : UserControl
         }
 
         _applications.Columns["Icon"]!.Visible =
-    _settings.ShowAppIcons;
+            DataGridViewHelper.IsIconColumnVisible(_settings, _settings.ApplicationsColumns, "Icon");
 
         var entries = ApplicationEntry.Build(
                 _viewModel.ApplicationRules,
@@ -424,23 +424,16 @@ public sealed class ApplicationsControl : UserControl
 
     internal void InitializeColumnSettings(AppSettings settings)
     {
-        _applications.AllowUserToOrderColumns = true;
-
-        DataGridViewHelper.RestoreColumnSettings(
-            _applications,
-            settings.ApplicationsColumns);
-
-        _applications.ColumnWidthChanged += (_, _) =>
-            DataGridViewHelper.SaveColumnSettings(
-                _applications,
-                settings.ApplicationsColumns,
-                settings);
-
-        _applications.ColumnDisplayIndexChanged += (_, _) =>
-            DataGridViewHelper.SaveColumnSettings(
-                _applications,
-                settings.ApplicationsColumns,
-                settings);
+        foreach (var (grid, columns) in new[]
+        {
+            (_applications, settings.ApplicationsColumns), (_rules, settings.ApplicationRulesColumns),
+            (_attempts, settings.ApplicationAttemptsColumns)
+        })
+        {
+            DataGridViewHelper.RestoreColumnSettings(grid, columns, settings);
+            grid.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+            grid.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(grid, columns, settings);
+        }
     }
 
     internal void DisplayApplications(List<ApplicationEntry> entries)

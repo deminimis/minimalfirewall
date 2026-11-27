@@ -80,7 +80,8 @@ namespace MinimalFirewall
 
             DataGridViewHelper.RestoreColumnSettings(
                 dashboardDataGridView,
-                _appSettings.DashboardColumns);
+                _appSettings.DashboardColumns,
+                _appSettings);
 
             NormalizeDashboardColumns();
 
@@ -201,7 +202,7 @@ namespace MinimalFirewall
         {
             if (dashIconColumn != null)
             {
-                dashIconColumn.Visible = visible;
+                dashIconColumn.Visible = visible && DataGridViewHelper.IsColumnVisible(_appSettings.DashboardColumns, dashIconColumn.Name);
                 dashboardDataGridView.InvalidateColumn(dashIconColumn.Index);
             }
         }
