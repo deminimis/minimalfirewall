@@ -103,6 +103,12 @@ public class AdvancedRuleViewModel
     public DateTime? DateAdded { get; set; }
     public string AutoAllowedPublisher { get; set; } = string.Empty;
 
+    // Where the rule is enforced; empty for Windows Firewall rules, "WSL (<distro>)" for OpenSnitch rules.
+    public string Attributes { get; set; } = string.Empty;
+    // OpenSnitch rule name; set only for WSL rules.
+    public string WslRuleName { get; set; } = string.Empty;
+    public bool IsWsl => WslRuleName.Length > 0;
+
     // Checks if all firewall-relevant properties match (Case-Insensitive for strings)
     public bool HasSameSettings(AdvancedRuleViewModel? other)
     {
@@ -201,6 +207,11 @@ public class PendingConnectionViewModel
     public string RemoteAddress { get; set; } = string.Empty;
     public string FilterId { get; set; } = string.Empty;
     public string LayerId { get; set; } = string.Empty;
+
+    // Set for connections asked by opensnitchd in WSL: the decision goes back to the daemon
+    // instead of creating a Windows Firewall rule.
+    public Action<string, TimeSpan>? WslReply { get; set; }
+    public bool IsWsl => WslReply != null;
 }
 
 public class WildcardRule

@@ -640,10 +640,11 @@ public sealed class ApplicationsControl : UserControl
         _replaceBoth.Enabled = hasApplication;
         _bothAction.Enabled = hasApplication;
 
+        // OpenSnitch rules have no Windows rule definition to edit or delete here.
         _editSelectedRule.Enabled =
-        !_busy && SelectedRule != null;
+        !_busy && SelectedRule is { IsWsl: false };
             _deleteSelectedRule.Enabled =
-                !_busy && SelectedRule != null;
+                !_busy && SelectedRule is { IsWsl: false };
             _deleteAllApplicationRules.Enabled =
                 hasApplication;
     }
@@ -656,6 +657,27 @@ public sealed class ApplicationsControl : UserControl
 
         if (entry == null || _busy)
         {
+            return;
+        }
+
+        // Linux programs seen through OpenSnitch are filtered there. A Windows .exe stored on the WSL file
+        // system also has a \\wsl.localhost path but stays a Windows Firewall application.
+        if (entry.Attempts.Any(a => a.IsWsl) || entry.Rules.Any(r => r.IsWsl))
+        {
+            string? message = null;
+            if (!directions.HasFlag(Directions.Outgoing))
+            {
+                message = "OpenSnitch filters outbound connections only. Choose outbound or both directions.";
+            }
+            else if (_viewModel?.WslBridge?.ToLinuxPath(entry.AppPath) is not { } linuxPath
+                || !_viewModel.WslBridge.SetProgramAction(linuxPath, action == "Allow"))
+            {
+                message = "WSL filtering is not running, so the OpenSnitch rule was not changed. Turn on \"Filter WSL programs (OpenSnitch)\" in Settings.";
+            }
+            if (message != null)
+            {
+                Messenger.MessageBox(message, "Applications", MessageBoxButtons.OK, MessageBoxIcon.Information, pIsDarkMode: Theme.Colors.Surface.R < 128);
+            }
             return;
         }
 
