@@ -40,6 +40,8 @@ namespace MinimalFirewall
         private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
+        private const string BlockAllOutboundRuleName = "Minimal Firewall System - Block All Outbound";
+        private const string BlockAllInboundRuleName = "Minimal Firewall System - Block All Inbound";
         private const string TemporaryRulePrefix = "MFW - Temp Allow - ";
         private const string TemporaryAllowAllRulePrefix = TemporaryRulePrefix + "All Outbound - ";
 
@@ -699,7 +701,8 @@ namespace MinimalFirewall
 
 
         // Consolidated helper for System Rules (Crypto/DHCP)
-        private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable)
+        private void ManageSystemRule(string ruleName, string description, string applicationName, string serviceName, int protocol, string remotePorts, string localPorts, bool enable,
+            NET_FW_RULE_DIRECTION_ direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_ action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW)
         {
             INetFwRule2? rule = null;
             try
@@ -718,8 +721,8 @@ namespace MinimalFirewall
 
                         newRule.Name = ruleName;
                         newRule.Description = description;
-                        newRule.Direction = NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT;
-                        newRule.Action = NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+                        newRule.Direction = direction;
+                        newRule.Action = action;
                         newRule.Grouping = MFWConstants.MainRuleGroup;
                         newRule.Enabled = true;
                         newRule.InterfaceTypes = "All"; 
@@ -771,6 +774,48 @@ namespace MinimalFirewall
                 }
             }
         }
+
+        // Block rules take precedence over allow rules in Windows Firewall, so two
+        // program-less block rules cut all traffic without touching the user's rules.
+        public bool IsBlockAllTrafficEnabled()
+        {
+            var rule = FirewallRuleService.GetRuleByName(BlockAllOutboundRuleName);
+            if (rule == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                return rule.Enabled;
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(rule);
+            }
+        }
+
+        public void SetBlockAllTraffic(bool enable)
+        {
+            const string description = "Blocks all network traffic, including allowed programs, until turned off from the Minimal Firewall tray menu.";
+            ManageSystemRule(BlockAllOutboundRuleName, description, "", "", ProtocolTypes.Any.Value, "*", "*", enable,
+                NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT, NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
+            ManageSystemRule(BlockAllInboundRuleName, description, "", "", ProtocolTypes.Any.Value, "*", "*", enable,
+                NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_IN, NET_FW_ACTION_.NET_FW_ACTION_BLOCK);
+
+            // ManageSystemRule only logs failures: read the state back so the user is told when nothing changed.
+            if (IsBlockAllTrafficEnabled() != enable)
+            {
+                SafeShowMessageBox("Failed to change the Block All Traffic rules.\nCheck debug_log.txt for details.",
+                    "Block All Traffic", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            activityLogger.LogChange("Block All Traffic", enable ? "Enabled" : "Disabled");
+        }
+
+        private static bool IsBlockAllRuleName(string name) =>
+            name == BlockAllOutboundRuleName || name == BlockAllInboundRuleName;
 
         private void ManageCryptoServiceRule(bool enable)
         {
@@ -2078,7 +2123,7 @@ namespace MinimalFirewall
                 {
                     _ = (r?.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName));
                     return r;
-                }).Where(r => r != null && !r.Name.StartsWith(TemporaryRulePrefix, StringComparison.OrdinalIgnoreCase)).ToList();
+                }).Where(r => r != null && !IsBlockAllRuleName(r.Name) && !r.Name.StartsWith(TemporaryRulePrefix, StringComparison.OrdinalIgnoreCase)).ToList();
             var wildcardRules = _wildcardRuleService.GetRules()
                 .Select(r =>
                 {
