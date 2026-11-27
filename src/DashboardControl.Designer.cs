@@ -299,7 +299,7 @@ namespace MinimalFirewall
             dashboardDataGridView.AllowUserToAddRows = false;
             dashboardDataGridView.AllowUserToDeleteRows = false;
             dashboardDataGridView.AllowUserToResizeRows = false;
-            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dashboardDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             // Borders and background color inherited from ThemedDataGridView
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
@@ -472,6 +472,7 @@ namespace MinimalFirewall
             // 
             // detailsLabel
             // 
+            detailsLabel.AutoSize = true;
             detailsLabel.Dock = DockStyle.Top;
             detailsLabel.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             detailsLabel.Location = new Point(0, 0);

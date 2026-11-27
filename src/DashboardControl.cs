@@ -51,9 +51,8 @@ namespace MinimalFirewall
             _bindingSource = new BindingSource { DataSource = _viewModel.PendingConnections };
             dashboardDataGridView.DataSource = _bindingSource;
             dashboardDataGridView.Paint += DashboardDataGridView_PaintEmptyState;
-            // Centered text must be redrawn in full when the grid resizes.
-            dashboardDataGridView.Resize += (_, _) => { if (dashboardDataGridView.Rows.Count == 0) dashboardDataGridView.Invalidate(); };
-
+            dashboardDataGridView.Resize += DashboardDataGridView_Resize;
+            _appSettings.PropertyChanged += AppSettings_PropertyChanged;
             _viewModel.PendingConnections.CollectionChanged += PendingConnections_CollectionChanged;
             LoadDashboardItems();
 
@@ -113,9 +112,7 @@ namespace MinimalFirewall
                     _appSettings);
             };
 
-            Resize += (_, _) => NormalizeDashboardColumns();
-
-            BeginInvoke(new Action(NormalizeDashboardColumns));
+            
         }
 
         
@@ -212,9 +209,8 @@ namespace MinimalFirewall
             if (dashIconColumn != null)
             {
                 dashIconColumn.Visible = visible;
+                dashboardDataGridView.InvalidateColumn(dashIconColumn.Index);
             }
-
-            NormalizeDashboardColumns();
         }
 
         private void PendingConnections_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -258,10 +254,25 @@ namespace MinimalFirewall
             }
         }
 
-        // An empty grid looked broken; explain what the Dashboard is for until something is pending.
+        // Explain the Dashboard while no blocked connections are pending.
         private void DashboardDataGridView_PaintEmptyState(object? sender, PaintEventArgs e)
         {
-            if (dashboardDataGridView.Rows.Count > 0)
+            if (dashboardDataGridView.Rows.Count != 0)
+            {
+                return;
+            }
+
+            int top = dashboardDataGridView.ColumnHeadersVisible
+                ? dashboardDataGridView.ColumnHeadersHeight
+                : 0;
+
+            var bounds = new Rectangle(
+                16,
+                top + 16,
+                dashboardDataGridView.ClientSize.Width - 32,
+                dashboardDataGridView.ClientSize.Height - top - 32);
+
+            if (bounds.Width <= 0 || bounds.Height <= 0)
             {
                 return;
             }
@@ -271,10 +282,32 @@ namespace MinimalFirewall
                     ? "Blocked programs get a popup. Popups you close without choosing are listed here."
                     : "Popups are off: every blocked program is listed here to allow, block or ignore.");
 
-            int top = dashboardDataGridView.ColumnHeadersVisible ? dashboardDataGridView.ColumnHeadersHeight : 0;
-            var bounds = new Rectangle(16, top + 16, dashboardDataGridView.ClientSize.Width - 32, dashboardDataGridView.ClientSize.Height - top - 32);
-            TextRenderer.DrawText(e.Graphics, message, dashboardDataGridView.Font, bounds, Theme.Colors.TextInactive,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.WordBreak);
+            TextRenderer.DrawText(
+                e.Graphics,
+                message,
+                dashboardDataGridView.Font,
+                bounds,
+                Theme.Colors.TextInactive,
+                TextFormatFlags.HorizontalCenter |
+                TextFormatFlags.VerticalCenter |
+                TextFormatFlags.WordBreak);
+        }
+
+        private void DashboardDataGridView_Resize(object? sender, EventArgs e)
+        {
+            if (dashboardDataGridView.Rows.Count == 0)
+            {
+                dashboardDataGridView.Invalidate();
+            }
+        }
+
+        private void AppSettings_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AppSettings.IsPopupsEnabled) &&
+                dashboardDataGridView.Rows.Count == 0)
+            {
+                dashboardDataGridView.Invalidate();
+            }
         }
 
         private void LoadDashboardItems()
@@ -308,65 +341,32 @@ namespace MinimalFirewall
             }
 
             dashboardDataGridView.AutoSizeColumnsMode =
-                DataGridViewAutoSizeColumnsMode.Fill;
+                DataGridViewAutoSizeColumnsMode.None;
 
-            // Fixed-width columns.
-            if (dashIconColumn != null)
+            dashboardDataGridView.AllowUserToOrderColumns = true;
+            dashboardDataGridView.AllowUserToResizeColumns = true;
+
+            foreach (DataGridViewColumn column in
+                     dashboardDataGridView.Columns)
             {
-                dashIconColumn.AutoSizeMode =
+                column.AutoSizeMode =
                     DataGridViewAutoSizeColumnMode.None;
-                dashIconColumn.MinimumWidth = 32;
-                dashIconColumn.Width = 32;
-                dashIconColumn.Resizable = DataGridViewTriState.False;
-            }
 
-            ConfigureActionColumn(allowButtonColumn);
-            ConfigureActionColumn(blockButtonColumn);
-            ConfigureActionColumn(ignoreButtonColumn);
+                column.Resizable = DataGridViewTriState.True;
 
-            // Fill columns must never collapse to only a few pixels.
-            ConfigureFillColumn(dashAppColumn, 30F, 120);
-            ConfigureFillColumn(dashServiceColumn, 22F, 100);
-            ConfigureFillColumn(dashDirectionColumn, 12F, 85);
-            ConfigureFillColumn(dashProtocolColumn, 10F, 80);
-            ConfigureFillColumn(dashPathColumn, 46F, 180);
+                if (column.MinimumWidth < 30)
+                {
+                    column.MinimumWidth = 30;
+                }
 
-            dashboardDataGridView.PerformLayout();
-        }
-
-        private static void ConfigureActionColumn(
-            DataGridViewColumn? column)
-        {
-            if (column == null)
-            {
-                return;
-            }
-
-            column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            column.MinimumWidth = 90;
-            column.Width = 90;
-            column.Resizable = DataGridViewTriState.False;
-        }
-
-        private static void ConfigureFillColumn(
-            DataGridViewColumn? column,
-            float fillWeight,
-            int minimumWidth)
-        {
-            if (column == null)
-            {
-                return;
-            }
-
-            column.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            column.FillWeight = fillWeight;
-            column.MinimumWidth = minimumWidth;
-
-            if (column.Width < minimumWidth)
-            {
-                column.Width = minimumWidth;
+                column.Width = Math.Clamp(
+                    column.Width,
+                    30,
+                    2000);
             }
         }
+
+        
 
         private void DashboardDataGridView_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
