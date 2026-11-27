@@ -67,6 +67,9 @@ namespace MinimalFirewall
 
         public void Stop()
         {
+            // Events are not tracked while stopped, so the next scan must rebuild the baseline.
+            ResetBaseline();
+
             if (!_isStarted || _watcher == null)
             {
                 return;
@@ -327,7 +330,7 @@ namespace MinimalFirewall
                 return false;
             }
 
-            return grouping.EndsWith(MFWConstants.MfwRuleSuffix) ||
+            return grouping.EndsWith(MFWConstants.firewallRulesuffix) ||
                    grouping == MFWConstants.MainRuleGroup ||
                    grouping == MFWConstants.WildcardRuleGroup;
         }

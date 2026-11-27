@@ -33,6 +33,7 @@ namespace MinimalFirewall
         public AuditControl()
         {
             InitializeComponent();
+            systemChangesDataGridView.AutoGenerateColumns = false;
             
 
             _cachedOverlayBrush = new SolidBrush(Color.FromArgb(25, Color.Black));
@@ -75,13 +76,9 @@ namespace MinimalFirewall
             _cachedBoldFont = new Font(systemChangesDataGridView.DefaultCellStyle.Font ?? Control.DefaultFont, FontStyle.Bold);
 
             ApplySearchFilter();
-
-            systemChangesDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns);
-
-            systemChangesDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns, _appSettings);
-            systemChangesDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(systemChangesDataGridView, _appSettings.AuditColumns, _appSettings);
         }
+
+        
 
 
 
@@ -220,7 +217,7 @@ namespace MinimalFirewall
 
         private void SystemChangesDataGridView_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.ColumnIndex < 0)
+            if (e.Button != MouseButtons.Left || e.ColumnIndex < 0)
             {
                 return;
             }
