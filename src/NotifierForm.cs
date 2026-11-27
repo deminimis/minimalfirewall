@@ -24,6 +24,8 @@ namespace MinimalFirewall
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
 
+        // Set once the signature check finds no trusted signature on an existing file.
+        private bool _isUnsignedApp;
         private ContextMenuStrip? _ignoreMenu;
 
 
@@ -226,6 +228,7 @@ namespace MinimalFirewall
                 string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
                 if (IsDisposed) return;
+                _isUnsignedApp = !hasInfo && File.Exists(PendingConnection.AppPath);
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
                 {
@@ -318,6 +321,14 @@ namespace MinimalFirewall
 
         private void AllowButton_Click(object sender, EventArgs e)
         {
+            if (_isUnsignedApp && MessageBox.Show(this,
+                    $"{Path.GetFileName(PendingConnection?.AppPath)} has no valid signature from a trusted publisher.\n\n" +
+                    "Create a permanent allow rule anyway?",
+                    "Unsigned Application", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes)
+            {
+                return;
+            }
+
             Result = NotifierResult.Allow;
             TrustPublisher = trustPublisherCheckBox.Visible && trustPublisherCheckBox.Checked;
             DialogResult = DialogResult.OK;
