@@ -247,12 +247,14 @@ public sealed class ApplicationsControl : UserControl
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.Controls.Add(_identity, 0, 0);
-        identity.Controls.Add(_searchOnline, 1, 0);
-        identity.Controls.Add(_virusTotal, 2, 0);
+        identity.SetColumnSpan(_identity, 3);
         identity.Controls.Add(_publisher, 0, 1);
         identity.Controls.Add(_signature, 0, 2);
-        identity.SetColumnSpan(_publisher, 3);
-        identity.SetColumnSpan(_signature, 3);
+        // Beside the two metadata lines, so the buttons add no height and the grid keeps its rows at large text sizes.
+        identity.Controls.Add(_searchOnline, 1, 1);
+        identity.Controls.Add(_virusTotal, 2, 1);
+        identity.SetRowSpan(_searchOnline, 2);
+        identity.SetRowSpan(_virusTotal, 2);
 
         _bothAction.Items.AddRange(["Allow", "Block"]);
         _bothAction.SelectedIndex = 0;
