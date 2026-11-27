@@ -1,53 +1,114 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace MinimalFirewall
 {
     public static class DataGridViewHelper
     {
-        public static void RestoreColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings)
+        private const int MinimumColumnWidth = 30;
+        private const int MaximumColumnWidth = 2000;
+
+        public static void RestoreColumnSettings(
+            DataGridView grid,
+            Dictionary<string, ColumnState>? settings)
         {
-            if (settings == null || settings.Count == 0) return;
-
-            var sortedList = new List<KeyValuePair<string, ColumnState>>(settings);
-            sortedList.Sort((a, b) => a.Value.DisplayIndex.CompareTo(b.Value.DisplayIndex));
-
-            foreach (var kvp in sortedList)
+            if (settings == null || settings.Count == 0)
             {
-                if (grid.Columns.Contains(kvp.Key))
-                {
-                    var col = grid.Columns[kvp.Key];
-                    if (kvp.Value.DisplayIndex >= 0 && kvp.Value.DisplayIndex < grid.Columns.Count)
-                    {
-                        col.DisplayIndex = kvp.Value.DisplayIndex;
-                    }
-                    if (kvp.Value.Width > 0) col.Width = kvp.Value.Width;
-                }
+                return;
+            }
+
+            grid.AllowUserToOrderColumns = true;
+            grid.AllowUserToResizeColumns = true;
+            grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
+            foreach (DataGridViewColumn column in grid.Columns)
+            {
+                column.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            }
+
+            foreach (var savedColumn in settings
+                         .Where(item => grid.Columns.Contains(item.Key))
+                         .OrderBy(item => item.Value.DisplayIndex))
+            {
+                DataGridViewColumn column = grid.Columns[savedColumn.Key]!;
+
+                column.Width = Math.Clamp(
+                    savedColumn.Value.Width,
+                    MinimumColumnWidth,
+                    MaximumColumnWidth);
+            }
+
+            var orderedColumns = grid.Columns
+                .Cast<DataGridViewColumn>()
+                .OrderBy(column =>
+                    settings.TryGetValue(column.Name, out ColumnState? state) &&
+                    state.DisplayIndex >= 0
+                        ? state.DisplayIndex
+                        : column.DisplayIndex)
+                .ThenBy(column => column.Index)
+                .ToList();
+
+            for (int displayIndex = 0;
+                 displayIndex < orderedColumns.Count;
+                 displayIndex++)
+            {
+                orderedColumns[displayIndex].DisplayIndex = displayIndex;
             }
         }
 
-        public static void SaveColumnSettings(DataGridView grid, Dictionary<string, ColumnState> settings, AppSettings appSettings)
+        public static void SaveColumnSettings(
+            DataGridView grid,
+            Dictionary<string, ColumnState>? settings,
+            AppSettings appSettings)
         {
-            if (appSettings == null) return;
-
-            bool changed = false;
-            foreach (DataGridViewColumn col in grid.Columns)
+            if (settings == null ||
+                appSettings == null ||
+                grid.IsDisposed ||
+                grid.ClientSize.Width <= 0)
             {
-                if (!settings.TryGetValue(col.Name, out var state))
-                {
-                    state = new ColumnState();
-                    settings[col.Name] = state;
-                }
-
-                if (state.DisplayIndex != col.DisplayIndex || state.Width != col.Width)
-                {
-                    state.DisplayIndex = col.DisplayIndex;
-                    state.Width = col.Width;
-                    changed = true;
-                }
+                return;
             }
 
-            if (changed) appSettings.QueueSave();
+            bool changed = false;
+
+            foreach (DataGridViewColumn column in grid.Columns)
+            {
+                int width = Math.Clamp(
+                    column.Width,
+                    MinimumColumnWidth,
+                    MaximumColumnWidth);
+
+                if (!settings.TryGetValue(
+                        column.Name,
+                        out ColumnState? state))
+                {
+                    state = new ColumnState
+                    {
+                        DisplayIndex = column.DisplayIndex,
+                        Width = width
+                    };
+
+                    settings[column.Name] = state;
+                    changed = true;
+                    continue;
+                }
+
+                if (state.DisplayIndex == column.DisplayIndex &&
+                    state.Width == width)
+                {
+                    continue;
+                }
+
+                state.DisplayIndex = column.DisplayIndex;
+                state.Width = width;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                appSettings.QueueSave();
+            }
         }
     }
 }
