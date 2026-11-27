@@ -61,10 +61,6 @@ namespace MinimalFirewall
             UpdateLiveConnectionsView();
 
             liveConnectionsDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns);
-
-            liveConnectionsDataGridView.ColumnDisplayIndexChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
-            liveConnectionsDataGridView.ColumnWidthChanged += (s, e) => DataGridViewHelper.SaveColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
         }
 
         
@@ -307,7 +303,7 @@ namespace MinimalFirewall
             base.OnLoad(e);
             liveConnectionsDataGridView.ColumnHeaderMouseClick += (s, ev) =>
             {
-                if (_appSettings != null && ev.ColumnIndex >= 0)
+                if (ev.Button == MouseButtons.Left && _appSettings != null && ev.ColumnIndex >= 0)
                 {
                     int currentSort;
 
