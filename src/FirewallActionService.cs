@@ -47,6 +47,9 @@ namespace MinimalFirewall
 
         public LockdownGuard LockdownGuard { get; } = new(activityLogger);
 
+        // Raised on the background task thread after a Dashboard or popup decision is applied.
+        public event Action<PendingConnectionViewModel, string>? PendingConnectionProcessed;
+
         public void Dispose()
         {
             Dispose(true);
@@ -1178,6 +1181,7 @@ namespace MinimalFirewall
                     activityLogger.LogDebug($"Ignored Connection for {ignoreDuration}: {pending.Direction} for {pending.AppPath}");
                     break;
             }
+            PendingConnectionProcessed?.Invoke(pending, decision);
         }
 
         public void ReenablefirewallRules()
