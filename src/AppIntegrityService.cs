@@ -69,7 +69,7 @@ namespace MinimalFirewall
             {
                 string grouping = rule.Grouping ?? string.Empty;
                 bool isMfwAllow = rule.Action == NET_FW_ACTION_.NET_FW_ACTION_ALLOW &&
-                                  grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.Ordinal);
+                                  grouping.EndsWith(MFWConstants.firewallRulesuffix, StringComparison.Ordinal);
                 string app = rule.ApplicationName ?? string.Empty;
                 return isMfwAllow && app.Length > 0 && app != "*" ? PathResolver.NormalizePath(app) : string.Empty;
             });
