@@ -67,6 +67,9 @@ namespace MinimalFirewall
 
         public void Stop()
         {
+            // Events are not tracked while stopped, so the next scan must rebuild the baseline.
+            ResetBaseline();
+
             if (!_isStarted || _watcher == null)
             {
                 return;

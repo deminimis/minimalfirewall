@@ -1173,8 +1173,9 @@ namespace MinimalFirewall
                     break;
 
                 case "Ignore":
-                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
-                    activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
+                    var ignoreDuration = duration > TimeSpan.Zero ? duration : longSnoozeDuration;
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, ignoreDuration);
+                    activityLogger.LogDebug($"Ignored Connection for {ignoreDuration}: {pending.Direction} for {pending.AppPath}");
                     break;
             }
         }

@@ -12,31 +12,105 @@ namespace MinimalFirewall
     {
         
 
+
         public WildcardRule NewRule { get; private set; } = new();
 
-        // The instructions are taller than their designed box with the app font or a larger display font.
-        // Grow the box to fit and push the controls below it down, so nothing is cut or overlapped.
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            int needed = instructionLabel.GetPreferredSize(new Size(instructionLabel.Width, 0)).Height;
-            int delta = needed - instructionLabel.Height;
+            SuspendLayout();
+
+            int instructionHeight = instructionLabel
+                .GetPreferredSize(new Size(instructionLabel.Width, 0)).Height;
+
+            MoveControlsBelow(
+                instructionLabel,
+                Math.Max(0, instructionHeight - instructionLabel.Height));
+
+            instructionLabel.Height = Math.Max(
+                instructionLabel.Height,
+                instructionHeight);
+
+            FitButtons();
+            ResumeLayout(true);
+        }
+
+        private void FitButtons()
+        {
+            static int Grow(Button button, int minimumHeight = 0)
+            {
+                Size preferred = button.GetPreferredSize(Size.Empty);
+                int oldHeight = button.Height;
+
+                button.Size = new Size(
+                    Math.Max(button.Width, preferred.Width),
+                    Math.Max(button.Height, Math.Max(preferred.Height, minimumHeight)));
+
+                return button.Height - oldHeight;
+            }
+
+            int browseRight = browseButton.Right;
+            Grow(browseButton, folderPathTextBox.Height);
+            browseButton.Location = new Point(
+                browseRight - browseButton.Width,
+                folderPathTextBox.Top);
+
+            folderPathTextBox.Width = Math.Max(
+                20,
+                browseButton.Left - 6 - folderPathTextBox.Left);
+
+            int advancedDelta = Grow(advancedButton);
+            MoveControlsBelow(advancedButton, advancedDelta);
+
+            int rightMargin = ClientSize.Width - cancelButton.Right;
+            int bottomMargin = ClientSize.Height - cancelButton.Bottom;
+
+            int okDelta = Grow(okButton);
+            int cancelDelta = Grow(cancelButton);
+            int dialogDelta = Math.Max(okDelta, cancelDelta);
+
+            int buttonHeight = Math.Max(okButton.Height, cancelButton.Height);
+            okButton.Height = buttonHeight;
+            cancelButton.Height = buttonHeight;
+
+            if (dialogDelta > 0)
+            {
+                ClientSize = new Size(
+                    ClientSize.Width,
+                    ClientSize.Height + dialogDelta);
+            }
+
+            cancelButton.Location = new Point(
+                ClientSize.Width - rightMargin - cancelButton.Width,
+                ClientSize.Height - bottomMargin - cancelButton.Height);
+
+            okButton.Location = new Point(
+                cancelButton.Left - 6 - okButton.Width,
+                cancelButton.Top);
+        }
+
+        private void MoveControlsBelow(Control source, int delta)
+        {
             if (delta <= 0)
             {
                 return;
             }
 
-            int oldBottom = instructionLabel.Bottom;
-            instructionLabel.Height = needed;
+            int oldBottom = source.Bottom;
+
             foreach (Control control in Controls)
             {
-                if (control != instructionLabel && control.Top >= oldBottom && !control.Anchor.HasFlag(AnchorStyles.Bottom))
+                if (control != source &&
+                    control.Top >= oldBottom &&
+                    !control.Anchor.HasFlag(AnchorStyles.Bottom))
                 {
                     control.Top += delta;
                 }
             }
-            // Bottom-anchored controls (OK, Cancel) move down with the taller client area.
-            ClientSize = new Size(ClientSize.Width, ClientSize.Height + delta);
+
+            ClientSize = new Size(
+                ClientSize.Width,
+                ClientSize.Height + delta);
         }
 
         public WildcardCreatorForm(WildcardRuleService wildcardRuleService, AppSettings appSettings, WildcardRule? ruleToEdit = null)
