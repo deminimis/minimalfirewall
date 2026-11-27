@@ -185,7 +185,7 @@ namespace MinimalFirewall
             // 
             exeNameNoteLabel.AutoSize = true;
             exeNameNoteLabel.ForeColor = SystemColors.GrayText;
-            exeNameNoteLabel.Location = new Point(20, 157);
+            exeNameNoteLabel.Location = new Point(20, 163);
             exeNameNoteLabel.Name = "exeNameNoteLabel";
             exeNameNoteLabel.Size = new Size(546, 16);
             exeNameNoteLabel.TabIndex = 7;
@@ -325,6 +325,7 @@ namespace MinimalFirewall
             Name = "WildcardCreatorForm";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Create Wildcard Rule";
+            
             actionGroupBox.ResumeLayout(false);
             actionGroupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)errorProvider1).EndInit();

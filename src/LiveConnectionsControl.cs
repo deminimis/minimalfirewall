@@ -478,7 +478,7 @@ namespace MinimalFirewall
             base.OnLoad(e);
             liveConnectionsDataGridView.ColumnHeaderMouseClick += (s, ev) =>
             {
-                if (_appSettings != null && ev.ColumnIndex >= 0)
+                if (ev.Button == MouseButtons.Left && _appSettings != null && ev.ColumnIndex >= 0)
                 {
                     int currentSort;
 

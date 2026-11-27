@@ -61,8 +61,7 @@ namespace MinimalFirewall
 
         private System.Collections.Generic.Dictionary<string, ColumnState>? _dashboardColumns = [];
         private System.Collections.Generic.Dictionary<string, ColumnState>? _rulesColumns = [];
-        private System.Collections.Generic.Dictionary<string, ColumnState>? _liveConnectionsColumns = [];
-        private System.Collections.Generic.Dictionary<string, ColumnState>? _auditColumns = [];
+        private System.Collections.Generic.Dictionary<string, ColumnState>? _applicationsColumns = [];
         private List<string> _autoAllowExclusions =
         [
             Path.GetTempPath(),
@@ -120,10 +119,23 @@ namespace MinimalFirewall
         public bool LiveConnectionsShowLoopback { get => _liveConnectionsShowLoopback; set => SetField(ref _liveConnectionsShowLoopback, value); }
         public bool LiveConnectionsAutoRefresh { get => _liveConnectionsAutoRefresh; set => SetField(ref _liveConnectionsAutoRefresh, value); }
 
-        public System.Collections.Generic.Dictionary<string, ColumnState> DashboardColumns { get => _dashboardColumns ??= []; set => SetField(ref _dashboardColumns, value); }
-        public System.Collections.Generic.Dictionary<string, ColumnState> RulesColumns { get => _rulesColumns ??= []; set => SetField(ref _rulesColumns, value); }
-        public System.Collections.Generic.Dictionary<string, ColumnState> LiveConnectionsColumns { get => _liveConnectionsColumns ??= []; set => SetField(ref _liveConnectionsColumns, value); }
-        public System.Collections.Generic.Dictionary<string, ColumnState> AuditColumns { get => _auditColumns ??= []; set => SetField(ref _auditColumns, value); }
+        public System.Collections.Generic.Dictionary<string, ColumnState> DashboardColumns
+        {
+            get => _dashboardColumns ??= [];
+            set => SetField(ref _dashboardColumns, value);
+        }
+
+        public System.Collections.Generic.Dictionary<string, ColumnState> RulesColumns
+        {
+            get => _rulesColumns ??= [];
+            set => SetField(ref _rulesColumns, value);
+        }
+
+        public System.Collections.Generic.Dictionary<string, ColumnState> ApplicationsColumns
+        {
+            get => _applicationsColumns ??= [];
+            set => SetField(ref _applicationsColumns, value);
+        }
 
         private int _dnsRefreshIntervalMinutes = 4;
         
@@ -172,6 +184,7 @@ namespace MinimalFirewall
         public void QueueSave()
         {
             _saveCts?.Cancel();
+            _saveCts?.Dispose();
             _saveCts = new CancellationTokenSource();
             var token = _saveCts.Token;
 
@@ -183,7 +196,10 @@ namespace MinimalFirewall
                 }
 
                 Save();
-            }, TaskScheduler.Default);
+            },
+            // The UI thread edits the column dictionaries; serializing them on another thread can throw
+            // "Collection was modified" and silently lose the save. Save on the caller's UI thread when there is one.
+            SynchronizationContext.Current != null ? TaskScheduler.FromCurrentSynchronizationContext() : TaskScheduler.Default);
         }
 
         public void Save()
@@ -196,7 +212,7 @@ namespace MinimalFirewall
                     ConfigPathManager.EnsureStorageDirectoryExists();
 
                     string json = JsonSerializer.Serialize(this, AppSettingsJsonContext.Default.AppSettings);
-                    File.WriteAllText(_configPath, json);
+                    FileUtility.WriteAllTextAtomic(_configPath, json);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
