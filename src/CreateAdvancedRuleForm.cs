@@ -73,7 +73,9 @@ namespace MinimalFirewall
             Text = "Edit Advanced Rule";
 
             bothDirRadioButton.Enabled = false;
-            bothDirRadioButton.Text = "Both (create a new rule to use both directions)";
+            // Short label keeps the Direction box inside the form; the tooltip carries the explanation.
+            bothDirRadioButton.Text = "Both (new rule only)";
+            toolTip1.SetToolTip(directionGroupBox, "Create a new rule to use both directions.");
 
             PopulateFormFromRule(ruleToEdit);
         }
