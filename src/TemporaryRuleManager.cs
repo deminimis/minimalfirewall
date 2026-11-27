@@ -54,7 +54,7 @@ namespace MinimalFirewall
 
                     var rulesToSave = new Dictionary<string, DateTime>(_temporaryRules, StringComparer.OrdinalIgnoreCase);
                     string json = JsonSerializer.Serialize(rulesToSave, TempRuleJsonContext.Default.DictionaryStringDateTime);
-                    File.WriteAllText(_storagePath, json);
+                    FileUtility.WriteAllTextAtomic(_storagePath, json);
                 }
                 catch (Exception ex)
                 {
@@ -82,6 +82,33 @@ namespace MinimalFirewall
             var now = DateTime.UtcNow;
             return _temporaryRules
                 .Where(kvp => kvp.Value <= now)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        }
+
+        public Dictionary<string, DateTime> GetRulesByPrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                return new Dictionary<string, DateTime>(
+                    StringComparer.OrdinalIgnoreCase);
+            }
+
+            return _temporaryRules
+                .Where(kvp =>
+                    kvp.Key.StartsWith(
+                        prefix,
+                        StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value,
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        public Dictionary<string, DateTime> GetActiveRules()
+        {
+            var now = DateTime.UtcNow;
+            return _temporaryRules
+                .Where(kvp => kvp.Value > now)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
         }
     }

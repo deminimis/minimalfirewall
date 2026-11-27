@@ -40,8 +40,12 @@ namespace MinimalFirewall
         private static readonly Type? FwPolicyType = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
         private const string CryptoRuleName = "Minimal Firewall System - Certificate Checks";
         private const string DhcpRuleName = "Minimal Firewall System - DHCP Client";
+        private const string TemporaryRulePrefix = "MFW - Temp Allow - ";
+        private const string TemporaryAllowAllRulePrefix = TemporaryRulePrefix + "All Outbound - ";
 
         public BackgroundFirewallTaskService? BackgroundTaskService { get; set; }
+
+        public LockdownGuard LockdownGuard { get; } = new(activityLogger);
 
         public void Dispose()
         {
@@ -60,6 +64,7 @@ namespace MinimalFirewall
                         timer.Dispose();
                     }
                     _temporaryRuleTimers.Clear();
+                    LockdownGuard.Dispose();
                 }
                 _disposed = true;
             }
@@ -67,39 +72,289 @@ namespace MinimalFirewall
 
         public void CleanupTemporaryRulesOnStartup()
         {
+            // An allow-all rule belongs only to the process session that created it
+            try
+            {
+                RemoveTemporaryAllowAllRules();
+            }
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException)
+            {
+                activityLogger.LogException(
+                    "CleanupTemporaryAllowAllRulesOnStartup",
+                    ex);
+            }
+
             var expiredRules = _temporaryRuleManager.GetExpiredRules();
+
             if (expiredRules.Count != 0)
             {
                 var ruleNamesToRemove = expiredRules.Keys.ToList();
+
                 try
                 {
                     FirewallRuleService.DeleteRulesByName(ruleNamesToRemove);
+
                     foreach (var ruleName in ruleNamesToRemove)
                     {
                         _temporaryRuleManager.Remove(ruleName);
+
+                        if (_temporaryRuleTimers.TryRemove(
+                                ruleName,
+                                out var timer))
+                        {
+                            timer.Dispose();
+                        }
                     }
-                    activityLogger.LogDebug($"Cleaned up {ruleNamesToRemove.Count} expired temporary rules on startup.");
+
+                    activityLogger.LogDebug(
+                        $"Cleaned up {ruleNamesToRemove.Count} " +
+                        "expired temporary rules on startup.");
                 }
-                catch (COMException ex)
+                catch (Exception ex) when (
+                    ex is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
                 {
-                    activityLogger.LogException("CleanupTemporaryRulesOnStartup", ex);
+                    // Keep the tracking records so cleanup can retry next startup
+                    activityLogger.LogException(
+                        "CleanupTemporaryRulesOnStartup",
+                        ex);
                 }
+            }
+
+            // Re-arm temporary rules that remain active after an application restart
+            foreach (var (ruleName, expiryUtc) in
+                     _temporaryRuleManager.GetActiveRules())
+            {
+                if (_temporaryRuleTimers.ContainsKey(ruleName))
+                {
+                    continue;
+                }
+
+                TimeSpan remaining = expiryUtc - DateTime.UtcNow;
+
+                if (remaining < TimeSpan.Zero)
+                {
+                    remaining = TimeSpan.Zero;
+                }
+
+                try
+                {
+                    SetupRuleTimer(ruleName, remaining);
+                }
+                catch (Exception ex) when (
+                    ex is ArgumentException or
+                    ArgumentOutOfRangeException or
+                    InvalidOperationException)
+                {
+                    activityLogger.LogException(
+                        $"Re-arm temporary rule timer '{ruleName}'",
+                        ex);
+                }
+            }
+        }
+
+        // The allow-all rule disables lockdown for every program, so it must not
+        // survive an application exit or a restart.
+        private int _allowAllExitHookInstalled;
+        private int _allowAllOperationInProgress;
+
+        private void EnsureAllowAllRemovedOnExit()
+        {
+            if (Interlocked.Exchange(ref _allowAllExitHookInstalled, 1) == 0)
+            {
+                Application.ApplicationExit += (_, _) =>
+                {
+                    try
+                    {
+                        RemoveTemporaryAllowAllRules();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Application shutdown must continue even if firewall cleanup fails.
+                        activityLogger.LogException(
+                            "RemoveTemporaryAllowAllRules on application exit",
+                            ex);
+                    }
+                };
+            }
+        }
+
+        public void RemoveTemporaryAllowAllRules()
+        {
+            // Inspect the actual Windows Firewall collection. The tracking file may be
+            // missing, corrupt, stale, or may not have been written after rule creation.
+            var firewallRuleNames =
+                FirewallRuleService.GetRuleNamesByPrefix(
+                    TemporaryAllowAllRulePrefix);
+
+            // Also include tracked names so stale manager entries and timers are
+            // cleaned even when their firewall rules are already gone.
+            var trackedRuleNames = _temporaryRuleManager
+                .GetRulesByPrefix(TemporaryAllowAllRulePrefix)
+                .Keys;
+
+            var names = firewallRuleNames
+                .Concat(trackedRuleNames)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (names.Count == 0)
+            {
+                return;
+            }
+
+            // Delete actual firewall rules first. Do not remove tracking information
+            // if deletion fails, because a later startup must be able to retry.
+            if (firewallRuleNames.Count != 0)
+            {
+                FirewallRuleService.DeleteRulesByName(firewallRuleNames);
+            }
+
+            foreach (var name in names)
+            {
+                _temporaryRuleManager.Remove(name);
+
+                if (_temporaryRuleTimers.TryRemove(name, out var timer))
+                {
+                    timer.Dispose();
+                }
+            }
+
+            activityLogger.LogChange(
+                "Temporary Rule Removed",
+                $"Removed {firewallRuleNames.Count} temporary allow-all outbound rule(s).");
+        }
+
+        public void CreateTemporaryAllowAllOutbound(TimeSpan duration)
+        {
+            if (duration <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(duration),
+                    "The temporary allow duration must be greater than zero.");
+            }
+
+            // Prevent repeated tray clicks from leaving overlapping allow-all rules.
+            if (Interlocked.Exchange(ref _allowAllOperationInProgress, 1) != 0)
+            {
+                return;
+            }
+
+            string ruleName =
+                $"{TemporaryAllowAllRulePrefix}{Guid.NewGuid():N}";
+
+            bool firewallRuleCreated = false;
+
+            try
+            {
+                // Replace an existing allowance instead of stacking 
+                RemoveTemporaryAllowAllRules();
+
+                BuildAndCreateRule(
+                    ruleName,
+                    "Temporarily allows all outbound traffic.",
+                    MFWConstants.MainRuleGroup,
+                    Directions.Outgoing,
+                    Actions.Allow,
+                    ProtocolTypes.Any.Value,
+                    "",
+                    "",
+                    RuleType.Program);
+
+                firewallRuleCreated = true;
+
+                DateTime expiryUtc = DateTime.UtcNow.Add(duration);
+                _temporaryRuleManager.Add(ruleName, expiryUtc);
+
+                SetupRuleTimer(ruleName, duration);
+                EnsureAllowAllRemovedOnExit();
+
+                activityLogger.LogChange(
+                    "Temporary Rule Created",
+                    $"Allowed all outbound traffic for " +
+                    $"{duration.TotalMinutes:0.##} minutes.");
+            }
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException or
+                IOException or
+                ArgumentOutOfRangeException)
+            {
+                // Roll back every part of a partial creation
+                try
+                {
+                    if (firewallRuleCreated)
+                    {
+                        FirewallRuleService.DeleteRulesByName([ruleName]);
+                    }
+                }
+                catch (Exception rollbackEx) when (
+                    rollbackEx is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
+                {
+                    activityLogger.LogException(
+                        $"Rollback temporary allow-all rule '{ruleName}'",
+                        rollbackEx);
+                }
+
+                _temporaryRuleManager.Remove(ruleName);
+
+                if (_temporaryRuleTimers.TryRemove(ruleName, out var timer))
+                {
+                    timer.Dispose();
+                }
+
+                activityLogger.LogException(
+                    "CreateTemporaryAllowAllOutbound",
+                    ex);
+
+                SafeShowMessageBox(
+                    "Failed to allow all outbound traffic.\n" +
+                    "Any partially created rule was scheduled for cleanup.\n" +
+                    "Check debug_log.txt for details.",
+                    "Allow All Outbound",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Volatile.Write(ref _allowAllOperationInProgress, 0);
             }
         }
 
         private static bool IsMfwRule(INetFwRule2 rule)
         {
-            // Optimize: Read COM property once
             string grouping = rule.Grouping;
             if (string.IsNullOrEmpty(grouping))
             {
                 return false;
             }
 
-            // Optimize: Use safe casing comparison
-            return grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(grouping, MFWConstants.MainRuleGroup, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(grouping, MFWConstants.WildcardRuleGroup, StringComparison.OrdinalIgnoreCase);
+            return grouping.EndsWith(
+                   MFWConstants.firewallRulesuffix,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   MFWConstants.MainRuleGroup,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   MFWConstants.WildcardRuleGroup,
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   "Minimal Firewall",
+                   StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(
+                   grouping,
+                   "Minimal Firewall (Wildcard)",
+                   StringComparison.OrdinalIgnoreCase);
         }
 
         private void FindAndQueueDeleteForGeneralBlockRule(string appPath)
@@ -178,6 +433,28 @@ namespace MinimalFirewall
                 }
             }
         }
+
+        public void ReplaceApplicationRules(
+            string appPath,
+            Directions directions,
+            string action)
+                {
+                    FirewallRuleService.ReplaceApplicationRules(
+                        appPath,
+                        directions,
+                        action);
+
+                    string directionText =
+                        directions == (Directions.Incoming | Directions.Outgoing)
+                            ? "both directions"
+                            : directions == Directions.Incoming
+                                ? "inbound"
+                                : "outbound";
+
+                    activityLogger.LogChange(
+                        "Application Rules Replaced",
+                        $"{appPath}: {directionText} replaced with {action}.");
+                }
 
         public void ApplyApplicationRuleChange(List<string> appPaths, string action, string? wildcardSourcePath = null, string? autoAllowedPublisher = null)
         {
@@ -281,11 +558,6 @@ namespace MinimalFirewall
                 rulesToRemove.AddRange(FirewallRuleService.DeleteConflictingServiceRules(serviceName, (NET_FW_ACTION_)parsedAction, NET_FW_RULE_DIRECTION_.NET_FW_RULE_DIR_OUT));
             }
 
-            if (rulesToRemove.Count != 0)
-            {
-                FirewallRuleService.DeleteRulesByName(rulesToRemove);
-            }
-
             ProcessTcpAndUdpRules(parsedDirection, (dir, proto, suffix) =>
             {
                 string dirStr = dir == Directions.Incoming ? "In" : "Out";
@@ -354,14 +626,56 @@ namespace MinimalFirewall
             }
         }
 
-        public void DeleteApplicationRules(List<string> appPaths) =>
-            ExecuteRuleDeletion(appPaths, items => { FirewallRuleService.DeleteRulesByPath(items); }, "Rule");
+        public void DeleteSelectedRule(AdvancedRuleViewModel rule)
+        {
+            if (rule == null)
+            {
+                throw new InvalidOperationException(
+                    "The selected rule definition was missing.");
+            }
+
+            if (!FirewallRuleService.TryDeleteExactRule(
+                    rule,
+                    out string errorMessage))
+            {
+                throw new InvalidOperationException(errorMessage);
+            }
+
+            activityLogger.LogChange(
+                "Selected Rule Deleted",
+                rule.Name);
+        }
+
+        public void DeleteApplicationRules(List<string> appPaths)
+        {
+            if (appPaths == null || appPaths.Count == 0)
+            {
+                return;
+            }
+
+            foreach (string appPath in appPaths
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                FirewallRuleService.DeleteAllRulesForApplication(appPath);
+
+                activityLogger.LogChange(
+                    "Application Rules Deleted",
+                    appPath);
+            }
+        }
 
         public void DeleteUwpRules(List<string> packageFamilyNames) =>
-            ExecuteRuleDeletion(packageFamilyNames, items => { FirewallRuleService.DeleteUwpRules(items); }, "UWP Rule");
+            ExecuteRuleDeletion(
+                packageFamilyNames,
+                items => { FirewallRuleService.DeleteUwpRules(items); },
+                "UWP Rule");
 
         public void DeleteAdvancedRules(List<string> ruleNames) =>
-            ExecuteRuleDeletion(ruleNames, items => { FirewallRuleService.DeleteRulesByName(items); }, "Advanced Rule");
+            ExecuteRuleDeletion(
+                ruleNames,
+                items => { FirewallRuleService.DeleteRulesByName(items); },
+                "Advanced Rule");
 
         public void DeleteRulesForWildcard(WildcardRule wildcard)
         {
@@ -501,83 +815,170 @@ namespace MinimalFirewall
             MessageBox.Show(text, caption, buttons, icon);
         }
 
-        public void ToggleLockdown()
+        public bool ToggleLockdown()
         {
-            var isCurrentlyLocked = FirewallRuleService.GetDefaultOutboundAction() == NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
-            bool newLockdownState = !isCurrentlyLocked;
-            activityLogger.LogDebug($"Toggling Lockdown. Current state: {(isCurrentlyLocked ? "Locked" : "Unlocked")}. New state: {(newLockdownState ? "Locked" : "Unlocked")}.");
+            bool wasLocked =
+                FirewallRuleService.GetDefaultOutboundAction() ==
+                NET_FW_ACTION_.NET_FW_ACTION_BLOCK;
+
+            bool lockDown = !wasLocked;
+            var requestedAction = lockDown
+                ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
+                : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+
+            var previousAction = wasLocked
+                ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK
+                : NET_FW_ACTION_.NET_FW_ACTION_ALLOW;
+
+            activityLogger.LogDebug(
+                $"Toggling Lockdown. Current state: " +
+                $"{(wasLocked ? "Locked" : "Unlocked")}. New state: " +
+                $"{(lockDown ? "Locked" : "Unlocked")}.");
+
+            LockdownGuard.Expect(lockDown);
+
+            void RestorePreviousState()
+            {
+                LockdownGuard.Expect(wasLocked);
+
+                try
+                {
+                    FirewallRuleService.SetDefaultOutboundAction(previousAction);
+                }
+                catch (Exception ex) when (
+                    ex is COMException or
+                    InvalidOperationException or
+                    UnauthorizedAccessException)
+                {
+                    activityLogger.LogException(
+                        "Restore previous outbound policy",
+                        ex);
+                }
+
+                try
+                {
+                    AdminTaskService.SetAuditPolicy(wasLocked);
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    activityLogger.LogException(
+                        "Restore previous audit policy",
+                        ex);
+                }
+
+                ManageCryptoServiceRule(wasLocked);
+                ManageDhcpClientRule(wasLocked);
+                ManageWslRules(wasLocked);
+            }
+
             try
             {
-                AdminTaskService.SetAuditPolicy(newLockdownState);
+                AdminTaskService.SetAuditPolicy(lockDown);
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
                 activityLogger.LogException("SetAuditPolicy", ex);
             }
 
-            ManageCryptoServiceRule(newLockdownState);
-            ManageDhcpClientRule(newLockdownState);
+            ManageCryptoServiceRule(lockDown);
+            ManageDhcpClientRule(lockDown);
+            ManageWslRules(lockDown);
 
-
-            ManageWslRules(newLockdownState);
-
-            if (newLockdownState && !AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
+            if (lockDown &&
+                !AdminTaskService.IsWfpConnectionAuditPolicyEnabled())
             {
+                RestorePreviousState();
+
                 SafeShowMessageBox(
                     "Failed to verify that Windows Security Auditing was enabled.\n\n" +
-                     "The Lockdown dashboard will not be able to detect blocked connections.\n\n" +
+                    "The Lockdown dashboard will not be able to detect blocked " +
+                    "connections.\n\n" +
                     "Potential Causes:\n" +
                     "1. A local or domain Group Policy is preventing this change.\n" +
                     "2. Other security software is blocking this action.\n\n" +
-                    "The firewall's default policy will be set back to 'Allow' for safety.",
-                     "Lockdown Mode Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                try
-                {
-                    FirewallRuleService.SetDefaultOutboundAction(NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
-                }
-                catch (COMException ex)
-                {
-                    activityLogger.LogException("SetDefaultOutboundAction(Allow) after audit failure", ex);
-                }
-                ManageCryptoServiceRule(false);
-                ManageDhcpClientRule(false);
-                ManageWslRules(false);
+                    "The previous firewall state was restored.",
+                    "Lockdown Mode Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
 
                 activityLogger.LogDebug(
-                    "Lockdown Mode Failed: Could not enable audit policy. " +
-                    "Temporary system and WSL rules were removed.");
+                    "Lockdown Mode failed because the audit policy could not " +
+                    "be verified. The previous state was restored.");
 
-                return;
+                return false;
             }
 
             try
             {
-                FirewallRuleService.SetDefaultOutboundAction(
-                    newLockdownState ? NET_FW_ACTION_.NET_FW_ACTION_BLOCK : NET_FW_ACTION_.NET_FW_ACTION_ALLOW);
+                FirewallRuleService.SetDefaultOutboundAction(requestedAction);
             }
-            catch (COMException ex)
+            catch (Exception ex) when (
+                ex is COMException or
+                InvalidOperationException or
+                UnauthorizedAccessException)
             {
-                activityLogger.LogException("SetDefaultOutboundAction", ex);
-                SafeShowMessageBox("Failed to change default outbound policy.\nCheck debug_log.txt for details.",
-                "Lockdown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                activityLogger.LogException(
+                    "SetDefaultOutboundAction",
+                    ex);
+
+                RestorePreviousState();
+
+                SafeShowMessageBox(
+                    "Failed to change the default outbound policy.\n" +
+                    "The previous firewall state was restored.\n\n" +
+                    "Check debug_log.txt for details.",
+                    "Lockdown Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+
+                return false;
             }
 
-            if (newLockdownState)
+            var mismatched =
+                FirewallRuleService.GetProfilesNotMatchingOutbound(
+                    requestedAction);
+
+            if (mismatched.Count > 0)
+            {
+                string profiles = string.Join(", ", mismatched);
+
+                activityLogger.LogDebug(
+                    $"Lockdown verification failed. Profiles not set to " +
+                    $"{(lockDown ? "Block" : "Allow")}: {profiles}");
+
+                RestorePreviousState();
+
+                SafeShowMessageBox(
+                    "The default outbound policy was not applied to these " +
+                    $"profiles: {profiles}.\n\n" +
+                    "A Group Policy, insufficient permissions, or other " +
+                    "security software may be overriding it.\n\n" +
+                    "The previous firewall state was restored.",
+                    "Lockdown Mode Warning",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return false;
+            }
+
+            if (lockDown)
             {
                 eventListenerService.Start();
             }
             else
             {
                 eventListenerService.Stop();
+                ReenablefirewallRules();
+
+                activityLogger.LogDebug(
+                    "All MFW rules re-enabled upon disabling Lockdown mode.");
             }
 
-            activityLogger.LogChange("Lockdown Mode", newLockdownState ? "Enabled" : "Disabled");
-            if (!newLockdownState)
-            {
-                ReenableMfwRules();
-                activityLogger.LogDebug("All MFW rules re-enabled upon disabling Lockdown mode.");
-            }
+            activityLogger.LogChange(
+                "Lockdown Mode",
+                lockDown ? "Enabled" : "Disabled");
+
+            return true;
         }
 
 
@@ -777,13 +1178,14 @@ namespace MinimalFirewall
                     break;
 
                 case "Ignore":
-                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, longSnoozeDuration);
-                    activityLogger.LogDebug($"Ignored Connection: {pending.Direction} for {pending.AppPath}");
+                    var ignoreDuration = duration > TimeSpan.Zero ? duration : longSnoozeDuration;
+                    eventListenerService.SnoozeNotificationsForApp(pending.AppPath, ignoreDuration);
+                    activityLogger.LogDebug($"Ignored Connection for {ignoreDuration}: {pending.Direction} for {pending.AppPath}");
                     break;
             }
         }
 
-        public void ReenableMfwRules()
+        public void ReenablefirewallRules()
         {
             var allRules = FirewallRuleService.GetAllRules();
             try
@@ -795,7 +1197,7 @@ namespace MinimalFirewall
                         // Safe COM property access
                         string grouping = rule.Grouping;
                         if (!string.IsNullOrEmpty(grouping) &&
-                             (grouping.EndsWith(MFWConstants.MfwRuleSuffix, StringComparison.OrdinalIgnoreCase) ||
+                             (grouping.EndsWith(MFWConstants.firewallRulesuffix, StringComparison.OrdinalIgnoreCase) ||
                                string.Equals(grouping, "Minimal Firewall", StringComparison.OrdinalIgnoreCase) ||
                                string.Equals(grouping, "Minimal Firewall (Wildcard)", StringComparison.OrdinalIgnoreCase)))
                         {
@@ -822,24 +1224,82 @@ namespace MinimalFirewall
 
         private void SetupRuleTimer(string ruleName, TimeSpan duration)
         {
-            var timer = new System.Threading.Timer(_ =>
+            if (string.IsNullOrWhiteSpace(ruleName))
             {
-                try
+                throw new ArgumentException(
+                    "A temporary firewall rule name is required.",
+                    nameof(ruleName));
+            }
+
+            if (duration < TimeSpan.Zero)
+            {
+                duration = TimeSpan.Zero;
+            }
+
+            System.Threading.Timer? newTimer = null;
+
+            newTimer = new System.Threading.Timer(
+                _ =>
                 {
-                    FirewallRuleService.DeleteRulesByName([ruleName]);
-                    _temporaryRuleManager.Remove(ruleName);
-                    if (_temporaryRuleTimers.TryRemove(ruleName, out var t))
+                    bool ruleRemoved = false;
+
+                    try
                     {
-                        t.Dispose();
+                        FirewallRuleService.DeleteRulesByName([ruleName]);
+                        ruleRemoved = true;
+
+                        _temporaryRuleManager.Remove(ruleName);
+
+                        activityLogger.LogDebug(
+                            $"Temporary rule {ruleName} expired and was removed.");
                     }
-                    activityLogger.LogDebug($"Temporary rule {ruleName} expired and was removed.");
-                }
-                catch (COMException ex)
+                    catch (Exception ex) when (
+                        ex is COMException or
+                        InvalidOperationException or
+                        UnauthorizedAccessException)
+                    {
+                        // Keep the manager entry when firewall deletion fails to retry
+                        activityLogger.LogException(
+                            $"Deleting temporary rule {ruleName}",
+                            ex);
+                    }
+                    finally
+                    {
+                        if (_temporaryRuleTimers.TryGetValue(
+                                ruleName,
+                                out var registeredTimer) &&
+                            ReferenceEquals(registeredTimer, newTimer) &&
+                            _temporaryRuleTimers.TryRemove(
+                                ruleName,
+                                out var removedTimer))
+                        {
+                            removedTimer.Dispose();
+                        }
+                        else
+                        {
+                            newTimer?.Dispose();
+                        }
+
+                        if (!ruleRemoved)
+                        {
+                            activityLogger.LogDebug(
+                                $"Temporary rule '{ruleName}' remains tracked " +
+                                "because its firewall deletion was not confirmed.");
+                        }
+                    }
+                },
+                null,
+                duration,
+                Timeout.InfiniteTimeSpan);
+
+            _temporaryRuleTimers.AddOrUpdate(
+                ruleName,
+                newTimer,
+                (_, previousTimer) =>
                 {
-                    activityLogger.LogException($"Deleting temporary rule {ruleName}", ex);
-                }
-            }, null, duration, Timeout.InfiniteTimeSpan);
-            _temporaryRuleTimers[ruleName] = timer;
+                    previousTimer.Dispose();
+                    return newTimer;
+                });
         }
 
         private void CreateTemporaryAllowRule(string appPath, string serviceName, string direction, TimeSpan duration)
@@ -879,23 +1339,39 @@ namespace MinimalFirewall
             }
         }
 
-        private void ProcessForeignRule(FirewallRuleChange change, bool enable, string logAction)
-        {
-            if (change.Rule is { Name: string ruleName })
-            {
-                if (enable)
+        private void ProcessForeignRule(
+            FirewallRuleChange change,
+            bool enable,
+            string logAction)
                 {
-                    firewallService.EnableRuleByName(ruleName);
-                }
-                else
-                {
-                    firewallService.DisableRuleByName(ruleName);
-                }
+                    AdvancedRuleViewModel? rule = change?.Rule;
 
-                activityLogger.LogChange($"Foreign Rule {logAction}", ruleName);
-                activityLogger.LogDebug($"Sentry: {logAction} foreign rule '{ruleName}'");
-            }
-        }
+                    if (rule == null || string.IsNullOrWhiteSpace(rule.Name))
+                    {
+                        throw new InvalidOperationException(
+                            "The foreign firewall rule definition was missing.");
+                    }
+
+                    bool changed = enable
+                        ? firewallService.EnableRule(
+                            rule,
+                            out string errorMessage)
+                        : firewallService.DisableRule(
+                            rule,
+                            out errorMessage);
+
+                    if (!changed)
+                    {
+                        throw new InvalidOperationException(errorMessage);
+                    }
+
+                    activityLogger.LogChange(
+                        $"Foreign Rule {logAction}",
+                        rule.Name);
+
+                    activityLogger.LogDebug(
+                        $"Sentry: {logAction} foreign rule '{rule.Name}'");
+                }
 
         public void AcceptForeignRule(FirewallRuleChange change) =>
             ProcessForeignRule(change, true, "Accepted");
@@ -1003,6 +1479,35 @@ namespace MinimalFirewall
                 activityLogger.LogDebug($"Sentry: Accepted all {ruleNames.Count} foreign rules.");
             }
         }
+
+        public void EditAdvancedRule(
+            AdvancedRuleViewModel originalRule,
+            AdvancedRuleViewModel updatedRule)
+                {
+                    ArgumentNullException.ThrowIfNull(originalRule);
+                    ArgumentNullException.ThrowIfNull(updatedRule);
+
+                    if (!FirewallRuleService.TryEditExactRule(
+                            originalRule,
+                            updatedRule,
+                            out string errorMessage))
+                    {
+                        activityLogger.LogDebug(
+                            "[EditAdvancedRule] Edit stopped for " +
+                            $"'{originalRule.Name}': {errorMessage}");
+
+                        throw new InvalidOperationException(errorMessage);
+                    }
+
+                    activityLogger.LogChange(
+                        "Advanced Rule Edited",
+                        string.Equals(
+                            originalRule.Name,
+                            updatedRule.Name,
+                            StringComparison.OrdinalIgnoreCase)
+                            ? updatedRule.Name
+                            : $"{originalRule.Name} -> {updatedRule.Name}");
+                }
 
         public void CreateAdvancedRule(AdvancedRuleViewModel vm, string interfaceTypes, string icmpTypesAndCodes)
         {
@@ -1344,17 +1849,17 @@ namespace MinimalFirewall
             });
         }
 
-        public void DeleteAllMfwRules()
+        public void DeleteallFirewallRules()
         {
             try
             {
-                FirewallRuleService.DeleteAllMfwRules();
+                FirewallRuleService.DeleteallFirewallRules();
                 _wildcardRuleService.ClearRules();
                 activityLogger.LogChange("Bulk Delete", "All Minimal Firewall rules deleted by user.");
             }
             catch (COMException ex)
             {
-                activityLogger.LogException("DeleteAllMfwRules", ex);
+                activityLogger.LogException("DeleteallFirewallRules", ex);
             }
         }
 
@@ -1483,7 +1988,7 @@ namespace MinimalFirewall
         public async Task<List<string>> CleanUpOrphanedRulesAsync(CancellationToken token, IProgress<int>? progress = null)
         {
             var orphanedRuleNames = new List<string>();
-            var mfwRulesData = new List<(string Name, string ApplicationName)>();
+            var firewallRulesData = new List<(string Name, string ApplicationName)>();
             var allRules = FirewallRuleService.GetAllRules();
 
             try
@@ -1494,7 +1999,7 @@ namespace MinimalFirewall
                     {
                         if (IsMfwRule(rule))
                         {
-                            mfwRulesData.Add((rule.Name, rule.ApplicationName));
+                            firewallRulesData.Add((rule.Name, rule.ApplicationName));
                         }
                     }
                     catch { /* Ignore localized COM property read failures */ }
@@ -1512,7 +2017,7 @@ namespace MinimalFirewall
                 // allRules items were completely evaluated and released in the loop
             }
 
-            int total = mfwRulesData.Count;
+            int total = firewallRulesData.Count;
             if (total == 0)
             {
                 progress?.Report(100);
@@ -1524,7 +2029,7 @@ namespace MinimalFirewall
             // Execute safe, COM-free validation on the background thread
             await Task.Run(() =>
             {
-                foreach (var (Name, ApplicationName) in mfwRulesData)
+                foreach (var (Name, ApplicationName) in firewallRulesData)
                 {
                     if (token.IsCancellationRequested)
                     {
@@ -1570,7 +2075,7 @@ namespace MinimalFirewall
             return orphanedRuleNames;
         }
 
-        public async Task<string> ExportAllMfwRulesAsync()
+        public async Task<string> ExportallFirewallRulesAsync()
         {
             var advancedRules = await _dataService.GetAggregatedRulesAsync(CancellationToken.None);
             var portableAdvancedRules = advancedRules.SelectMany(ar => ar.UnderlyingRules ?? [])
@@ -1578,7 +2083,7 @@ namespace MinimalFirewall
                 {
                     _ = (r?.ApplicationName = PathResolver.ConvertToEnvironmentPath(r.ApplicationName));
                     return r;
-                }).Where(r => r != null).ToList();
+                }).Where(r => r != null && !r.Name.StartsWith(TemporaryRulePrefix, StringComparison.OrdinalIgnoreCase)).ToList();
             var wildcardRules = _wildcardRuleService.GetRules()
                 .Select(r =>
                 {
@@ -1613,7 +2118,7 @@ namespace MinimalFirewall
 
                 if (replace)
                 {
-                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteAllMfwRules, new object()));
+                    BackgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.DeleteallFirewallRules, new object()));
                 }
 
                 foreach (var ruleVm in container.AdvancedRules ?? [])

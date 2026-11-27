@@ -24,11 +24,14 @@ namespace MinimalFirewall
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
 
+        private ContextMenuStrip? _ignoreMenu;
+
 
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
         private bool _fittingLayout;
         private bool _isDarkMode;
+        private System.Windows.Forms.Timer? _allowDelayTimer;
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
@@ -93,6 +96,7 @@ namespace MinimalFirewall
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
+            SetupIgnoreMenu();
 
             if (pending.IsWsl)
             {
@@ -183,9 +187,43 @@ namespace MinimalFirewall
             finally { _fittingLayout = false; }
         }
 
+        // The popup appears on top of whatever the user is doing; a click or key press aimed at another window
+        // must not land on Allow. Keep the allowing buttons disabled briefly after the popup appears.
+        private const int AllowDelayMs = 900;
+
+        private void DelayAllowButtons()
+        {
+            allowButton.Enabled = false;
+            tempAllowButton.Enabled = false;
+
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = new System.Windows.Forms.Timer
+            {
+                Interval = AllowDelayMs
+            };
+
+            _allowDelayTimer.Tick += (_, _) =>
+            {
+                _allowDelayTimer?.Stop();
+                _allowDelayTimer?.Dispose();
+                _allowDelayTimer = null;
+
+                if (Disposing || IsDisposed)
+                {
+                    return;
+                }
+
+                allowButton.Enabled = true;
+                tempAllowButton.Enabled = true;
+            };
+
+            _allowDelayTimer.Start();
+        }
+
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            DelayAllowButtons();
             ApplyThemeStyles(_isDarkMode);
             try
             {
@@ -222,6 +260,10 @@ namespace MinimalFirewall
         // Window Closing: Save position
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            _allowDelayTimer?.Stop();
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = null;
+
             try
             {
                 if (WindowState == FormWindowState.Normal)
@@ -256,6 +298,25 @@ namespace MinimalFirewall
             tempAllowContextMenu.Items.Add("For 8 hours").Click += (s, e) => SetTemporaryAllow(TimeSpan.FromHours(8));
         }
 
+        // Connection popups only: ignore for a chosen time instead of the default 2 minutes.
+        // The snooze stays in memory, so "until restart" ends when Minimal Firewall exits.
+        private void SetupIgnoreMenu()
+        {
+            _ignoreMenu = new ContextMenuStrip(components);
+            _ignoreMenu.Items.Add("For 2 minutes").Click += (_, _) => SetIgnore(TimeSpan.FromMinutes(2));
+            _ignoreMenu.Items.Add("For 1 hour").Click += (_, _) => SetIgnore(TimeSpan.FromHours(1));
+            _ignoreMenu.Items.Add("For 8 hours").Click += (_, _) => SetIgnore(TimeSpan.FromHours(8));
+            _ignoreMenu.Items.Add("Until Minimal Firewall restarts").Click += (_, _) => SetIgnore(TimeSpan.MaxValue);
+        }
+
+        private void SetIgnore(TimeSpan duration)
+        {
+            Result = NotifierResult.Ignore;
+            TemporaryDuration = duration;
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
         private void SetTemporaryAllow(TimeSpan duration)
         {
             Result = NotifierResult.TemporaryAllow;
@@ -281,6 +342,12 @@ namespace MinimalFirewall
 
         private void IgnoreButton_Click(object sender, EventArgs e)
         {
+            if (_ignoreMenu != null)
+            {
+                _ignoreMenu.Show(ignoreButton, new Point(0, ignoreButton.Height));
+                return;
+            }
+
             Result = NotifierResult.Ignore;
             DialogResult = DialogResult.Cancel;
             Close();
