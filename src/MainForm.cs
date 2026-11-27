@@ -926,6 +926,10 @@ namespace MinimalFirewall
 
             var contextMenu = new ContextMenuStrip();
             contextMenu.Items.Add(lockdownTrayMenuItem);
+            var allowAppMenuItem = new ToolStripMenuItem("Allow Application");
+            allowAppMenuItem.DropDownItems.Add(new ToolStripMenuItem("From Running Programs...", null, (_, _) => AllowRunningProgram()));
+            allowAppMenuItem.DropDownItems.Add(new ToolStripMenuItem("Browse for File...", null, (_, _) => AllowProgramFile()));
+            contextMenu.Items.Add(allowAppMenuItem);
             contextMenu.Items.Add(allowAllOutboundTrayMenuItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(
@@ -953,6 +957,39 @@ namespace MinimalFirewall
             if (_mainViewModel.ToggleLockdownMode())
             {
                 UpdateTrayStatus();
+            }
+        }
+
+        private void AllowRunningProgram()
+        {
+            using var picker = new ProcessPickerForm(_appSettings);
+            if (picker.ShowDialog() == DialogResult.OK && picker.SelectedPath is string path)
+            {
+                ConfirmAndAllowProgram(path);
+            }
+        }
+
+        private void AllowProgramFile()
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "Programs (*.exe)|*.exe|All files (*.*)|*.*",
+                Title = "Allow Application"
+            };
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                ConfirmAndAllowProgram(dialog.FileName);
+            }
+        }
+
+        // Every quick-allow path asks first, so a stray click never opens the firewall for a program.
+        private void ConfirmAndAllowProgram(string appPath)
+        {
+            var answer = Messenger.MessageBox($"Allow outbound connections for this program?\n\n{appPath}",
+                "Allow Application", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (answer == DialogResult.Yes)
+            {
+                _mainViewModel.CreateProgramRule(appPath, "Allow (Outbound)");
             }
         }
 
