@@ -24,6 +24,9 @@ namespace MinimalFirewall
         public TimeSpan TemporaryDuration { get; private set; }
         public bool TrustPublisher { get; private set; } = false;
 
+        // Every alert carries the app name and icon so users can tell it apart from a look-alike window.
+        private const string AppTitlePrefix = "Minimal Firewall - ";
+        private static readonly Lazy<Icon?> _appIcon = new(() => Environment.ProcessPath is string path ? Icon.ExtractAssociatedIcon(path) : null);
         private ContextMenuStrip? _ignoreMenu;
 
 
@@ -32,6 +35,15 @@ namespace MinimalFirewall
         private bool _fittingLayout;
         private bool _isDarkMode;
         private System.Windows.Forms.Timer? _allowDelayTimer;
+
+        private void ApplyAppIdentity()
+        {
+            ShowIcon = true;
+            if (_appIcon.Value is Icon icon)
+            {
+                Icon = icon;
+            }
+        }
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
@@ -59,6 +71,7 @@ namespace MinimalFirewall
         public NotifierForm(FirewallRuleChange rule, bool isDarkMode)
         {
             InitializeComponent();
+            ApplyAppIdentity();
             RuleChange = rule;
 
             
@@ -66,7 +79,7 @@ namespace MinimalFirewall
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
             appNameLabel.Text = appName;
-            Text = "New Firewall Rule Detected";
+            Text = AppTitlePrefix + "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
             pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
@@ -82,12 +95,16 @@ namespace MinimalFirewall
         public NotifierForm(PendingConnectionViewModel pending, bool isDarkMode)
         {
             InitializeComponent();
+            ApplyAppIdentity();
             PendingConnection = pending;
 
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(pending.ServiceName) ? pending.FileName : $"{pending.FileName} ({pending.ServiceName})";
-            Text = "Connection Blocked";
+            Text = AppTitlePrefix + "Connection Blocked";
+            // Connection alerts only exist in lockdown, where the tray icon blinks while one is pending.
+            trayHintLabel.Text = "Genuine alerts make the Minimal Firewall tray icon blink.";
+            trayHintLabel.Visible = true;
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
             pathLabel.Text = pending.AppPath;
