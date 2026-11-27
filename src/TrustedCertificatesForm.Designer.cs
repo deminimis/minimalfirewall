@@ -41,7 +41,7 @@ namespace MinimalFirewall
             certGrid.ReadOnly = true;
             certGrid.RowHeadersVisible = false;
             certGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            certGrid.Size = new Size(730, 350);
+            certGrid.Size = new Size(730, 340);
             certGrid.TabIndex = 1;
             // 
             // closeButton
