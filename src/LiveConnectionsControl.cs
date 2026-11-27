@@ -183,7 +183,7 @@ namespace MinimalFirewall
             UpdateLiveConnectionsView();
 
             liveConnectionsDataGridView.AllowUserToOrderColumns = true;
-            DataGridViewHelper.RestoreColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns);
+            DataGridViewHelper.RestoreColumnSettings(liveConnectionsDataGridView, _appSettings.LiveConnectionsColumns, _appSettings);
 
             // Columns added after a layout was saved: show them next to related columns rather than last.
             if (!_appSettings.LiveConnectionsColumns.ContainsKey(connPidColumn.Name)) connPidColumn.DisplayIndex = connNameColumn.DisplayIndex + 1;
@@ -362,7 +362,7 @@ namespace MinimalFirewall
         {
             if (connIconColumn != null && _appSettings != null)
             {
-                connIconColumn.Visible = _appSettings.ShowAppIcons;
+                connIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.LiveConnectionsColumns, connIconColumn.Name);
                 liveConnectionsDataGridView.InvalidateColumn(connIconColumn.Index);
             }
         }
@@ -457,7 +457,7 @@ namespace MinimalFirewall
             base.OnLoad(e);
             liveConnectionsDataGridView.ColumnHeaderMouseClick += (s, ev) =>
             {
-                if (_appSettings != null && ev.ColumnIndex >= 0)
+                if (ev.Button == MouseButtons.Left && _appSettings != null && ev.ColumnIndex >= 0)
                 {
                     int currentSort;
 
