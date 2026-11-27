@@ -173,6 +173,7 @@ public class RuleFilterViewModel : INotifyPropertyChanged
 
 public class PendingConnectionViewModel
 {
+    public DateTime ObservedAt { get; set; } = DateTime.Now;
     public string ProcessId { get; set; } = string.Empty;
     public string CommandLine { get; set; } = string.Empty;
     public string ParentProcessId { get; set; } = string.Empty;
@@ -254,8 +255,10 @@ internal partial class CacheJsonContext : JsonSerializerContext { }
 public enum FirewallTaskType
 {
     ApplyApplicationRule,
+    ReplaceApplicationRules,
     ApplyServiceRule,
     ApplyUwpRule,
+    DeleteSelectedRule,
     DeleteApplicationRules,
     DeleteUwpRules,
     DeleteAdvancedRules,
@@ -268,12 +271,13 @@ public enum FirewallTaskType
     DisableForeignRule,
     AcceptAllForeignRules,
     CreateAdvancedRule,
+    EditAdvancedRule,
     AddWildcardRule,
     SetGroupEnabledState,
     UpdateWildcardRule,
     RemoveWildcardRule,
     RemoveWildcardDefinitionOnly,
-    DeleteAllMfwRules,
+    DeleteallFirewallRules,
     ImportRules
 }
 
@@ -298,15 +302,88 @@ public class FirewallTask
 }
 
 // Payload DTOs converted to records for Immutability and built-in ToString() logging
-public record ApplyApplicationRulePayload { public List<string> AppPaths { get; init; } = []; public string Action { get; init; } = ""; public string? WildcardSourcePath { get; init; } public string? AutoAllowedPublisher { get; init; } }
+public record ApplyApplicationRulePayload
+{
+    public List<string> AppPaths { get; init; } = [];
+    public string Action { get; init; } = "";
+    public string? WildcardSourcePath { get; init; }
+    public string? AutoAllowedPublisher { get; init; }
+}
+
+public record ReplaceApplicationRulesPayload
+{
+    public string AppPath { get; init; } = string.Empty;
+    public Directions Directions { get; init; }
+    public string Action { get; init; } = string.Empty;
+}
+public sealed record ApplicationRuleReplacementPreview
+{
+    public string AppPath { get; init; } = string.Empty;
+    public Directions Directions { get; init; }
+    public string Action { get; init; } = string.Empty;
+    public int MatchingRuleCount { get; init; }
+    public int InboundRuleCount { get; init; }
+    public int OutboundRuleCount { get; init; }
+    public bool IncludesThirdPartyRules { get; init; }
+    public IReadOnlyList<string> Profiles { get; init; } = [];
+    public IReadOnlyList<string> Protocols { get; init; } = [];
+    public IReadOnlyList<string> LocalPorts { get; init; } = [];
+    public IReadOnlyList<string> RemotePorts { get; init; } = [];
+    public IReadOnlyList<string> LocalAddresses { get; init; } = [];
+    public IReadOnlyList<string> RemoteAddresses { get; init; } = [];
+    public IReadOnlyList<string> Services { get; init; } = [];
+}
 public record ApplyServiceRulePayload { public string ServiceName { get; init; } = ""; public string Action { get; init; } = ""; public string? AppPath { get; init; } }
 public record ApplyUwpRulePayload { public List<UwpApp> UwpApps { get; init; } = []; public string Action { get; init; } = ""; }
-public record DeleteRulesPayload { public List<string> RuleIdentifiers { get; init; } = []; }
+public sealed record DeleteSelectedRulePayload
+{
+    public AdvancedRuleViewModel Rule { get; init; } = new();
+}
+
+public sealed record DeleteApplicationRulesPayload
+{
+    public List<string> AppPaths { get; init; } = [];
+}
+
+public sealed record DeleteRuleNamesPayload
+{
+    public List<string> RuleNames { get; init; } = [];
+}
+
+public sealed record DeleteUwpRulesPayload
+{
+    public List<string> PackageFamilyNames { get; init; } = [];
+}
+
+public sealed record ApplicationRuleDeletionPreview
+{
+    public string AppPath { get; init; } = string.Empty;
+    public int MatchingRuleCount { get; init; }
+    public int InboundRuleCount { get; init; }
+    public int OutboundRuleCount { get; init; }
+    public int AllowRuleCount { get; init; }
+    public int BlockRuleCount { get; init; }
+    public int MinimalFirewallRuleCount { get; init; }
+    public int OtherRuleCount { get; init; }
+    public IReadOnlyList<string> RuleNames { get; init; } = [];
+    public IReadOnlyList<string> RuleTypes { get; init; } = [];
+}
 public record DeleteWildcardRulePayload { public WildcardRule Wildcard { get; init; } = new(); }
 public record ProcessPendingConnectionPayload { public PendingConnectionViewModel PendingConnection { get; init; } = new(); public string Decision { get; init; } = ""; public TimeSpan Duration { get; init; } = default; public bool TrustPublisher { get; init; } = false; }
 public record ForeignRuleChangePayload { public FirewallRuleChange Change { get; init; } = new(); public bool Acknowledge { get; init; } = true; }
 public record AllForeignRuleChangesPayload { public List<FirewallRuleChange> Changes { get; init; } = []; }
-public record CreateAdvancedRulePayload { public AdvancedRuleViewModel ViewModel { get; init; } = new(); public string InterfaceTypes { get; init; } = ""; public string IcmpTypesAndCodes { get; init; } = ""; }
+public record CreateAdvancedRulePayload
+{
+    public AdvancedRuleViewModel ViewModel { get; init; } = new();
+    public string InterfaceTypes { get; init; } = "";
+    public string IcmpTypesAndCodes { get; init; } = "";
+}
+
+public record EditAdvancedRulePayload
+{
+    public AdvancedRuleViewModel OriginalRule { get; init; } = new();
+    public AdvancedRuleViewModel UpdatedRule { get; init; } = new();
+}
 public record SetGroupEnabledStatePayload { public string GroupName { get; init; } = string.Empty; public bool IsEnabled { get; init; } }
 public record UpdateWildcardRulePayload { public WildcardRule OldRule { get; init; } = new(); public WildcardRule NewRule { get; init; } = new(); }
 public record ImportRulesPayload { public string JsonContent { get; init; } = string.Empty; public bool Replace { get; init; } }

@@ -275,15 +275,15 @@ namespace MinimalFirewall
                     LayerId = primaryLayerId
                 };
 
-                MfwRuleStatus existingRuleStatus = await _dataService.CheckMfwRuleStatusAsync(pendingContext);
-                if (existingRuleStatus == MfwRuleStatus.MfwBlock)
+                firewallRulestatus existingRuleStatus = await _dataService.CheckfirewallRulestatusAsync(pendingContext);
+                if (existingRuleStatus == firewallRulestatus.MfwBlock)
                 {
                     _logAction($"[EventListener] Suppressed popup: Existing MFW block rule matches for {appPath}");
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
 
-                if (existingRuleStatus == MfwRuleStatus.MfwAllow)
+                if (existingRuleStatus == firewallRulestatus.MfwAllow)
                 {
                     if (filterId == "0")
                     {
@@ -645,7 +645,14 @@ namespace MinimalFirewall
 
         public void SnoozeNotificationsForApp(string appPath, TimeSpan duration)
         {
-            _snoozedApps[appPath] = DateTime.UtcNow.Add(duration);
+            if (string.IsNullOrWhiteSpace(appPath) || duration <= TimeSpan.Zero)
+            {
+                return;
+            }
+
+            _snoozedApps[appPath] = duration == TimeSpan.MaxValue
+                ? DateTime.MaxValue
+                : DateTime.UtcNow.Add(duration);
         }
 
         public void ClearAllSnoozes()
