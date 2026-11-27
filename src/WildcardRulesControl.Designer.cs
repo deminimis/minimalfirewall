@@ -19,7 +19,7 @@ namespace MinimalFirewall
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            topPanel = new DarkModeForms.ThemedPanel();
+            topPanel = new FlowLayoutPanel();
             deleteRuleButton = new DarkModeForms.ThemedButton();
             editRuleButton = new DarkModeForms.ThemedButton();
             addRuleButton = new DarkModeForms.ThemedButton();
@@ -44,9 +44,12 @@ namespace MinimalFirewall
             // 
             // topPanel
             // 
-            topPanel.Controls.Add(deleteRuleButton);
-            topPanel.Controls.Add(editRuleButton);
             topPanel.Controls.Add(addRuleButton);
+            topPanel.Controls.Add(editRuleButton);
+            topPanel.Controls.Add(deleteRuleButton);
+            topPanel.AutoSize = true;
+            topPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            topPanel.Padding = new Padding(8, 6, 8, 6);
             topPanel.Dock = DockStyle.Top;
             topPanel.Location = new Point(0, 0);
             topPanel.Margin = new Padding(3, 2, 3, 2);
@@ -59,6 +62,8 @@ namespace MinimalFirewall
             deleteRuleButton.Location = new Point(197, 9);
             deleteRuleButton.Margin = new Padding(3, 2, 3, 2);
             deleteRuleButton.Name = "deleteRuleButton";
+            deleteRuleButton.AutoSize = true;
+            deleteRuleButton.Padding = new Padding(8, 4, 8, 4);
             deleteRuleButton.Size = new Size(88, 23);
             deleteRuleButton.TabIndex = 2;
             deleteRuleButton.Text = "Delete Rule(s)";
@@ -70,6 +75,8 @@ namespace MinimalFirewall
             editRuleButton.Location = new Point(104, 9);
             editRuleButton.Margin = new Padding(3, 2, 3, 2);
             editRuleButton.Name = "editRuleButton";
+            editRuleButton.AutoSize = true;
+            editRuleButton.Padding = new Padding(8, 4, 8, 4);
             editRuleButton.Size = new Size(88, 23);
             editRuleButton.TabIndex = 1;
             editRuleButton.Text = "Edit Rule...";
@@ -81,6 +88,8 @@ namespace MinimalFirewall
             addRuleButton.Location = new Point(11, 9);
             addRuleButton.Margin = new Padding(3, 2, 3, 2);
             addRuleButton.Name = "addRuleButton";
+            addRuleButton.AutoSize = true;
+            addRuleButton.Padding = new Padding(8, 4, 8, 4);
             addRuleButton.Size = new Size(88, 23);
             addRuleButton.TabIndex = 0;
             addRuleButton.Text = "Add Rule...";
@@ -214,15 +223,17 @@ namespace MinimalFirewall
             Name = "WildcardRulesControl";
             Size = new Size(700, 480);
             topPanel.ResumeLayout(false);
+            topPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)wildcardDataGridView).EndInit();
             wildcardContextMenu.ResumeLayout(false);
             ResumeLayout(false);
+            PerformLayout();
 
         }
 
         #endregion
 
-        private DarkModeForms.ThemedPanel topPanel;
+        private FlowLayoutPanel topPanel;
         private DarkModeForms.ThemedButton deleteRuleButton;
         private DarkModeForms.ThemedButton editRuleButton;
         private DarkModeForms.ThemedButton addRuleButton;

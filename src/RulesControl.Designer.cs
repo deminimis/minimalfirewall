@@ -16,11 +16,13 @@ namespace MinimalFirewall
         private System.Windows.Forms.ToolStripMenuItem blockInboundToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem blockAllToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripMenuItem deleteRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem editRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deleteSelectedRuleToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deleteAllApplicationRulesToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem openFileLocationToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem manageDomainsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem copyDetailsToolStripMenuItem;
         private DarkModeForms.ThemedDataGridView rulesDataGridView;
         private System.Windows.Forms.FlowLayoutPanel filterPanel;
@@ -29,7 +31,6 @@ namespace MinimalFirewall
         private System.Windows.Forms.CheckBox uwpFilterCheckBox;
         private System.Windows.Forms.CheckBox wildcardFilterCheckBox;
         private System.Windows.Forms.TableLayoutPanel topPanel;
-        private System.Windows.Forms.ToolStripMenuItem editRuleToolStripMenuItem;
         private System.Windows.Forms.CheckBox systemFilterCheckBox;
         protected override void Dispose(bool disposing)
         {
@@ -68,7 +69,8 @@ namespace MinimalFirewall
             blockAllToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
             editRuleToolStripMenuItem = new ToolStripMenuItem();
-            deleteRuleToolStripMenuItem = new ToolStripMenuItem();
+            deleteSelectedRuleToolStripMenuItem = new ToolStripMenuItem();
+            deleteAllApplicationRulesToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
             openFileLocationToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator3 = new ToolStripSeparator();
@@ -137,9 +139,23 @@ namespace MinimalFirewall
             // rulesContextMenu
             // 
             rulesContextMenu.ImageScalingSize = new Size(20, 20);
-            rulesContextMenu.Items.AddRange(new ToolStripItem[] { allowToolStripMenuItem, blockToolStripMenuItem, toolStripSeparator1, editRuleToolStripMenuItem, deleteRuleToolStripMenuItem, toolStripSeparator2, openFileLocationToolStripMenuItem, manageDomainsToolStripMenuItem, toolStripSeparator3, copyDetailsToolStripMenuItem });
+            rulesContextMenu.Items.AddRange(
+    new ToolStripItem[]
+    {
+                      allowToolStripMenuItem,
+                      blockToolStripMenuItem,
+                      toolStripSeparator1,
+                      editRuleToolStripMenuItem,
+                      deleteSelectedRuleToolStripMenuItem,
+                      deleteAllApplicationRulesToolStripMenuItem,
+                      toolStripSeparator2,
+                      openFileLocationToolStripMenuItem,
+                      manageDomainsToolStripMenuItem,
+                      toolStripSeparator3,
+                      copyDetailsToolStripMenuItem
+    });
             rulesContextMenu.Name = "rulesContextMenu";
-            rulesContextMenu.Size = new Size(174, 154);
+            rulesContextMenu.Size = new Size(285, 198);
             rulesContextMenu.Opening += RulesContextMenu_Opening;
             // 
             // allowToolStripMenuItem
@@ -215,13 +231,28 @@ namespace MinimalFirewall
             editRuleToolStripMenuItem.Size = new Size(173, 22);
             editRuleToolStripMenuItem.Text = "Edit Rule...";
             editRuleToolStripMenuItem.Click += EditRuleToolStripMenuItem_Click;
-            // 
-            // deleteRuleToolStripMenuItem
-            // 
-            deleteRuleToolStripMenuItem.Name = "deleteRuleToolStripMenuItem";
-            deleteRuleToolStripMenuItem.Size = new Size(173, 22);
-            deleteRuleToolStripMenuItem.Text = "Delete Rule(s)";
-            deleteRuleToolStripMenuItem.Click += DeleteRuleMenuItem_Click;
+            //
+            // deleteSelectedRuleToolStripMenuItem
+            //
+            deleteSelectedRuleToolStripMenuItem.Name =
+                "deleteSelectedRuleToolStripMenuItem";
+            deleteSelectedRuleToolStripMenuItem.Size =
+                new Size(284, 22);
+            deleteSelectedRuleToolStripMenuItem.Text =
+                "Delete selected rule...";
+            deleteSelectedRuleToolStripMenuItem.Click +=
+                DeleteSelectedRuleMenuItem_Click;
+            //
+            // deleteAllApplicationRulesToolStripMenuItem
+            //
+            deleteAllApplicationRulesToolStripMenuItem.Name =
+                "deleteAllApplicationRulesToolStripMenuItem";
+            deleteAllApplicationRulesToolStripMenuItem.Size =
+                new Size(284, 22);
+            deleteAllApplicationRulesToolStripMenuItem.Text =
+                "Delete all rules for this application...";
+            deleteAllApplicationRulesToolStripMenuItem.Click +=
+                DeleteAllApplicationRulesMenuItem_Click;
             // 
             // toolStripSeparator2
             // 
