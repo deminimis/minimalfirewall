@@ -56,6 +56,9 @@ namespace MinimalFirewall
         private readonly object _idleLock = new();
         private readonly List<TaskCompletionSource> _idleWaiters = [];
 
+        private readonly object _failureLock = new();
+        private Exception? _lastOperationFailure;
+
         public event Action<int>? QueueCountChanged;
         public event Action<string>? StatusChanged;
         public event Action? WildcardRulesChanged;
@@ -180,15 +183,24 @@ namespace MinimalFirewall
             }
             catch (COMException comEx)
             {
-                _activityLogger.LogException($"BackgroundTask-{task.TaskType}-COM", comEx);
+                RecordOperationFailure(comEx);
+                _activityLogger.LogException(
+                    $"BackgroundTask-{task.TaskType}-COM",
+                    comEx);
             }
             catch (InvalidComObjectException invComEx)
             {
-                _activityLogger.LogException($"BackgroundTask-{task.TaskType}-InvalidCOM", invComEx);
+                RecordOperationFailure(invComEx);
+                _activityLogger.LogException(
+                    $"BackgroundTask-{task.TaskType}-InvalidCOM",
+                    invComEx);
             }
             catch (Exception ex)
             {
-                _activityLogger.LogException($"BackgroundTask-{task.TaskType}", ex);
+                RecordOperationFailure(ex);
+                _activityLogger.LogException(
+                    $"BackgroundTask-{task.TaskType}",
+                    ex);
             }
             finally
             {
@@ -210,6 +222,16 @@ namespace MinimalFirewall
                 SafeInvoke(QueueCountChanged, queueCount);
                 Interlocked.Decrement(ref _outstandingWork);
                 SignalIdleIfQuiescent();
+            }
+        }
+
+        public Exception? TakeLastOperationFailure()
+        {
+            lock (_failureLock)
+            {
+                Exception? failure = _lastOperationFailure;
+                _lastOperationFailure = null;
+                return failure;
             }
         }
 
@@ -262,6 +284,14 @@ namespace MinimalFirewall
             }
         }
 
+        private void RecordOperationFailure(Exception exception)
+        {
+            lock (_failureLock)
+            {
+                _lastOperationFailure = exception;
+            }
+        }
+
         // Helper to prevent subscriber errors (UI crashes) from killing the service
         private void SafeInvoke(Action? action)
         {
@@ -285,20 +315,64 @@ namespace MinimalFirewall
             var map = new Dictionary<FirewallTaskType, IFirewallTaskHandler>
             {
                 // Standard Rule Handlers 
-                [FirewallTaskType.ApplyApplicationRule] = new ActionHandler<ApplyApplicationRulePayload>(
-                p => _actionsService.ApplyApplicationRuleChange(p.AppPaths, p.Action, p.WildcardSourcePath, p.AutoAllowedPublisher), TaskResult.CacheOnly),
-                [FirewallTaskType.ApplyServiceRule] = new ActionHandler<ApplyServiceRulePayload>(
+                [FirewallTaskType.ApplyApplicationRule] =
+                    new ActionHandler<ApplyApplicationRulePayload>(
+                        p => _actionsService.ApplyApplicationRuleChange(
+                            p.AppPaths,
+                            p.Action,
+                            p.WildcardSourcePath,
+                            p.AutoAllowedPublisher),
+                        TaskResult.CacheOnly),
+
+                                [FirewallTaskType.ReplaceApplicationRules] =
+                    new ActionHandler<ReplaceApplicationRulesPayload>(
+                        p => _actionsService.ReplaceApplicationRules(
+                            p.AppPath,
+                            p.Directions,
+                            p.Action),
+                        TaskResult.CacheOnly),
+
+                                [FirewallTaskType.ApplyServiceRule] =
+                    new ActionHandler<ApplyServiceRulePayload>(
                 p => _actionsService.ApplyServiceRuleChange(p.ServiceName, p.Action, p.AppPath), TaskResult.CacheOnly),
                 [FirewallTaskType.ApplyUwpRule] = new ActionHandler<ApplyUwpRulePayload>(
                 p => _actionsService.ApplyUwpRuleChange(p.UwpApps, p.Action), TaskResult.CacheOnly),
-                [FirewallTaskType.CreateAdvancedRule] = new ActionHandler<CreateAdvancedRulePayload>(
-                p => _actionsService.CreateAdvancedRule(p.ViewModel, p.InterfaceTypes, p.IcmpTypesAndCodes), TaskResult.CacheOnly),
-                [FirewallTaskType.DeleteApplicationRules] = new ActionHandler<DeleteRulesPayload>(
-                p => _actionsService.DeleteApplicationRules(p.RuleIdentifiers), TaskResult.CacheOnly),
-                [FirewallTaskType.DeleteUwpRules] = new ActionHandler<DeleteRulesPayload>(
-                p => _actionsService.DeleteUwpRules(p.RuleIdentifiers), TaskResult.CacheOnly),
-                [FirewallTaskType.DeleteAdvancedRules] = new ActionHandler<DeleteRulesPayload>(
-                p => _actionsService.DeleteAdvancedRules(p.RuleIdentifiers), TaskResult.CacheOnly),
+                [FirewallTaskType.CreateAdvancedRule] =
+                new ActionHandler<CreateAdvancedRulePayload>(
+                    p => _actionsService.CreateAdvancedRule(
+                        p.ViewModel,
+                        p.InterfaceTypes,
+                        p.IcmpTypesAndCodes),
+                    TaskResult.CacheOnly),
+
+                            [FirewallTaskType.EditAdvancedRule] =
+                new ActionHandler<EditAdvancedRulePayload>(
+                    p => _actionsService.EditAdvancedRule(
+                        p.OriginalRule,
+                        p.UpdatedRule),
+                    TaskResult.CacheOnly),
+                [FirewallTaskType.DeleteSelectedRule] =
+                      new ActionHandler<DeleteSelectedRulePayload>(
+                          p => _actionsService.DeleteSelectedRule(p.Rule),
+                          TaskResult.CacheOnly),
+
+                [FirewallTaskType.DeleteApplicationRules] =
+                      new ActionHandler<DeleteApplicationRulesPayload>(
+                          p => _actionsService.DeleteApplicationRules(
+                              p.AppPaths),
+                          TaskResult.CacheOnly),
+
+                [FirewallTaskType.DeleteUwpRules] =
+                      new ActionHandler<DeleteUwpRulesPayload>(
+                          p => _actionsService.DeleteUwpRules(
+                              p.PackageFamilyNames),
+                          TaskResult.CacheOnly),
+
+                [FirewallTaskType.DeleteAdvancedRules] =
+                      new ActionHandler<DeleteRuleNamesPayload>(
+                          p => _actionsService.DeleteAdvancedRules(
+                              p.RuleNames),
+                          TaskResult.CacheOnly),
                 [FirewallTaskType.ProcessPendingConnection] = new ActionHandler<ProcessPendingConnectionPayload>(
                p => _actionsService.ProcessPendingConnection(p.PendingConnection, p.Decision, p.Duration, p.TrustPublisher), TaskResult.CacheOnly),
                 [FirewallTaskType.DeleteForeignRule] = new ActionHandler<ForeignRuleChangePayload>(
@@ -329,8 +403,8 @@ namespace MinimalFirewall
                 p => _actionsService.DeleteRulesForWildcard(p.Wildcard), TaskResult.CacheOnly),
                 [FirewallTaskType.RemoveWildcardDefinitionOnly] = new ActionHandler<DeleteWildcardRulePayload>(
                 p => _actionsService.RemoveWildcardDefinitionOnly(p.Wildcard), TaskResult.WildcardOnly),
-                [FirewallTaskType.DeleteAllMfwRules] = new ActionHandler<object>(
-                _ => _actionsService.DeleteAllMfwRules(), TaskResult.CacheOnly),
+                [FirewallTaskType.DeleteallFirewallRules] = new ActionHandler<object>(
+                _ => _actionsService.DeleteallFirewallRules(), TaskResult.CacheOnly),
                 [FirewallTaskType.ImportRules] = new AsyncActionHandler<ImportRulesPayload>(
                 async p => await _actionsService.ImportRulesAsync(p.JsonContent, p.Replace), TaskResult.CacheOnly)
             };

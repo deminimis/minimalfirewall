@@ -25,17 +25,23 @@ namespace MinimalFirewall
         public bool TrustPublisher { get; private set; } = false;
 
         private ContextMenuStrip? _createRuleMenu;
+        private ContextMenuStrip? _ignoreMenu;
 
 
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
+        private bool _fittingLayout;
+        private bool _isDarkMode;
+        private System.Windows.Forms.Timer? _allowDelayTimer;
 
         private void ApplyThemeStyles(bool isDarkMode)
         {
+            _isDarkMode = isDarkMode;
             Theme.Colors = Theme.GetSystemColors(isDarkMode ? 0 : 1);
             Theme.ApplyTitleBarTheme(this.Handle, isDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
             this.BackColor = Theme.Colors.Background;
             this.ForeColor = Theme.Colors.TextInactive;
+            MainForm.RefreshAllThemedControls(this);
 
             pathLabel.BackColor = Theme.Colors.PathLabelBackground;
             pathLabel.ForeColor = Theme.Colors.TextActive;
@@ -60,11 +66,12 @@ namespace MinimalFirewall
             ApplyThemeStyles(isDarkMode);
 
             string appName = string.IsNullOrEmpty(rule.ApplicationName) ? rule.Name : Path.GetFileName(rule.ApplicationName);
+            appNameLabel.Text = appName;
             Text = "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
             pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
@@ -85,11 +92,12 @@ namespace MinimalFirewall
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
             pathLabel.Text = pending.AppPath;
-            pathLabel.WordWrap = false;
+            pathLabel.WordWrap = true;
 
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
+            SetupIgnoreMenu();
         }
 
         // Restore window position
@@ -143,11 +151,72 @@ namespace MinimalFirewall
             {
                 Debug.WriteLine($"[WARN] NotifierForm.OnLoad failed to restore layout: {ex.Message}");
             }
+            FitToWorkingArea();
+        }
+
+        private void FitToWorkingArea()
+        {
+            if (!IsHandleCreated || _notificationLayout == null || _fittingLayout) return;
+            _fittingLayout = true;
+            try
+            {
+                var working = Screen.FromRectangle(Bounds).WorkingArea;
+                int maximumWidth = working.Width - 32;
+                int maximumHeight = working.Height - 32;
+                int frameHeight = Height - ClientSize.Height;
+                int minimumWidth = Math.Min(maximumWidth, Math.Max((int)(360 * DeviceDpi / 96f), Font.Height * 22));
+                MinimumSize = new Size(minimumWidth, Math.Min(MinimumSize.Height, maximumHeight));
+                Width = Math.Clamp(Width, minimumWidth, maximumWidth);
+                pathLabel.MinimumSize = new Size(0, Font.Height * 3);
+                int contentHeight = _notificationLayout.Padding.Vertical + pathLabel.MinimumSize.Height + pathLabel.Margin.Vertical
+                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != pathLabel).Sum(c => c.Height + c.Margin.Vertical);
+                int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
+                MinimumSize = new Size(minimumWidth, minimumHeight);
+                Height = Math.Clamp(Height, minimumHeight, maximumHeight);
+                Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
+                    Math.Clamp(Top, working.Top, working.Bottom - Height));
+            }
+            finally { _fittingLayout = false; }
+        }
+
+        // The popup appears on top of whatever the user is doing; a click or key press aimed at another window
+        // must not land on Allow. Keep the allowing buttons disabled briefly after the popup appears.
+        private const int AllowDelayMs = 900;
+
+        private void DelayAllowButtons()
+        {
+            allowButton.Enabled = false;
+            tempAllowButton.Enabled = false;
+
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = new System.Windows.Forms.Timer
+            {
+                Interval = AllowDelayMs
+            };
+
+            _allowDelayTimer.Tick += (_, _) =>
+            {
+                _allowDelayTimer?.Stop();
+                _allowDelayTimer?.Dispose();
+                _allowDelayTimer = null;
+
+                if (Disposing || IsDisposed)
+                {
+                    return;
+                }
+
+                allowButton.Enabled = true;
+                tempAllowButton.Enabled = true;
+            };
+
+            _allowDelayTimer.Start();
         }
 
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            DelayAllowButtons();
+            ApplyThemeStyles(_isDarkMode);
             try
             {
                 if (PendingConnection == null)
@@ -157,6 +226,7 @@ namespace MinimalFirewall
 
                 string? publisherName = null;
                 bool hasInfo = await Task.Run(() => SignatureValidationService.IsSignatureTrusted(PendingConnection.AppPath, out publisherName));
+                if (IsDisposed) return;
 
                 if (hasInfo && !string.IsNullOrEmpty(publisherName))
                 {
@@ -182,6 +252,10 @@ namespace MinimalFirewall
         // Window Closing: Save position
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            _allowDelayTimer?.Stop();
+            _allowDelayTimer?.Dispose();
+            _allowDelayTimer = null;
+
             try
             {
                 if (WindowState == FormWindowState.Normal)
@@ -216,6 +290,25 @@ namespace MinimalFirewall
             tempAllowContextMenu.Items.Add("For 8 hours").Click += (s, e) => SetTemporaryAllow(TimeSpan.FromHours(8));
         }
 
+        // Connection popups only: ignore for a chosen time instead of the default 2 minutes.
+        // The snooze stays in memory, so "until restart" ends when Minimal Firewall exits.
+        private void SetupIgnoreMenu()
+        {
+            _ignoreMenu = new ContextMenuStrip(components);
+            _ignoreMenu.Items.Add("For 2 minutes").Click += (_, _) => SetIgnore(TimeSpan.FromMinutes(2));
+            _ignoreMenu.Items.Add("For 1 hour").Click += (_, _) => SetIgnore(TimeSpan.FromHours(1));
+            _ignoreMenu.Items.Add("For 8 hours").Click += (_, _) => SetIgnore(TimeSpan.FromHours(8));
+            _ignoreMenu.Items.Add("Until Minimal Firewall restarts").Click += (_, _) => SetIgnore(TimeSpan.MaxValue);
+        }
+
+        private void SetIgnore(TimeSpan duration)
+        {
+            Result = NotifierResult.Ignore;
+            TemporaryDuration = duration;
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
         private void SetTemporaryAllow(TimeSpan duration)
         {
             Result = NotifierResult.TemporaryAllow;
@@ -241,6 +334,12 @@ namespace MinimalFirewall
 
         private void IgnoreButton_Click(object sender, EventArgs e)
         {
+            if (_ignoreMenu != null)
+            {
+                _ignoreMenu.Show(ignoreButton, new Point(0, ignoreButton.Height));
+                return;
+            }
+
             Result = NotifierResult.Ignore;
             DialogResult = DialogResult.Cancel;
             Close();
@@ -324,13 +423,13 @@ namespace MinimalFirewall
                     }
                 }
 
-                copyDetailsButton.Text = "✓";
+                copyDetailsButton.Text = "Copied";
 
                 await Task.Delay(2000);
 
                 if (!IsDisposed && IsHandleCreated)
                 {
-                    copyDetailsButton.Text = "📋";
+                    copyDetailsButton.Text = "Copy details";
                 }
             }
             catch (Exception ex)

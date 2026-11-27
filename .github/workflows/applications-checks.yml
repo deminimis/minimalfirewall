@@ -1,0 +1,29 @@
+name: Applications checks
+
+on:
+  push:
+    branches: [feat/176-applications-view]
+  pull_request:
+    paths: ['src/**', 'tests/ApplicationsChecks/**', 'mise.toml', '.github/workflows/applications-checks.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
+      - run: mise run build
+      - uses: microsoft/setup-msbuild@v2
+      # COM reference generation requires Windows and full-framework MSBuild.
+      - run: msbuild tests/ApplicationsChecks/ApplicationsChecks.csproj /restore /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+      - run: ./tests/ApplicationsChecks/bin/x64/Release/net10.0-windows8.0/win-x64/ApplicationsChecks.exe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: applications-screenshots
+          path: artifacts/applications/*.png
