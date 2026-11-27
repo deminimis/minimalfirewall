@@ -1,4 +1,4 @@
-﻿// MFWConstants.cs
+// MFWConstants.cs
 namespace MinimalFirewall
 {
     public static class MFWConstants
@@ -8,6 +8,6 @@ namespace MinimalFirewall
         public const string WildcardDescriptionPrefix = "MFW_Wildcard_Path:[";
         public const string UwpDescriptionPrefix = "UWP App; PFN=";
         public const string AutoAllowPublisherPrefix = "MFW_AutoAllow_Publisher:[";
-        public const string MfwRuleSuffix = " - MFW";
+        public const string firewallRulesuffix = " - MFW";
     }
 }
