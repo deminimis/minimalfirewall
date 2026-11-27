@@ -39,9 +39,234 @@ namespace MinimalFirewall
         public SettingsControl()
         {
             InitializeComponent();
-
-
+            BuildCardLayout();
         }
+
+        #region Card layout
+        // The designer places every control at a fixed position in a 680 px column. Re-parent them into
+        // titled cards that flow two per row on wide windows and one per row on narrow ones.
+        private readonly List<Control> _cards = [];
+        private FlowLayoutPanel? _cardFlow;
+        private int _cardWidth;
+
+        private void BuildCardLayout()
+        {
+            float dpi = DeviceDpi / 96f;
+            int S(int value) => (int)Math.Round(value * dpi);
+
+            Control Row(params Control[] controls)
+            {
+                var row = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, Margin = new Padding(0, 0, 0, S(4)) };
+                KeepTransparent(row);
+                foreach (var control in controls)
+                {
+                    control.Anchor = AnchorStyles.Left;
+                    if (control is Button button)
+                    {
+                        button.AutoSize = true;
+                        button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                        button.MinimumSize = new Size(S(150), S(30));
+                        button.Padding = new Padding(S(8), 0, S(8), 0);
+                    }
+                    else if (control is Label or CheckBox)
+                    {
+                        control.AutoSize = true;
+                    }
+                    control.Margin = new Padding(0, S(4), S(10), S(4));
+                    row.Controls.Add(control);
+                }
+                return row;
+            }
+
+            Control Card(string title, params Control[] rows)
+            {
+                var header = new DarkModeForms.ThemedLabel
+                {
+                    Text = title,
+                    UseMnemonic = false,
+                    AutoSize = true,
+                    Font = new Font(Font.FontFamily, Font.SizeInPoints * 1.15f, FontStyle.Bold),
+                    Margin = new Padding(0, 0, 0, S(8)),
+                };
+                var body = new FlowLayoutPanel
+                {
+                    FlowDirection = FlowDirection.TopDown,
+                    WrapContents = false,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Margin = Padding.Empty,
+                };
+                KeepTransparent(body);
+                body.Controls.Add(header);
+                body.Controls.AddRange(rows);
+                var card = new DarkModeForms.ThemedPanel
+                {
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    Padding = new Padding(S(16), S(12), S(16), S(12)),
+                    Margin = new Padding(0, 0, S(16), S(16)),
+                };
+                // An auto-sized panel ignores Padding for a child at (0,0); place the body inside it explicitly.
+                body.Location = new Point(card.Padding.Left, card.Padding.Top);
+                card.Controls.Add(body);
+                _cards.Add(card);
+                return card;
+            }
+
+            DarkModeForms.ThemedLabel Caption(string text) => new() { Text = text, AutoSize = true, Margin = new Padding(0, S(10), 0, S(2)) };
+
+            label1.Text = "DNS refresh:";
+            autoRefreshLabel1.Text = "List refresh:";
+            coffeePictureBox.Size = new Size(S(32), S(32));
+            coffeePictureBox.SizeMode = PictureBoxSizeMode.Zoom;
+
+            var general = Card("General",
+                Row(closeToTraySwitch),
+                Row(startOnStartupSwitch),
+                Row(darkModeSwitch, autoThemeSwitch),
+                Row(popupsSwitch),
+                Row(showAppIconsSwitch),
+                Row(trafficMonitorSwitch),
+                Row(loggingSwitch),
+                Row(autoRefreshLabel1, autoRefreshTextBox, autoRefreshLabel2),
+                Row(label1, dnsRefreshNumericUpDown, themedLabel1));
+
+            var protection = Card("Protection",
+                Row(autoAllowWhitelistedPublishersCheck),
+                Row(managePublishersButton),
+                Row(autoAllowSystemSignedAppsCheck),
+                Row(viewTrustedCertsButton),
+                Row(excludedFoldersButton),
+                Row(auditAlertsSwitch));
+
+            var data = Card("Rules & data",
+                Row(exportRulesButton, importMergeButton, importReplaceButton),
+                Row(cleanUpOrphanedRulesButton, openFirewallButton, openAppDataButton),
+                Row(exportDiagnosticButton),
+                Caption("Danger zone — cannot be undone"),
+                Row(deleteAllRulesButton, revertFirewallButton));
+
+            var about = Card("About",
+                Row(versionLabel, checkForUpdatesButton),
+                Row(helpLink, forumLink, reportProblemLink),
+                Row(coffeePictureBox, coffeeLinkLabel));
+
+            // Controls that only made sense in the fixed layout.
+            dividerPanel1.Visible = false;
+            dividerPanel2.Visible = false;
+            coffeePanel.Visible = false;
+
+            // A setting added to the designer but not listed above would stay hidden behind the cards.
+            // Show it in a "More" card instead, keeping controls on the same designer line together.
+            var lines = new List<List<Control>>();
+            foreach (var control in mainSettingsPanel.Controls.Cast<Control>()
+                .Where(c => c != dividerPanel1 && c != dividerPanel2 && c != coffeePanel)
+                .OrderBy(c => c.Top).ThenBy(c => c.Left).ToList())
+            {
+                if (lines.Count > 0 && control.Top - lines[^1][0].Top < control.Height) lines[^1].Add(control);
+                else lines.Add([control]);
+            }
+            var cards = new List<Control> { general, protection, data };
+            if (lines.Count > 0)
+            {
+                cards.Add(Card("More", [.. lines.Select(line => Row([.. line.OrderBy(c => c.Left)]))]));
+            }
+            cards.Add(about);
+
+            _cardFlow = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                Padding = new Padding(S(16)),
+            };
+            _cardFlow.Controls.AddRange([.. cards]);
+            _cardFlow.Resize += (_, _) => SizeCards();
+            mainSettingsPanel.AutoScroll = false;
+            mainSettingsPanel.Controls.Add(_cardFlow);
+            _cardFlow.BringToFront();
+            SizeCards();
+        }
+
+        // The theme pass repaints every panel in the window color; inner layout panels must show the card instead.
+        private static void KeepTransparent(Control panel)
+        {
+            panel.BackColor = Color.Transparent;
+            panel.BackColorChanged += (_, _) =>
+            {
+                if (panel.BackColor != Color.Transparent)
+                {
+                    panel.BackColor = Color.Transparent;
+                }
+            };
+        }
+
+        private void SizeCards()
+        {
+            if (_cardFlow == null)
+            {
+                return;
+            }
+
+            float dpi = DeviceDpi / 96f;
+            int gap = (int)Math.Round(16 * dpi);
+            int available = _cardFlow.ClientSize.Width
+                - _cardFlow.Padding.Horizontal
+                - SystemInformation.VerticalScrollBarWidth;
+
+            int columns = available >= 2 * (int)Math.Round(380 * dpi) + gap ? 2 : 1;
+            int width = Math.Max(
+                (int)Math.Round(300 * dpi),
+                (available - gap * (columns - 1)) / columns);
+
+            _cardFlow.SuspendLayout();
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                var card = _cards[i];
+                int contentWidth = Math.Max(0, width - card.Padding.Horizontal);
+
+                card.MinimumSize = new Size(width, 0);
+                card.MaximumSize = new Size(width, 0);
+
+                if (card.Controls.Count > 0)
+                {
+                    card.Controls[0].MaximumSize = new Size(contentWidth, 0);
+
+                    foreach (Control row in card.Controls[0].Controls)
+                    {
+                        row.MaximumSize = new Size(contentWidth, 0);
+                    }
+                }
+
+                _cardFlow.SetFlowBreak(card, (i + 1) % columns == 0);
+            }
+
+            _cardFlow.ResumeLayout(true);
+            _cardFlow.PerformLayout();
+
+            int rows = (_cards.Count + columns - 1) / columns;
+            int contentHeight = _cardFlow.Padding.Vertical;
+
+            for (int row = 0; row < rows; row++)
+            {
+                contentHeight += _cards
+                    .Skip(row * columns)
+                    .Take(columns)
+                    .Max(card => card.Height + card.Margin.Vertical);
+            }
+
+            _cardFlow.AutoScrollMinSize = new Size(0, contentHeight);
+        }
+
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            _cardWidth = 0;
+            SizeCards();
+        }
+        #endregion
 
         public void Initialize(
             AppSettings appSettings,
@@ -164,9 +389,9 @@ namespace MinimalFirewall
 
             IconVisibilityChanged?.Invoke();
             AutoRefreshTimerChanged?.Invoke();
-            _appSettings.Save();
             _appSettings.DnsRefreshIntervalMinutes = (int)dnsRefreshNumericUpDown.Value;
             if (searchEngineComboBox.SelectedItem is string engine) _appSettings.SearchEngine = engine;
+            _appSettings.Save();
         }
 
         public void ApplyTheme(bool _isDark)
@@ -394,7 +619,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    _actionsService.DeleteAllMfwRules();
+                    _actionsService.DeleteallFirewallRules();
                     await (DataRefreshRequested?.Invoke() ?? Task.CompletedTask);
                     Messenger.MessageBox("All Minimal Firewall rules have been deleted.", "Operation Complete", MessageBoxButtons.OK, MessageBoxIcon.None);
                 }
@@ -486,7 +711,7 @@ namespace MinimalFirewall
             {
                 try
                 {
-                    string jsonContent = await _actionsService.ExportAllMfwRulesAsync();
+                    string jsonContent = await _actionsService.ExportallFirewallRulesAsync();
                     await File.WriteAllTextAsync(saveDialog.FileName, jsonContent);
                     Messenger.MessageBox("All rules have been successfully exported.", "Export Complete", MessageBoxButtons.OK, MsgIcon.Success);
                 }
@@ -631,7 +856,7 @@ namespace MinimalFirewall
                         statusForm.UpdateProgress(40);
 
                         statusForm.UpdateStatus("Exporting current rules...");
-                        string rulesJson = await _actionsService.ExportAllMfwRulesAsync();
+                        string rulesJson = await _actionsService.ExportallFirewallRulesAsync();
                         var rulesEntry = archive.CreateEntry("current_mfw_rules.json");
                         using (var writer = new StreamWriter(rulesEntry.Open()))
                         {

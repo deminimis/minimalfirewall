@@ -146,6 +146,47 @@ namespace MinimalFirewall
     }
 
 
+    public static class FileUtility
+    {
+        // Write to uniquely named temp file in destination, then replace
+        public static void WriteAllTextAtomic(string path, string contents)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(path);
+            ArgumentNullException.ThrowIfNull(contents);
+
+            string destinationPath = Path.GetFullPath(path);
+            string? destinationDirectory = Path.GetDirectoryName(destinationPath);
+
+            if (string.IsNullOrEmpty(destinationDirectory))
+            {
+                throw new ArgumentException(
+                    "The destination path must include a valid directory.",
+                    nameof(path));
+            }
+
+            string tempPath = Path.Combine(
+                destinationDirectory,
+                $".{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                File.WriteAllText(tempPath, contents);
+                File.Move(tempPath, destinationPath, overwrite: true);
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(tempPath);
+                }
+                catch
+                {
+                    // Best-effort cleanup only. Do not mask a write or move failure.
+                }
+            }
+        }
+    }
+
     public static partial class PathResolver
     {
         private static readonly Dictionary<string, string> _deviceMap = [];

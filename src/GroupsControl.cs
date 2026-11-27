@@ -30,19 +30,17 @@ namespace MinimalFirewall
 
         }
 
-        public void Initialize(FirewallGroupManager groupManager, BackgroundFirewallTaskService backgroundTaskService, AppSettings appSettings)
-        {
-            _groupManager = groupManager;
-            _backgroundTaskService = backgroundTaskService;
+        public void Initialize(
+            FirewallGroupManager groupManager,
+            BackgroundFirewallTaskService backgroundTaskService)
+                {
+                    _groupManager = groupManager;
+                    _backgroundTaskService = backgroundTaskService;
+                    groupsDataGridView.AutoGenerateColumns = false;
+                    groupsDataGridView.DataSource = _bindingSource;
+                }
 
-            groupsDataGridView.AutoGenerateColumns = false;
-            groupsDataGridView.DataSource = _bindingSource;
-            DataGridViewHelper.RestoreColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
-            groupsDataGridView.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
-            groupsDataGridView.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
-        }
 
-        
 
         public void ClearGroups()
         {
@@ -150,10 +148,18 @@ namespace MinimalFirewall
 
             // DPI Scaling calculation
             float scaleFactor = g.DpiY / 96f;
-            int switchWidth = (int)(SwitchWidthBase * scaleFactor);
-            int switchHeight = (int)(SwitchHeightBase * scaleFactor);
-            int thumbSize = (int)(ThumbSizeBase * scaleFactor);
-            int padding = (int)(2 * scaleFactor);
+            // Fit the switch inside the cell: rows can be shorter than the 25 px design (or narrower than 50 px),
+            // and drawing past the cell overlaps the neighbouring rows and columns.
+            float scale = Math.Min(scaleFactor, Math.Min((bounds.Height - 4) / (float)SwitchHeightBase, (bounds.Width - 4) / (float)SwitchWidthBase));
+            if (scale <= 0)
+            {
+                return;
+            }
+
+            int switchWidth = (int)(SwitchWidthBase * scale);
+            int switchHeight = (int)(SwitchHeightBase * scale);
+            int thumbSize = (int)(ThumbSizeBase * scale);
+            int padding = (int)(2 * scale);
 
             var switchRect = new Rectangle(
                 bounds.X + (bounds.Width - switchWidth) / 2,
