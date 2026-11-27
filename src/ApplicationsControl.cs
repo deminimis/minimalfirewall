@@ -505,13 +505,17 @@ public sealed class ApplicationsControl : UserControl
                         firstDisplayedPath,
                         StringComparison.OrdinalIgnoreCase));
 
-                _applications.FirstDisplayedScrollingRowIndex =
-                    topIndex >= 0
-                        ? topIndex
-                        : Math.Clamp(
-                            firstDisplayedIndex,
-                            0,
-                            entries.Count - 1);
+                // A grid too short to show one row (small window, large text) throws on scroll.
+                if (_applications.DisplayedRowCount(true) > 0)
+                {
+                    _applications.FirstDisplayedScrollingRowIndex =
+                        topIndex >= 0
+                            ? topIndex
+                            : Math.Clamp(
+                                firstDisplayedIndex,
+                                0,
+                                entries.Count - 1);
+                }
 
                 _applications.HorizontalScrollingOffset =
                     horizontalOffset;
@@ -608,7 +612,7 @@ public sealed class ApplicationsControl : UserControl
 
                 _rules.CurrentCell = FirstVisibleCell(row);
 
-                if (_rules.Rows.Count > 0)
+                if (_rules.Rows.Count > 0 && _rules.DisplayedRowCount(true) > 0)
                 {
                     _rules.FirstDisplayedScrollingRowIndex =
                         Math.Clamp(
