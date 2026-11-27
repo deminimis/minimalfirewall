@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using DarkModeForms;
 using MinimalFirewall.TypedObjects;
@@ -101,6 +102,9 @@ public sealed class ApplicationsControl : UserControl
         Text = "Delete &all rules for this application…",
         AutoSize = true
     };
+    private readonly ThemedButton _searchOnline = new() { Text = "Search &online", AutoSize = true };
+    private readonly ThemedButton _virusTotal = new() { Text = "Check on &VirusTotal", AutoSize = true };
+    private bool _selectedFileExists;
 
     private MainViewModel _viewModel = null!;
     private AppSettings _settings = null!;
@@ -236,13 +240,21 @@ public sealed class ApplicationsControl : UserControl
             Dock = DockStyle.Fill,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            ColumnCount = 1,
+            ColumnCount = 3,
             Margin = new Padding(0, 8, 0, 8)
         };
         identity.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        identity.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         identity.Controls.Add(_identity, 0, 0);
+        identity.SetColumnSpan(_identity, 3);
         identity.Controls.Add(_publisher, 0, 1);
         identity.Controls.Add(_signature, 0, 2);
+        // Beside the two metadata lines, so the buttons add no height and the grid keeps its rows at large text sizes.
+        identity.Controls.Add(_searchOnline, 1, 1);
+        identity.Controls.Add(_virusTotal, 2, 1);
+        identity.SetRowSpan(_searchOnline, 2);
+        identity.SetRowSpan(_virusTotal, 2);
 
         _bothAction.Items.AddRange(["Allow", "Block"]);
         _bothAction.SelectedIndex = 0;
@@ -353,6 +365,8 @@ public sealed class ApplicationsControl : UserControl
                     await DeleteSelectedRuleAsync();
                 _deleteAllApplicationRules.Click += async (_, _) =>
                     await DeleteAllApplicationRulesAsync();
+        _searchOnline.Click += (_, _) => SearchOnline();
+        _virusTotal.Click += async (_, _) => await CheckVirusTotalAsync();
 
         _applications.CellFormatting += (_, e) =>
         {
@@ -628,6 +642,8 @@ public sealed class ApplicationsControl : UserControl
             .OrderByDescending(attempt =>
                 attempt.ObservedAt)
             .ToList() ?? []);
+        // Checked once per selection: rules can target executables that no longer exist.
+        _selectedFileExists = entry != null && File.Exists(entry.AppPath);
     }
 
     private void UpdateActions()
@@ -646,6 +662,44 @@ public sealed class ApplicationsControl : UserControl
                 !_busy && SelectedRule != null;
             _deleteAllApplicationRules.Enabled =
                 hasApplication;
+        _searchOnline.Enabled = SelectedApplication != null;
+        _virusTotal.Enabled = _selectedFileExists && SelectedApplication != null;
+    }
+
+    // Sends only the SHA-256 hash; VirusTotal offers an upload when the file is unknown.
+    private async Task CheckVirusTotalAsync()
+    {
+        if (SelectedApplication is not { } entry || !_selectedFileExists) return;
+        _virusTotal.Enabled = false;
+        string hash = await SystemDiscoveryService.CalculateSHA256Async(entry.AppPath);
+        UpdateActions();
+        if (string.IsNullOrEmpty(hash))
+        {
+            Messenger.MessageBox("Could not calculate file hash.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+        try
+        {
+            Process.Start(new ProcessStartInfo($"https://www.virustotal.com/gui/file/{hash}") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WARN] ApplicationsControl.CheckVirusTotalAsync failed: {ex.Message}");
+        }
+    }
+
+    // Same query as the connection popup; only sent on explicit click.
+    private void SearchOnline()
+    {
+        if (SelectedApplication is not { } entry) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(NotifierForm.BuildSearchUrl(entry.AppPath, _settings.SearchEngine)) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[WARN] ApplicationsControl.SearchOnline failed: {ex.Message}");
+        }
     }
 
     private async Task ReplaceApplicationRulesAsync(

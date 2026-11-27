@@ -6,6 +6,32 @@ internal static class PopupChecks
 {
     public static void Run()
     {
+        var cmd = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+        var sample = new PendingConnectionViewModel
+        {
+            AppPath = cmd, Direction = "Outbound", RemoteAddress = "192.0.2.1", RemotePort = "443", Protocol = "6",
+            ParentProcessName = "explorer.exe", ParentProcessId = "42", ProcessOwner = @"PC\User",
+            CommandLine = @"cmd.exe /c ping -n 4 example.org && C:\Tools\Very\Long\Folder\Name\script.cmd --verbose"
+        };
+        var details = string.Join("\n", NotifierForm.BuildConnectionDetails(sample).Select(d => $"{d.Label}: {d.Value}"));
+        Check(details.StartsWith("Path: " + cmd) && details.Contains("Description: Windows Command Processor") && details.Contains("Company: Microsoft"),
+            $"Popup details miss version info: {details}");
+        Check(details.Contains("Remote: 192.0.2.1:443 TCP") && details.Contains("Parent: explorer.exe (PID 42)") && details.Contains("Command: cmd.exe /c ping"),
+            $"Popup details miss connection context: {details}");
+        Check(NotifierForm.BuildConnectionDetails(new PendingConnectionViewModel { AppPath = @"C:\Missing\app.exe" }).Single() == ("Path", @"C:\Missing\app.exe"),
+            "Popup details must fall back to the path for a missing file.");
+        foreach (bool dark in new[] { false, true })
+        {
+            using var real = new NotifierForm(sample, dark);
+            real.Show();
+            ValidateLayout(real);
+            Capture(real, $"notification-real-{(dark ? "dark" : "light")}.png", Path.Combine(Environment.CurrentDirectory, "artifacts", "applications"));
+        }
+        var searchUrl = NotifierForm.BuildSearchUrl(cmd, "Google");
+        const string purpose = "%20what%20is%20it%20used%20for%2C%20is%20it%20safe%20or%20malware";
+        Check(searchUrl == "https://www.google.com/search?q=%22cmd.exe%22%20Microsoft%20Corporation" + purpose, $"Unexpected search URL: {searchUrl}");
+        Check(NotifierForm.BuildSearchUrl(@"C:\Missing\app.exe", "DuckDuckGo") == "https://duckduckgo.com/?q=%22app.exe%22" + purpose, "Search must fall back to the file name.");
+
         var directory = Path.Combine(Environment.CurrentDirectory, "artifacts", "applications");
         Directory.CreateDirectory(directory);
         foreach (bool dark in new[] { false, true })

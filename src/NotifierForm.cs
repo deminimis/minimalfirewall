@@ -30,6 +30,7 @@ namespace MinimalFirewall
         // Settings file > window position
         private readonly string _layoutSettingsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "notifier_layout.json");
         private bool _fittingLayout;
+        private bool _grewToDetails;
         private bool _isDarkMode;
         private System.Windows.Forms.Timer? _allowDelayTimer;
 
@@ -42,8 +43,15 @@ namespace MinimalFirewall
             this.ForeColor = Theme.Colors.TextInactive;
             MainForm.RefreshAllThemedControls(this);
 
-            pathLabel.BackColor = Theme.Colors.PathLabelBackground;
-            pathLabel.ForeColor = Theme.Colors.TextActive;
+            subtitleLabel.ForeColor = Theme.Colors.TextInactive;
+            foreach (var link in new[] { searchOnlineButton, copyDetailsButton, createWildcardButton })
+            {
+                link.LinkColor = link.ActiveLinkColor = link.VisitedLinkColor = Theme.Colors.LinkText;
+            }
+            foreach (Control cell in detailsGrid.Controls)
+            {
+                if (detailsGrid.GetColumn(cell) == 0) cell.ForeColor = Theme.Colors.TextInactive;
+            }
 
             allowButton.BackColor = Theme.Colors.Success;
             blockButton.BackColor = Theme.Colors.Danger;
@@ -69,13 +77,13 @@ namespace MinimalFirewall
             Text = "New Firewall Rule Detected";
             string actionText = rule.Rule.Status.Equals("Allow", StringComparison.OrdinalIgnoreCase) ? "allow" : "block";
             infoLabel.Text = $"An application just created a firewall rule to {actionText} traffic:";
-            pathLabel.Text = string.IsNullOrEmpty(rule.ApplicationName) ? $"Rule Name: {rule.Name}" : rule.ApplicationName;
-            pathLabel.WordWrap = true;
+            ShowDetails(string.IsNullOrEmpty(rule.ApplicationName) ? [("Rule name", rule.Name)] : [("Path", rule.ApplicationName)]);
 
             AcceptButton = ignoreButton;
 
             tempAllowButton?.Visible = false;
             createWildcardButton?.Visible = false;
+            searchOnlineButton?.Visible = false;
             trustPublisherCheckBox?.Visible = false;
         }
 
@@ -90,13 +98,79 @@ namespace MinimalFirewall
             Text = "Connection Blocked";
             infoLabel.Text = $"Blocked a {pending.Direction} connection for:";
             appNameLabel.Text = appName;
-            pathLabel.Text = pending.AppPath;
-            pathLabel.WordWrap = true;
+            var details = BuildConnectionDetails(pending);
+            string? Take(string label)
+            {
+                int i = details.FindIndex(d => d.Label == label);
+                if (i < 0) return null;
+                string value = details[i].Value;
+                details.RemoveAt(i);
+                return value;
+            }
+            string subtitle = string.Join($" {(char)0x00B7} ", new[] { Take("Description"), Take("Company") }.Where(s => s != null));
+            subtitleLabel.Text = subtitle;
+            subtitleLabel.Visible = subtitle.Length > 0;
+            ShowDetails(details);
 
             AcceptButton = ignoreButton;
 
             SetupTempAllowMenu();
             SetupIgnoreMenu();
+        }
+
+        private void ShowDetails(System.Collections.Generic.IEnumerable<(string Label, string Value)> details)
+        {
+            detailsGrid.SuspendLayout();
+            foreach (var (label, value) in details)
+            {
+                detailsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                detailsGrid.Controls.Add(new DarkModeForms.ThemedLabel { Text = label, AutoSize = true, UseMnemonic = false, Margin = new Padding(0, 0, 12, 6) });
+                // Zero-width spaces after separators let long paths wrap instead of being cut off.
+                detailsGrid.Controls.Add(new DarkModeForms.ThemedLabel { Text = value.Replace("\\", "\\" + (char)0x200B), AutoSize = true, UseMnemonic = false,
+                    Anchor = AnchorStyles.Left | AnchorStyles.Right, Margin = new Padding(0, 0, 0, 6) });
+            }
+            detailsGrid.ResumeLayout();
+        }
+
+        // Describes what the executable is and what it is trying to reach, so the user can decide.
+        public static System.Collections.Generic.List<(string Label, string Value)> BuildConnectionDetails(PendingConnectionViewModel pending)
+        {
+            var lines = new System.Collections.Generic.List<(string Label, string Value)> { ("Path", pending.AppPath) };
+            void Add(string label, string? value)
+            {
+                if (!string.IsNullOrWhiteSpace(value)) lines.Add((label, value.Trim()));
+            }
+
+            try
+            {
+                if (File.Exists(pending.AppPath))
+                {
+                    var info = FileVersionInfo.GetVersionInfo(pending.AppPath);
+                    Add("Description", info.FileDescription);
+                    Add("Product", string.Join(" ", new[] { info.ProductName, info.ProductVersion }.Where(s => !string.IsNullOrWhiteSpace(s))));
+                    Add("Company", info.CompanyName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm could not read version info: {ex.Message}");
+            }
+
+            Add("Service", pending.ServiceName);
+            Add("Remote", string.IsNullOrEmpty(pending.RemoteAddress) ? null
+                : $"{pending.RemoteAddress}{(string.IsNullOrEmpty(pending.RemotePort) ? "" : ":" + pending.RemotePort)} {pending.ProtocolDisplay}");
+            Add("Parent", string.IsNullOrEmpty(pending.ParentProcessName) ? pending.ParentProcessId
+                : $"{pending.ParentProcessName} (PID {pending.ParentProcessId})");
+            Add("User", pending.ProcessOwner);
+            Add("Command", pending.CommandLine);
+            return lines;
+        }
+
+        // The app name heading follows the form font so it scales with large-font settings.
+        protected override void OnFontChanged(EventArgs e)
+        {
+            base.OnFontChanged(e);
+            appNameLabel?.Font = new Font(Font.FontFamily, Font.SizeInPoints * 1.3f, FontStyle.Bold);
         }
 
         // Restore window position
@@ -166,12 +240,20 @@ namespace MinimalFirewall
                 int minimumWidth = Math.Min(maximumWidth, Math.Max((int)(360 * DeviceDpi / 96f), Font.Height * 22));
                 MinimumSize = new Size(minimumWidth, Math.Min(MinimumSize.Height, maximumHeight));
                 Width = Math.Clamp(Width, minimumWidth, maximumWidth);
-                pathLabel.MinimumSize = new Size(0, Font.Height * 3);
-                int contentHeight = _notificationLayout.Padding.Vertical + pathLabel.MinimumSize.Height + pathLabel.Margin.Vertical
-                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != pathLabel).Sum(c => c.Height + c.Margin.Vertical);
+                int contentHeight = _notificationLayout.Padding.Vertical + Font.Height * 3 + detailsPanel.Margin.Vertical
+                    + _notificationLayout.Controls.Cast<Control>().Where(c => c.Visible && c != detailsPanel)
+                    // Preferred height, not current height: a squeezed row would otherwise lower the minimum further.
+                    .Sum(c => c.GetPreferredSize(new Size(_notificationLayout.DisplayRectangle.Width - c.Margin.Horizontal, 0)).Height + c.Margin.Vertical);
                 int minimumHeight = Math.Min(maximumHeight, contentHeight + frameHeight);
                 MinimumSize = new Size(minimumWidth, minimumHeight);
                 Height = Math.Clamp(Height, minimumHeight, maximumHeight);
+                if (!_grewToDetails)
+                {
+                    // Once, open tall enough to show every detail row without a scroll bar.
+                    _grewToDetails = true;
+                    int detailsHeight = detailsGrid.GetPreferredSize(new Size(detailsPanel.ClientSize.Width, 0)).Height;
+                    Height = Math.Clamp(Math.Max(Height, minimumHeight - Font.Height * 3 + detailsHeight), minimumHeight, maximumHeight);
+                }
                 Location = new Point(Math.Clamp(Left, working.Left, working.Right - Width),
                     Math.Clamp(Top, working.Top, working.Bottom - Height));
             }
@@ -354,6 +436,48 @@ namespace MinimalFirewall
             Result = NotifierResult.CreateWildcard;
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        // Web search on the file name plus its publisher explains what the program does better than local metadata.
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string SearchEngine { get; set; } = "Google";
+
+        public static string BuildSearchUrl(string appPath, string engine)
+        {
+            string prefix = engine switch
+            {
+                "Bing" => "https://www.bing.com/search?q=",
+                "DuckDuckGo" => "https://duckduckgo.com/?q=",
+                _ => "https://www.google.com/search?q="
+            };
+            string query = $"\"{Path.GetFileName(appPath)}\"";
+            try
+            {
+                if (File.Exists(appPath) && FileVersionInfo.GetVersionInfo(appPath).CompanyName is string company && !string.IsNullOrWhiteSpace(company))
+                {
+                    query += " " + company.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm could not read company name: {ex.Message}");
+            }
+            // Steer results toward pages that explain the program's purpose and whether it is risky.
+            query += " what is it used for, is it safe or malware";
+            return prefix + Uri.EscapeDataString(query);
+        }
+
+        private void SearchOnlineButton_Click(object? sender, EventArgs e)
+        {
+            if (PendingConnection == null) return;
+            try
+            {
+                Process.Start(new ProcessStartInfo(BuildSearchUrl(PendingConnection.AppPath, SearchEngine)) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[WARN] NotifierForm.SearchOnlineButton_Click failed: {ex.Message}");
+            }
         }
 
         private async void CopyDetailsButton_Click(object sender, EventArgs e)

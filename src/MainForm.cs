@@ -777,6 +777,7 @@ namespace MinimalFirewall
 
                 bool isDark = IsDarkModeEnabled;
                 var notifier = new NotifierForm(pending, isDark);
+                notifier.SearchEngine = _appSettings.SearchEngine;
                 notifier.FormClosed += Notifier_FormClosed;
                 notifier.TopMost = true;
                 notifier.Show();
