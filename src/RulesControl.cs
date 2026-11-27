@@ -112,7 +112,8 @@ namespace MinimalFirewall
 
             DataGridViewHelper.RestoreColumnSettings(
                 rulesDataGridView,
-                _appSettings.RulesColumns);
+                _appSettings.RulesColumns,
+                _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (_, _) =>
                 DataGridViewHelper.SaveColumnSettings(
@@ -937,7 +938,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null && _appSettings != null)
             {
-                advIconColumn.Visible = _appSettings.ShowAppIcons;
+                advIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.RulesColumns, advIconColumn.Name);
                 rulesDataGridView.InvalidateColumn(advIconColumn.Index);
             }
         }

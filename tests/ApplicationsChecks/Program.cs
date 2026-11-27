@@ -126,18 +126,18 @@ internal static class Program
             Check(identity.Text.Contains(selectedPath), "Details must follow selected executable.");
             view.DisplayApplications([]);
             Check(grid.Rows.Count == 0 && !identity.Text.Contains(selectedPath), "Empty result must clear stale selection and details.");
-            Check(!controls.OfType<Button>().Single(c => c.Text == "&Allow…").Enabled, "Empty result must disable application actions.");
+            Check(!controls.OfType<Button>().Single(c => c.Text == "Replace &outbound rules with Allow…").Enabled, "Empty result must disable application actions.");
 
             view.DisplayApplications(ApplicationEntry.Build([first, second, conflict], [attempt, observedOnly]));
             grid.Columns["AppPath"]!.Width = 260;
-            var ruleGrid = controls.OfType<DataGridView>().Single(c => c.AccessibleName == "Explicit executable rules");
+            var ruleGrid = controls.OfType<DataGridView>().Single(c => c.AccessibleName!.StartsWith("Explicit executable rules"));
             ruleGrid.CurrentCell = ruleGrid.Rows[1].Cells["Name"];
             ruleGrid.Rows[1].Selected = true;
             view.DisplayApplications(ApplicationEntry.Build([first, second, conflict], [attempt, observedOnly]));
             Check(((AdvancedRuleViewModel)ruleGrid.CurrentRow!.DataBoundItem!).Name == conflict.Name, "Refresh must preserve the selected individual rule.");
             Check(form.ActivateMnemonic('s') && controls.OfType<TextBox>().Single(c => c.AccessibleName == "Search applications").Focused, "Search mnemonic must focus search.");
             Check(form.ActivateMnemonic('f') && controls.OfType<ComboBox>().Single(c => c.AccessibleName == "Filter applications").Focused, "Filter mnemonic must focus filter.");
-            Check(form.ActivateMnemonic('d') && controls.OfType<ComboBox>().Single(c => c.AccessibleName == "Rule direction").Focused, "Direction mnemonic must focus direction.");
+            Check(form.ActivateMnemonic('a') && controls.OfType<ComboBox>().Single(c => c.AccessibleName == "Both-directions replacement action").Focused, "Action mnemonic must focus the both-directions action.");
             grid.Focus();
             Check(grid.Focused, "Application grid must accept keyboard focus.");
             Check(grid.Rows.Cast<DataGridViewRow>().Where(r => r.Displayed).All(r => r.Height > grid.Font.Height), "Visible rows must fit enlarged text without clipping.");
