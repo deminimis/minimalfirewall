@@ -112,7 +112,8 @@ namespace MinimalFirewall
 
             DataGridViewHelper.RestoreColumnSettings(
                 rulesDataGridView,
-                _appSettings.RulesColumns);
+                _appSettings.RulesColumns,
+                _appSettings);
 
             rulesDataGridView.ColumnDisplayIndexChanged += (_, _) =>
                 DataGridViewHelper.SaveColumnSettings(
@@ -145,7 +146,7 @@ namespace MinimalFirewall
             await Task.CompletedTask;
         }
 
-        private void ApplyRulesFilters()
+        public void ApplyRulesFilters()
         {
             var enabledTypes = new HashSet<RuleType>();
             if (programFilterCheckBox.Checked) enabledTypes.Add(RuleType.Program);
@@ -334,6 +335,18 @@ namespace MinimalFirewall
             AggregatedRuleViewModel? selected = GetFirstSelectedRule();
             if (selected == null)
             {
+                return;
+            }
+
+            if (selected.IsWsl)
+            {
+                if (Messenger.MessageBox($"Delete the WSL rule '{selected.Name}' from OpenSnitch?", "Delete selected rule",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    return;
+                }
+                _mainViewModel.DeleteWslRule(selected);
+                ApplyRulesFilters();
                 return;
             }
 
@@ -609,9 +622,14 @@ namespace MinimalFirewall
         {
             if (sender is not ToolStripMenuItem menuItem || menuItem.Tag?.ToString() is not string action) return;
 
-            foreach (var item in GetSelectedRules())
+            var selected = GetSelectedRules();
+            foreach (var item in selected)
             {
                 _mainViewModel.ApplyRuleChange(item, action);
+            }
+            if (action.Contains("(Inbound)", StringComparison.Ordinal) && selected.Any(r => r.IsWsl))
+            {
+                Messenger.MessageBox("OpenSnitch filters outbound connections only, so the selected WSL rules were not changed.", "WSL rules", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -647,7 +665,7 @@ namespace MinimalFirewall
 
             deleteSelectedRuleToolStripMenuItem.Enabled =
                 hasSingleSelectedRow &&
-                hasOneUnderlyingRule;
+                (hasOneUnderlyingRule || rule.IsWsl);
 
             deleteAllApplicationRulesToolStripMenuItem.Enabled =
                 hasSingleSelectedRow &&
@@ -655,7 +673,8 @@ namespace MinimalFirewall
 
             manageDomainsToolStripMenuItem.Enabled =
                 hasSingleSelectedRow &&
-                isEditableType;
+                isEditableType &&
+                !rule.IsWsl;
         }
 
         private async void ManageDomainsToolStripMenuItem_Click(object sender, EventArgs e)
@@ -937,7 +956,7 @@ namespace MinimalFirewall
         {
             if (advIconColumn != null && _appSettings != null)
             {
-                advIconColumn.Visible = _appSettings.ShowAppIcons;
+                advIconColumn.Visible = DataGridViewHelper.IsIconColumnVisible(_appSettings, _appSettings.RulesColumns, advIconColumn.Name);
                 rulesDataGridView.InvalidateColumn(advIconColumn.Index);
             }
         }
@@ -1005,6 +1024,7 @@ namespace MinimalFirewall
                 _ when col == advDescColumn => CleanDescription(rule.Description),
                 _ when col == dateAddedColumn => rule.DateAdded.HasValue ? rule.DateAdded.Value.ToLocalTime() : null,
                 _ when col == autoAllowedColumn => string.IsNullOrEmpty(rule.AutoAllowedPublisher) ? "" : "Auto",
+                _ when col == attributesColumn => rule.Attributes,
                 _ => e.Value
             };
         }

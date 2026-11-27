@@ -20,6 +20,7 @@ namespace MinimalFirewall
             deleteAllRulesButton = new DarkModeForms.ThemedButton();
             revertFirewallButton = new DarkModeForms.ThemedButton();
             auditAlertsSwitch = new CheckBox();
+            wslOpenSnitchSwitch = new CheckBox();
             managePublishersButton = new DarkModeForms.ThemedButton();
             autoAllowWhitelistedPublishersCheck = new CheckBox();
             autoAllowSystemSignedAppsCheck = new CheckBox();
@@ -109,6 +110,17 @@ namespace MinimalFirewall
             auditAlertsSwitch.TabIndex = 24;
             auditAlertsSwitch.Text = "Alert on new system rules";
             auditAlertsSwitch.UseVisualStyleBackColor = true;
+            //
+            // wslOpenSnitchSwitch
+            //
+            wslOpenSnitchSwitch.AutoSize = true;
+            wslOpenSnitchSwitch.Location = new Point(306, 160);
+            wslOpenSnitchSwitch.Margin = new Padding(4, 3, 4, 3);
+            wslOpenSnitchSwitch.Name = "wslOpenSnitchSwitch";
+            wslOpenSnitchSwitch.Size = new Size(230, 20);
+            wslOpenSnitchSwitch.TabIndex = 42;
+            wslOpenSnitchSwitch.Text = "Filter WSL programs (OpenSnitch)";
+            wslOpenSnitchSwitch.UseVisualStyleBackColor = true;
             // 
             // managePublishersButton
             // 
@@ -482,6 +494,7 @@ namespace MinimalFirewall
             mainSettingsPanel.Controls.Add(deleteAllRulesButton);
             mainSettingsPanel.Controls.Add(revertFirewallButton);
             mainSettingsPanel.Controls.Add(auditAlertsSwitch);
+            mainSettingsPanel.Controls.Add(wslOpenSnitchSwitch);
             mainSettingsPanel.Controls.Add(managePublishersButton);
             mainSettingsPanel.Controls.Add(autoAllowWhitelistedPublishersCheck);
             mainSettingsPanel.Controls.Add(autoAllowSystemSignedAppsCheck);
@@ -684,6 +697,7 @@ namespace MinimalFirewall
         private DarkModeForms.ThemedButton deleteAllRulesButton;
         private DarkModeForms.ThemedButton revertFirewallButton;
         private System.Windows.Forms.CheckBox auditAlertsSwitch;
+        private System.Windows.Forms.CheckBox wslOpenSnitchSwitch;
         private DarkModeForms.ThemedButton managePublishersButton;
         private System.Windows.Forms.CheckBox autoAllowWhitelistedPublishersCheck;
         private System.Windows.Forms.CheckBox autoAllowSystemSignedAppsCheck;
