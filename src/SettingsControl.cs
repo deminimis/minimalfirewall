@@ -316,7 +316,7 @@ namespace MinimalFirewall
                 openFirewallButton, openAppDataButton, checkForUpdatesButton,
                 cleanUpOrphanedRulesButton, exportRulesButton, importMergeButton,
                 importReplaceButton, exportDiagnosticButton, viewTrustedCertsButton,
-                excludedFoldersButton
+                excludedFoldersButton, verifyAllowedAppsButton
             };
 
             foreach (var btn in buttonsToStyle)
@@ -650,6 +650,41 @@ namespace MinimalFirewall
                     _activityLogger?.LogException("RevertFirewall", ex);
                     Messenger.MessageBox($"Failed to reset firewall: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+            }
+        }
+
+        private async void VerifyAllowedAppsButton_Click(object? sender, EventArgs e)
+        {
+            verifyAllowedAppsButton.Enabled = false;
+            try
+            {
+                var (changed, checkedCount) = await AppIntegrityService.CheckAllowedAppsAsync();
+                if (changed.Count == 0)
+                {
+                    Messenger.MessageBox(
+                        $"{checkedCount} allowed applications checked. No unexpected change was found.\n\n" +
+                        "The first check records a baseline; later checks compare with it.",
+                        "Verify Allowed Apps", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                _activityLogger?.LogChange("Allowed App Changed", string.Join("; ", changed));
+                Messenger.MessageBox(
+                    "These allowed applications changed and are no longer signed by the same publisher:\n\n" +
+                    string.Join("\n", changed.Take(15)) +
+                    (changed.Count > 15 ? $"\n... and {changed.Count - 15} more (see the activity log)" : "") +
+                    "\n\nTheir allow rules were not changed. Review them in the Rules tab. " +
+                    "The new versions are now the baseline.",
+                    "Verify Allowed Apps", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex) when (ex is COMException or InvalidOperationException or IOException)
+            {
+                _activityLogger?.LogException("VerifyAllowedApps", ex);
+                Messenger.MessageBox($"Failed to verify allowed applications: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                verifyAllowedAppsButton.Enabled = true;
             }
         }
 
