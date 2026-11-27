@@ -46,15 +46,13 @@ namespace DarkModeForms
 
         #region MessageBox
 
-        private static MessageBoxDefaultButton _defaultButton = MessageBoxDefaultButton.Button1;
-
         public static DialogResult MessageBox(string Message)
             => MessageBox(Message, string.Empty, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 
         public static DialogResult MessageBox(Exception ex, bool ShowTrace = true) =>
             MessageBox(ex.Message + (ShowTrace ? "\r\n" + ex.StackTrace : ""), "Error!", icon: MessageBoxIcon.Error);
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MessageBoxIcon icon = MessageBoxIcon.Information, bool? pIsDarkMode = null, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1)
         {
             MsgIcon msgIcon = MsgIcon.None;
             switch (icon)
@@ -65,164 +63,209 @@ namespace DarkModeForms
                 case MessageBoxIcon.Error: msgIcon = MsgIcon.Error; break;
             }
 
-            return MessageBox(Message: Message, title: title, icon: msgIcon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
+            return MessageBox(Message: Message, title: title, icon: msgIcon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: defaultButton, owner: null);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton DefaultButton, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons, MessageBoxIcon icon, MessageBoxDefaultButton DefaultButton, bool? pIsDarkMode = null)
         {
-            _defaultButton = DefaultButton;
-            return MessageBox(Message, title, buttons, icon, pIsDarkMode);
+            return MessageBox(Message, title, buttons, icon, pIsDarkMode, DefaultButton);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(string Message, string title, MessageBoxButtons buttons = MessageBoxButtons.OK, MsgIcon icon = MsgIcon.None, bool? pIsDarkMode = null)
         {
             // Explicitly name arguments 
-            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: null);
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: MessageBoxDefaultButton.Button1, owner: null);
         }
 
-        public static DialogResult MessageBox(Form pOwner, string Message, string title, MessageBoxButtons buttons, MsgIcon icon = MsgIcon.None, bool pIsDarkMode = true)
+        public static DialogResult MessageBox(Form pOwner, string Message, string title, MessageBoxButtons buttons, MsgIcon icon = MsgIcon.None, bool? pIsDarkMode = null)
         {
             // Explicitly name arguments
-            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: _defaultButton, owner: pOwner);
+            return MessageBox(Message: Message, title: title, icon: icon, buttons: buttons, pIsDarkMode: pIsDarkMode, defaultButton: MessageBoxDefaultButton.Button1, owner: pOwner);
         }
 
-        public static DialogResult MessageBox(string Message, string title, MsgIcon icon, MessageBoxButtons buttons = MessageBoxButtons.OK, bool pIsDarkMode = true, MessageBoxDefaultButton defaultButton = MessageBoxDefaultButton.Button1, Form? owner = null)
+        public static DialogResult MessageBox(
+            string Message,
+            string title,
+            MsgIcon icon,
+            MessageBoxButtons buttons = MessageBoxButtons.OK,
+            bool? pIsDarkMode = null,
+            MessageBoxDefaultButton defaultButton =
+                MessageBoxDefaultButton.Button1,
+            Form? owner = null)
+                {
+                    var previousColors = Theme.Colors;
+
+                    try
+                    {
+                        using var form = CreateMessageDialog(
+                            Message,
+                            title,
+                            icon,
+                            buttons,
+                            pIsDarkMode ?? Theme.Colors.Surface.R < 128,
+                            defaultButton,
+                            owner);
+
+                        return owner == null || owner.IsDisposed
+                            ? form.ShowDialog()
+                            : form.ShowDialog(owner);
+                    }
+            catch (System.ComponentModel.Win32Exception ex)
+                when (ex.NativeErrorCode == 6 ||
+                  ex.NativeErrorCode == 8 ||
+                  ex.NativeErrorCode == 1400 ||
+                  ex.NativeErrorCode == 1158 ||
+                  ex.Message.Contains(
+                      "window handle",
+                      StringComparison.OrdinalIgnoreCase))
+            {
+                        MessageBoxIcon fallbackIcon = icon switch
+                        {
+                            MsgIcon.Error => MessageBoxIcon.Error,
+                            MsgIcon.Warning => MessageBoxIcon.Warning,
+                            MsgIcon.Question => MessageBoxIcon.Question,
+                            MsgIcon.Info or MsgIcon.Success =>
+                                MessageBoxIcon.Information,
+                            _ => MessageBoxIcon.None
+                        };
+
+                        return owner == null || owner.IsDisposed
+                            ? System.Windows.Forms.MessageBox.Show(
+                                Message,
+                                title,
+                                buttons,
+                                fallbackIcon,
+                                defaultButton)
+                            : System.Windows.Forms.MessageBox.Show(
+                                owner,
+                                Message,
+                                title,
+                                buttons,
+                                fallbackIcon,
+                                defaultButton);
+                    }
+                    finally
+                    {
+                        Theme.Colors = previousColors;
+                    }
+                }
+
+        internal static Form CreateMessageDialog(string message, string title, MsgIcon icon, MessageBoxButtons buttons,
+            bool isDark, MessageBoxDefaultButton defaultButton, Form? owner = null)
         {
-            using var form = new Form
+            var form = new Form
             {
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = owner != null ? FormStartPosition.CenterParent : FormStartPosition.CenterScreen,
                 MaximizeBox = false,
                 MinimizeBox = false,
                 Text = title,
-                Width = 340,
-                Height = 170,
-                KeyPreview = true,
+                Font = SystemFonts.MessageBoxFont ?? SystemFonts.DefaultFont,
+                // Layout dimensions are converted with DeviceDpi below; avoid scaling them twice.
+                AutoScaleMode = AutoScaleMode.None,
+                KeyPreview = true
             };
-            if (owner != null)
+            if (owner != null) form.Location = owner.Location;
+            Theme.Colors = Theme.GetSystemColors(isDark ? 0 : 1);
+            form.HandleCreated += (_, _) =>
             {
-                form.Owner = owner;
-            }
-
-            Theme.Colors = Theme.GetSystemColors(pIsDarkMode ? 0 : 1);
-            Theme.ApplyTitleBarTheme(form.Handle, pIsDarkMode ? Theme.DisplayMode.DarkMode : Theme.DisplayMode.ClearMode);
-            form.BackColor = Theme.Colors.Background;
-            form.ForeColor = Theme.Colors.TextInactive;
-
-            Font systemFont = SystemFonts.DefaultFont;
-            int fontHeight = systemFont.Height;
-
-            #region Bottom Panel & Buttons
-
-            var bottomPanel = new ThemedPanel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 48,
-                BackColor = Theme.Colors.Surface,
-                ForeColor = Theme.Colors.TextActive
-            };
-            form.Controls.Add(bottomPanel);
-
-            string CurrentLanguage = GetCurrentLanguage();
-            var ButtonTranslations = GetButtonTranslations(CurrentLanguage);
-            List<ThemedButton> CmdButtons = GenerateDialogButtons(form, bottomPanel, buttons, ButtonTranslations, fontHeight);
-
-            int Padding = 4;
-            int LastPos = form.ClientSize.Width;
-
-            systemFont = SystemFonts.MessageBoxFont ?? SystemFonts.DefaultFont;
-
-            for (int c = CmdButtons.Count - 1; c >= 0; c--)
-            {
-                ThemedButton _button = CmdButtons[c];
-                _button.FlatAppearance.BorderColor = (form.AcceptButton == _button) ? Theme.Colors.Accent : Theme.Colors.Control;
-
-                _button.TabIndex = c;
-                _button.Font = systemFont;
-                Size textSize = TextRenderer.MeasureText(_button.Text, systemFont);
-                _button.Size = new Size(textSize.Width + 20, systemFont.Height + 10);
-                _button.Location = new Point(LastPos - (_button.Width + Padding), (bottomPanel.Height - _button.Height) / 2);
-                LastPos = _button.Left;
-            }
-
-            int b = (int)_defaultButton;
-            if (b >= 0)
-            {
-                b >>= 8;
-                if (b < CmdButtons.Count)
+                if (!form.IsDisposed)
                 {
-                    CmdButtons[b].Select();
-                    CmdButtons[b].FlatStyle = FlatStyle.Flat;
-                    CmdButtons[b].FlatAppearance.BorderColor = Theme.Colors.AccentLight;
+                    Theme.ApplyTitleBarTheme(
+                        form.Handle,
+                        isDark
+                            ? Theme.DisplayMode.DarkMode
+                            : Theme.DisplayMode.ClearMode);
                 }
-            }
+            };
+            form.BackColor = Theme.Colors.Background;
+            form.ForeColor = Theme.Colors.TextActive;
 
-            #endregion Bottom Panel & Buttons
+            int Scale(int value) => (int)Math.Round(value * form.DeviceDpi / 96f);
+            var workingArea = Screen.FromControl(owner ?? form).WorkingArea;
+            var frame = form.Size - form.ClientSize;
+            int width = Math.Min(Scale(520), workingArea.Width - frame.Width - Scale(32));
+            int maximumHeight = workingArea.Height - frame.Height - Scale(32);
 
-            #region Icon
-
-            var picBox = new Rectangle(2, 10, 0, 0);
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+                Padding = new Padding(Scale(16))
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            var content = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = Padding.Empty };
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             if (icon != MsgIcon.None)
             {
-                var picIcon = new PictureBox
+                var image = _sharedIcons.GetIcon(icon);
+                bool ownsImage = image == null;
+                image ??= GetSafeSystemIcon(icon, Scale(32));
+                var picture = new PictureBox
                 {
-                    SizeMode = PictureBoxSizeMode.Zoom,
-                    Size = new Size(64, 64),
-                    Image = _sharedIcons.GetIcon(icon)
+                    Image = image, SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(Scale(32), Scale(32)),
+                    Margin = new Padding(0, 0, Scale(16), 0), TabStop = false
                 };
+                if (ownsImage) picture.Disposed += (_, _) => image?.Dispose();
+                content.Controls.Add(picture, 0, 0);
+            }
+            var prompt = new RichTextBox
+            {
+                Text = message, Dock = DockStyle.Fill, BorderStyle = BorderStyle.None,
+                ReadOnly = true, WordWrap = true, DetectUrls = false, ScrollBars = RichTextBoxScrollBars.Vertical,
+                BackColor = form.BackColor, ForeColor = form.ForeColor, Margin = Padding.Empty,
+                AccessibleName = "Message"
+            };
+            content.Controls.Add(prompt, 1, 0);
 
-                // Fallback to system icons 
-                picIcon.Image ??= GetSafeSystemIcon(icon, 64);
+            var commands = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = true, Margin = new Padding(0, Scale(16), 0, 0)
+            };
+            var commandButtons = GenerateDialogButtons(
+                form,
+                commands,
+                buttons,
+                GetButtonTranslations(GetCurrentLanguage()),
+                form.Font.Height);
 
-                form.Controls.Add(picIcon);
-
-                picBox.Size = new Size(64, 64);
-                picIcon.SetBounds(picBox.X, picBox.Y, picBox.Width, picBox.Height);
-                picIcon.BringToFront();
+            foreach (var button in commandButtons)
+            {
+                button.AutoSize = true;
+                button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+                button.MinimumSize = new Size(Scale(80), Scale(32));
+                button.Padding = new Padding(
+                    Scale(12),
+                    Scale(4),
+                    Scale(12),
+                    Scale(4));
+                button.Margin = new Padding(Scale(4), 0, 0, 0);
             }
 
-            #endregion Icon
+            int defaultIndex = Math.Clamp((int)defaultButton >> 8, 0, commandButtons.Count - 1);
+            form.AcceptButton = commandButtons[defaultIndex];
+            form.Shown += (_, _) => commandButtons[defaultIndex].Select();
+            layout.Controls.Add(content, 0, 0);
+            layout.Controls.Add(commands, 0, 1);
+            form.Controls.Add(layout);
 
-            #region Prompt Text
-
-            int lblWidth = Math.Max(10, form.ClientSize.Width - (picBox.X + picBox.Width) - 12); // Fix: Prevent negative/zero scale measurements
-            var lblPrompt = new ThemedLabel
+            int textWidth = Math.Max(1, width - Scale(icon == MsgIcon.None ? 32 : 80) - SystemInformation.VerticalScrollBarWidth);
+            int textHeight = TextRenderer.MeasureText(message, form.Font, new Size(textWidth, int.MaxValue),
+                TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl).Height;
+            form.ClientSize = new Size(width, Math.Min(maximumHeight, Math.Max(Scale(150), textHeight + Scale(112))));
+            form.KeyDown += (_, e) =>
             {
-                Text = Message,
-                AutoSize = true,
-                ForeColor = Theme.Colors.TextActive,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Location = new Point(picBox.X + picBox.Width + 4, picBox.Y),
-                MaximumSize = new Size(lblWidth, 0),
-                MinimumSize = new Size(lblWidth, 0) 
-            };
-            form.Controls.Add(lblPrompt);
-            lblPrompt.BringToFront();
-
-            int promptHeight = Math.Max(64, lblPrompt.GetPreferredSize(new Size(lblWidth, 0)).Height);
-            lblPrompt.MinimumSize = new Size(lblWidth, promptHeight);
-
-            #endregion Prompt Text
-
-            form.ClientSize = new Size(340, bottomPanel.Height + promptHeight + 20);
-
-            #region Keyboard Shortcuts
-
-            string localMessage = Message;
-            string localTitle = title;
-
-            form.KeyDown += (sender, e) =>
-            {
-                if (e.Control && e.KeyCode == Keys.C)
+                if (e.Control && e.KeyCode == Keys.C && !prompt.Focused)
                 {
-                    string clipboardText = $"Title: {localTitle}\r\nMessage: {localMessage}";
-                    Clipboard.SetText(clipboardText);
+                    Clipboard.SetText($"Title: {title}\r\nMessage: {message}");
                     e.Handled = true;
                 }
             };
-            #endregion
-
-            return form.ShowDialog();
+            return form;
         }
 
         #endregion MessageBox

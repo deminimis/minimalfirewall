@@ -168,7 +168,7 @@ namespace MinimalFirewall
             try
             {
                 string json = JsonSerializer.Serialize(_rules, WildcardRuleJsonContext.Default.ListWildcardRule);
-                File.WriteAllText(_configPath, json);
+                FileUtility.WriteAllTextAtomic(_configPath, json);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -203,7 +203,7 @@ namespace MinimalFirewall
                                            .Replace("\\?", ".") + "$";
 
 
-                    folderRegex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                    folderRegex = new Regex(pattern, RegexOptions.IgnoreCase);
                 }
                 catch (Exception ex)
                 {
@@ -218,7 +218,7 @@ namespace MinimalFirewall
                                        .Replace("\\*", ".*")
                                        .Replace("\\?", ".") + "$";
 
-                exeRegex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                exeRegex = new Regex(regexPattern, RegexOptions.IgnoreCase);
             }
             catch (Exception ex)
             {
@@ -226,6 +226,74 @@ namespace MinimalFirewall
             }
 
             _regexCache[rule] = (folderRegex, exeRegex);
+        }
+
+        // Version folders (app-1.0.9015, 120.0.6099.71) change on every update, so a wildcard on them stops
+        // matching. Suggest the stable parent instead, but never a drive root or a shared system folder,
+        // where a wildcard would cover unrelated programs.
+        private static readonly Regex VersionFolder = new(
+            @"^(?:.*[-_])?\d+(?:[._-]\d+)+$",
+            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        private static readonly string[] BroadFolders =
+        [
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        ];
+
+        public static string? SuggestFolder(string? exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                return null;
+            }
+
+            string? folder = Path.GetDirectoryName(exePath);
+
+            for (int level = 0;
+                 level < 3 && folder != null && VersionFolder.IsMatch(Path.GetFileName(folder));
+                 level++)
+            {
+                string? parent = Path.GetDirectoryName(folder);
+                if (parent == null
+                    || string.Equals(Path.GetPathRoot(parent), parent, StringComparison.OrdinalIgnoreCase)
+                    || BroadFolders.Any(broad =>
+                        !string.IsNullOrEmpty(broad)
+                        && string.Equals(
+                            Path.TrimEndingDirectorySeparator(parent),
+                            Path.TrimEndingDirectorySeparator(broad),
+                            StringComparison.OrdinalIgnoreCase)))
+                {
+                    break;
+                }
+
+                folder = parent;
+            }
+
+            return folder;
+        }
+
+        // A folder prefix only matches on a separator boundary: "C:\Tools" must not match "C:\ToolsEvil\x.exe".
+        public static bool IsInFolder(string? path, string? folder)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(folder))
+            {
+                return false;
+            }
+
+            string root = folder.TrimEnd('\\', '/');
+
+            if (root.Length == 0 || path.Length <= root.Length)
+            {
+                return false;
+            }
+
+            return path.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+                && (path[root.Length] == '\\' || path[root.Length] == '/');
         }
 
         public WildcardRule? Match(string path)
@@ -267,7 +335,7 @@ namespace MinimalFirewall
                     }
                     else
                     {
-                        if (normalizedPath.StartsWith(expandedFolderPath, StringComparison.OrdinalIgnoreCase))
+                        if (IsInFolder(normalizedPath, expandedFolderPath))
                         {
                             isFolderMatch = true;
                         }
