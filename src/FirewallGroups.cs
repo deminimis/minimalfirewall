@@ -96,7 +96,7 @@ namespace MinimalFirewall.Groups
                 {
                     string grouping = rule.Grouping;
 
-                    if (!string.IsNullOrEmpty(grouping) && grouping.EndsWith(MFWConstants.MfwRuleSuffix))
+                    if (!string.IsNullOrEmpty(grouping) && grouping.EndsWith(MFWConstants.firewallRulesuffix))
                     {
                         if (!groupsData.TryGetValue(grouping, out var ruleList))
                         {
