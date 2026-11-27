@@ -168,7 +168,8 @@ namespace MinimalFirewall
             auditControl1.Initialize(_mainViewModel, _firewallSentryService, _appSettings);
             groupsControl1.Initialize(
                 _groupManager,
-                _backgroundTaskService);
+                _backgroundTaskService,
+                _appSettings);
             liveConnectionsControl1.Initialize(_mainViewModel.TrafficMonitorViewModel, _appSettings, _iconService, _backgroundTaskService, _actionsService);
             liveConnectionsControl1.RefreshRequested += LiveConnectionsControl_RefreshRequested;
 
