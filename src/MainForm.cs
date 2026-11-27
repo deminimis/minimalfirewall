@@ -808,7 +808,26 @@ namespace MinimalFirewall
                 }
 
                 _mainViewModel.PendingConnections.Remove(pending);
-                if (result == NotifierForm.NotifierResult.CreateWildcard)
+                if (result == NotifierForm.NotifierResult.CreateAdvancedRule)
+                {
+                    BeginInvoke(new Action(() =>
+                    {
+                        using var dialog = new CreateAdvancedRuleForm(_actionsService, pending, _appSettings);
+                        if (dialog.ShowDialog(this) == DialogResult.OK && dialog.RuleVm != null)
+                        {
+                            _mainViewModel.CreateAdvancedRule(dialog.RuleVm, dialog.RuleVm.InterfaceTypes, dialog.RuleVm.IcmpTypesAndCodes);
+                            // The rule decides from now on: only clear the pending notification.
+                            _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection,
+                                new ProcessPendingConnectionPayload { PendingConnection = pending, Decision = "Ignore" }));
+                        }
+                        lock (_popupLock)
+                        {
+                            _isPopupVisible = false;
+                        }
+                        BeginInvoke(new Action(ProcessNextPopup));
+                    }));
+                }
+                else if (result == NotifierForm.NotifierResult.CreateWildcard)
                 {
                     BeginInvoke(new Action(() =>
                     {

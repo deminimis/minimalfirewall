@@ -48,7 +48,7 @@ namespace MinimalFirewall
             blockButton = new DarkModeForms.ThemedButton { Name = "blockButton", Text = "Block" };
             ignoreButton = new DarkModeForms.ThemedButton { Name = "ignoreButton", Text = "Ignore" };
             tempAllowButton = new DarkModeForms.ThemedButton { Name = "tempAllowButton", Text = "Allow Temporarily" };
-            createWildcardButton = new DarkModeForms.ThemedButton { Name = "createWildcardButton", Text = "Create Wildcard Rule..." };
+            createWildcardButton = new DarkModeForms.ThemedButton { Name = "createWildcardButton", Text = "Create Rule..." };
             copyDetailsButton = new DarkModeForms.ThemedButton { Name = "copyDetailsButton", Text = "Copy details" };
             allowButton.Click += AllowButton_Click;
             blockButton.Click += BlockButton_Click;
