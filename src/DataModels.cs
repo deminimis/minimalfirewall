@@ -201,6 +201,11 @@ public class PendingConnectionViewModel
     public string RemoteAddress { get; set; } = string.Empty;
     public string FilterId { get; set; } = string.Empty;
     public string LayerId { get; set; } = string.Empty;
+
+    // Set for connections asked by opensnitchd in WSL: the decision goes back to the daemon
+    // instead of creating a Windows Firewall rule.
+    public Action<string, TimeSpan>? WslReply { get; set; }
+    public bool IsWsl => WslReply != null;
 }
 
 public class WildcardRule

@@ -437,7 +437,7 @@ namespace MinimalFirewall
             _backgroundTaskService.EnqueueTask(new FirewallTask(FirewallTaskType.ProcessPendingConnection, payload, $"Processing: {decision} {pending.FileName}"));
             PendingConnections.Remove(pending);
 
-            if (decision == "Allow" || decision == "Block")
+            if (!pending.IsWsl && (decision == "Allow" || decision == "Block"))
             {
                 string action = $"{decision} ({pending.Direction})";
                 FirewallActionsService.ParseActionString(action, out Actions parsedAction, out Directions parsedDirection);
@@ -856,6 +856,8 @@ namespace MinimalFirewall
             }
         }
 
+        public void AddWslPendingConnection(PendingConnectionViewModel pending) => OnPendingConnectionDetected(pending);
+
         private void OnPendingConnectionDetected(PendingConnectionViewModel pending)
         {
             void ProcessDetection()
@@ -921,6 +923,12 @@ namespace MinimalFirewall
 
         public void ProcessSpecificAllow(PendingConnectionViewModel pending)
         {
+            if (pending.IsWsl)
+            {
+                // opensnitch 1.5 cannot receive list rules over gRPC; allow the program instead.
+                ProcessDashboardAction(pending, "Allow");
+                return;
+            }
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
             _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
             PendingConnections.Remove(pending);
@@ -958,6 +966,12 @@ namespace MinimalFirewall
 
         public void CreateWildcardRule(PendingConnectionViewModel pending, WildcardRule newRule)
         {
+            if (pending.IsWsl)
+            {
+                // Wildcard folders are Windows paths; apply the decision to the WSL program only.
+                ProcessDashboardAction(pending, newRule.Action.StartsWith("Block", StringComparison.OrdinalIgnoreCase) ? "Block" : "Allow");
+                return;
+            }
             _eventListenerService.SnoozeNotificationsForApp(pending.AppPath, TimeSpan.FromSeconds(5));
             _eventListenerService.ClearPendingNotification(pending.AppPath, pending.Direction);
 
