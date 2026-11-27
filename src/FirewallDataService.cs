@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System;
+using System.Net;
 
 namespace MinimalFirewall
 {
@@ -416,17 +417,18 @@ namespace MinimalFirewall
 
         private static string GetStr(string? val, string def) => string.IsNullOrEmpty(val) ? def : val;
 
-        public async Task<firewallRulestatus> CheckfirewallRulestatusAsync(string appPath, string serviceName, string direction)
+        public async Task<firewallRulestatus> CheckfirewallRulestatusAsync(PendingConnectionViewModel pending)
         {
-            if (!Enum.TryParse<Directions>(direction, true, out var dirEnum))
+            if (!Enum.TryParse<Directions>(pending.Direction, true, out var dirEnum))
             {
+                Debug.WriteLine($"[CheckMfwRuleStatus] Invalid direction: {pending.Direction}");
                 return firewallRulestatus.None;
             }
 
-            string normalizedAppPath = string.IsNullOrEmpty(appPath) ? string.Empty : PathResolver.NormalizePath(appPath);
-            var serviceNamesSet = string.IsNullOrEmpty(serviceName)
+            string normalizedAppPath = string.IsNullOrEmpty(pending.AppPath) ? string.Empty : PathResolver.NormalizePath(pending.AppPath);
+            var serviceNamesSet = string.IsNullOrEmpty(pending.ServiceName)
                  ? null
-                : new HashSet<string>(serviceName.Split(_separators, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
+                : new HashSet<string>(pending.ServiceName.Split(_separators, StringSplitOptions.RemoveEmptyEntries), StringComparer.OrdinalIgnoreCase);
 
             var firewallRules = await GetAllFirewallRulesAsync(CancellationToken.None);
 
@@ -442,9 +444,24 @@ namespace MinimalFirewall
             bool eventHasService = serviceNamesSet != null && serviceNamesSet.Count > 0;
             bool eventHasApp = !string.IsNullOrEmpty(normalizedAppPath);
 
+            // Parse event protocol for matching
+            int eventProtocol = 0;
+            if (!string.IsNullOrEmpty(pending.Protocol) && int.TryParse(pending.Protocol, out int parsedProto))
+            {
+                eventProtocol = parsedProto;
+            }
+
+            int? activeProfiles = null;
+
             foreach (var rule in firewallRules)
             {
                 if (rule == null)
+                {
+                    continue;
+                }
+
+                // Ignore disabled rules
+                if (!rule.IsEnabled)
                 {
                     continue;
                 }
@@ -459,6 +476,7 @@ namespace MinimalFirewall
 
                 bool match = false;
 
+                // Match app/service target
                 if (eventHasService)
                 {
                     if (ruleHasService && serviceNamesSet!.Contains(rule.ServiceName))
@@ -471,22 +489,51 @@ namespace MinimalFirewall
                     match = string.Equals(rule.ApplicationName, normalizedAppPath, StringComparison.OrdinalIgnoreCase);
                 }
 
-                if (match)
-                {
-                    if (rule.Status == "Allow")
-                    {
-                        foundAllow = true;
-                    }
-                    else if (rule.Status == "Block")
-                    {
-                        foundBlock = true;
-                    }
+                if (!match) continue;
 
-                    if (foundBlock)
+                // Conservative protocol matching
+                // Protocol 256 (Any) matches all protocols
+                // Specific protocol must match exactly
+                if (rule.Protocol != 256 && rule.Protocol != eventProtocol)
+                {
+                    continue;
+                }
+
+                // Conservative port and address matching: "*" matches all, a specific list must contain
+                // the event value, and a specific list never matches an event without that value.
+                if (!Covers(rule.RemotePorts, pending.RemotePort, PortMatches) ||
+                    !Covers(rule.LocalPorts, pending.LocalPort, PortMatches) ||
+                    !Covers(rule.RemoteAddresses, pending.RemoteAddress, AddressMatches) ||
+                    !Covers(rule.LocalAddresses, pending.LocalAddress, AddressMatches))
+                {
+                    continue;
+                }
+
+                // Conservative profile matching: the rule must cover every active profile.
+                // The active profiles are read once, and only when a rule is profile specific.
+                if (rule.Profiles != "All")
+                {
+                    activeProfiles ??= FirewallRuleService.GetCurrentProfileTypes();
+                    if (!CoversProfiles(rule.Profiles, activeProfiles.Value))
                     {
-                        break;
+                        Debug.WriteLine($"[CheckMfwRuleStatus] Rule '{rule.Name}' profiles '{rule.Profiles}' do not cover active profiles {activeProfiles.Value} - cannot confirm match");
+                        continue;
                     }
                 }
+
+                // All criteria matched
+                if (rule.Status == "Allow")
+                {
+                    foundAllow = true;
+                    Debug.WriteLine($"[CheckMfwRuleStatus] Conservative match found: Allow rule '{rule.Name}' covers event for {pending.AppPath}");
+                }
+                else if (rule.Status == "Block")
+                {
+                    foundBlock = true;
+                    Debug.WriteLine($"[CheckMfwRuleStatus] Conservative match found: Block rule '{rule.Name}' covers event for {pending.AppPath}");
+                }
+
+                if (foundBlock) break;
             }
 
             if (foundBlock)
@@ -499,7 +546,61 @@ namespace MinimalFirewall
                 return firewallRulestatus.MfwAllow;
             }
 
+            Debug.WriteLine($"[CheckMfwRuleStatus] No conservative match found for {pending.AppPath} - returning None to allow popup");
             return firewallRulestatus.None;
+        }
+
+        private static bool Covers(string? ruleValues, string eventValue, Func<string, string, bool> matches)
+        {
+            if (string.IsNullOrEmpty(ruleValues) || ruleValues == "*")
+            {
+                return true;
+            }
+
+            return !string.IsNullOrEmpty(eventValue) && eventValue != "*" &&
+                ruleValues.Split(_separators, StringSplitOptions.RemoveEmptyEntries).Any(v => matches(v.Trim(), eventValue));
+        }
+
+        private static bool PortMatches(string rulePort, string eventPort)
+        {
+            // Use existing PortRange.TryParse for proper range support
+            if (PortRange.TryParse(rulePort, out var portRange))
+            {
+                if (ushort.TryParse(eventPort, out var eventPortNum))
+                {
+                    return eventPortNum >= portRange.Begin && eventPortNum <= portRange.End;
+                }
+            }
+            return false;
+        }
+
+        internal static bool CoversProfiles(string ruleProfiles, int activeProfiles)
+        {
+            if (ruleProfiles == "All")
+            {
+                return true;
+            }
+
+            int ruleMask = 0;
+            if (ruleProfiles.Contains("Domain")) ruleMask |= (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_DOMAIN;
+            if (ruleProfiles.Contains("Private")) ruleMask |= (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PRIVATE;
+            if (ruleProfiles.Contains("Public")) ruleMask |= (int)NET_FW_PROFILE_TYPE2_.NET_FW_PROFILE2_PUBLIC;
+
+            // Unknown active profile: we cannot prove the rule applies.
+            return activeProfiles != 0 && (ruleMask & activeProfiles) == activeProfiles;
+        }
+
+        private static bool AddressMatches(string ruleAddress, string eventAddress)
+        {
+            // Use existing IPAddressRange.TryParse/Contains for proper CIDR/range support
+            if (IPAddressRange.TryParse(ruleAddress, out var ipRange))
+            {
+                if (IPAddress.TryParse(eventAddress, out var eventIp))
+                {
+                    return ipRange.Contains(eventIp);
+                }
+            }
+            return false;
         }
 
         public void ClearCaches()

@@ -155,36 +155,56 @@ namespace MinimalFirewall
 
             try
             {
+                // Parse official 5157 fields with fallback to legacy names
                 string rawAppPath = GetValueFromXml(xmlContent, "Application");
-                string layerId = GetValueFromXml(xmlContent, "LayerRTID");
-
-                // Direction extraction using LayerId (bypasses OS language localization issues)
-                if (layerId == "48" || layerId == "50")
-                {
-                    direction = DirectionOutbound;
-                }
-                else if (layerId == "44" || layerId == "46")
-                {
-                    direction = DirectionInbound;
-                }
-                else if (rawDirectionCode.HasValue)
-                {
-                    direction = ParseDirectionFromCode(rawDirectionCode.Value);
-                }
-                else
-                {
-                    direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
-                }
-
                 string sourceAddress = GetValueFromXml(xmlContent, "SourceAddress");
                 string sourcePort = GetValueFromXml(xmlContent, "SourcePort");
                 string destAddress = GetValueFromXml(xmlContent, "DestAddress");
                 string destPort = GetValueFromXml(xmlContent, "DestPort");
+                string filterRtid = GetValueFromXml(xmlContent, "FilterRTID");
+                string layerRtid = GetValueFromXml(xmlContent, "LayerRTID");
+                string layerId = GetValueFromXml(xmlContent, "LayerId");
 
-                string remoteAddress = direction == DirectionInbound ? sourceAddress : destAddress;
-                string remotePort = direction == DirectionInbound ? sourcePort : destPort;
+                // Store legacy remote fields separately for fallback after direction derivation
+                string legacyRemoteAddress = GetValueFromXml(xmlContent, "RemoteAddress");
+                string legacyRemotePort = GetValueFromXml(xmlContent, "RemotePort");
+                if (string.IsNullOrEmpty(filterRtid)) filterRtid = GetValueFromXml(xmlContent, "FilterId");
+
+                // Use LayerRTID as primary layer id for direction detection, with LayerId as fallback
+                string primaryLayerId = !string.IsNullOrEmpty(layerRtid) ? layerRtid : layerId;
+
+                // Reliable Direction extraction using LayerId (bypasses OS language localization issues)
+                if (primaryLayerId == "48" || primaryLayerId == "50") direction = DirectionOutbound;
+                else if (primaryLayerId == "44" || primaryLayerId == "46") direction = DirectionInbound;
+                else if (rawDirectionCode.HasValue) direction = ParseDirectionFromCode(rawDirectionCode.Value);
+                else direction = ParseDirection(GetValueFromXml(xmlContent, "Direction"));
+
+                // Derive local/remote endpoint fields from direction
+                // Outgoing: local = source, remote = destination
+                // Incoming: local = destination, remote = source
+                string localAddress, localPort, remoteAddress, remotePort;
+                if (direction == DirectionOutbound)
+                {
+                    localAddress = sourceAddress;
+                    localPort = sourcePort;
+                    remoteAddress = destAddress;
+                    remotePort = destPort;
+                }
+                else
+                {
+                    localAddress = destAddress;
+                    localPort = destPort;
+                    remoteAddress = sourceAddress;
+                    remotePort = sourcePort;
+                }
+
+                // Apply legacy remote fields as fallback for missing destination fields
+                // This ensures the old RemoteAddress/RemotePort map to the remote endpoint regardless of direction
+                if (string.IsNullOrEmpty(remoteAddress)) remoteAddress = legacyRemoteAddress;
+                if (string.IsNullOrEmpty(remotePort)) remotePort = legacyRemotePort;
+
                 string protocol = GetValueFromXml(xmlContent, "Protocol");
-                string filterId = GetValueFromXml(xmlContent, "FilterRTID");
+                string filterId = filterRtid;
                 string xmlServiceName = GetValueFromXml(xmlContent, "ServiceName");
                 string pidStr = GetValueFromXml(xmlContent, "ProcessID");
 
@@ -239,9 +259,26 @@ namespace MinimalFirewall
                     return;
                 }
 
-                firewallRulestatus existingRuleStatus = await _dataService.CheckfirewallRulestatusAsync(appPath, serviceName, direction);
+                // Create pending connection context for conservative rule matching
+                var pendingContext = new PendingConnectionViewModel
+                {
+                    ProcessId = pidStr,
+                    AppPath = appPath,
+                    Direction = direction,
+                    ServiceName = serviceName,
+                    Protocol = protocol,
+                    RemotePort = remotePort,
+                    RemoteAddress = remoteAddress,
+                    LocalPort = localPort,
+                    LocalAddress = localAddress,
+                    FilterId = filterId,
+                    LayerId = primaryLayerId
+                };
+
+                firewallRulestatus existingRuleStatus = await _dataService.CheckfirewallRulestatusAsync(pendingContext);
                 if (existingRuleStatus == firewallRulestatus.MfwBlock)
                 {
+                    _logAction($"[EventListener] Suppressed popup: Existing MFW block rule matches for {appPath}");
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
@@ -253,18 +290,21 @@ namespace MinimalFirewall
                         _dataService.InvalidateRuleCache();
                         SnoozeNotificationsForApp(appPath, TimeSpan.FromSeconds(10));
                     }
+                    _logAction($"[EventListener] Suppressed popup: Existing MFW allow rule matches for {appPath}");
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
 
                 if (CheckWildcardMatch(appPath, serviceName))
                 {
+                    _logAction($"[EventListener] Suppressed popup: Wildcard rule matches for {appPath}");
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
 
                 if (await CheckAutoAllowTrustedAsync(appPath, direction))
                 {
+                    _logAction($"[EventListener] Suppressed popup: Auto-allowed trusted publisher for {appPath}");
                     ClearPendingNotification(appPath, direction);
                     return;
                 }
@@ -283,24 +323,13 @@ namespace MinimalFirewall
                     owner = procDetails.ProcessOwner;
                 }
 
-                var pendingVm = new PendingConnectionViewModel
-                {
-                    ProcessId = pidStr,
-                    CommandLine = commandLine,
-                    ParentProcessId = parentPid,
-                    ParentProcessName = parentName,
-                    ProcessOwner = owner,
-                    AppPath = appPath,
-                    Direction = direction,
-                    ServiceName = serviceName,
-                    Protocol = protocol,
-                    RemotePort = remotePort,
-                    RemoteAddress = remoteAddress,
-                    FilterId = filterId,
-                    LayerId = layerId
-                };
+                pendingContext.CommandLine = commandLine;
+                pendingContext.ParentProcessId = parentPid;
+                pendingContext.ParentProcessName = parentName;
+                pendingContext.ProcessOwner = owner;
 
-                PendingConnectionDetected?.Invoke(pendingVm);
+                _logAction($"[EventListener] Showing popup/dashboard for blocked connection: {appPath} ({direction}) to {remoteAddress}:{remotePort}");
+                PendingConnectionDetected?.Invoke(pendingContext);
             }
             catch (Exception ex)
             {
