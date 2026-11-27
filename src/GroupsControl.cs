@@ -32,12 +32,16 @@ namespace MinimalFirewall
 
         public void Initialize(
             FirewallGroupManager groupManager,
-            BackgroundFirewallTaskService backgroundTaskService)
+            BackgroundFirewallTaskService backgroundTaskService,
+            AppSettings appSettings)
                 {
                     _groupManager = groupManager;
                     _backgroundTaskService = backgroundTaskService;
                     groupsDataGridView.AutoGenerateColumns = false;
                     groupsDataGridView.DataSource = _bindingSource;
+                    DataGridViewHelper.RestoreColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
+                    groupsDataGridView.ColumnWidthChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
+                    groupsDataGridView.ColumnDisplayIndexChanged += (_, _) => DataGridViewHelper.SaveColumnSettings(groupsDataGridView, appSettings.GroupsColumns, appSettings);
                 }
 
 
