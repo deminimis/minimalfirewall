@@ -215,6 +215,24 @@ namespace MinimalFirewall
         }
 
 
+        // Runs in the background so startup (Lockdown listener, tabs) does not wait for the scan.
+        // Deletions are logged by CleanUpOrphanedRulesAsync.
+        private async Task CleanUpOrphanedRulesOnStartupAsync()
+        {
+            try
+            {
+                var deleted = await Task.Run(() => _actionsService.CleanUpOrphanedRulesAsync(CancellationToken.None));
+                if (deleted.Count > 0)
+                {
+                    _mainViewModel.ClearRulesCache();
+                }
+            }
+            catch (Exception ex)
+            {
+                _activityLogger.LogException("CleanUpOrphanedRulesOnStartup", ex);
+            }
+        }
+
         protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
@@ -246,6 +264,10 @@ namespace MinimalFirewall
             }
 
             _actionsService.CleanupTemporaryRulesOnStartup();
+            if (_appSettings.AutoCleanUpOrphanedRules)
+            {
+                _ = CleanUpOrphanedRulesOnStartupAsync();
+            }
             if (_appSettings.StartOnSystemStartup)
             {
                 _startupService.VerifyAndCorrectStartupTaskPath();

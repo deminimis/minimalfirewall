@@ -2036,7 +2036,10 @@ namespace MinimalFirewall
                     if (!string.IsNullOrEmpty(appPath) && appPath != "*" && !appPath.StartsWith('@'))
                     {
                         string expandedPath = Environment.ExpandEnvironmentVariables(appPath);
-                        if (!File.Exists(expandedPath) && !expandedPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !expandedPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
+                        // An unavailable drive or share (USB disk, network share at logon) is not proof the file is gone.
+                        string? root = Path.GetPathRoot(expandedPath);
+                        if (!string.IsNullOrEmpty(root) && Directory.Exists(root) &&
+                            !File.Exists(expandedPath) && !expandedPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && !expandedPath.Contains("SystemApps", StringComparison.OrdinalIgnoreCase))
                         {
                             orphanedRuleNames.Add(Name);
                             activityLogger.LogDebug($"Found orphaned rule '{Name}' for path: {expandedPath}");
