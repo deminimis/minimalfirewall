@@ -1134,6 +1134,11 @@ namespace MinimalFirewall
         public void ProcessPendingConnection(PendingConnectionViewModel pending, string decision, TimeSpan duration = default, bool trustPublisher = false)
         {
             if (pending == null) return;
+            if (pending.WslReply != null)
+            {
+                pending.WslReply(decision, duration);
+                return;
+            }
             activityLogger.LogDebug($"Processing Pending Connection for '{pending.AppPath}'. Decision: {decision}, Duration: {duration}, Trust Publisher: {trustPublisher}");
             var shortSnoozeDuration = TimeSpan.FromSeconds(10);
             var longSnoozeDuration = TimeSpan.FromMinutes(2);
