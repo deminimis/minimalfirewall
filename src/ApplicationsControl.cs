@@ -295,6 +295,15 @@ public sealed class ApplicationsControl : UserControl
         layout.Controls.Add(_replacementScope, 0, 5);
         layout.Controls.Add(actions, 0, 6);
         Controls.Add(layout);
+        // Large text in a small window leaves the grids no room for a row: keep them a minimum height and scroll the view.
+        AutoScroll = true;
+        layout.Layout += (_, _) =>
+        {
+            int[] heights = layout.GetRowHeights();
+            if (heights.Length < 5) return;
+            int minimum = heights.Sum() - heights[2] - heights[4] + 12 * (layout.Font.Height + 8);
+            if (AutoScrollMinSize.Height != minimum) AutoScrollMinSize = new Size(0, minimum);
+        };
 
         _search.AccessibleName = "Search applications";
         _filter.AccessibleName = "Filter applications";
@@ -505,13 +514,17 @@ public sealed class ApplicationsControl : UserControl
                         firstDisplayedPath,
                         StringComparison.OrdinalIgnoreCase));
 
-                _applications.FirstDisplayedScrollingRowIndex =
-                    topIndex >= 0
-                        ? topIndex
-                        : Math.Clamp(
-                            firstDisplayedIndex,
-                            0,
-                            entries.Count - 1);
+                // A grid too short to show one row (small window, large text) throws on scroll.
+                if (_applications.DisplayedRowCount(true) > 0)
+                {
+                    _applications.FirstDisplayedScrollingRowIndex =
+                        topIndex >= 0
+                            ? topIndex
+                            : Math.Clamp(
+                                firstDisplayedIndex,
+                                0,
+                                entries.Count - 1);
+                }
 
                 _applications.HorizontalScrollingOffset =
                     horizontalOffset;
@@ -608,7 +621,7 @@ public sealed class ApplicationsControl : UserControl
 
                 _rules.CurrentCell = FirstVisibleCell(row);
 
-                if (_rules.Rows.Count > 0)
+                if (_rules.Rows.Count > 0 && _rules.DisplayedRowCount(true) > 0)
                 {
                     _rules.FirstDisplayedScrollingRowIndex =
                         Math.Clamp(
