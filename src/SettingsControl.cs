@@ -351,6 +351,7 @@ namespace MinimalFirewall
             auditAlertsSwitch.Checked = _appSettings.AlertOnForeignRules;
             managePublishersButton.Enabled = true;
             dnsRefreshNumericUpDown.Value = _appSettings.DnsRefreshIntervalMinutes > 0 ? _appSettings.DnsRefreshIntervalMinutes : 4;
+            searchEngineComboBox.SelectedItem = searchEngineComboBox.Items.Contains(_appSettings.SearchEngine) ? _appSettings.SearchEngine : "Google";
         }
 
         public void SaveSettingsFromUI()
@@ -389,6 +390,7 @@ namespace MinimalFirewall
             IconVisibilityChanged?.Invoke();
             AutoRefreshTimerChanged?.Invoke();
             _appSettings.DnsRefreshIntervalMinutes = (int)dnsRefreshNumericUpDown.Value;
+            if (searchEngineComboBox.SelectedItem is string engine) _appSettings.SearchEngine = engine;
             _appSettings.Save();
         }
 
@@ -892,6 +894,12 @@ namespace MinimalFirewall
         }
 
         private void DnsRefreshNumericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            SaveSettingsFromUI();
+            _appSettings.QueueSave();
+        }
+
+        private void SearchEngineComboBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
             SaveSettingsFromUI();
             _appSettings.QueueSave();
