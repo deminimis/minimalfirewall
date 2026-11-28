@@ -150,6 +150,7 @@ internal static class PopupChecks
     {
         using var image = new Bitmap(form.Width, form.Height);
         form.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));
+        Directory.CreateDirectory(directory);
         image.Save(Path.Combine(directory, filename));
     }
 
